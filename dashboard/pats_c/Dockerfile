@@ -12,6 +12,7 @@ USER flask
 RUN mkdir -p /home/flask/pats_c
 RUN mkdir -p /home/flask/patsc/db/
 RUN mkdir -p /home/flask/patsc/static/
+RUN mkdir -p /home/flask/patsc/logs/
 RUN mkdir -p /home/flask/.ssh
 RUN ln -s /home/flask/patsc/base_install/sshconfig /home/flask/.ssh/config
 RUN ln -s /home/flask/patsc/ssh_tmp/id_rsa /home/flask/.ssh/id_rsa

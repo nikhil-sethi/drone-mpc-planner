@@ -101,23 +101,32 @@ def get_daily_errors(now):
     return systems
 
 
+def next_date(file_reader):
+    cet = timezone('Europe/Amsterdam')
+    line = file_reader.readline()
+    date = None
+    if line:
+        try:
+            date = datetime.strptime(line.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f')  # The patsc log has an extended error so not every line is a date
+            date = date.astimezone(cet)
+        except ValueError:
+            date = next_date(file_reader)
+    return date
+
+
 def n_errors_from_file(file, now: datetime):
     yesterday = now - timedelta(days=1)
-    cet = timezone('Europe/Amsterdam')
     n_error = -1  # if the file can't be read for some reason the function will return -1
     if os.path.exists(file):
         with open(file, "r") as err_file:
-            msg = err_file.readline()
             n_error = 0
-            log_date = datetime.now(cet)
-            while log_date > yesterday and msg:
-                try:
-                    log_date = datetime.strptime(msg.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f')  # The patsc log has an extended error so not every line is a date
-                    log_date = log_date.astimezone(cet)
+            log_date = next_date(err_file)
+            if log_date:
+                while log_date > yesterday:
                     n_error += 1
-                except ValueError:
-                    log_date = datetime.now(cet)
-                msg = err_file.readline()
+                    log_date = next_date(err_file)
+                    if not log_date:
+                        break
     return n_error
 
 
@@ -152,7 +161,7 @@ def send_mail(now, dry_run):
 
     mail_err = ''
     if daemon_errors or patsc_errors:
-        mail_err += ' DEAMON ERRORS: ' + str(daemon_errors) + ' PATSC ERRORS: ' + str(patsc_errors) + '\n'
+        mail_err += 'Deamon erros: ' + str(daemon_errors) + ' Pats-c errors: ' + str(patsc_errors) + '\n'
     if (sum(systems['err'] > 1) > 0):  # err > 1 because we force rotation with an error
         for system, maintenance, _, _, _ in systems[systems['err'] > 1].to_numpy():
             if maintenance:
