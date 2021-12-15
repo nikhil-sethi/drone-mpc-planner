@@ -251,7 +251,10 @@ def apply_unsaved_changes(data, table_name):
                     if column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values:
                         fk = column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0]
                         fk_table = fk.replace('"', '').split('(')[0][:-1]
-                        data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
+                        if value is not None:
+                            data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
+                        else:
+                            data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = ''
                     elif column == 'DELETE':
                         data = data.drop(data[data[pks[0].replace('"', '')] == index_list[0]].index)
                     else:
@@ -362,7 +365,9 @@ def handle_save_button():
                 if 'connection' in table_name:
                     sql_save += f'''INSERT INTO {table_name}({','.join(pks)}) VALUES ({','.join([str(id) for id in id_list])}) ;'''
             elif len(pks) == 1:
-                if value.isnumeric():
+                if value is None:
+                    sql_save += f'''UPDATE {table_name} SET {column_name} = NULL WHERE {' AND '.join([f'{pk} = {id}' for pk,id in zip(pks,id_list)])} ; '''
+                elif value.isnumeric():
                     sql_save += f'''UPDATE {table_name} SET {column_name} = {value} WHERE { ' AND '.join([f'{pk} = {id}' for pk,id in zip(pks,id_list)]) } ; '''
                 else:
                     sql_save += f'''UPDATE {table_name} SET {column_name} = '{value}' WHERE {' AND '.join([f'{pk} = {id}' for pk,id in zip(pks,id_list)])} ; '''
@@ -444,9 +449,12 @@ def process_edit(children, choosen_table, selected_rows, current_data):
                 column_name = input['column'].split('_fk_')[0]
                 fk_table = input['column'].split('_fk_')[1]
                 if fk_table in current_data.columns:
-                    named_value = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column_name}"', 'fk'].values[0], [input['value']])[0][0]
-                    if named_value != current_data[fk_table].values[row]:
-                        sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},'{input['value']}','{username}',0), '''
+                    if input['value'] is not None and (input['value'] or not isinstance(input['value'], str)):
+                        named_value = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column_name}"', 'fk'].values[0], [input['value']])[0][0]
+                        if named_value != current_data[fk_table].values[row]:
+                            sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},'{input['value']}','{username}',0), '''
+                    elif (current_data[fk_table].values[row] is not None and (current_data[fk_table].values[row] or not isinstance(current_data[fk_table].values[row], str))) and len(selected_rows) == 1:
+                        sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},NULL,'{username}',0), '''
             elif 'connection' in input['column']:
                 connection_name, connection_info = get_table_connection(choosen_table)
                 if connection_name in input['column']:
