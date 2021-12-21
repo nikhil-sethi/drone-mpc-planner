@@ -70,10 +70,30 @@ def load_customers():
     return {}, False
 
 
-def init_insects_dropdown():
+def init_insects_lia_options():
     insect_options = []
-    date_style = {'width': '30%', 'display': 'inline-block'}
-    insect_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
+    if current_user:
+        if current_user.is_authenticated:
+            username = current_user.username
+            with patsc.open_systems_db() as con:
+                sql_str = 'SELECT DISTINCT insects.name, LIA_name FROM insects' \
+                    + ' JOIN crop_insect_connection ON crop_insect_connection.insect_id = insects.insect_id' \
+                    + ' JOIN crops ON crops.crop_id = crop_insect_connection.crop_id' \
+                    + ' JOIN customers ON customers.crop_id = crops.crop_id' \
+                    + ' JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id' \
+                    + ' JOIN users ON users.user_id = user_customer_connection.user_id' \
+                    + ' WHERE users.name = "' + username + '" AND LIA_name NOT NULL ORDER BY insects.name'
+                insects = con.execute(sql_str)
+                for name, LIA_name in insects:
+                    insect_options.append({'label': name, 'value': {'label': name, 'LIA_name': LIA_name}})
+
+    insect_options.append({'label': 'No insect filter', 'value': {'label': 'No insect filter', 'LIA_name': ''}})
+    insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'LIA_name': ''}})
+    return insect_options
+
+
+def init_insects_size_options():
+    insect_options = []
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
@@ -91,17 +111,12 @@ def init_insects_dropdown():
 
     insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0, 'floodfill_avg_size': 0, 'floodfill_std_dev': 0}})
     insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'avg_size': 0, 'std_dev': 0, 'floodfill_avg_size': 0, 'floodfill_std_dev': 0}})
-    return insect_options, date_style, insect_style
+    return insect_options
 
 
-def init_system_and_customer_dropdown():
-    customer_dict, demo = load_customers()
+def init_system_and_customer_options(customer_dict, demo):
     sys_options = []
     customer_options = []
-    customer_value = None
-    customer_style = {'width': '30%', 'display': 'inline-block'}
-    sys_style = {'width': '70%', 'display': 'inline-block'}
-
     for customer in customer_dict.keys():
         if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
             customer_options.append({'label': customer, 'value': customer})
@@ -118,11 +133,28 @@ def init_system_and_customer_dropdown():
                         sys_options.append({'label': customer + ' ' + location, 'value': system, 'title': system})
                 else:
                     sys_options.append({'label': customer + ' ' + str(i + 1), 'value': system, 'title': system})
+    return customer_options, sys_options
+
+
+def init_dropdowns():
+    customer_dict, demo = load_customers()
+    customer_value = None
+    customer_style = {'width': '30%', 'display': 'inline-block'}
+    sys_style = {'width': '70%', 'display': 'inline-block'}
+    insect_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
+    filter_style = {'width': '0%', 'display': 'none', 'float': 'right'}
+    customer_options, sys_options = init_system_and_customer_options(customer_dict, demo)
+
     if len(customer_dict.keys()) == 1 or demo:
         customer_value = [list(customer_dict)[0]]
         customer_style = {'width': '0%', 'display': 'none'}
         sys_style = {'width': '100%', 'display': 'inline-block'}
-    return sys_options, sys_style, customer_options, customer_value, customer_style
+
+    if 'Pats' in customer_dict.keys():
+        insect_style = {'width': '40%', 'display': 'inline-block', 'float': 'right'}
+        filter_style = {'width': '30%', 'display': 'inline-block', 'float': 'right'}
+
+    return sys_options, sys_style, customer_options, customer_value, customer_style, insect_style, filter_style
 
 
 def load_systems(username):
@@ -135,8 +167,19 @@ def load_systems(username):
     return authorized_systems
 
 
-def create_insect_filter_sql_str(start_date, insect_type):
-    if 'Anomalies' in insect_type['label']:
+def create_insect_lia_filter_sql_str(insect_type_info):
+    if 'Anomalies' in insect_type_info['label']:
+        return 'Monster'
+    duration_str = ' AND duration > 1 AND duration < 10'
+    insect_str = ' Dist_traveled > 0.15 AND Dist_traveled < 4 '
+    if insect_type_info['LIA_name']:
+        insect_str += ' AND ' + insect_type_info['LIA_name'] + ' > 0.5 '  # 0.5 depends on normalization of result.
+
+    return '((' + insect_str + duration_str + ') OR Monster)'
+
+
+def create_insect_classic_filter_sql_str(start_date, insect_type_info):
+    if 'Anomalies' in insect_type_info['label']:
         return 'Monster'
     duration_str = ' AND duration > 1 AND duration < 10'
     insect_str = ''
@@ -144,11 +187,11 @@ def create_insect_filter_sql_str(start_date, insect_type):
     if start_date < datetime.datetime.strptime('20210101_000000', '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
         insect_str = '((Version="1.0" AND time < "20210101_000000") OR ('
         close_insect_str = '))'
-    min_size = insect_type['avg_size'] - insect_type['std_dev']
-    max_size = insect_type['avg_size'] + 2 * insect_type['std_dev']
-    floodfill_min_size = insect_type['floodfill_avg_size'] - insect_type['floodfill_std_dev']
-    floodfill_max_size = insect_type['floodfill_avg_size'] + 2 * insect_type['floodfill_std_dev']
-    if insect_type['avg_size'] > 0:
+    min_size = insect_type_info['avg_size'] - insect_type_info['std_dev']
+    max_size = insect_type_info['avg_size'] + 2 * insect_type_info['std_dev']
+    floodfill_min_size = insect_type_info['floodfill_avg_size'] - insect_type_info['floodfill_std_dev']
+    floodfill_max_size = insect_type_info['floodfill_avg_size'] + 2 * insect_type_info['floodfill_std_dev']
+    if insect_type_info['avg_size'] > 0:
         insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND
                                       CASE WHEN CAST (substr(Version, 0, instr(Version, '.')) AS INTEGER) >= 1 AND CAST (substr(Version, instr(Version, '.')+1) AS INTEGER) >= 10
                                       THEN Size > {floodfill_min_size} AND Size < {floodfill_max_size}
@@ -179,7 +222,7 @@ def window_filter_monster(insect_df, monster_df):
     return insect_without_monsters
 
 
-def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
+def load_insect_df(systems, start_date, end_date, insect_type_info, selected_filter, columns=[]):
     columns.extend(['system', 'time', 'Monster'])
     insect_df = pd.DataFrame()
     monster_df = pd.DataFrame()
@@ -195,7 +238,10 @@ def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
 
             time_str = f'''time > '{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' AND time <= '{(end_date+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' '''  # with added monster window
             system_str = create_system_filter_sql_str(start_date, system)
-            insect_str = create_insect_filter_sql_str(start_date, insect_type)
+            if selected_filter == 'LIA':
+                insect_str = create_insect_lia_filter_sql_str(insect_type_info)
+            else:
+                insect_str = create_insect_classic_filter_sql_str(start_date, insect_type_info)
             sql_str = f'''SELECT {', '.join(set(columns))} FROM moth_records
                          WHERE {system_str}
                          AND {time_str}
@@ -205,7 +251,7 @@ def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
 
             monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
 
-            if 'Anomalies' not in insect_type['label']:
+            if 'Anomalies' not in insect_type_info['label']:
                 insect_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] != 1]
                 insect_sys_df = insect_sys_df[(insect_sys_df['time'] > real_start_date) & (insect_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
                 insect_sys_df = window_filter_monster(insect_sys_df, monster_sys_df)
@@ -222,7 +268,7 @@ def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
     return insect_df, monster_df
 
 
-def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
+def load_insects_of_hour(systems, start_date, end_date, hour, insect_type_info):
     systems = installation_dates(systems)
     hour_strs = [str(hour - 1).rjust(2, '0'), str(hour).rjust(2, '0'), str(hour + 1).rjust(2, '0')]
     insect_df = pd.DataFrame()
@@ -236,7 +282,10 @@ def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
                 real_start_date = start_date
 
             system_str = create_system_filter_sql_str(start_date, system)
-            insect_str = create_insect_filter_sql_str(start_date, insect_type)
+            if 'LIA_name' in insect_type_info:
+                insect_str = create_insect_lia_filter_sql_str(insect_type_info)
+            else:
+                insect_str = create_insect_classic_filter_sql_str(start_date, insect_type_info)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
                 WHERE {system_str}
@@ -248,7 +297,7 @@ def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
             insect_sys_df['time'] = pd.to_datetime(insect_sys_df['time'], format='%Y%m%d_%H%M%S')
 
             monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
-            if 'Anomalies' not in insect_type['label']:
+            if 'Anomalies' not in insect_type_info['label']:
                 insect_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] != 1]
                 insect_sys_df = window_filter_monster(insect_sys_df, monster_sys_df)
                 insect_sys_df = insect_sys_df.loc[insect_sys_df['time'].dt.hour == hour]
@@ -284,13 +333,13 @@ def system_sql_str(systems):
     return systems_str
 
 
-def load_insect_data(selected_systems, start_date, end_date, insect_type):
+def load_insect_data(selected_systems, start_date, end_date, insect_type_info, selected_filter):
     # We count insects from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
     # So a insect at 23:00 on 14-01 is counted at 14-01 and a insect at 2:00 on 15-01 also at 14-01
     # A insect seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
     start_datetime = start_date + datetime.timedelta(hours=12)
     end_datetime = end_date + datetime.timedelta(hours=12)
-    insect_df, monster_df = load_insect_df(selected_systems, start_datetime, end_datetime, insect_type)  # Shift to include the insects of today until 12:00 in the afternoon.
+    insect_df, monster_df = load_insect_df(selected_systems, start_datetime, end_datetime, insect_type_info, selected_filter)  # Shift to include the insects of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
@@ -601,7 +650,39 @@ def video_available_to_symbol(x):
     return 300  # see "Custom Marker Symbols" https://plotly.com/python/marker-style/
 
 
-def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
+def create_scatter_hover(df, selected_filter, chance_columns, current_labels):
+    customdata = np.stack(
+        (df['system'] + '/' + df['Folder'] + '/' + df['Filename'],
+            df['Video_Filename'],
+            df['Human_classification'],
+            current_labels,
+            df['uid'],
+            df['time_for_humans'],
+         ), axis=-1)
+
+    hovertemplate = '<b>System %{customdata[3]}</b><br><br>'\
+        + 'x: %{x}<br>'\
+        + 'y: %{y}<br>'\
+        + 't: %{customdata[5]}<br>'\
+        + 'File: %{customdata[0]}<br>'\
+        + 'Video: %{customdata[1]}<br>'\
+        + 'Ground truth: %{customdata[2]}<br>'
+    if selected_filter == 'LIA':
+        len_custom = customdata.shape[1]
+        chance_stack = np.stack(df[chance_columns].values, axis=0)
+        index_top3 = chance_stack.argsort(axis=1)[:, -3:][:, ::-1]
+        chance_col_stack = np.broadcast_to(np.array(chance_columns), chance_stack.shape)
+        chance_col_stack_top3 = chance_col_stack[np.arange(chance_col_stack.shape[0])[:, None], index_top3]
+        chance_stack_top3 = chance_stack[np.arange(chance_stack.shape[0])[:, None], index_top3]
+        customdata = np.concatenate([customdata, chance_col_stack_top3, chance_stack_top3], axis=1)
+        hovertemplate += ''.join(['%{customdata[' + str(i + len_custom) + ']}' + ': %{customdata[' + str(i + len_custom + 3) + ']:.2f}<br>' for i in range(3)])
+
+    hovertemplate += '<extra></extra>'
+
+    return hovertemplate, customdata
+
+
+def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value, selected_filter, chance_columns):
     df_scatter = insects
     df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto', '').str.replace('pats', '').astype(int)
     df_scatter['system_color'] = df_scatter['system'].apply(list(system_labels.keys()).index).astype(int)
@@ -622,20 +703,15 @@ def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
                 # df['time'].apply(lambda x: x.strftime('%H:%M:%S %d-%m-%Y'))
                 df['time_for_humans'] = df['time'].dt.strftime('%H:%M:%S %d-%m-%Y')
                 current_labels = [system_labels[sys] for x in df[scatter_x_value]]
+                hovertemplate, customdata = create_scatter_hover(df, selected_filter, chance_columns, current_labels)
+
                 scatter = go.Scattergl(
                     name=system_labels[sys] + ', ' + classification,
                     showlegend=True,
                     x=df[scatter_x_value],
                     y=df[scatter_y_value],
                     mode='markers',
-                    customdata=np.stack(
-                        (df['system'] + '/' + df['Folder'] + '/' + df['Filename'],
-                         df['Video_Filename'],
-                         df['Human_classification'],
-                         current_labels,
-                         df['uid'],
-                         df['time_for_humans'],
-                         ), axis=-1),
+                    customdata=customdata,
                     marker=dict(
                         cmin=0,
                         cmax=9,
@@ -645,14 +721,7 @@ def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
                         size=10,
                         line=dict(width=2, color="rgba(0,0, 0, 255)")
                     ),
-                    hovertemplate='<b>System %{customdata[3]}</b><br><br>' +
-                    'x: %{x}<br>' +
-                    'y: %{y}<br>' +
-                    't: %{customdata[5]}<br>' +
-                    'File: %{customdata[0]}<br>' +
-                    'Video: %{customdata[1]}<br>' +
-                    'Ground truth: %{customdata[2]}<br>' +
-                    '<extra></extra>'
+                    hovertemplate=hovertemplate
                 )
                 scat_fig.add_trace(scatter)
 
@@ -764,6 +833,29 @@ def dash_application():
                 value.extend(systems)
         return value
 
+    @ app.callback(
+        Output('insects_dropdown', 'options'),
+        Output('insects_dropdown', 'value'),
+        Input('filter_dropdown', 'value'),
+        State('insects_dropdown', 'value'))
+    def init_insect_options(selected_filter, insect_value):
+        insect_options = []
+        if selected_filter == 'size':
+            insect_options = init_insects_size_options()
+        elif selected_filter == 'LIA':
+            insect_options = init_insects_lia_options()
+
+        new_value = None
+        if insect_value:
+            for option in insect_options:
+                if option['label'] == insect_value['label']:
+                    new_value = option['value']
+
+        if not new_value:
+            new_value = insect_options[0]['value']
+
+        return insect_options, new_value
+
     def update_selected_heat(clickData_hm, selected_heat):
         if not clickData_hm:
             return None, None
@@ -815,6 +907,7 @@ def dash_application():
         Input('systems_dropdown', 'value'),
         Input('insects_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
+        State('filter_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'),
         State('hete_kaart', 'figure'),
@@ -823,7 +916,7 @@ def dash_application():
         State('hete_kaart', 'style'),
         State('staaf_kaart', 'style'),
         State('staaf24h_kaart', 'style'))
-    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options, hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style):  # pylint: disable=unused-variable
+    def update_ui_hist_and_heat(start_date, end_date, selected_systems, selected_insect_type, clickData_hm, selected_filter, selected_heat, system_options, hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style):  # pylint: disable=unused-variable
         loading_animation_style = {'display': 'block'}
         system_labels = {x['value']: x['label'] for x in system_options if x['value'] in selected_systems}
 
@@ -837,14 +930,14 @@ def dash_application():
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
             end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())  # the 12:00 O'clock start time is not included here. (so not a datetime, but a date)
             start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())  # idem
-        if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
+        if not selected_systems or not selected_insect_type or not end_date or not start_date or (end_date - start_date).days < 1:
             hm_style = {'display': 'none'}
             hist_style = {'display': 'none'}
             hist24h_style = {'display': 'none'}
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
         if prop_id != 'hete_kaart.clickData' and prop_id != 'classification_dropdown.value':
-            unique_dates, heatmap_insect_counts, heatmap_monster_counts, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
+            unique_dates, heatmap_insect_counts, heatmap_monster_counts, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, selected_insect_type, selected_filter)
             if not len(unique_dates):
                 hm_style = {'display': 'none'}
                 hist_style = {'display': 'none'}
@@ -877,8 +970,9 @@ def dash_application():
         Input('scatter_x_dropdown', 'value'),
         Input('scatter_y_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
-        State('systems_dropdown', 'options'))
-    def update_ui_scatter(start_date, end_date, selected_systems, insect_types, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options):  # pylint: disable=unused-variable
+        State('systems_dropdown', 'options'),
+        State('filter_dropdown', 'value'))
+    def update_ui_scatter(start_date, end_date, selected_systems, selected_insect_type, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options, selected_filter):  # pylint: disable=unused-variable
         scat_fig = go.Figure(data=go.Scatter())
         scat_style = {'display': 'none'}
         scat_axis_select_style = {'display': 'none'}
@@ -888,7 +982,7 @@ def dash_application():
             system_labels = None
 
         selected_systems = remove_unauthoirized_system(selected_systems)
-        if not selected_systems or not insect_types:
+        if not selected_systems or not selected_insect_type:
             return scat_fig, scat_style, scat_axis_select_style
 
         prop_id = dash.callback_context.triggered[0]['prop_id']
@@ -905,13 +999,13 @@ def dash_application():
                     if hour < 12:
                         hour += 24
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
+                    insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), selected_insect_type, selected_filter, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value, *chance_columns])
                     insects = insects.append(insects_hour)
             elif hist_selected_bars and prop_id == 'staaf_kaart.selectedData':
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
+                    insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), selected_insect_type, selected_filter, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value, *chance_columns])
                     insects = insects.append(insects_day)
             elif hist24h_selected_bars and prop_id == 'staaf24h_kaart.selectedData':
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
@@ -919,11 +1013,11 @@ def dash_application():
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
-                    insects_hour = load_insects_of_hour([sys], start_date, end_date, hour, insect_types)
+                    insects_hour = load_insects_of_hour([sys], start_date, end_date, hour, selected_insect_type)
                     insects = insects.append(insects_hour)
 
             if not insects.empty:
-                scat_fig = create_scatter(insects, system_labels, scatter_x_value, scatter_y_value)
+                scat_fig = create_scatter(insects, system_labels, scatter_x_value, scatter_y_value, selected_filter, chance_columns)
                 scat_axis_select_style = {'display': 'table', 'textAlign': 'center', 'width': '50%', 'margin': 'auto'}
                 scat_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
         return scat_fig, scat_style, scat_axis_select_style
@@ -1031,6 +1125,7 @@ def dash_application():
 
     with patsc.open_data_db() as con:
         insect_columns = [i[1] for i in con.execute('PRAGMA table_info(moth_records)')]
+        chance_columns = [col for col in insect_columns if 'chance_' in col]
         if 'Human_classification' not in insect_columns:
             con.execute('ALTER TABLE moth_records ADD COLUMN Human_classification TEXT')
 
@@ -1057,8 +1152,7 @@ def dash_application():
         fig_hist24h = go.Figure(data=go.Histogram())
         fig_scatter = go.Figure(data=go.Scatter())
         fig_path = go.Figure(data=go.Scatter3d())
-        system_options, system_style, customer_options, customer_value, customer_style = init_system_and_customer_dropdown()
-        insect_options, date_style, insect_style = init_insects_dropdown()
+        system_options, system_style, customer_options, customer_value, customer_style, insect_style, filter_style = init_dropdowns()
         return html.Div([
             dbc.Navbar
             ([
@@ -1115,15 +1209,25 @@ def dash_application():
                         end_date_placeholder_text="End period",
                         persistence=True
                     ), className='dash-bootstrap')
-                ], style=date_style),
+                ], style={'width': '30%', 'display': 'inline-block'}),
+                html.Div
+                ([
+                    html.Div('Filter:'),
+                    html.Div(dcc.Dropdown(
+                        id='filter_dropdown',
+                        multi=False,
+                        placeholder='Select filter',
+                        options=[{'label': 'size', 'value': 'size'}, {'label': 'LIA', 'value': 'LIA'}],
+                        value='size',
+                        clearable=False,
+                    ), className='dash-bootstrap'),
+                ], style=filter_style),
                 html.Div
                 ([
                     html.Div('Insects:'),
                     html.Div(dcc.Dropdown(
                         id='insects_dropdown',
-                        options=insect_options,
                         multi=False,
-                        value=insect_options[0]['value'] if insect_options else "",
                         placeholder='Select insects'
                     ), className='dash-bootstrap'),
                 ], style=insect_style),
