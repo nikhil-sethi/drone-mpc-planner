@@ -35,6 +35,14 @@ def check_if_table_exists(table_name_prefix, con):
     return cur.fetchone()[0]
 
 
+def get_insect_chance_columns():
+    sql_str = 'SELECT LIA_column FROM insects WHERE LIA_column'
+    with patsc.open_systems_db() as con:
+        columns = con.execute(sql_str).fetchall()
+        columns = [col[0] for col in columns]
+    return columns
+
+
 def store_moths(data, dry_run):
     moths = data["moths"]
     if not len(moths):
@@ -96,6 +104,10 @@ def store_moths(data, dry_run):
         # v1.12: Added a version str for the insect labeling
         if 'LIA_version' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN LIA_version TEXT')
+        # v1.13: Added all the different insect probabilities found by LIA
+        for col in get_insect_chance_columns():
+            if col not in columns:
+                cur.execute(f'ALTER TABLE moth_records ADD COLUMN {col} REAL')
 
         sql_insert = ''
         for moth in moths:
