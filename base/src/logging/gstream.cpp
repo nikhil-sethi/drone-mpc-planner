@@ -122,29 +122,54 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
             g_object_set(G_OBJECT(videosink), "location", file.c_str(), NULL);
 
             if (bgr_mode) {
-                if (vp9 == nuc11) {
-                    // For the NUC11 with gstreamer 1.18 .4 the vp9 encoder cannot accept direct BGR, and for some reason
-                    // I don't understand the videoconvert element does not want to do that either (weird),
-                    // so in prep buffer we had opencv convert it to I420 instead.
-                    // Actually, now we should not need the videoconvert element anymore, but the pipeline
-                    // fails without it anyway (weird 2).
-                    // The opencv color convert does introduce some color artifacts unfortunately (semi weird3).
-                    auto caps_appsrc = gst_caps_new_simple("video/x-raw",
-                                                           "format", G_TYPE_STRING, "I420",
-                                                           "width", G_TYPE_INT, sizeX,
-                                                           "height", G_TYPE_INT, sizeY,
-                                                           "framerate", GST_TYPE_FRACTION, gstream_fps, 1, NULL);
-                    g_object_set(G_OBJECT(_appsrc), "caps", caps_appsrc, NULL);
-                    gst_caps_unref(caps_appsrc);
 
-                    encoder = gst_element_factory_make("vaapivp9enc", "encoder");
-                    g_object_set(G_OBJECT(encoder), "rate-control", 4, "bitrate", 3000, NULL);
+                if (gst_element_factory_find("vaapivp9enc")) {
+                    if (vp9 == nuc11) {
+                        // For the NUC11 with gstreamer 1.18 .4 the vp9 encoder cannot accept direct BGR, and for some reason
+                        // I don't understand the videoconvert element does not want to do that either (weird),
+                        // so in prep buffer we had opencv convert it to I420 instead.
+                        // Actually, now we should not need the videoconvert element anymore, but the pipeline
+                        // fails without it anyway (weird 2).
+                        // The opencv color convert does introduce some color artifacts unfortunately (semi weird3).
+                        auto caps_appsrc = gst_caps_new_simple("video/x-raw",
+                                                               "format", G_TYPE_STRING, "I420",
+                                                               "width", G_TYPE_INT, sizeX,
+                                                               "height", G_TYPE_INT, sizeY,
+                                                               "framerate", GST_TYPE_FRACTION, gstream_fps, 1, NULL);
+                        g_object_set(G_OBJECT(_appsrc), "caps", caps_appsrc, NULL);
+                        gst_caps_unref(caps_appsrc);
 
-                    gst_bin_add_many(GST_BIN(_pipeline), _appsrc, videoconvert, encoder, mux, videosink, NULL);
-                    gst_element_link_many(_appsrc, videoconvert, encoder, mux, videosink, NULL);
+                        encoder = gst_element_factory_make("vaapivp9enc", "encoder");
+                        g_object_set(G_OBJECT(encoder), "rate-control", 4, "bitrate", 3000, NULL);
 
-                } else {
-                    // for the NUC 7 & 8 we have gstreamer 1.14.9, which vaapivp9enc does accept BGR.
+                        gst_bin_add_many(GST_BIN(_pipeline), _appsrc, videoconvert, encoder, mux, videosink, NULL);
+                        gst_element_link_many(_appsrc, videoconvert, encoder, mux, videosink, NULL);
+                        std::cout << "Initialized gstreamer video render with vaapivp9enc I420 mode..." << std::endl;
+                    } else {
+                        // for the NUC 7 & 8 we have gstreamer 1.14.9, which vaapivp9enc does accept BGR.
+                        auto caps_appsrc = gst_caps_new_simple("video/x-raw",
+                                                               "format", G_TYPE_STRING, "BGR",
+                                                               "width", G_TYPE_INT, sizeX,
+                                                               "height", G_TYPE_INT, sizeY,
+                                                               "framerate", GST_TYPE_FRACTION, gstream_fps, 1, NULL);
+                        g_object_set(G_OBJECT(_appsrc), "caps", caps_appsrc, NULL);
+                        gst_caps_unref(caps_appsrc);
+
+                        // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
+                        colorbalance = gst_element_factory_make("videobalance", "videobalance");
+                        g_object_set(G_OBJECT(colorbalance), "brightness", 0.03, "contrast", 1.0, "saturation", 2.0, NULL);
+
+                        encoder = gst_element_factory_make("vaapivp9enc", "encoder");  // hardware encoding
+                        g_object_set(G_OBJECT(encoder), "rate-control", 4, "bitrate", 3000, NULL);
+                        // g_object_set (G_OBJECT (encoder),"rate-control",2,"quality" , 2, NULL); // quality does not seem to do much
+
+                        gst_bin_add_many(GST_BIN(_pipeline), _appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
+                        gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
+                        std::cout << "Initialized gstreamer video render with vaapivp9enc BGR mode..." << std::endl;
+                    }
+
+                } else if (gst_element_factory_find("vaapih264enc")) {
+
                     auto caps_appsrc = gst_caps_new_simple("video/x-raw",
                                                            "format", G_TYPE_STRING, "BGR",
                                                            "width", G_TYPE_INT, sizeX,
@@ -157,14 +182,18 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                     colorbalance = gst_element_factory_make("videobalance", "videobalance");
                     g_object_set(G_OBJECT(colorbalance), "brightness", 0.03, "contrast", 1.0, "saturation", 2.0, NULL);
 
-                    encoder = gst_element_factory_make("vaapivp9enc", "encoder");  // hardware encoding
-                    g_object_set(G_OBJECT(encoder), "rate-control", 4, "bitrate", 3000, NULL);
+                    encoder = gst_element_factory_make("vaapih264enc", "encoder");  // hardware encoding
+                    g_object_set(G_OBJECT(encoder), "quality-level", 2, "rate-control", 4, "bitrate", 4500, NULL);
                     // g_object_set (G_OBJECT (encoder),"rate-control",2,"quality" , 2, NULL); // quality does not seem to do much
 
                     gst_bin_add_many(GST_BIN(_pipeline), _appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
                     gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
+                    std::cout << "Initialized gstreamer video render with vaapih264enc BGR mode..." << std::endl;
+
+                } else {
+                    throw NoCodecAvailable();
                 }
-            } else {
+            } else { // grayscale mode
                 // Both gstreamer 1.18.4 and 1.14.9 do not accept GRAY directly, and so we have that manually converted ourselves to I420 with some memory copy trick.
                 auto caps_appsrc = gst_caps_new_simple("video/x-raw",
                                                        "format", G_TYPE_STRING, "I420",

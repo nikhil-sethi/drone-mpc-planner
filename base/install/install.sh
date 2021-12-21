@@ -14,6 +14,7 @@ mkdir -p ~/dependencies
 mkdir -p ~/code
 
 KERNEL=$(uname -r)
+ubuntu_str=$(lsb_release -a | grep Release)
 
 if [ ! -f ~/dependencies/ssh_keys.done ] && [ $1 -eq 1 ] ; then
 
@@ -52,12 +53,11 @@ fi
 pushd ~/dependencies
 
 # Install pats dependency packages
-DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
+DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 [ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
 	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed
-
-	ubuntu_str=$(lsb_release -a | grep Release)
+	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
 			sudo apt remove intel-media-va-driver
@@ -65,10 +65,15 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 		else
 			sudo apt remove intel-media-va-driver intel-media-va-driver-non-free
 		fi
-	fi
+		# gstreamer compile packages:
+		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
 
-	# gstreamer packages:
-	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+		# gstreamer packages:
+		sudo apt remove -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+	else
+		# gstreamer packages:
+		sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+	fi
 
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache qtbase5-dev
@@ -155,6 +160,25 @@ if [[ $1 -eq 0 ]] ; then
 	}
 fi
 
+if [[ $ubuntu_str != *"18.04"* ]] && [[ $1 -eq 1 ]] && [[ ! -f gstreamer-v1.18.5.done ]]; then
+	pushd ~/code/
+	[ -d pats ] || {
+		git clone git@github.com:pats-drones/pats.git # needed for the patch
+		pushd pats
+		popd
+	}
+	popd
+	git clone https://gitlab.freedesktop.org/gstreamer/gst-build.git
+	pushd gst-build/
+	git checkout 1.18.5
+	meson builddir -Dvaapi=enabled -Dgst_debug=false -Dgstreamer-vaapi:with_x11=no --buildtype=release --prefix=/usr/local
+	ninja -C builddir
+	sudo ninja install -C builddir
+	sudo ldconfig
+	popd
+	touch gstreamer-v1.18.5.done
+fi
+
 # Uninstall openCV 3
 [ ! -f opencv-3.4.2.done ] || {
 	pushd opencv-3.4.2
@@ -218,7 +242,11 @@ fi
 }
 
 # Install the Pats code
-[ -f pats_code_v1.1.done ] || {
+PATS_CODE_FLAG=pats_code_v1.1.done
+[ -f PATS_CODE_FLAG ] || {
+	touch ~/pats/flags/disable
+	touch ~/pats/flags/disable_baseboard
+
 	pushd ../code/
 	[ -d ../code/pats ] || {
 		git clone git@github.com:pats-drones/pats.git
@@ -236,7 +264,7 @@ fi
 		mv ~/.ssh/config_tmp ~/.ssh/config
 	fi
 
-	touch pats_code_v1.1.done
+	touch PATS_CODE_FLAG
 }
 
 # Install pats-c dev packages
@@ -259,11 +287,7 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
 
-	SYMLINK_FLAG=symlinks-v1.4.done
-	[ -f $SYMLINK_FLAG ] || {
-		touch ~/pats/flags/disable
-	}
-
+	SYMLINK_FLAG=symlinks-v1.5.done
 	# Create nice symlinks
 	[ -f $SYMLINK_FLAG ] || {
 		[ -f ~/.screenrc ] && {
@@ -313,6 +337,17 @@ if [[ $1 -eq 1 ]] ; then
 			sudo rm /etc/rc.local
 		}
 		sudo ln -s ~/code/pats/base/install/rc.local /etc/rc.local
+
+		[ -f /etc/environment ] && {
+			sudo cp  /etc/environment{,.bak} --backup=numbered
+			sudo rm /etc/environment
+		}
+		ubuntu_str=$(lsb_release -a | grep Release)
+		if [[ $ubuntu_str == *"18.04"* ]] ; then
+  			sudo ln -s ~/code/pats/base/install/environment_18.04 /etc/environment
+		else
+  			sudo ln -s ~/code/pats/base/install/environment_20.04 /etc/environment
+		fi
 
 		rm ~/.ssh/config -f
 		ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config

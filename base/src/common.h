@@ -84,6 +84,16 @@ struct MyExit : public std::exception {
     std::string msg;
     MyExit(std::string return_value) : msg(return_value) {}
 };
+class NotImplemented : public std::logic_error
+{
+public:
+    NotImplemented() : std::logic_error("Function not yet implemented") { };
+};
+class NoCodecAvailable : public std::logic_error
+{
+public:
+    NoCodecAvailable() : std::logic_error("No codec available") { };
+};
 struct ReplayVideoEnded : public std::exception {
     ReplayVideoEnded() {}
 };
