@@ -64,7 +64,8 @@ def process_wait_for_dark_status(folder):
                                   "mode": 'wait_for_dark'
                                   }
             return (exposure_valid, data_wait_for_dark, daylight_start, daylight_end)
-    return (False, [], daylight_start, daylight_end)
+        return (False, [], daylight_start, daylight_end)
+    return (False, [], '', '')
 
 
 def process_system_status_in_folder(folder):
