@@ -243,7 +243,7 @@ fi
 
 # Install the Pats code
 PATS_CODE_FLAG=pats_code_v1.1.done
-[ -f PATS_CODE_FLAG ] || {
+[ -f $PATS_CODE_FLAG ] || {
 	touch ~/pats/flags/disable
 	touch ~/pats/flags/disable_baseboard
 
@@ -264,7 +264,7 @@ PATS_CODE_FLAG=pats_code_v1.1.done
 		mv ~/.ssh/config_tmp ~/.ssh/config
 	fi
 
-	touch PATS_CODE_FLAG
+	touch $PATS_CODE_FLAG
 }
 
 # Install pats-c dev packages
