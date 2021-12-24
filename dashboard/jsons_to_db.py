@@ -36,7 +36,7 @@ def check_if_table_exists(table_name_prefix, con):
 
 
 def get_insect_chance_columns():
-    sql_str = 'SELECT LIA_column FROM insects WHERE LIA_column'
+    sql_str = 'SELECT LIA_name FROM insects WHERE LIA_name'
     with patsc.open_systems_db() as con:
         columns = con.execute(sql_str).fetchall()
         columns = [col[0] for col in columns]
