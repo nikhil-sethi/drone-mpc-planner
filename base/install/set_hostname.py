@@ -4,10 +4,13 @@ import uuid
 import subprocess
 import os
 import sys
+import time
 from pathlib import Path
 
 if not os.path.isfile('/home/pats/dependencies/hostname_set'):
 
+    time.sleep(5) # seems to be necessary with old ubuntu 18 images, need some time to get wifi
+    
     id_db_path = '/home/pats/pats/id_db.txt'
     rsync_cmd = ['rsync -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR  -i /home/pats/.ssh/id_rsa -F /home/pats/.ssh/config" ' + 'dash:id_db.txt ' + id_db_path]
     subprocess.run(rsync_cmd, shell=True)
