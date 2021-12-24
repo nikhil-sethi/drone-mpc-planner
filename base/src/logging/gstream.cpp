@@ -186,8 +186,10 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                     g_object_set(G_OBJECT(encoder), "quality-level", 2, "rate-control", 4, "bitrate", 4500, NULL);
                     // g_object_set (G_OBJECT (encoder),"rate-control",2,"quality" , 2, NULL); // quality does not seem to do much
 
-                    gst_bin_add_many(GST_BIN(_pipeline), _appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
-                    gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
+
+                    auto parser = gst_element_factory_make("h264parse", "parser");
+                    gst_bin_add_many(GST_BIN(_pipeline), _appsrc, colorbalance, videoconvert, encoder, parser, mux, videosink, NULL);
+                    gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, parser, mux, videosink, NULL);
                     std::cout << "Initialized gstreamer video render with vaapih264enc BGR mode..." << std::endl;
 
                 } else {
