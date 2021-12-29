@@ -60,10 +60,10 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
-			sudo apt remove intel-media-va-driver
-			sudo apt install intel-media-va-driver-non-free
+			sudo apt remove -y intel-media-va-driver
+			sudo apt install -y intel-media-va-driver-non-free
 		else
-			sudo apt remove intel-media-va-driver intel-media-va-driver-non-free
+			sudo apt remove -y intel-media-va-driver intel-media-va-driver-non-free
 		fi
 		# gstreamer compile packages:
 		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
@@ -109,7 +109,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 			git clone git@github.com:IntelRealSense/librealsense.git
 		}
 		pushd librealsense/
-		git co development
+		git checkout development
 		./scripts/patch-realsense-ubuntu-lts.sh
 		popd
 		touch librealsense-kernel-patch_v1.2.done
@@ -137,7 +137,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 if [[ $1 -eq 0 ]] ; then
 	[ -f dev-dependencies-packages-v1.1.done ] || {
 		wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-		sudo apt-get install apt-transport-https
+		sudo apt-get -y install apt-transport-https
 		#to install sublime
 		#echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
 		#sudo snap install sublime-text --classic
@@ -155,7 +155,7 @@ if [[ $1 -eq 0 ]] ; then
 	# Install command center packages
 	[ -f cc-dependencies-packages-v1.1.done ] || {
 		sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
-		sudo apt install ansible ansible-lint
+		sudo apt install -y ansible ansible-lint
 		touch cc-dependencies-packages-v1.1.done
 	}
 fi
@@ -224,7 +224,7 @@ fi
 
 [ -f git_aliases_v1.0.done ] || {
 
-	#sudo apt install bash-completion
+	#sudo apt install -y bash-completion
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
