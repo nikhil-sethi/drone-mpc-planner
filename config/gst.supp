@@ -1737,3 +1737,55 @@
    fun:_Z5closeb
    fun:main
 }
+{
+   <kevin>
+   Memcheck:Cond
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <kevin>
+   Memcheck:Addr1
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <kevin>
+   Memcheck:Addr2
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <kevin>
+   Memcheck:Addr4
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <kevin>
+   Memcheck:Addr8
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <kevin>
+   Memcheck:Addr16
+   ...
+   obj:*/iHD_drv_video.so
+   ...
+}
+{
+   <Weird false positive>
+   Memcheck:Cond
+   fun:_ZN16FlightAreaConfig42find_active_planes_and_their_corner_pointsEv
+   fun:_ZN16FlightAreaConfig13update_configEv
+   fun:_ZN10FlightArea4initENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEP3Cam
+   fun:_ZN6Patser4initEPSt14basic_ofstreamIcSt11char_traitsIcEEiP2RCNSt7__cxx1112basic_stringIcS2_SaIcEEEP3CamP10VisionDataP9Baseboard
+   fun:_Z4initv
+   fun:main
+}

@@ -88,4 +88,4 @@ struct Plane {
 };
 
 std::ostream &operator<<(std::ostream &os, Plane &plane);
-cv::Point3f intersection_of_3_planes(Plane p1, Plane p2, Plane p3);
+cv::Point3f intersection_of_3_planes(Plane *p1, Plane *p2, Plane *p3);

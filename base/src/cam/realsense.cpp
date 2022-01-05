@@ -216,7 +216,6 @@ void Realsense::calibration(rs2::stream_profile infrared1, rs2::stream_profile i
 void Realsense::connect_and_check(string ser_nr, int id) {
     _id = id;
     set_write_file_paths(data_output_dir);
-    bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
 
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {

@@ -118,7 +118,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 	touch librealsense-packages_v1.1.done
 }
 
-[ -f python-packages-v1.2.done ] || {
+[ -f python-packages-v1.3.done ] || {
 	pip3 install cython pyserial types-pytz
 	pip3 install numpy pandas scipy sklearn tqdm pause
 	pip3 install xmltodict requests # for huawei-hilink-status
@@ -127,10 +127,13 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 	#vscode linting and formatting:
 	pip3 install pylint flake8 bandit mypy autopep8
 
+	pip3 install types-python-dateutil
+	pip3 install types-requests
+
 	#automatic timezone updater
 	pip3 install tzupdate
 
-	touch python-packages-v1.2.done
+	touch python-packages-v1.3.done
 }
 
 # Install dev packages
@@ -270,8 +273,6 @@ PATS_CODE_FLAG=pats_code_v1.1.done
 # Install pats-c dev packages
 if [[ $1 -eq 0 ]] ; then
 	[ -f patsc-dependencies-packages-v1.0.done ] || {
-		pip3 install types-python-dateutil
-		pip3 install types-requests
 		pip3 install -r ~/code/pats/dashboard/pats_c/requirements.txt
 		touch patsc-dependencies-packages-v1.0.done
 	}

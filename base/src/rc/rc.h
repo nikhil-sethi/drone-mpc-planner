@@ -206,7 +206,7 @@ public:
 
     bool ok(double time) {
         if (dparams.Telemetry() && connected()) {
-            return (telemetry.rssi > 10 && time - telemetry.rssi_last_received < 5); // TODO tune rssi
+            return (telemetry.rssi > 40 && time - telemetry.rssi_last_received < 1); // TODO tune rssi
         } else
             return connected();
     }

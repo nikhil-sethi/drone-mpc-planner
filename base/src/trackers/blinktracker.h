@@ -3,8 +3,7 @@
 
 namespace tracking {
 
-static const char *blinking_drone_state_names[] = { "",
-                                                    "bds_start",
+static const char *blinking_drone_state_names[] = { "bds_start",
                                                     "bds_failed",
                                                     "bds_failed_delete_me",
                                                     "bds_restart_searching",
@@ -19,7 +18,6 @@ static const char *blinking_drone_state_names[] = { "",
                                                     "bds_4_blink_on",
                                                     "bds_5_blink_off",
                                                     "bds_5_blink_on",
-                                                    "bds_6_blink_off_calib",
                                                     "bds_6_blink_off",
                                                     "bds_6_blink_on",
                                                     "bds_found"
@@ -43,7 +41,6 @@ public:
         bds_4_blink_on,
         bds_5_blink_off,
         bds_5_blink_on,
-        bds_6_blink_off_calib,
         bds_6_blink_off,
         bds_6_blink_on,
         bds_found
@@ -63,6 +60,7 @@ private:
 
     blinking_drone_states detect_blink(double time, bool found);
 
+    void close_log_line();
     void clean_ignore_blobs(double time);
 
 public:
@@ -71,6 +69,7 @@ public:
     void update(double time);
     void calc_world_item(tracking::BlobProps *pbs, double time);
     bool check_ignore_blobs(tracking::BlobProps *pbs);
+
     bool delete_me();
 
     tracker_type type() { return tt_blink;}

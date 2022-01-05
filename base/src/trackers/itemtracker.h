@@ -87,7 +87,7 @@ protected:
     TrackData last_valid_trackdata_for_prediction;
     TrackData last_vel_valid_trackdata_for_prediction;
     int _n_frames_lost = 100;
-    int n_frames_lost_threshold;
+    int n_frames_lost_threshold = 10;
     int _n_frames_tracking = 0; // reset after interruptions
     int _n_frames_tracked = 0;  // total tracked frames ever
     int _n_frames = 0;          // lifetime of the tracker

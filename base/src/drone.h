@@ -5,6 +5,7 @@
 #include "dronenavigation.h"
 #include "baseboard.h"
 #include "interceptor.h"
+#include "dronereader.h"
 
 static const char *drone_state_names[] = {
     "pre_flight",
@@ -20,13 +21,14 @@ static const char *drone_state_names[] = {
 static const char *pre_flight_state_names[] = {
     "init",
     "locate",
-    "locating",
+    "wait led",
     "locating...",
     "calibrating",
     "check_telem",
     "check_pad",
     "wait to arm",
     "arming",
+    "init_led",
     "locate_fail"
 };
 static const char *post_flight_state_names[] = {
@@ -34,6 +36,7 @@ static const char *post_flight_state_names[] = {
     "yaw",
     "shake",
     "shaking",
+    "wait_init",
     "shaked...",
     "lost"
 };
@@ -53,13 +56,14 @@ public:
     enum pre_flight_states {
         pre_init = 0,
         pre_locate_drone_init,
-        pre_locate_drone_wait_led_on,
+        pre_locate_drone_wait_led,
         pre_locate_drone,
         pre_calibrating_pad,
         pre_check_telemetry,
         pre_check_pad_att,
         pre_wait_to_arm,
         pre_arming,
+        pre_wait_init_led,
         pre_locate_time_out
     };
     enum post_flight_states {
@@ -67,6 +71,7 @@ public:
         post_reset_yaw_on_pad,
         post_start_shaking,
         post_shaking_drone,
+        post_wait_after_shake_init,
         post_wait_after_shake,
         post_lost
     };
@@ -90,6 +95,7 @@ private:
     double time_start_locating_drone_attempt = 0;
     double time_last_led_doubler = 0;
     double time_located_drone = 0;
+    double time_led_init = 0;
     uint n_detected_pad_locations = 0;
 
     // flight
@@ -102,11 +108,14 @@ private:
     int _n_hunt_flights = 0;
 
     //post flight:
+    const float duration_post_shake_wait = 1;
     const float duration_shake = 3;
-    const float duration_reset_yaw_on_pad = 1.5;
+    const float duration_reset_yaw_on_pad = 1.5f;
     const float duration_wait_before_shake = 1;
+    const float led_response_duration = 1;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
+    double time_post_shake = 0;
     double time_shake_start = 0;
     int n_shakes_sessions_after_landing = 0;
 
@@ -139,8 +148,8 @@ public:
     RC *rc() { return _rc;}
     uint rc_id() { return _rc_id;}
 
-    void demo_flight(std::string fp) {
-        flightplan_fn = fp;
+    void demo_flight(std::string flightplan_fn_) {
+        flightplan_fn = flightplan_fn_;
         trigger_waypoint_flight = true;
     }
 
@@ -161,8 +170,11 @@ public:
     }
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard);
+    void init_flight_replay(std::string replay_dir, int flight_id);
+    void init_full_log_replay(std::string replay_dir);
     void update(double time);
     void dummy_log() {(*main_logger) << "NA;";}
+    void inject_log(logging::LogEntryDrone entry, unsigned long long rs_id);
     void close();
 
 };

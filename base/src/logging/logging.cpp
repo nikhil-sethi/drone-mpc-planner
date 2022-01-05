@@ -42,6 +42,9 @@ map<string, int> read_head_map(string heads) {
         auto insect_str_pos = tmp.find("_insect");
         if (insect_str_pos != string::npos)
             tmp = tmp.substr(0, insect_str_pos);
+        auto drone_str_pos = tmp.find("_drone");
+        if (drone_str_pos != string::npos)
+            tmp = tmp.substr(0, drone_str_pos);
         map<const string, int>::value_type head(tmp, cnt);
         res.insert(head);
         cnt++;

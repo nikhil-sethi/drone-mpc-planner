@@ -1,6 +1,5 @@
 #include <iostream>
 #include "dronenavigation.h"
-#include <experimental/filesystem>
 #include "interceptor.h"
 
 using namespace cv;
@@ -21,7 +20,7 @@ void DroneNavigation::init(tracking::DroneTracker *tracker, DroneController *con
 
 void DroneNavigation::init_flight(bool hunt, std::ofstream *logger) {
     _logger = logger;
-    (*_logger) << "nav_state_str;charge_state;";
+    (*_logger) << "nav_state_str;nav_flight_mode;insect_id;charging_state_str;charging_state;";
 
     _navigation_status = ns_takeoff;
     wpid = 0;
@@ -295,10 +294,10 @@ void DroneNavigation::update(double time) {
 
                 _control->flight_mode(DroneController::fm_wait);
                 if (static_cast<float>(time - time_start_wait_after_landing) > duration_wait_after_landing) {
-                    if (_control->somewhere_on_pad() == drone_on_pad) {
+                    if (_control->drone_pad_state() == drone_on_pad) {
                         _navigation_status = ns_flight_done;
                         time_start_wait_after_landing = -1;
-                    } else if (!_control->somewhere_on_pad())
+                    } else if (!_control->drone_pad_state())
                         _navigation_status = ns_landing_failure;
                 }
                 break;
@@ -316,9 +315,9 @@ void DroneNavigation::update(double time) {
                 break;
             }
     }
-    (*_logger) << navigation_status() << ";" << _baseboard->charging_state_str() << ";";
-}
+    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard->charging_state()) << ";";
 
+}
 void DroneNavigation::close() {
     if (initialized) {
         std::cout << "Closing drone navigation" << std::endl;
@@ -412,14 +411,13 @@ void DroneNavigation::serialize_settings() {
 void DroneNavigation::flightplan(std::string flightplan_fn) {
     navigation::XML_FlightPlan fp;
     fp.deserialize(flightplan_fn);
-    fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
+    fp.serialize(data_output_dir + "flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
     waypoints = fp.waypoints();
     if (!pparams.long_range_mode)
         for (auto w : waypoints) {
             if (w.mode == wfm_long_range)
                 throw std::runtime_error("Long range flightplan needs long_range_mode in pats xml enabled!");
         }
-
     wpid = 0;
     next_waypoint(waypoints[wpid], _tracker->last_track_data().time);
     if (!strcmp(fp.flightplan_name.c_str(), "thrust-calibration"))

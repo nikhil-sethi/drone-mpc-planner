@@ -16,9 +16,9 @@ import numpy as np
 import pandas as pd
 import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
-from cut_moths import cut_moths
+from cut_moths import cut_all
 
-version = "1.10"
+version = "1.11"
 
 
 def measured_exposure(terminal_log_path):
@@ -55,7 +55,7 @@ def measured_exposure(terminal_log_path):
 
 
 def process_wait_for_dark_status(folder):
-    terminal_log_path = Path(folder, 'logging', 'terminal.log')
+    terminal_log_path = Path(folder, 'terminal.log')
     if os.path.exists(terminal_log_path):
         exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
         if exposure_valid:
@@ -71,8 +71,8 @@ def process_wait_for_dark_status(folder):
 def process_system_status_in_folder(folder):
     logging.getLogger('logs_to_json').info('Processing status...')
     pats_xml_mode = ''
-    pats_xml_path = Path(folder, 'logging', 'pats.xml')
-    terminal_log_path = Path(folder, 'logging', 'terminal.log')
+    pats_xml_path = Path(folder, 'pats.xml')
+    terminal_log_path = Path(folder, 'terminal.log')
     if not os.path.exists(terminal_log_path):
         return ([], 'Error: terminal log do not exist', '')
 
@@ -85,7 +85,7 @@ def process_system_status_in_folder(folder):
     if log_start == '':
         return ([], 'Error: log_start empty!?', '')
 
-    if os.path.exists(Path(folder, 'logging', 'cam_roll_problem_flag')):
+    if os.path.exists(Path(folder, 'cam_roll_problem_flag')):
         return ([], 'Error: Cam roll angle problem!', '')
     if not os.path.exists(pats_xml_path):
         line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
@@ -97,7 +97,7 @@ def process_system_status_in_folder(folder):
                 pats_xml_mode = line.split('_')[3].split('<')[0]
                 break
 
-    results_path = Path(folder, 'logging', 'results.txt')
+    results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
         return ([], 'Error: results.txt does not exist', '')
     runtime = -1
@@ -123,7 +123,7 @@ def process_system_status_in_folder(folder):
 
 def process_hunts_in_folder(folder, operational_log_start):
     logging.getLogger('logs_to_json').info('Processing hunts...')
-    results_path = Path(folder, 'logging', 'results.txt')
+    results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
         return []
     drone_flights = 0
@@ -185,7 +185,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
         logger.info(detection_fn + ': ' + str(e))
         return {}
 
-    elapsed_time = log["time"].values
+    elapsed_time = log["elapsed"].values
     lost = log['n_frames_lost_insect'].values > 0
     remove_ids = [i for i, x in enumerate(lost) if x]
     if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
@@ -200,7 +200,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
         remove_ids.extend(inf_ids)
         logger.warning('Detected infs in velocity. See #540')
 
-    RS_ID = log['RS_ID'].values
+    rs_id = log['rs_id'].values
 
     xs = log['sposX_insect'].values
     ys = log['sposY_insect'].values
@@ -256,7 +256,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     start = filtered_elepased[0]
     end = filtered_elepased[-1]
     duration = end - start
-    first_RS_ID = str(RS_ID[0])
+    first_rs_id = str(rs_id[0])
     filename = os.path.basename(detection_fn)
     video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'mkv')
     if os.path.exists(video_filename) and duration > 1 and duration < 10:  # this filter is also used in PATS-C
@@ -278,7 +278,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
 
     detection_data = {"time": detection_time,
                       "duration": duration,
-                      "RS_ID": first_RS_ID,
+                      "rs_id": first_rs_id,
                       "Dist_traveled": dist_traveled,
                       "Dist_traject": dist_traject,
                       "Size": size,
@@ -303,7 +303,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
 def process_detections_in_folder(folder, operational_log_start, mode):
 
     logger = logging.getLogger('logs_to_json')
-    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_i*.csv")) if "itrk0" not in fp])
+    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv")) if "itrk0" not in fp])
     monitoring_start_datetime = str_to_datetime(operational_log_start)
 
     valid_detections = []
@@ -337,8 +337,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
     logger = logging.getLogger('logs_to_json')
     for folder in ordered_dirs:
         logger.info("Processing " + folder)
-        if os.path.exists(folder + '/logging/videoRawLR.avi'):  # this folder was probably not yet processed in cut_moth.
-            cut_moths(folder)
+        if os.path.exists(folder + '/videoRawLR.avi'):  # this folder was probably not yet processed in cut_moth.
+            cut_all(folder)
 
         top_folder = os.path.basename(folder)
         t_folder = str_to_datetime(top_folder)
@@ -358,11 +358,11 @@ def logs_to_json(json_fn, data_folder, sys_str):
             if lb.str_to_datetime(operational_log_start) < t_start:
                 t_start = lb.str_to_datetime(operational_log_start)
 
-        if mode == 'monitoring' or mode == 'hunt':
+        if mode == 'c' or mode == 'x':
             detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
             if detections_in_folder != []:
                 detections.extend(detections_in_folder)
-        if mode == 'hunt' or mode == 'deploy':
+        if mode == 'x':
             hunts_in_folder = process_hunts_in_folder(folder, operational_log_start)
             if hunts_in_folder != []:
                 hunts.append(hunts_in_folder)
@@ -371,7 +371,7 @@ def logs_to_json(json_fn, data_folder, sys_str):
         if mode.startswith('Resetting cam'):
             cam_resets += 1
 
-        if mode == 'monitoring' or mode == 'hunt' or mode == 'waypoint' or mode == 'deploy':
+        if mode == 'c' or mode == 'x':
             Path(folder + '/OK').touch()
         else:
             Path(folder + '/junk').touch()

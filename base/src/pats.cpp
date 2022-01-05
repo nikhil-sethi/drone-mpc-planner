@@ -2,7 +2,7 @@
 
 void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  Baseboard *baseboard) {
     _logger = logger;
-    (*_logger) << "pats_state;";
+    (*_logger) << "pats_state_str;pats_state;";
     _visdat = visdat;
     _baseboard = baseboard;
     _rc = rc;
@@ -15,8 +15,18 @@ void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_d
     }
 }
 
+void Patser::init_insect_replay() {
+    _pats_state = pats_c;
+    trackers.mode(tracking::TrackerManager::t_c);
+}
+void Patser::init_flight_replay(std::string replay_dir, int flight_id) {
+    drone.init_flight_replay(replay_dir, flight_id);
+    _pats_state = pats_x;
+    trackers.mode(tracking::TrackerManager::t_x);
+}
+
 void Patser::update(double time) {
-    (*_logger) << state_str() << ";";
+    (*_logger) << state_str() << ";" << static_cast<uint16_t>(_pats_state) << ";";
     switch (_pats_state) {
         case pats_init: {
                 if (time_first_frame < 0)
@@ -36,6 +46,7 @@ void Patser::update(double time) {
                 maintain_motion_map(time);
                 trackers.update(time);
                 if (static_cast<float>(time - time_start_motion_calibration) > duration_motion_calibration && _visdat->motion_filtered_noise_initialized()) {
+                    _visdat->save_maps_before_monitoring(data_output_dir);
                     if (pparams.op_mode == op_mode_c) {
                         trackers.mode(tracking::TrackerManager::t_c);
                         _pats_state = pats_c;

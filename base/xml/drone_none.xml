@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.13">
+<SerializableClass Type="DroneParameters" Version="1.14">
     <Member Name="name">----</Member>
     <Member Name="initial_hover_throttle">675</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
@@ -14,7 +14,7 @@
     <Member Name="blink_period">0.1</Member>
     <Member Name="radius">0.07</Member>
     <Member Name="pad_radius">0.16</Member>
-    <Member Name="thrust">65</Member>
+    <Member Name="max_thrust">65</Member>
     <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_anvil_superbee</Member>

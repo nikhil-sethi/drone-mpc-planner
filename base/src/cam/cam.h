@@ -58,7 +58,7 @@ protected:
 
 public:
     bool frame_by_frame = false;
-    bool turbo = true;
+    bool turbo = false;
     cv::Mat Qf;
     cv::Mat depth_background;
     cv::Mat depth_background_3mm;
@@ -68,6 +68,7 @@ public:
 
     virtual void init() = 0;
     virtual void close() {
+        std::cout << "Closing cam" << std::endl;
         delete intr;
         Qf.release();
         depth_background.release();

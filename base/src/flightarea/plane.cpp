@@ -27,10 +27,10 @@ std::tuple<float, cv::Point3f> Plane::hesse_normal_form() {
     double d = support.dot(n0);
     return std::make_tuple(d, n0);
 }
-cv::Point3f intersection_of_3_planes(Plane p1, Plane p2, Plane p3) {
-    auto [d1, n01] = p1.hesse_normal_form();
-    auto [d2, n02] = p2.hesse_normal_form();
-    auto [d3, n03] = p3.hesse_normal_form();
+cv::Point3f intersection_of_3_planes(Plane *p1, Plane *p2, Plane *p3) {
+    auto [d1, n01] = p1->hesse_normal_form();
+    auto [d2, n02] = p2->hesse_normal_form();
+    auto [d3, n03] = p3->hesse_normal_form();
 
     cv::Matx31f b(d1, d2, d3);
     cv::Mat  A;

@@ -6,7 +6,6 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include "third_party/stopwatch.h"
-#include <experimental/filesystem>
 
 #include "stopwatch.h"
 static stopwatch_c swc;
@@ -41,34 +40,34 @@ void FileCam::init() {
 
     read_frame_ids();
     swc.Start();
-    update();
 
     initialized = true;
 }
 
 void FileCam::read_frame_ids() {
-    string framesfile = replay_dir + "/frames.csv";
-    ifstream infile(framesfile);
+    string frames_file = replay_dir + "/frames.csv";
+    ifstream infile(frames_file);
     string line;
+    getline(infile, line); // skip heads
     while (getline(infile, line)) {
         try {
             auto data = split_csv_line(line);
             if (data.size() != 4) {
                 if (getline(infile, line))
-                    throw std::runtime_error("Could not read log! File: " + framesfile + '\n' + " at: " + line);
+                    throw std::runtime_error("Could not read frame log! File: " + frames_file + '\n' + " at: " + line);
                 else {
                     std::cout << "Warning, last line corrupted of frames.csv. Processes did not close properly?" << std::endl;
                     break;
                 }
             }
             Frame_ID_Entry entry;
-            entry.raw_video_frame_counter = stoi(data.at(0));
+            entry.encoded_img_count = stoi(data.at(0));
             entry.imgcount = stoi(data.at(1));
             entry.rs_id = stol(data.at(2));
             entry.time = stod(data.at(3));
             frames_ids.push_back(entry);
         } catch (exception &exp) {
-            throw std::runtime_error("Could not read log! File: " + framesfile + '\n' + "Err: " + string(exp.what()) + " at: " + line);
+            throw std::runtime_error("Could not read frame log! File: " + frames_file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
@@ -97,7 +96,16 @@ void FileCam::calibration() {
     Qf = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1 / baseline, 0.0);
 }
 
+void FileCam::inject_log(logging::LogEntryMain entry) {
+    camparams.measured_exposure = entry.exposure;
+    camparams.measured_gain = entry.gain;
+}
+
 StereoPair *FileCam::update() {
+    if (skip_first_frame) {
+        skip_first_frame = false;
+        return _current;
+    }
     GstSample *sample = NULL;
     for (uint i = 0; i < replay_skip_n_frames + 1; i++) {
         if (i > 0)
@@ -139,7 +147,7 @@ StereoPair *FileCam::update() {
         frame_time_new = f->time + 1. / pparams.fps;
     }
     if (frame_number_new == ULONG_MAX) {
-        std::cout << "Log end, exiting." << std::endl;
+        std::cout << "Video end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
         throw ReplayVideoEnded();

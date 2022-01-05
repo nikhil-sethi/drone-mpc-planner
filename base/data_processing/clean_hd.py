@@ -17,25 +17,22 @@ def dir_to_datetime(dir_name):
 
 
 def strip_dir(dir_name, logger):
-    logging_dir = dir_name + '/logging/'
     logger.info('stripping: ' + dir_name)
-    if os.path.isfile(dir_name + '/terminal.log'):  # legacy, was moved to logging folder
+    if os.path.isfile(dir_name + '/terminal.log'):
         os.remove(dir_name + '/terminal.log')
-    if os.path.isfile(logging_dir + '/terminal.log'):
-        os.remove(logging_dir + '/terminal.log')
-    if os.path.isfile(logging_dir + 'log.csv'):
-        os.remove(logging_dir + 'log.csv')
-    if os.path.isfile(logging_dir + 'frames.csv'):
-        os.remove(logging_dir + 'frames.csv')
-    vids = glob.glob(logging_dir + "*.mkv")
-    vids.extend(glob.glob(logging_dir + "*.mp4"))
+    if os.path.isfile(dir_name + 'log.csv'):
+        os.remove(dir_name + 'log.csv')
+    if os.path.isfile(dir_name + 'frames.csv'):
+        os.remove(dir_name + 'frames.csv')
+    vids = glob.glob(dir_name + "*.mkv")
+    vids.extend(glob.glob(dir_name + "*.mp4"))
     for vid in vids:
         if 'render' not in vid:
             os.remove(vid)
         elif Path(vid).stat().st_size > 10 * 1024 * 1024:  # 10 MB
             logger.info('removing: ' + vid)
             os.remove(vid)
-    insect_logs = glob.glob(logging_dir + 'log_itrk*.csv')
+    insect_logs = glob.glob(dir_name + 'log_itrk*.csv')
     for log in insect_logs:
         if Path(log).stat().st_size > 5 * 1024 * 1024:  # 5 MB
             logger.info('removing: ' + log)
@@ -64,12 +61,8 @@ def strip_folders_until(min_date, logger):
             if os.path.exists(dir_name + '/junk'):
                 logger.info('removing: ' + dir_name)
                 shutil.rmtree(dir_name)
-            elif os.path.exists(dir_name + '/logging'):
-                strip_dir(dir_name, logger)
-            else:
-                logger.info('removing: ' + dir_name)
-                shutil.rmtree(dir_name)
-                check_free_space = False
+
+            strip_dir(dir_name, logger)
         elif os.path.exists(dir_name + '/STRIPPED'):
             check_free_space = False
         else:

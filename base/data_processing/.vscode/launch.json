@@ -34,8 +34,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/cut_moths.py",
       "args": [
-        "-i",
-        "~/code/pats/base/build-vscode/"
+        "-d"
       ],
       "console": "integratedTerminal"
     }

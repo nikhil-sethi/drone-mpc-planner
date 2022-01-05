@@ -14,6 +14,8 @@
     "editor.formatOnSave": true,
     "search.exclude": {
         "**/build*/**": true,
+        "**/unittest/**": true,
+        "**/ansible/**": true,
         "**/replay_insects/**": true,
         "**/install/**": true,
         "**/data_processing/**": true,

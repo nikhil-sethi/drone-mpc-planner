@@ -11,9 +11,9 @@ import sys
 import socket
 import re
 import shutil
-import pandas as pd
 from datetime import date, datetime, timedelta
 from pathlib import Path
+import pandas as pd
 import pause
 from lib_socket import socket_communication
 import lib_base as lb
@@ -21,7 +21,7 @@ from clean_hd import clean_hd
 from status_cc import send_status_update
 from render_videos import render_last_day
 from logs_to_json import process_all_logs_to_jsons, send_all_jsons
-from cut_moths import cut_moths_all
+from cut_moths import cut_all
 
 status_cc_status_str = ''
 
@@ -149,7 +149,7 @@ class cut_moths_task(pats_task):
         super(cut_moths_task, self).__init__('cut_moths', timedelta(), timedelta(minutes=60), False, error_file_handler)
 
     def task_func(self):
-        cut_moths_all()
+        cut_all()
 
 
 class logs_to_json_task(pats_task):
@@ -227,7 +227,7 @@ class wdt_pats_task(pats_task):
             else:
                 self.error_cnt += 1
                 self.logger.error('executor process watchdog alert! executor does not seem to function. Restarting...')
-                Path(lb.executor_dir).mkdir(parents=True, exist_ok=True)
+                Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
                 Path(lb.wdt_fired_flag).touch()
                 cmd = 'killall -9 executor'
                 lb.execute(cmd, 1, logger_name=self.name)

@@ -6,7 +6,6 @@ public :
     void init(bool log_replay_mode, Patser *patser, VisionData *visdat);
     void close();
     void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
-    void trigger_demo_flight_from_log(std::string replay_dir);
     int n_replay_moth() {return _n_replay_moth;}
     void update(cv::Mat frame, double time) {
         _time_since_start = time;

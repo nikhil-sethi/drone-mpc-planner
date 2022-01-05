@@ -60,6 +60,7 @@ private:
 
     bool _disabled = false;
     bool _replay_mode;
+    bool _exit_now = false;
     std::thread thread_send;
     std::thread thread_receive;
     bool initialized = false;
@@ -83,14 +84,22 @@ public:
     void init(bool replay_mode);
     void close();
 
-    void update_from_log(int s) {_charging_state  = static_cast<ChargingState>(s);}
+    void inject_log() {
+        // some default values for when no flight log is available yet...
+        // we should probably a create dedicated bb log?
+        _charging_state  = state_trickle_charging;
+        _bat_voltage = 4.2;
+        _charging = true;
+    }
+    void inject_log(int s) {_charging_state  = static_cast<ChargingState>(s);}
 
     bool disabled() {return _disabled;}
+    bool exit_now() { return _exit_now;}
     bool battery_ready_for_flight() { return _charging_state == state_trickle_charging || (_charging_state == state_normal_charging && _bat_voltage >= dparams.min_hunt_cell_v);}
     bool charging() {return _charging_state == state_measure || _charging_state == state_normal_charging || _charging_state == state_trickle_charging || _charging_state == state_revive_charging;};
     bool contact_problem() {return _charging_state == state_contact_problem;}
     bool drone_on_pad() {return _charging_state != state_drone_not_on_pad;}
-    bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge  || _charging_state == state_calibrating;};
+    bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge || _charging_state == state_calibrating;};
     ChargingState charging_state() {return _charging_state;};
     std::string charging_state_str() {
         if (!_disabled)

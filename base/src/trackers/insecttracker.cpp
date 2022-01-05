@@ -16,7 +16,7 @@ void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t 
 void InsectTracker::init_logger() {
     logger_fn = data_output_dir  + "log_itrk" + to_string(_insect_trkr_id) + ".csv";
     insectlogger.open(logger_fn, std::ofstream::out);
-    insectlogger << "RS_ID;time;";
+    insectlogger << "rs_id;elapsed;";
     ItemTracker::init_logger(&insectlogger);
     insectlogger << "fp;";
     insectlogger << std::endl;

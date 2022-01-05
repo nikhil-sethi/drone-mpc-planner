@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build-vscode/executor",
-            "args": ["--pats-xml", "../xml/pats_debug.xml", "--drone-id", "36"],
+            "args": ["--pats-xml", "../xml/pats_debug.xml", "--drone-id", "36" ,"--log", "logging", "--flight" ,"flight1.mkv"],
             "stopAtEntry": false,
             "preLaunchTask": "make",
             "cwd": "${workspaceFolder}/build-vscode",

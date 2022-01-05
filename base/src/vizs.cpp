@@ -372,12 +372,8 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
         warnings += "BRIGHTNESS ";
     if (_patser->trackers.monster_alert())
         warnings += "MONSTER ALERT ";
-    if (_fromfile) {
-        warnings += "POPCORN TIME";
-        if (first_take_off_time - time > 0)
-            warnings += " IN " + to_string_with_precision(first_take_off_time - time, 1);
-        warnings += " ";
-    }
+    if (_fromfile)
+        warnings += "POPCORN TIME ";
 
     if (warnings != "") {
         int baseline = 0;

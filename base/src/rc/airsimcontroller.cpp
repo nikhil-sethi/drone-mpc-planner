@@ -4,7 +4,7 @@ bool AirSimController::connect() {
     if (notconnected) {
         std::cout << "Connecting AirSimController" << std::endl;
         sim.init(drone_name);
-        notconnected = false;
+        notconnected = 0;
     }
     return !notconnected;
 }
@@ -88,7 +88,7 @@ void AirSimController::close() {
         g_sendData.unlock();
         g_lockData.unlock();
         send_rc_data();
-        notconnected = true;
+        notconnected = 1;
     }
     initialized = false;
 }

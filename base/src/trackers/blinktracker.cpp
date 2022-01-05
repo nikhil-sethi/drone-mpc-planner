@@ -22,7 +22,7 @@ bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t v
 void BlinkTracker::init_logger() {
     logger_fn = data_output_dir  + "log_btrk" + to_string(_blink_trkr_id) + ".csv";
     blinklogger.open(logger_fn, std::ofstream::out);
-    blinklogger << "RS_ID;time;";
+    blinklogger << "rs_id;elapsed;";
     ItemTracker::init_logger(&blinklogger);
     blinklogger << std::endl;
 }
@@ -44,10 +44,10 @@ void BlinkTracker::update(double time) {
                     fail_time_start = time;
                 }
                 ItemTracker::update(time);
-                if (_n_frames_lost == 0) {
+                if (_n_frames_tracking) {
                     _blinking_drone_status = bds_1_blink_off;
                     blink_time_start = time;
-                    _score_threshold = 10; // increase score threshold after first sightings, so that the tracker rejects moving blobs
+                    _score_threshold = 0.8; // increase score threshold after first sightings, so that the tracker rejects moving blobs
                 }
                 break;
         } case bds_1_blink_off: {
@@ -91,9 +91,6 @@ void BlinkTracker::update(double time) {
                 ItemTracker::update(time);
                 _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
                 break;
-        } case bds_6_blink_off_calib: {
-                _blinking_drone_status = bds_6_blink_off;
-                [[fallthrough]];
         } case bds_6_blink_off: {
                 ItemTracker::update(time);
                 _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
@@ -122,6 +119,7 @@ void BlinkTracker::update(double time) {
         last_known_valid_pos = _world_item.pt;
         last_known_valid_pos_valid = true;
     }
+    close_log_line();
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
@@ -187,6 +185,9 @@ float BlinkTracker::score(tracking::BlobProps *blob) {
     } else {
         return ItemTracker::score(blob, &_image_item);
     }
+}
+void BlinkTracker::close_log_line() {
+    (*_logger) << '\n';
 }
 bool BlinkTracker::delete_me() {
     return (_n_frames_lost > n_frames_lost_threshold) || _blinking_drone_status == bds_failed_delete_me;

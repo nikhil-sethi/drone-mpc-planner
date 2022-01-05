@@ -352,7 +352,7 @@ public:
     int wdt_timeout_us, close_after_n_images;
     uint fps;
     bool watchdog, has_screen;
-    video_modes video_raw, video_result;
+    video_modes video_raw, video_render;
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
@@ -373,7 +373,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.15");
+        setVersion("1.16");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us", &_wdt_timeout_us);
@@ -389,7 +389,7 @@ public:
         Register("watchdog", &_watchdog);
         Register("fps", &_fps);
         Register("video_raw", &_video_raw);
-        Register("video_result", &_video_result);
+        Register("video_render", &_video_result);
         Register("joystick", &_joystick);
         Register("drone", &_drone);
         Register("imscalef", &_imscalef);
@@ -436,7 +436,7 @@ public:
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_raw = _video_raw.value();
-        video_result = _video_result.value();
+        video_render = _video_result.value();
         joystick = _joystick.value();
         drone = _drone.value();
         imscalef = _imscalef.value();
@@ -463,7 +463,7 @@ public:
         _watchdog = watchdog;
         _fps = fps;
         _video_raw = video_raw;
-        _video_result = video_result;
+        _video_result = video_render;
         _joystick = joystick;
         _drone = drone;
         _imscalef = imscalef;
@@ -497,7 +497,7 @@ private:
     xFloat _blink_period;
     xFloat _radius;
     xFloat _pad_radius;
-    xFloat _default_thrust;
+    xFloat _max_thrust;
     xInt _drone_blink_strength;
     xInt _drone_led_strength;
     xTx_protocol _tx;
@@ -533,7 +533,7 @@ public:
     float blink_period;
     float radius;
     float pad_radius;
-    float default_thrust;
+    float max_thrust;
     int drone_blink_strength;
     int drone_led_strength;
     tx_protocols tx;
@@ -557,7 +557,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.13");
+        setVersion("1.14");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name", &_name);
@@ -573,7 +573,7 @@ public:
         Register("blink_period", &_blink_period);
         Register("radius", &_radius);
         Register("pad_radius", &_pad_radius);
-        Register("thrust", &_default_thrust);
+        Register("max_thrust", &_max_thrust);
         Register("drone_blink_strength", &_drone_blink_strength);
         Register("drone_led_strength", &_drone_led_strength);
         Register("tx", &_tx);
@@ -648,7 +648,7 @@ public:
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
         blink_period = _blink_period.value();
-        default_thrust = _default_thrust.value();
+        max_thrust = _max_thrust.value();
         radius = _radius.value();
         pad_radius = _pad_radius.value();
         drone_blink_strength = _drone_blink_strength.value();
@@ -702,7 +702,7 @@ public:
         _hover_throttle_a = hover_throttle_a;
         _hover_throttle_b = hover_throttle_b;
         _blink_period = blink_period;
-        _default_thrust = default_thrust;
+        _max_thrust = max_thrust;
         _radius = radius;
         _pad_radius = pad_radius;
         _drone_blink_strength = drone_blink_strength;
@@ -875,7 +875,7 @@ public: float pad_roll = 0;
 public: float pad_pitch = 0;
 public: string drone_name = "";
 public: int drone_id = -1;
-public: float thrust = -1;
+public: float max_thrust = -1;
 public: string thrust_calib_date = "";
 private: xmls::xString _pad_calib_date;
 private: xmls::xFloat _pad_pos_x;
@@ -885,14 +885,14 @@ private: xmls::xFloat _pad_roll;
 private: xmls::xFloat _pad_pitch;
 private: xmls::xInt _drone_id;
 private: xmls::xString _drone_name;
-private: xmls::xFloat _thrust;
+private: xmls::xFloat _max_thrust;
 private: xmls::xString _thrust_calib_date;
 
 public: cv::Point3f pad_pos() { return cv::Point3f(pad_pos_x, pad_pos_y, pad_pos_z);}
 
 public: DroneCalibration() {
         setClassName("DroneCalibration");
-        setVersion("1.2");
+        setVersion("1.3");
         Register("drone_id", &_drone_id);
         Register("drone_name", &_drone_name);
         Register("pad_calib_date", &_pad_calib_date);
@@ -901,7 +901,7 @@ public: DroneCalibration() {
         Register("pad_pos_z", &_pad_pos_z);
         Register("pad_roll", &_pad_roll);
         Register("pad_pitch", &_pad_pitch);
-        Register("thrust", &_thrust);
+        Register("max_thrust", &_max_thrust);
         Register("thrust_calib_date", &_thrust_calib_date);
     }
 
@@ -934,7 +934,7 @@ public: void deserialize(std::string filepath) {
         pad_pitch = _pad_pitch.value();
         drone_id = _drone_id.value();
         drone_name = _drone_name.value();
-        thrust = _thrust.value();
+        max_thrust = _max_thrust.value();
         thrust_calib_date = _thrust_calib_date.value();
     }
 
@@ -947,7 +947,7 @@ public: void serialize(std::string filepath) {
         _pad_pitch = pad_pitch;
         _drone_name = drone_name;
         _drone_id = drone_id;
-        _thrust = thrust;
+        _max_thrust = max_thrust;
         _thrust_calib_date = thrust_calib_date;
 
         std::string xmlData = toXML();

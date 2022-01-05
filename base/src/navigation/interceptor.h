@@ -61,6 +61,12 @@ public:
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
     void update(bool drone_at_base, double time);
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
+    int insect_id() {
+        if (!_target_insecttracker)
+            return -1;
+        else
+            return _target_insecttracker->insect_trkr_id();
+    }
 
     tracking::TrackData target_last_trackdata();
 

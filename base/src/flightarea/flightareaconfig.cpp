@@ -94,7 +94,7 @@ void FlightAreaConfig::find_active_planes_and_their_corner_points() {
         for (auto &plane2 : _planes) {
             for (auto &plane3 : _planes) {
                 if (plane1.id < plane2.id && plane2.id < plane3.id && plane3.id > plane1.id) {
-                    cv::Point3f intrs_pnt = intersection_of_3_planes(plane1, plane2, plane3);
+                    cv::Point3f intrs_pnt = intersection_of_3_planes(&plane1, &plane2, &plane3);
 
                     bool in_view = true;
                     for (auto plane : _planes) {

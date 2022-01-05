@@ -7,6 +7,7 @@
 #include "tracking.h"
 #include "landingcontroller.h"
 #include "keepinviewcontroller.h"
+#include "dronereader.h"
 
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -124,6 +125,7 @@ private:
 
     std::string control_parameters_rfn;
     const std::string calib_fn = "drone_calibration.xml";
+    std::string calib_rfn = "../../../../pats/xml/" + calib_fn;
 
     xmls::DroneCalibration calibration;
 
@@ -168,7 +170,7 @@ private:
     uint16_t kill_cnt_down = 0;
     double spin_up_start_time = 0;
     double start_takeoff_burn_time = 0;
-    int _n_shakes = 0;
+    bool _shake_finished = false;
 
     std::vector<cv::Point3f> aim_direction_history;
 
@@ -216,9 +218,8 @@ private:
         }
     }
 
-    void save_calibration();
     void approx_effective_thrust(tracking::TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
-    float thrust_to_throttle(float thrust_ratio);
+    float thrust_to_throttle(float thrust);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(tracking::StateData state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
     std::tuple<int, int, float, cv::Point3f, std::vector<tracking::StateData> > calc_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
     std::tuple<int, int, float, cv::Point3f> calc_directional_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
@@ -243,7 +244,8 @@ private:
     void read_joystick(void);
     void process_joystick();
     void load_calibration();
-    void load_control_parameters();
+    void save_calibration();
+    void save_calibration_before_flight(int flight_id);
 
 public:
     LandingController land_ctrl;
@@ -257,7 +259,7 @@ public:
     void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength * 2, 5, 100); }
     void freeze_attitude_reset_yaw_on_pad() { att_reset_yaw_on_pad = cv::Point2f(_rc->telemetry.roll, _rc->telemetry.pitch); };
 
-    int n_shake() {return _n_shakes;}
+    int shake_finished() {return _shake_finished;}
 
     bool abort_take_off();
 
@@ -294,19 +296,17 @@ public:
     bool joy_takeoff_switch() {
         return _joy_takeoff_switch;
     }
-    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch, int log_auto_roll, int log_auto_pitch, int log_auto_throttle, float log_acc_z) {
-        //TODO
-        joy_roll = log_joy_roll;
-        joy_pitch = log_joy_pitch;
-        joy_yaw = log_joy_yaw;
-        joy_throttle = log_joy_throttle;
-        _joy_arm_switch = static_cast<betaflight_arming>(log_joy_arm_switch);
-        _joy_mode_switch = static_cast<joy_mode_switch_modes>(log_joy_mode_switch);
-        _joy_takeoff_switch = log_joy_take_off_switch;
-        _log_auto_roll = log_auto_roll;
-        _log_auto_pitch = log_auto_pitch;
-        _log_auto_throttle = log_auto_throttle;
-        _log_acc_z = log_acc_z;
+    void inject_log(logging::LogEntryDrone entry) {
+        joy_roll = entry.joy_roll;
+        joy_pitch = entry.joy_pitch;
+        joy_yaw = entry.joy_yaw;
+        joy_throttle = entry.joy_throttle;
+        _joy_arm_switch = static_cast<betaflight_arming>(entry.joy_arm_switch);
+        _joy_mode_switch = static_cast<joy_mode_switch_modes>(entry.joy_mode_switch);
+        _joy_takeoff_switch = entry.joy_takeoff_switch;
+        _log_auto_roll = entry.auto_roll;
+        _log_auto_pitch = entry.auto_pitch;
+        _log_auto_throttle = entry.auto_throttle;
     }
 
     bool spinup() {  return _flight_mode == fm_spinup; }
@@ -371,13 +371,6 @@ public:
         pitch /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
         return pitch;
     }
-    float _log_acc_z;
-    float telem_acc_z() {
-        float acc_z = _rc->telemetry.acc.z;
-        if (log_replay_mode)
-            acc_z = _log_acc_z;
-        return acc_z;
-    }
 
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
@@ -405,7 +398,9 @@ public:
 
     void close(void);
     void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure);
-    void init_flight(std::ofstream *logger);
+    void init_flight(std::ofstream *logger, int flight_id);
+    void init_flight_replay(std::string replay_dir, int flight_id);
+    void init_full_log_replay(std::string replay_dir);
     void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double, bool enable_logging);
     bool landed() {return _landed; }
     bool state_inactive() { return _flight_mode == fm_inactive; }
@@ -450,7 +445,7 @@ public:
     void save_thrust_calibration();
     bool new_attitude_package_available();
     bool attitude_on_pad_OK();
-    drone_on_pad_state somewhere_on_pad();
+    drone_on_pad_state drone_pad_state();
     void invalidize_blink();
     bool pad_calibration_done();
     bool takeoff_calib_valid();

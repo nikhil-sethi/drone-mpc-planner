@@ -12,7 +12,7 @@ void TrackerManager::init(std::ofstream *logger, string replay_dir_, VisionData 
     _iceptor = interceptor;
     replay_dir = replay_dir_;
 
-    if (pparams.has_screen || pparams.video_result) {
+    if (pparams.has_screen || pparams.video_render) {
         _enable_viz_blob = false; // can be enable during runtime by key-pressing '['
         _enable_viz_tracker = false; // can be enable during runtime by key-pressing ']'
         enable_viz_motion = true; // part of the main visualisation
@@ -21,7 +21,7 @@ void TrackerManager::init(std::ofstream *logger, string replay_dir_, VisionData 
     deserialize_settings();
     read_false_positives();
 
-    (*_logger) << "trkrs_state;n_trackers;n_blobs;monsters;";
+    (*_logger) << "trackers_state_str;trackers_state;n_trackers;n_blobs;monsters;";
     initialized = true;
 }
 
@@ -43,7 +43,7 @@ void TrackerManager::update(double time) {
     }
     update_trackers(time, _visdat->frame_id);
     _monster_alert = time_since_monsters > 0 && time - time_since_monsters < 30;
-    (*_logger) << trackermanager_mode_names[_mode] << ";" << _trackers.size() << ";" << _blobs.size() << ";" << time_since_monsters << ";";
+    (*_logger) << trackermanager_mode_names[_mode] << ";" << static_cast<uint16_t>(_mode) << ";" << _trackers.size() << ";" << _blobs.size() << ";" << time_since_monsters << ";";
     draw_trackers_viz();
     finish_vizs();
 }
@@ -1141,22 +1141,17 @@ void TrackerManager::read_false_positives() {
                 FalsePositive fp(static_cast<false_positive_type>(stoi(splitted_line.at(0))), stoi(splitted_line.at(2)), stof(splitted_line.at(3)), stof(splitted_line.at(4)), stof(splitted_line.at(5)));
                 false_positives.push_back(fp);
             }
-            if (replay_dir == "")
-                save_false_positives("./logging/initial_" + false_positive_fn);
-            else
-                save_false_positives("./logging/replay/initial_" + false_positive_fn);
+
+            save_false_positives(data_output_dir + "initial_" + false_positive_fn);
         } catch (exception &exp) {
             throw std::runtime_error("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
 }
 void TrackerManager::save_false_positives() {
-    if (replay_dir == "") {
-        save_false_positives("./logging/" + false_positive_fn);
+    save_false_positives(data_output_dir + false_positive_fn);
+    if (replay_dir == "")
         save_false_positives("../" + false_positive_fn);
-    } else {
-        save_false_positives("./logging/replay/" + false_positive_fn);
-    }
 }
 void TrackerManager::save_false_positives(string false_positive_wfn) {
     std::ofstream fp_writer;

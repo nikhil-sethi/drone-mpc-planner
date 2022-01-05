@@ -18,7 +18,7 @@ public:
     bool check_ignore_blobs(BlobProps *pbs [[maybe_unused]]) {return false;}
     void calc_world_item(BlobProps *pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
     void update(double time);
-    void update_from_log(unsigned long long frame_number, double time);
+    void inject_log(unsigned long long frame_number, double time);
     bool delete_me();
 
     int16_t id() {return _id;}

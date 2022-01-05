@@ -19,6 +19,14 @@ void LogReader::init(string path) {
     read_multi_insect_logs(path);
 
 }
+void LogReader::init(string path, string drone_log_fn) {
+    read_drone_log(drone_log_fn);
+    init(path);
+    for (auto &insect : log_insects) {
+        insect.current_frame_number(_log_drone.video_start_rs_id());
+    }
+    current_frame_number(_log_drone.video_start_rs_id());
+}
 
 tuple<map<int, LogEntryMain>, map<string, int>> LogReader::read_log(string file) {
     ifstream infile(file);
@@ -60,43 +68,28 @@ void LogReader::read_multi_insect_logs(string path) {
     }
 }
 
+void LogReader::read_drone_log(std::string drone_log_fn) {
+    if (!file_exist(drone_log_fn))
+        throw std::runtime_error("Could not find drone log file: " + drone_log_fn);
+    std::cout << "Opening flight log: " << drone_log_fn << std::endl;
+    _log_drone.init(drone_log_fn);
+}
+
 LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) {
 
     auto line_data = split_csv_line(line);
 
     LogEntryMain entry;
     entry.id = stoi(line_data.at(headmap["ID"]));
-    entry.rs_id = stoi(line_data.at(headmap["RS_ID"]));
+    entry.rs_id = stoi(line_data.at(headmap["rs_id"]));
     entry.elapsed = stod(line_data.at(headmap["elapsed"]));
-    auto iid = headmap["insect_log"];
-    if (iid)
-        entry.insect_replay_log = stoi(line_data.at(iid));
-    else
-        entry.insect_replay_log = false;
-    entry.valid = stoi(line_data.at(headmap["valid"]));
-    entry.joyThrottle = stoi(line_data.at(headmap["joyThrottle"]));
-    entry.joyRoll = stoi(line_data.at(headmap["joyRoll"]));
-    entry.joyPitch = stoi(line_data.at(headmap["joyPitch"]));
-    entry.joyYaw = stoi(line_data.at(headmap["joyYaw"]));
-    entry.joyArmSwitch = stoi(line_data.at(headmap["joyArmSwitch"]));
-    entry.joyModeSwitch = stoi(line_data.at(headmap["joyModeSwitch"]));
-    entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
-    entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
-    entry.nav_state = stoi(line_data.at(headmap["nav_state"]));
-    entry.charging_state = stoi(line_data.at(headmap["charge_state"]));
+    entry.exposure = stoi(line_data.at(headmap["exposure"]));
+    entry.gain = stoi(line_data.at(headmap["gain"]));
+    entry.trackers_state = stoi(line_data.at(headmap["trackers_state"]));
+    entry.charging_state = stoi(line_data.at(headmap["charging_state"]));
 
-    entry.imLx_drone = stof(line_data.at(headmap["imLx_drone"]));
-    entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));
-    entry.disparity_drone = stod(line_data.at(headmap["disparity_drone"]));
-
-    entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
-    entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
-    entry.auto_pitch = stoi(line_data.at(headmap["autoPitch"]));
-
-    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_approach_waypoint))
-        _takeoff_time = entry.elapsed;
-    if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_reset_headless_yaw)
-        _yaw_reset_time = entry.elapsed;
+    if (!_start_rs_id)
+        _start_rs_id = entry.rs_id ;
 
     return entry;
 }
@@ -106,6 +99,11 @@ int LogReader::current_frame_number(unsigned long long rs_id) {
 
     if (current_entry.rs_id != rs_id)
         return 1;
+
+    if (_log_drone.initialized()) {
+        if (_log_drone.current_frame_number(rs_id) > 0)
+            return 1;
+    }
 
     //Currently log playback based on the insect logs is not used.
     //I'd rather recalculate the insect based on the vision.
@@ -117,7 +115,6 @@ int LogReader::current_frame_number(unsigned long long rs_id) {
                 ins_entries.push_back(ins.current_entry);
             }
         }
-        current_entry.insects  = ins_entries;
     }
     return 0;
 }

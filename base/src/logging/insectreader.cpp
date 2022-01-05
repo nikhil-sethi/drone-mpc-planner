@@ -49,34 +49,34 @@ LogEntryInsect InsectReader::create_log_entry(string line) {
     auto line_data = split_csv_line(line);
 
     LogEntryInsect entry;
-    entry.time = stod(line_data.at(headmap["time"]));
+    entry.elapsed = stod(line_data.at(headmap["elapsed"]));
     entry.replay = stoi(line_data.at(headmap["replay"]));
-    entry.rs_id = stod(line_data.at(headmap["RS_ID"]));
-    entry.ins_pos_x = stod(line_data.at(headmap["posX"]));
-    entry.ins_pos_y = stod(line_data.at(headmap["posY"]));
-    entry.ins_pos_z = stod(line_data.at(headmap["posZ"]));
+    entry.rs_id = stod(line_data.at(headmap["rs_id"]));
+    entry.pos_x = stod(line_data.at(headmap["posX"]));
+    entry.pos_y = stod(line_data.at(headmap["posY"]));
+    entry.pos_z = stod(line_data.at(headmap["posZ"]));
 
-    entry.ins_spos_x = stod(line_data.at(headmap["sposX"]));
-    entry.ins_spos_y = stod(line_data.at(headmap["sposY"]));
-    entry.ins_spos_z = stod(line_data.at(headmap["sposZ"]));
+    entry.spos_x = stod(line_data.at(headmap["sposX"]));
+    entry.spos_y = stod(line_data.at(headmap["sposY"]));
+    entry.spos_z = stod(line_data.at(headmap["sposZ"]));
 
-    entry.ins_svel_x = stod(line_data.at(headmap["svelX"]));
-    entry.ins_svel_y = stod(line_data.at(headmap["svelY"]));
-    entry.ins_svel_z = stod(line_data.at(headmap["svelZ"]));
+    entry.svel_x = stod(line_data.at(headmap["svelX"]));
+    entry.svel_y = stod(line_data.at(headmap["svelY"]));
+    entry.svel_z = stod(line_data.at(headmap["svelZ"]));
 
-    entry.ins_sacc_x = stod(line_data.at(headmap["saccX"]));
-    entry.ins_sacc_y = stod(line_data.at(headmap["saccY"]));
-    entry.ins_sacc_z = stod(line_data.at(headmap["saccZ"]));
+    entry.sacc_x = stod(line_data.at(headmap["saccX"]));
+    entry.sacc_y = stod(line_data.at(headmap["saccY"]));
+    entry.sacc_z = stod(line_data.at(headmap["saccZ"]));
 
-    entry.ins_im_x = stod(line_data.at(headmap["imLx"]));
-    entry.ins_im_y = stod(line_data.at(headmap["imLy"]));
-    entry.ins_disparity = stod(line_data.at(headmap["disparity"]));
-    entry.ins_pred_im_x = stod(line_data.at(headmap["imLx_pred"]));
-    entry.ins_pred_im_y = stod(line_data.at(headmap["imLy_pred"]));
+    entry.im_x = stod(line_data.at(headmap["imLx"]));
+    entry.im_y = stod(line_data.at(headmap["imLy"]));
+    entry.disparity = stod(line_data.at(headmap["disparity"]));
+    entry.pred_im_x = stod(line_data.at(headmap["imLx_pred"]));
+    entry.pred_im_y = stod(line_data.at(headmap["imLy_pred"]));
 
-    entry.ins_n_frames_lost = stoi(line_data.at(headmap["n_frames_lost"]));
-    entry.ins_n_frames_tracking = stoi(line_data.at(headmap["n_frames_tracking"]));
-    entry.ins_foundL = stoi(line_data.at(headmap["foundL"]));
+    entry.n_frames_lost = stoi(line_data.at(headmap["n_frames_lost"]));
+    entry.n_frames_tracking = stoi(line_data.at(headmap["n_frames_tracking"]));
+    entry.foundL = stoi(line_data.at(headmap["foundL"]));
     if (entry.rs_id > last_rs_id)
         last_rs_id = entry.rs_id;
 

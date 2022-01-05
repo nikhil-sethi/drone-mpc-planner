@@ -10,8 +10,8 @@
             "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}",
             "presentation": {
                 "showReuseMessage": false
-              },
-              "problemMatcher": []
+            },
+            "problemMatcher": []
         },
         {
             "label": "make clean",
@@ -22,7 +22,8 @@
             },
             "presentation": {
                 "showReuseMessage": false
-              }
+            },
+            "problemMatcher": []
         },
         {
             "label": "make",
@@ -52,8 +53,15 @@
             "label": "Run (no debug)",
             "type": "shell",
             "command": "${workspaceFolder}/build-vscode/executor",
-            "args": ["--drone-id", "1", "--pats-xml", "../xml/pats_debug.xml"],
-            "dependsOn": ["make"],
+            "args": [
+                "--drone-id",
+                "1",
+                "--pats-xml",
+                "../xml/pats_debug.xml"
+            ],
+            "dependsOn": [
+                "make"
+            ],
             "options": {
                 "cwd": "${workspaceRoot}/build-vscode"
             },
@@ -63,7 +71,7 @@
             },
             "presentation": {
                 "showReuseMessage": false
-              }
+            }
         }
     ]
 }

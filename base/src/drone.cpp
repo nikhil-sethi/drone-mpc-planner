@@ -1,4 +1,6 @@
 #include "drone.h"
+#include <experimental/filesystem>
+#include "navigation.h"
 
 void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard) {
     _rc_id = rc_id;
@@ -13,8 +15,17 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
     nav.init(&tracker, &control, visdat, flight_area, interceptor, baseboard);
     control.init(_rc, &tracker, flight_area, visdat->camera_exposure);
 
-    (*main_logger) << "drone_state;";
+    (*main_logger) << "drone_state_str;";
     initialized = true;
+}
+
+void Drone::init_full_log_replay(std::string replay_dir) {
+    control.init_full_log_replay(replay_dir);
+}
+void Drone::init_flight_replay(std::string replay_dir, int flight_id) {
+    _state = ds_ready;
+    flightplan_fn = replay_dir + "/flightplan_flight" + to_string(flight_id) + ".xml";
+    control.init_flight_replay(replay_dir, flight_id);
 }
 
 void Drone::update(double time) {
@@ -66,7 +77,6 @@ void Drone::update(double time) {
                     _state = ds_crashed;
                 else if (nav.flight_done()) {
                     _state = ds_post_flight;
-                    _trackers->stop_drone_tracking(&tracker);
                     _n_landings++;
                     flight_logger.flush();
                     flight_logger.close();
@@ -75,6 +85,7 @@ void Drone::update(double time) {
         } case ds_post_flight: {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
                 post_flight(time);
+                break;
         } case ds_charging_failure: {
                 //TODO: notify user
                 break;
@@ -98,8 +109,9 @@ void Drone::pre_flight(double time) {
     switch (pre_flight_state) {
         case pre_init: {
                 n_locate_drone_attempts = 0;
-                _trackers->mode(tracking::TrackerManager::t_locate_drone);
+                _trackers->mode(tracking::TrackerManager::t_idle);
                 time_start_locating_drone = time;
+                pre_flight_state = pre_locate_drone_init;
                 [[fallthrough]];
         } case pre_locate_drone_init: {
                 control.LED(true);
@@ -113,14 +125,15 @@ void Drone::pre_flight(double time) {
                     pre_flight_state = pre_calibrating_pad;
                 else {
                     control.invalidize_blink();
-                    pre_flight_state = pre_locate_drone_wait_led_on;
+                    pre_flight_state = pre_locate_drone_wait_led;
                 }
                 force_pad_redetect = false;
                 break;
-        } case pre_locate_drone_wait_led_on: {
-                if (time - time_start_locating_drone > 1.5) {
-                    _visdat->reset_motion_integration();
+        } case pre_locate_drone_wait_led: {
+                _visdat->reset_motion_integration();
+                if (static_cast<float>(time - time_start_locating_drone) > led_response_duration) {
                     _visdat->disable_fading = true;
+                    _trackers->mode(tracking::TrackerManager::t_locate_drone);
                     control.flight_mode(DroneController::fm_disarmed);
                     pre_flight_state = pre_locate_drone;
                     time_last_led_doubler = time;
@@ -176,10 +189,8 @@ void Drone::pre_flight(double time) {
                     control.flight_mode(DroneController::fm_disarmed);
                     pre_flight_state = pre_wait_to_arm;
                 } else {
-                    _state = ds_charging;
-                    pre_flight_state = pre_init;
-                    _trackers->mode(tracking::TrackerManager::t_x);
-
+                    pre_flight_state = pre_wait_init_led;
+                    time_led_init = time;
                     switch (dparams.led_type) {
                         case led_none:
                             control.LED(false);
@@ -199,6 +210,14 @@ void Drone::pre_flight(double time) {
                     }
                 }
                 break;
+        } case pre_wait_init_led: {
+                if (static_cast<float>(time - time_led_init) > led_response_duration) {
+                    _visdat->reset_motion_integration();
+                    _trackers->mode(tracking::TrackerManager::t_x);
+                    pre_flight_state = pre_init;
+                    _state = ds_charging;
+                }
+                break;
         } case pre_locate_time_out: {
                 //TODO: notify user
                 break;
@@ -208,10 +227,15 @@ void Drone::pre_flight(double time) {
 void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
-                time_reset_yaw_on_pad = time;
-                control.freeze_attitude_reset_yaw_on_pad();
-                post_flight_state = post_reset_yaw_on_pad;
-                [[fallthrough]];
+                _trackers->stop_drone_tracking(&tracker);
+                if ((_baseboard->charging() || _baseboard->disabled()))
+                    post_flight_state = post_wait_after_shake_init;
+                else {
+                    time_reset_yaw_on_pad = time;
+                    control.freeze_attitude_reset_yaw_on_pad();
+                    post_flight_state = post_reset_yaw_on_pad;
+                }
+                break;
         } case post_reset_yaw_on_pad: {
                 control.flight_mode(DroneController::fm_reset_yaw_on_pad);
                 if (static_cast<float>(time - time_reset_yaw_on_pad) > duration_reset_yaw_on_pad) {
@@ -232,20 +256,23 @@ void Drone::post_flight(double time) {
                 }
                 break;
         } case post_shaking_drone: {
-                if (control.n_shake() >= 1) {
-                    control.flight_mode(DroneController::fm_disarmed);
-                    n_shakes_sessions_after_landing++;
-                    post_flight_state = post_wait_after_shake;
-                    control.new_attitude_package_available(); // reset internal counter so that we can use it in ns_wait_after_shake
-                }
+                if (control.shake_finished())
+                    post_flight_state = post_wait_after_shake_init;
                 break;
+        } case post_wait_after_shake_init: {
+                control.flight_mode(DroneController::fm_disarmed);
+                n_shakes_sessions_after_landing++;
+                control.new_attitude_package_available(); // reset internal counter so that we can use it in ns_wait_after_shake
+                time_post_shake = time;
+                post_flight_state = post_wait_after_shake;
+                [[fallthrough]];
         } case post_wait_after_shake: {
-                if (static_cast<float>(time - time_shake_start) > duration_shake) {
+                if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait) {
                     if (!control.new_attitude_package_available()) { /* wait some more until we receive new package */ }
                     else if (control.attitude_on_pad_OK() && (_baseboard->charging() || _baseboard->disabled())) {
                         post_flight_state = post_init;
                         _state = ds_charging;
-                    } else if (n_shakes_sessions_after_landing <= 10 && control.somewhere_on_pad())
+                    } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state())
                         post_flight_state = post_start_shaking;
                     else
                         post_flight_state = post_lost;
@@ -253,7 +280,7 @@ void Drone::post_flight(double time) {
                 break;
         } case post_lost: {
                 //TODO: notify user
-                if (_baseboard->charging()) {
+                if ((_baseboard->charging() || _baseboard->disabled()) && control.attitude_on_pad_OK()) {
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
                 }
@@ -268,16 +295,18 @@ void Drone::take_off(bool hunt, double time) {
         _n_hunt_flights++;
     else
         _n_wp_flights++;
+    _visdat->save_maps_before_flight(_n_take_offs, data_output_dir);
 
-    std::string fn = data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv";
-    flight_logger.open(fn, std::ofstream::out);
+    flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);
     tracker.init_flight(&flight_logger, time);
-    flight_logger << "RS_ID;time;dt;drone_state;";
+    flight_logger << "rs_id;elapsed;dt;drone_state_str;";
     _trackers->start_drone_tracking(&tracker);
     nav.init_flight(hunt, &flight_logger);
-    if (!hunt)
+    if (!hunt) {
         nav.flightplan(flightplan_fn);
-    control.init_flight(&flight_logger);
+        std::experimental::filesystem::copy(flightplan_fn, data_output_dir  + "flightplan_flight" + to_string(_n_take_offs) + ".xml");
+    }
+    control.init_flight(&flight_logger, _n_take_offs);
 
     flight_logger << std::endl;
 }
@@ -294,6 +323,13 @@ void Drone::blink(double time) {
         last_blink_time = time;
     }
     control.LED(blink_state);
+}
+
+void Drone::inject_log(logging::LogEntryDrone entry, unsigned long long rs_id) {
+    if (entry.nav_flight_mode == navigation::nfm_waypoint && nav.nav_flight_mode() != navigation::nfm_waypoint)
+        trigger_waypoint_flight = true;
+    if (rs_id >= entry.rs_id)
+        control.inject_log(entry);
 }
 
 void Drone::close() {

@@ -1,6 +1,7 @@
 #include "replayrc.h"
 
-void ReplayRC::init(int __attribute__((unused))) {
+void ReplayRC::init(int drone_id) {
+    _drone_id_rxnum = drone_id;
     logger_rfn = _replay_dir  + "/log_telem.txt";
     infile = ifstream(logger_rfn);
     getline(infile, next_line);
@@ -24,9 +25,9 @@ std::tuple<double, std::string, std::string>  split_telem_line(std::string line)
 void ReplayRC::telemetry_from_log(double time) {
     auto [log_time, id_str, val_str] = split_telem_line(next_line);
     while (log_time < time) {
-        if (!strcmp(id_str.c_str(), "FSSP_DATAID_ROLL")) {
+        if (!strcmp(id_str.c_str(), "FSSP_DATAID_ROLL")) { // also from FSSP_DATAID_ROLL_PITCH
             telemetry.roll = std::stof(val_str);
-        } else if (!strcmp(id_str.c_str(), "FSSP_DATAID_PITCH")) {
+        } else if (!strcmp(id_str.c_str(), "FSSP_DATAID_PITCH")) { // also from FSSP_DATAID_ROLL_PITCH
             telemetry.pitch = std::stof(val_str);
             telemetry.roll_pitch_package_id++;
         } else  if (!strcmp(id_str.c_str(), "FSSP_DATAID_A4")) {
@@ -34,6 +35,9 @@ void ReplayRC::telemetry_from_log(double time) {
             telemetry.batt_cell_v_package_id++;
         } else if (!strcmp(id_str.c_str(), "FSSP_DATAID_VFAS")) {
             telemetry.batt_cell_v = std::stof(val_str);
+        } else if (!strcmp(id_str.c_str(), "FSSP_DATAID_RSSI")) {
+            telemetry.rssi = std::stoi(val_str);
+            telemetry.rssi_last_received = time;
         } else if (!strcmp(id_str.c_str(), "FSSP_DATAID_BF_VERSION")) {
             auto v_str = split_csv_line(val_str, '.');
             telemetry.bf_major = std::stoi(v_str.at(0));

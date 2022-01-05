@@ -5,13 +5,12 @@
 void Baseboard::init(bool replay_mode) {
     _replay_mode = replay_mode;
 
-    if (file_exist(disable_flag)) {
+    if (file_exist(disable_flag) && !_replay_mode) {
         _disabled = true;
-        _charging_state = state_init;
+        _charging_state = state_disabled;
     }
 
     if (!_replay_mode && !_disabled) {
-
         deamon_address.sun_family = AF_UNIX;
         strncpy(deamon_address.sun_path, "/home/pats/pats/sockets/baseboard2pats.socket", sizeof(deamon_address.sun_path) - 1);
         if ((sock = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)) == 0) {
@@ -64,7 +63,7 @@ void Baseboard::worker_receive() {
             if (read_timeouts > 6) {
                 exit_thread = true;
                 std::cout << "Baseboard comm receive failed" << std::endl;
-                throw std::runtime_error("Baseboard comm receive failed");
+                _exit_now = true;
                 abort();
             }
         }
@@ -76,8 +75,8 @@ void Baseboard::worker_send() {
     while (!exit_thread) {
         ssize_t ret = send(sock, msg.c_str(), msg.length(), MSG_NOSIGNAL);
         if (ret != static_cast<ssize_t>(msg.length())) {
-            std::cout << "Baseboard comm send failed" << std::endl;
-            throw std::runtime_error("Baseboard comm send failed");
+            std::cout << "Error: Baseboard comm send failed" << std::endl;
+            _exit_now = true;
             abort();
         }
         usleep(1e6);

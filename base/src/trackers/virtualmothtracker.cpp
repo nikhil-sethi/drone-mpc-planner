@@ -6,7 +6,7 @@ using namespace std;
 namespace tracking {
 
 void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData *visdat, DroneController *dctrl) {
-    if(!dctrl && behavior_type!=no_reaction) {
+    if (!dctrl && behavior_type != no_reaction) {
         std::cout << "VirtualMothTracker: Set moth behavior to 'no_reaction', since dctrl is pointing to null." << std::endl;
     }
     _id = id;
@@ -28,7 +28,7 @@ void VirtualMothTracker::init_logger() {
     _logger = new std::ofstream(); // FIXME: use std::shared_ptr?
     logger_fn = data_output_dir  + "log_rtrkr" + to_string(_id) + ".csv";
     (*_logger).open(logger_fn, std::ofstream::out);
-    (*_logger) << "RS_ID;time;";
+    (*_logger) << "rs_id;elapsed;";
     ItemTracker::init_logger(_logger);
     (*_logger) << std::endl;
 }
@@ -52,13 +52,13 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     if (start_time <= 0)
         start_time = time;
 
-    if(behavior_type != no_reaction) {
+    if (behavior_type != no_reaction) {
         if (_dctrl->auto_throttle > 400) {
             escape_triggered = true;
         }
     }
     if (escape_triggered) {
-        if(behavior_type == diving)
+        if (behavior_type == diving)
             insect_vel += cv::Point3f(0., -2, 0.) / static_cast<float>(pparams.fps);
     }
 

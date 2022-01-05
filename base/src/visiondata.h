@@ -117,4 +117,8 @@ public:
     float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}
     void reset_motion_integration() {_reset_motion_integration = true;}
+    void init_insect_replay(std::string folder);
+    void init_flight_replay(std::string folder, int id);
+    void save_maps_before_monitoring(std::string folder);
+    void save_maps_before_flight(int id, std::string folder);
 };

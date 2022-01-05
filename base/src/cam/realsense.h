@@ -9,10 +9,8 @@
 class Realsense : public Cam {
 
 public:
-    static std::string playback_filename() { return "record.bag"; }
     Realsense() {
         set_write_file_paths(data_output_dir);
-        bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
     }
     void connect_and_check(string ser_nr, int id);
     void init() {
@@ -58,7 +56,6 @@ private:
 
     bool isD455 = false;
     double _frame_time_start = -1;
-    string bag_fn;
     string serial_nr_str;
     string serial_nr;
 

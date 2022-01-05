@@ -28,8 +28,8 @@ void CommandCenterLink::close() {
     if (initialized) {
         std::cout << "Closing CommandCenterLink" << std::endl;
         thread.join();
+        reset_commandcenter_status_file("Closed", false);
     }
-    reset_commandcenter_status_file("Closed", false);
 }
 
 void CommandCenterLink::background_worker() {
@@ -46,13 +46,6 @@ void CommandCenterLink::background_worker() {
     }
 }
 
-void CommandCenterLink::trigger_demo_flight_from_log(std::string replay_dir) {
-    if (file_exist(replay_dir + "/pats_demo.xml"))
-        _patser->drone.demo_flight(replay_dir + "/pats_demo.xml");
-    else
-        _patser->drone.demo_flight(replay_dir + "/flightplan.xml");
-}
-
 void CommandCenterLink::check_commandcenter_triggers() {
     static int demo_div_cnt = 0;
     demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
@@ -60,8 +53,32 @@ void CommandCenterLink::check_commandcenter_triggers() {
         if (pparams.op_mode == op_modes::op_mode_x) {
             if (file_exist(demo_waypoint_fn)) {
                 std::cout << "Waypoint demo!" << std::endl;
-                _patser->drone.demo_flight(demo_waypoint_fn);
-                rename(demo_waypoint_fn.c_str(), "./logging/pats_demo.xml");
+                rename(demo_waypoint_fn.c_str(), (data_output_dir + "pats_demo_trigger.xml").c_str());
+                _patser->drone.demo_flight(data_output_dir + "pats_demo_trigger.xml");
+            }
+            if (file_exist(shake_fn)) {
+                std::cout << "Shaking_drone!" << std::endl;
+                if (!_patser->drone.drone_flying())
+                    _patser->drone.shake_drone();
+                remove(shake_fn.c_str());
+            }
+            if (file_exist(calib_fn)) {
+                std::cout << "Calibrating_drone!" << std::endl;
+                if (!_patser->drone.drone_flying())
+                    _patser->rc()->calibrate_acc();
+                remove(calib_fn.c_str());
+            }
+            if (file_exist(beep_fn)) {
+                std::cout << "Beeping_drone!" << std::endl;
+                if (!_patser->drone.drone_flying())
+                    _patser->drone.beep_drone();
+                remove(beep_fn.c_str());
+            }
+            if (file_exist(blink_fn)) {
+                std::cout << "Redetecting_drone location!" << std::endl;
+                if (!_patser->drone.drone_flying())
+                    _patser->drone.redetect_drone_location();
+                remove(blink_fn.c_str());
             }
         }
         if (file_exist(demo_insect_fn)) {
@@ -76,35 +93,10 @@ void CommandCenterLink::check_commandcenter_triggers() {
             _patser->trackers.init_virtual_moth();
             remove(virtual_insect_fn.c_str());
         }
-        if (file_exist(shake_fn)) {
-            std::cout << "Shaking_drone!" << std::endl;
-            if (!_patser->drone.drone_flying())
-                _patser->drone.shake_drone();
-            remove(shake_fn.c_str());
-        }
-        if (file_exist(calib_fn)) {
-            std::cout << "Calibrating_drone!" << std::endl;
-            if (!_patser->drone.drone_flying())
-                _patser->rc()->calibrate_acc();
-            remove(calib_fn.c_str());
-        }
-        if (file_exist(beep_fn)) {
-            std::cout << "Beeping_drone!" << std::endl;
-            if (!_patser->drone.drone_flying())
-                _patser->drone.beep_drone();
-            remove(beep_fn.c_str());
-        }
-        if (file_exist(blink_fn)) {
-            std::cout << "Redetecting_drone location!" << std::endl;
-            if (!_patser->drone.drone_flying())
-                _patser->drone.redetect_drone_location();
-            remove(blink_fn.c_str());
-        }
     }
 }
 
 void CommandCenterLink::write_commandcenter_status_file() {
-
     static std::string nav_status = "";
     bool status_update_needed = nav_status.compare(_patser->drone.nav.navigation_status()) != 0;
     nav_status = _patser->drone.nav.navigation_status();
@@ -132,35 +124,39 @@ void CommandCenterLink::write_commandcenter_status_file() {
 }
 
 void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, bool never_overwrite) {
-    if (_never_overwrite)
-        return;
-    _never_overwrite = never_overwrite;
+    if (initialized) {
+        if (_never_overwrite)
+            return;
+        _never_overwrite = never_overwrite;
 
-    reset_cnt = pparams.fps * 3;
-    std::ofstream status_file;
-    status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
-    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
-    status_file << "Runtime: " << 0 << "s" << '\n';
-    status_file << status_msg << std::endl;
-    status_file.close();
+        reset_cnt = pparams.fps * 3;
+        std::ofstream status_file;
+        status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
+        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
+        status_file << "Runtime: " << 0 << "s" << '\n';
+        status_file << status_msg << std::endl;
+        status_file.close();
+    }
 }
 
 void CommandCenterLink::write_commandcenter_status_image() {
-    if (_frame.cols > 0) {
-        if (!new_frame_request) {
-            if (_frame.cols) {
-                cv::Mat out_rgb;
-                cvtColor(_frame, out_rgb, cv::COLOR_GRAY2BGR);
-                putText(out_rgb, "State: " + _patser->drone.nav.navigation_status() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode() +
-                        " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 14), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
-                putText(out_rgb, "Time:       " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 28), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
-                if (pparams.op_mode == op_mode_x)
-                    cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
-                cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
+    if (initialized) {
+        if (_frame.cols > 0) {
+            if (!new_frame_request) {
+                if (_frame.cols) {
+                    cv::Mat out_rgb;
+                    cvtColor(_frame, out_rgb, cv::COLOR_GRAY2BGR);
+                    putText(out_rgb, "State: " + _patser->drone.nav.navigation_status() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode() +
+                            " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 14), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
+                    putText(out_rgb, "Time:       " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 28), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
+                    if (pparams.op_mode == op_mode_x)
+                        cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
+                    cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
+                }
+                new_frame_request = 1;
             }
+        } else
             new_frame_request = 1;
-        }
-    } else
-        new_frame_request = 1;
+    }
 }

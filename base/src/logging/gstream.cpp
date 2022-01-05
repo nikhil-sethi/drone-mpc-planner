@@ -108,7 +108,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
 
         if (bgr_mode) {
 
-            if (gst_element_factory_find("vaapivp9enc")) {
+            if (gst_element_factory_find("vaapivp9enc") && vp9 != nuc11) {
                 if (vp9 == nuc11) {
                     // For the NUC11 with gstreamer 1.18 .4 the vp9 encoder cannot accept direct BGR, and for some reason
                     // I don't understand the videoconvert element does not want to do that either (weird),
@@ -152,11 +152,34 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                     gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
                     std::cout << "Initialized gstreamer video render with vaapivp9enc BGR mode..." << std::endl;
                 }
-
-            } else if (gst_element_factory_find("vaapih264enc")) {
+            } else if (gst_element_factory_find("vaapih264enc") && vp9 != nuc11) {
 
                 auto caps_appsrc = gst_caps_new_simple("video/x-raw",
                                                        "format", G_TYPE_STRING, "BGR",
+                                                       "width", G_TYPE_INT, sizeX,
+                                                       "height", G_TYPE_INT, sizeY,
+                                                       "framerate", GST_TYPE_FRACTION, gstream_fps, 1, NULL);
+                g_object_set(G_OBJECT(_appsrc), "caps", caps_appsrc, NULL);
+                gst_caps_unref(caps_appsrc);
+
+                // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
+                colorbalance = gst_element_factory_make("videobalance", "videobalance");
+                g_object_set(G_OBJECT(colorbalance), "brightness", 0.03, "contrast", 1.0, "saturation", 2.0, NULL);
+
+                encoder = gst_element_factory_make("vaapih264enc", "encoder");  // hardware encoding
+                g_object_set(G_OBJECT(encoder), "quality-level", 2, "rate-control", 4, "bitrate", 4500, NULL);
+                // g_object_set (G_OBJECT (encoder),"rate-control",2,"quality" , 2, NULL); // quality does not seem to do much
+
+
+                auto parser = gst_element_factory_make("h264parse", "parser");
+                gst_bin_add_many(GST_BIN(_pipeline), _appsrc, colorbalance, videoconvert, encoder, parser, mux, videosink, NULL);
+                gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, parser, mux, videosink, NULL);
+                std::cout << "Initialized gstreamer video render with vaapih264enc BGR mode..." << std::endl;
+
+            } else if (gst_element_factory_find("vaapih264enc") && vp9 == nuc11) {
+
+                auto caps_appsrc = gst_caps_new_simple("video/x-raw",
+                                                       "format", G_TYPE_STRING, "I420",
                                                        "width", G_TYPE_INT, sizeX,
                                                        "height", G_TYPE_INT, sizeY,
                                                        "framerate", GST_TYPE_FRACTION, gstream_fps, 1, NULL);

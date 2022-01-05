@@ -44,6 +44,8 @@ public:
     Baseboard *baseboard() { return _baseboard;}
 
     void init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  Baseboard *baseboard);
+    void init_insect_replay();
+    void init_flight_replay(std::string replay_dir, int flight_id);
     void update(double time);
     void close();
 

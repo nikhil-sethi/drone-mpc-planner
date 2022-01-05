@@ -268,17 +268,19 @@ public:
     std::string mode_str() {
         if (_mode == t_locate_drone) {
             int best_state = 0;
+            int n_blinkers = 0;
             for (auto trkr : _trackers)   {
                 if (trkr->type() == tt_blink)   {
+                    n_blinkers++;
                     BlinkTracker *btrkr = static_cast<BlinkTracker *>(trkr);
                     if (btrkr->state() > best_state)
                         best_state = btrkr->state();
                 }
             }
             if (best_state > 0)
-                return blinking_drone_state_names[best_state];
+                return to_string(n_blinkers) + ' ' + blinking_drone_state_names[best_state];
             else
-                return trackermanager_mode_names[_mode];
+                return to_string(n_blinkers) + ' ' + trackermanager_mode_names[_mode];
         } else
             return trackermanager_mode_names[_mode];
     }

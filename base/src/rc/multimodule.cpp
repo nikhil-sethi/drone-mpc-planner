@@ -308,7 +308,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
             if (current_firmware_version != required_firmware_version_multimodule) {
                 if (current_firmware_version.length() >= required_firmware_version_multimodule.length()) {
                     std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware_version_multimodule << "." << std::endl;
-                    exit(1);
+                    throw std::runtime_error("Detected wrong MultiModule firmware version!");
                 }
             } else {
                 std::cout << "Detecting MultiProtocol version " << required_firmware_version_multimodule << ": OK" << std::endl;
@@ -433,14 +433,14 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     break;
             } case FSSP_DATAID_VFAS: {
                     float data = std::stof(arr.at(1)) / 100.f;
-                    if(data >= 0 && data <= batt_v_accepted_max)
+                    if (data >= 0 && data <= batt_v_accepted_max)
                         telemetry.batt_v = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_VFAS;" << telemetry.batt_v << "\n";
                     break;
             } case FSSP_DATAID_A4: {
                     float data = std::stof(arr.at(1)) / 100.f;
-                    if(data >= 0 && data <= batt_cell_v_accepted_max) {
+                    if (data >= 0 && data <= batt_cell_v_accepted_max) {
                         telemetry.batt_cell_v = data;
                         telemetry.batt_cell_v_package_id++;
                     }
@@ -455,14 +455,14 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     break;
             } case FSSP_DATAID_ROLL: {
                     float data = std::stof(arr.at(1)) / 100.f;
-                    if(data > -roll_accepted_max && data <= roll_accepted_max)
+                    if (data > -roll_accepted_max && data <= roll_accepted_max)
                         telemetry.roll = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
                     break;
             } case FSSP_DATAID_PITCH: {
                     float data = std::stof(arr.at(1)) / 100.f;
-                    if(data > -pitch_accepted_max && data <= pitch_accepted_max)
+                    if (data > -pitch_accepted_max && data <= pitch_accepted_max)
                         telemetry.pitch = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";
@@ -494,12 +494,12 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     break;
             } case FSSP_DATAID_ROLL_PITCH: {
                     uint32_t data = std::stoi(arr.at(1));
-                    float rcvd_roll = static_cast<float>(data & 0xFFFF) / 10.f;
-                    float rcvd_pitch = static_cast<float>((data >> 16) & 0xFFFF) / 10.f;
+                    float received_roll = static_cast<float>(data & 0xFFFF) / 10.f;
+                    float received_pitch = static_cast<float>((data >> 16) & 0xFFFF) / 10.f;
 
-                    if(rcvd_roll > -roll_accepted_max && rcvd_roll < roll_accepted_max && rcvd_pitch > -pitch_accepted_max && rcvd_pitch < pitch_accepted_max) {
-                        telemetry.roll = rcvd_roll;
-                        telemetry.pitch = rcvd_pitch;
+                    if (received_roll > -roll_accepted_max && received_roll < roll_accepted_max && received_pitch > -pitch_accepted_max && received_pitch < pitch_accepted_max) {
+                        telemetry.roll = received_roll;
+                        telemetry.pitch = received_pitch;
                         telemetry.roll_pitch_package_id++;
                     }
                     if (logger_initialized) {
@@ -539,7 +539,7 @@ void MultiModule::close() {
         g_sendData.unlock();
         g_lockData.unlock();
         send_rc_data();
-        notconnected = true;
+        notconnected = 1;
         RS232_CloseComport();
         if (logger_initialized) {
             telem_logger.flush();

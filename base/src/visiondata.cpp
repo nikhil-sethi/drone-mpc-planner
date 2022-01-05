@@ -268,6 +268,41 @@ void VisionData::exclude_drone_from_motion_fading(cv::Point3f p, int radius) {
     exclude_drone_from_motion_fading_radius = radius;
 }
 
+
+void VisionData::init_insect_replay(std::string folder) {
+    overexposed_mapL = cv::imread(folder + "/overexposed_mapL.png", cv::IMREAD_ANYDEPTH);
+    overexposed_mapR = cv::imread(folder + "/overexposed_mapR.png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL = cv::imread(folder + "/motion_filtered_noise_mapL.png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapR = cv::imread(folder + "/motion_filtered_noise_mapR.png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL_small = cv::imread(folder + "/motion_filtered_noise_mapL_small.png", cv::IMREAD_ANYDEPTH);
+    motion_max_noise_mapL = cv::imread(folder + "/motion_max_noise_mapL.png", cv::IMREAD_ANYDEPTH);
+}
+void VisionData::init_flight_replay(std::string folder, int id) {
+    overexposed_mapL = cv::imread(folder + "/overexposed_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    overexposed_mapR = cv::imread(folder + "/overexposed_mapR_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL = cv::imread(folder + "/motion_filtered_noise_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapR = cv::imread(folder + "/motion_filtered_noise_mapR_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL_small = cv::imread(folder + "/motion_filtered_noise_mapL_small_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_max_noise_mapL = cv::imread(folder + "/motion_max_noise_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+}
+
+void VisionData::save_maps_before_monitoring(std::string folder) {
+    cv::imwrite(folder + "/overexposed_mapL.png", overexposed_mapL);
+    cv::imwrite(folder + "/overexposed_mapR.png", overexposed_mapR);
+    cv::imwrite(folder + "/motion_filtered_noise_mapL.png", motion_filtered_noise_mapL);
+    cv::imwrite(folder + "/motion_filtered_noise_mapR.png", motion_filtered_noise_mapR);
+    cv::imwrite(folder + "/motion_filtered_noise_mapL_small.png", motion_filtered_noise_mapL_small);
+    cv::imwrite(folder + "/motion_max_noise_mapL.png", motion_max_noise_mapL);
+}
+void VisionData::save_maps_before_flight(int id, std::string folder) {
+    cv::imwrite(folder + "/overexposed_mapL_" + to_string(id) + ".png", overexposed_mapL);
+    cv::imwrite(folder + "/overexposed_mapR_" + to_string(id) + ".png", overexposed_mapR);
+    cv::imwrite(folder + "/motion_filtered_noise_mapL_" + to_string(id) + ".png", motion_filtered_noise_mapL);
+    cv::imwrite(folder + "/motion_filtered_noise_mapR_" + to_string(id) + ".png", motion_filtered_noise_mapR);
+    cv::imwrite(folder + "/motion_filtered_noise_mapL_small_" + to_string(id) + ".png", motion_filtered_noise_mapL_small);
+    cv::imwrite(folder + "/motion_max_noise_mapL_" + to_string(id) + ".png", motion_max_noise_mapL);
+}
+
 void VisionData::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     VisionParameters params;

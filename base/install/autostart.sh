@@ -38,10 +38,8 @@ while [ 1 ]; do
 	/bin/mv rgb*.png $OUTDIR_IMAGES || true
 	/bin/mv stereo*.png $OUTDIR_IMAGES || true
 	echo Moving old data to $OUTDIR_LOG
-	/bin/mkdir -p $OUTDIR_LOG
-	/bin/mv logging $OUTDIR_LOG || true
-	/bin/mkdir -p $OUTDIR_LOG/logging
-	/bin/mv terminal.log ${OUTDIR_LOG}/logging/ || true
+	/bin/mv logging/ ${OUTDIR_LOG}/ || true
+	/bin/mv terminal.log ${OUTDIR_LOG}/ || true
 
 	echo "Hostname: $HOSTNAME" > $STAT_FN
 	echo "Drone ID: $DRONE_ID" >> $STAT_FN

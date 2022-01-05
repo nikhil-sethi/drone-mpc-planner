@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.15">
+<SerializableClass Type="PatsParameters" Version="1.16">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="exposure_threshold">5000</Member>
     <Member Name="gain_threshold">16</Member>
@@ -12,7 +12,7 @@
     <Member Name="watchdog">true</Member>
     <Member Name="fps">90</Member>
     <Member Name="video_raw">video_file</Member>
-    <Member Name="video_result">video_disabled</Member>
+    <Member Name="video_render">video_disabled</Member>
     <Member Name="joystick">rc_none</Member>
     <Member Name="drone">drone_anvil_superbee</Member>
     <Member Name="imscalef">2</Member>
