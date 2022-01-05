@@ -891,7 +891,7 @@ void init() {
     visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger, replay_dir, &visdat, &iceptor);
     iceptor.init(&trackers, &visdat, &flight_area, &logger, &dctrl);
-    baseboard.init(log_replay_mode);
+    baseboard.init(log_replay_mode || render_monitor_video_mode);
     dnav.init(&logger, &trackers, &dctrl, &visdat, &flight_area, replay_dir, &iceptor, &baseboard);
     if (log_replay_mode) {
         if (logreader.blink_at_startup())
@@ -901,7 +901,7 @@ void init() {
         dctrl.init(&logger, replay_dir, generator_mode, airsim_mode, rc.get(), trackers.dronetracker(), &flight_area, cam->measured_exposure());
 
     if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode, &dnav, &dctrl, rc.get(), &trackers, &visdat);
+        cmdcenter.init(log_replay_mode || render_monitor_video_mode, &dnav, &dctrl, rc.get(), &trackers, &visdat);
 
     if (render_monitor_video_mode)
         dnav.render_now_override();

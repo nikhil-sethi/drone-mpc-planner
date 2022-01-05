@@ -7,12 +7,6 @@
 #include<iostream>
 
 void CommandCenterLink::init(bool log_replay_mode, navigation::DroneNavigation *dnav, DroneController *dctrl, Rc *rc, tracking::TrackerManager *trackers, VisionData *visdat) {
-    remove(demo_insect_fn.c_str());
-    remove(demo_waypoint_fn.c_str());
-    remove(calib_fn.c_str());
-    remove(beep_fn.c_str());
-    remove(shake_fn.c_str());
-
     _dnav = dnav;
     _dctrl = dctrl;
     _rc = rc;
@@ -21,7 +15,13 @@ void CommandCenterLink::init(bool log_replay_mode, navigation::DroneNavigation *
     _visdat = visdat;
 
     if (!_log_replay_mode) {
+        remove(demo_insect_fn.c_str());
+        remove(demo_waypoint_fn.c_str());
+        remove(calib_fn.c_str());
+        remove(beep_fn.c_str());
+        remove(shake_fn.c_str());
         thread = std::thread(&CommandCenterLink::background_worker, this);
+        std::cout << "Commandcenter link initialized" << std::endl;
         initialized = true;
     }
 }
