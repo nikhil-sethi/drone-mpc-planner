@@ -454,14 +454,14 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                         telem_logger << _time << ";FSSP_DATAID_CURRENT;" << telemetry.batt_current << "\n";
                     break;
             } case FSSP_DATAID_ROLL: {
-                    float data = std::stof(arr.at(1)) / 100.f;
+                    float data = std::stof(arr.at(1)) / 10.f;
                     if (data > -roll_accepted_max && data <= roll_accepted_max)
                         telemetry.roll = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
                     break;
             } case FSSP_DATAID_PITCH: {
-                    float data = std::stof(arr.at(1)) / 100.f;
+                    float data = std::stof(arr.at(1)) / 10.f;
                     if (data > -pitch_accepted_max && data <= pitch_accepted_max)
                         telemetry.pitch = data;
                     if (logger_initialized)
@@ -494,9 +494,8 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     break;
             } case FSSP_DATAID_ROLL_PITCH: {
                     uint32_t data = std::stoi(arr.at(1));
-                    float received_roll = static_cast<float>(data & 0xFFFF) / 10.f;
-                    float received_pitch = static_cast<float>((data >> 16) & 0xFFFF) / 10.f;
-
+                    float received_roll = static_cast<float>(static_cast<int16_t>(data & 0xFFFF)) / 10.f;
+                    float received_pitch = static_cast<float>(static_cast<int16_t>((data >> 16) & 0xFFFF)) / 10.f;
                     if (received_roll > -roll_accepted_max && received_roll < roll_accepted_max && received_pitch > -pitch_accepted_max && received_pitch < pitch_accepted_max) {
                         telemetry.roll = received_roll;
                         telemetry.pitch = received_pitch;
