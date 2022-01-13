@@ -39,6 +39,7 @@ static const char *post_flight_state_names[] = {
     "shaking",
     "wait_init",
     "shaked...",
+    "trim_acc",
     "lost",
     "crash",
     "crashed"
@@ -76,6 +77,7 @@ public:
         post_shaking_drone,
         post_wait_after_shake_init,
         post_wait_after_shake,
+        post_trim_accelerometer,
         post_lost,
         post_init_crashed,
         post_crashed,

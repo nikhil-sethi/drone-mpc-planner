@@ -147,7 +147,7 @@ void CommandCenterLink::write_commandcenter_status_image() {
                 if (_frame.cols) {
                     cv::Mat out_rgb;
                     cvtColor(_frame, out_rgb, cv::COLOR_GRAY2BGR);
-                    putText(out_rgb, "State: " + _patser->drone.nav.navigation_status() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode() +
+                    putText(out_rgb, "State: " + _patser->drone.nav.navigation_status() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode_str() +
                             " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 14), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
                     putText(out_rgb, "Time:       " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 28), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
                     if (pparams.op_mode == op_mode_x)

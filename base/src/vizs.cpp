@@ -358,7 +358,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
 
         if (_patser->drone.drone_flying()) {
             putText(resFrame, _patser->drone.tracker.drone_tracking_state(), cv::Point(450, 106), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-            putText(resFrame, _patser->drone.control.flight_mode(), cv::Point(450, 94), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+            putText(resFrame, _patser->drone.control.flight_mode_str(), cv::Point(450, 94), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
         }
         putText(resFrame, _patser->rc()->armed_str(), cv::Point(220, 106), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
     }

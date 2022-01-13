@@ -329,8 +329,8 @@ void Drone::post_flight(double time) {
                 if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait) {
                     if (!control.new_attitude_package_available() || _baseboard_link->charging_waits_until_drone_ready()) { /* wait some more until we receive new data from either the drone telemetry or the baseboard */ }
                     else if (control.drone_pad_state() && (_baseboard_link->charging() || _baseboard_link->disabled())) {
-                        post_flight_state = post_init;
-                        _state = ds_charging;
+                        control.flight_mode(DroneController::fm_trim_accelerometer);
+                        post_flight_state = post_trim_accelerometer;
                     } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state()) {
                         post_flight_state = post_start_shaking;
                         std::cout << "Shake unsucessfull. Attempt " << n_shakes_sessions_after_landing << " of 10" << std::endl;
@@ -339,6 +339,12 @@ void Drone::post_flight(double time) {
                     else {
                         post_flight_state = post_lost;
                     }
+                }
+                break;
+        } case post_trim_accelerometer: {
+                if (control.flight_mode() == DroneController::fm_wait) {
+                    post_flight_state = post_init;
+                    _state = ds_charging;
                 }
                 break;
         } case post_init_crashed: {

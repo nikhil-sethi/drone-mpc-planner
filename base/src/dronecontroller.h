@@ -7,7 +7,9 @@
 #include "tracking.h"
 #include "landingcontroller.h"
 #include "keepinviewcontroller.h"
+#include "accelerometertrim.h"
 #include "dronereader.h"
+
 
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -50,6 +52,7 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_ff_landing",
                                            "fm_start_shake",
                                            "fm_shake_it_baby",
+                                           "fm_trim_accelerometer",
                                            "fm_abort"
                                          };
 
@@ -100,6 +103,7 @@ public:
         fm_ff_landing,
         fm_start_shake,
         fm_shake_it_baby,
+        fm_trim_accelerometer,
         fm_abort
     };
     enum joy_mode_switch_modes { // raw switch modes
@@ -249,6 +253,7 @@ private:
 public:
     LandingController land_ctrl;
     KeepInViewController kiv_ctrl;
+    AccelerometerTrim accelerometer_trim;
 
     void led_strength(float light_level);
     void calibrate_pad_attitude();
@@ -263,14 +268,21 @@ public:
 
     bool abort_take_off();
 
+    void update_hover_integrators() {
+        accelerometer_trim.intergrator_hovering(pos_err_i.x, pos_err_i.z);
+    }
+
     joy_states Joy_State() {
         return _joy_state;
     }
     std::string Joy_State_str() {
         return joy_states_names[_joy_state];
     }
-    std::string flight_mode() {
+    std::string flight_mode_str() {
         return flight_mode_names[_flight_mode];
+    }
+    flight_modes flight_mode() {
+        return _flight_mode;
     }
 
     bool ff_interception() {

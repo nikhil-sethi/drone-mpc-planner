@@ -497,6 +497,16 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                         break;
                 }
                 break;
+        } case fm_trim_accelerometer: {
+                auto_throttle = RC_BOUND_MAX;
+                auto_yaw = RC_MIDDLE;
+                bool trim_finished;
+                std::tie(auto_roll, auto_pitch, trim_finished) = accelerometer_trim.trim_accelerometer(time);
+
+                if (trim_finished)
+                    _flight_mode = fm_wait;
+
+                break;
         } case fm_disarmed: {
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;

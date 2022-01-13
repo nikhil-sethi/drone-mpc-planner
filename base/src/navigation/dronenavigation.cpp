@@ -224,8 +224,10 @@ void DroneNavigation::update(double time) {
                 check_abort_autonomus_flight_conditions();
                 break;
         } case ns_correcting_yaw: {
-                if (!_tracker->check_yaw(time) || (static_cast<float>(time - time_start_reset_headless_yaw) > duration_correct_yaw && drone_at_wp()))
+                if (!_tracker->check_yaw(time) || (static_cast<float>(time - time_start_reset_headless_yaw) > duration_correct_yaw && drone_at_wp())) {
                     _navigation_status = ns_goto_thrust_calib_waypoint;
+                    _control->update_hover_integrators();
+                }
                 check_abort_autonomus_flight_conditions();
                 if (low_battery_triggered) {
                     std::cout << "Warning: skipping thrust calibration because battery low." << std::endl;
