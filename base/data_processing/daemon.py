@@ -30,8 +30,6 @@ def status_cc_worker():
     global status_cc_status_str  # pylint: disable=global-statement
     logger = logging.getLogger('status_cc')
     logger.info('Status command center sender reporting in!')
-    metered = lb.check_if_metered()
-    logger.info('Metered mode: ' + str(metered))
 
     status_file_missing = not os.path.exists(lb.local_status_txt_file)
     if status_file_missing:
@@ -42,7 +40,7 @@ def status_cc_worker():
         logger.info('Warning: disable flag active...')
 
     # force an update at startup, otherwise it takes very long to pop up in the cc:
-    if not disabled_flag_detected and not status_file_missing and lb.check_if_metered():
+    if not disabled_flag_detected and not status_file_missing:
         send_status_update()
 
     while True:
@@ -54,13 +52,7 @@ def status_cc_worker():
             logger.info('Warning: disable flag went active...')
 
         if not status_file_missing and not disabled_flag_detected:
-            if lb.check_if_metered() != metered:
-                logger.info('Metered mode now: ' + str(metered))
-                metered = lb.check_if_metered()
-            if not metered:
-                logger.info("Wifi detected. Updating now: " + datetime.today().strftime("%d-%m-%Y %H:%M:%S"))
-                send_status_update()
-                status_cc_status_str = 'Auto sent at ' + datetime.today().strftime("%d-%m-%Y %H:%M:%S")
+
             if os.path.exists(lb.cc_update_request):
                 logger.info("Manual update trigger detected at " + datetime.today().strftime("%d-%m-%Y %H:%M:%S"))
                 os.remove(lb.cc_update_request)
