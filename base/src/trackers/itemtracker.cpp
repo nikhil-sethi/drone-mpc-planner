@@ -681,7 +681,15 @@ float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
         if (world_projected_pred_im_err < world_projected_im_err)
             world_projected_im_err = world_projected_pred_im_err;
         im_dist_err_ratio = world_projected_im_err / max_im_dist;
-        float prev_size = smoother_im_size.latest();
+        float prev_size;
+
+        if (smoother_im_size.ready())
+            prev_size = smoother_im_size.latest();
+        else if (_image_predict_item.valid)
+            prev_size = _image_predict_item.size;
+        else
+            prev_size = blob->size_unscaled();
+
         im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled() + prev_size);
         if (!smoother_im_size.ready())
             im_size_pred_err_ratio *= 0.5f;

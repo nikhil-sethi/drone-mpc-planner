@@ -24,6 +24,7 @@ public:
     int16_t id() {return _id;}
     bool tracking() {return _tracking;}
     tracker_type type() { return tt_replay;}
+    virtual float score(BlobProps *blob [[ maybe_unused]]) { return INFINITY; }
 };
 
 }

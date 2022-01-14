@@ -53,6 +53,7 @@ private:
         cv::Mat mask;
         BlobProps *props;
         std::vector<ItemTracker *> trackers;
+        std::vector<pair<int, float>> tracker_scores;
         bool tracked() { return trackers.size() > 0;}
         bool ignored = false;
         cv::Scalar color() {
@@ -101,7 +102,13 @@ private:
             return "";
         }
     };
-
+    struct ScorePair {
+        ScorePair(float score_, ItemTracker *tracker_, ProcessedBlob *blob_): score(score_), tracker(tracker_), blob(blob_) {}
+        float score;
+        ItemTracker *tracker;
+        ProcessedBlob *blob;
+        bool superfluous = false;
+    };
 
     class TrackerManagerParameters: public xmls::Serializable
     {
@@ -171,7 +178,6 @@ private:
     void find_blobs();
     void collect_static_ignores();
     void collect_static_ignores(ItemTracker *trkr);
-    void check_match_conflicts(std::vector<ProcessedBlob> *pbs, double time);
     void flag_used_static_ignores(std::vector<ProcessedBlob> *pbs);
     void prep_blobs(std::vector<ProcessedBlob> *pbs, double time);
     void erase_dissipated_fps(double time);
@@ -181,7 +187,6 @@ private:
     void create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(double time);
-    // std::tuple<float, bool, float> tune_detection_radius(cv::Point maxt);
     void floodfind_and_remove(cv::Point maxt, uint8_t max, uint8_t motion_noise, cv::Mat diff, cv::Mat motion_filtered_noise_mapL);
 
     bool tracker_active(ItemTracker *trkr);

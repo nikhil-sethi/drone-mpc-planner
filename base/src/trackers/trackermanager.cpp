@@ -322,7 +322,6 @@ void TrackerManager::match_blobs_to_trackers(double time) {
     if (_blobs.size() > 0) {
         prep_blobs(&pbs, time);
         match_existing_trackers(&pbs, time);
-        check_match_conflicts(&pbs, time);
         if (_mode == t_locate_drone) {
             rematch_blink_tracker(&pbs, time);
             create_new_blink_trackers(&pbs, time);
@@ -355,12 +354,10 @@ void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs, double time) {
         }
     }
 }
-void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, double time) {
-    //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
-    for (auto trkr : _trackers) {
-        float best_trkr_score = INFINITY;
-        ProcessedBlob *best_blob;
 
+void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, double time) {
+    std::vector<ScorePair> scores;
+    for (auto trkr : _trackers) {
         if (trkr->tracking()) {
             for (auto &blob : *pbs) {
                 auto *props = blob.props;
@@ -369,10 +366,9 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
                     blob.ignored = true;
                 if (!in_ignore_zone) {
                     float score  = trkr->score(props);
-                    if (score < best_trkr_score) {
-                        best_trkr_score = score;
-                        best_blob = &blob;
-                    }
+                    blob.tracker_scores.push_back(pair<int, float>(trkr->uid(), score));
+                    scores.push_back(ScorePair(score, trkr, &blob));
+
                     if (_enable_viz_blob && trkr->viz_id() < 6) {
                         cv::Mat viz = vizs_blobs.at(blob.id);
                         cv::Point2i pt(viz.cols / 5 + 2, viz.rows - 20 * (trkr->viz_id() + 1));
@@ -384,110 +380,29 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
                     putText(viz, "Ign.", pt, FONT_HERSHEY_SIMPLEX, 0.3, tracker_color(trkr));
                 }
             }
-            if (best_trkr_score < trkr->score_threshold()) {
-                best_blob->trackers.push_back(trkr);
-                trkr->calc_world_item(best_blob->props, time);
-                tracking::ImageItem image_item(*(best_blob->props), _visdat->frame_id, best_trkr_score, best_blob->id);
-                tracking::WorldItem w(image_item, best_blob->props->world_props);
-                trkr->world_item(w);
+        }
+    }
+
+    std::sort(scores.begin(), scores.end(), [](const ScorePair & a, const ScorePair & b) -> bool { return a.score < b.score; });
+
+    for (size_t i = 0; i < scores.size(); i++) {
+        if (scores.at(i).superfluous)
+            continue;
+        if (scores.at(i).score < scores.at(i).tracker->score_threshold()) {
+            scores.at(i).blob->trackers.push_back(scores.at(i).tracker);
+            scores.at(i).tracker->calc_world_item(scores.at(i).blob->props, time);
+            tracking::ImageItem image_item(*(scores.at(i).blob->props), _visdat->frame_id, scores.at(i).score, scores.at(i).blob->id);
+            tracking::WorldItem w(image_item, scores.at(i).blob->props->world_props);
+            scores.at(i).tracker->world_item(w);
+
+            for (size_t j = i + 1; j < scores.size(); j++) {
+                if (scores.at(j).blob->id == scores.at(i).blob->id || scores.at(j).tracker->uid() == scores.at(i).tracker->uid())
+                    scores.at(j).superfluous = true;
             }
         }
     }
 }
-void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs, double time) {
-    //check if there are blobs having multiple trackers attached
-    for (auto &blob_i : *pbs) {
-        if (blob_i.trackers.size() > 1) {
-            //see if we have a drone / insect tracker pair
-            DroneTracker *dtrkr;
-            InsectTracker *itrkr;
-            bool drn_trkr_fnd = false;
-            for (auto trkr : blob_i.trackers) {
-                if (trkr->type() == tt_drone) {
-                    dtrkr = static_cast<DroneTracker *>(trkr);
-                    drn_trkr_fnd = true;
-                    break;
-                }
-            }
 
-            if (drn_trkr_fnd) {
-                auto props_i = blob_i.props;
-                for (auto trkr : blob_i.trackers) {
-                    if (trkr->type() == tt_insect) {
-                        itrkr = static_cast<InsectTracker *>(trkr);
-
-                        //so, there should be another blob close to the currently one used.
-                        //if there is, the small one is prolly the moth...
-                        bool conflict_resolved = false;
-                        for (auto &blob_j : *pbs) {
-                            if (blob_i.id != blob_j.id && !blob_j.tracked()) {
-                                auto props_j = blob_j.props;
-                                float dist = cv::norm(blob_i.pt() - blob_j.pt()) * pparams.imscalef;
-                                if (dist < dtrkr->image_predict_item().size) {
-                                    if (blob_i.size() > blob_j.size()) {
-                                        dtrkr->calc_world_item(props_i, time);
-                                        tracking::WorldItem wi(tracking::ImageItem(*props_i, _visdat->frame_id, 0, blob_i.id), props_i->world_props);
-                                        dtrkr->world_item(wi);
-
-                                        itrkr->calc_world_item(props_j, time);
-                                        tracking::WorldItem wj(tracking::ImageItem(*props_j, _visdat->frame_id, 0, blob_j.id), props_j->world_props);
-                                        itrkr->world_item(wj);
-
-                                        blob_i.trackers.clear();
-                                        blob_j.trackers.clear();
-                                        blob_i.trackers.push_back(dtrkr);
-                                        blob_j.trackers.push_back(itrkr);
-                                    } else {
-                                        itrkr->calc_world_item(props_i, time);
-                                        tracking::WorldItem wi(tracking::ImageItem(*props_i, _visdat->frame_id, 0, blob_i.id), props_i->world_props);
-                                        itrkr->world_item(wi);
-                                        dtrkr->calc_world_item(props_j, time);
-                                        tracking::WorldItem wj(tracking::ImageItem(*props_j, _visdat->frame_id, 0, blob_j.id), props_j->world_props);
-                                        dtrkr->world_item(wj);
-
-                                        blob_i.trackers.clear();
-                                        blob_j.trackers.clear();
-                                        blob_j.trackers.push_back(dtrkr);
-                                        blob_i.trackers.push_back(itrkr);
-                                    }
-                                    conflict_resolved = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!conflict_resolved) {
-                            dtrkr->blobs_are_fused();
-                            itrkr->blobs_are_fused();
-
-                            // hmm, apparantely there is no blob close by, so now there are a few possibilities:
-                            //1. The insect is lost (e.g. too far, too small, into the flowers)
-                            //2. The drone is lost (e.g. crashed)
-                            //3. The insect and drone are too close to eachother to distinguish
-                            //4. We have a kill :) In the last few cases this resulted in a confetti storm. Maybe this can be detected.
-                        }
-                    }
-                }
-            } else { //for some reason multiple insect trackers got fused. This is quite unlikely, so just select the one with the best score:
-                ItemTracker *best_tracker;
-                float best_score = INFINITY;
-                for (auto trkr : blob_i.trackers) {
-                    if (trkr->image_item().score < best_score) {
-                        best_score = trkr->image_item().score;
-                        best_tracker = trkr;
-                    }
-                }
-                for (auto trkr : blob_i.trackers) {
-                    if (trkr->uid() != best_tracker->uid())
-                        trkr->invalidize(true);
-                }
-                blob_i.trackers.clear();
-                blob_i.trackers.push_back(best_tracker);
-            }
-        }
-    }
-
-}
 void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs, double time) {
     for (auto dtrkr : dronetrackers()) {
         if (!dtrkr->tracking()) {
