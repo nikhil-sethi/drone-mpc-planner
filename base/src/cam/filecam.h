@@ -9,7 +9,7 @@ class FileCam : public Cam {
 private:
     logging::LogReader *logreader;
     std::string video_fn;
-    int im_width = 0, im_height = 0, nFrames = 0, frame_cnt = 0;
+    uint im_width = 0, im_height = 0, nFrames = 0, frame_cnt = 0;
     void read_frame_ids();
     void calibration();
     void init_gstream();
@@ -22,7 +22,7 @@ private:
         long long rs_id;
         double time;
     };
-    std::vector<Frame_ID_Entry> frames_ids;
+    std::vector<Frame_ID_Entry> frame_ids;
 
 public:
     static std::string default_playback_filename() { return "videoRawLR.mkv"; }
@@ -51,7 +51,7 @@ public:
         auto current_time = frame->time;
         uint video_id_now = 0;
         uint video_id_skip = 0;
-        for (auto id : frames_ids) {
+        for (auto id : frame_ids) {
             if (id.time > static_cast<double>(duration) + current_time) {
                 video_id_skip = id.encoded_img_count;
                 break;
@@ -62,7 +62,7 @@ public:
         replay_skip_n_frames = video_id_skip - video_id_now;
     }
     void start_cnt(int rs_id) {
-        for (auto frame_id  : frames_ids) {
+        for (auto frame_id  : frame_ids) {
             if (frame_id.rs_id == rs_id) {
                 frame_cnt = frame_id.encoded_img_count;
                 break;

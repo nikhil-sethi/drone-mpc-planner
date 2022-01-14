@@ -86,6 +86,10 @@ public:
     cv::Point3f aim_acc() {return _aim_acc;}
     double time_to_intercept() {return _tti;}
     float best_distance() {return _best_distance;}
+    void target_is_hunted() {
+        if (_target_insecttracker)
+            _target_insecttracker->hunted();
+    }
 
     std::string Interceptor_State() {return interceptor_state_names[_interceptor_state];}
 };

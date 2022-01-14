@@ -65,7 +65,7 @@ void FileCam::read_frame_ids() {
             entry.imgcount = stoi(data.at(1));
             entry.rs_id = stol(data.at(2));
             entry.time = stod(data.at(3));
-            frames_ids.push_back(entry);
+            frame_ids.push_back(entry);
         } catch (exception &exp) {
             throw std::runtime_error("Could not read frame log! File: " + frames_file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
@@ -138,9 +138,12 @@ StereoPair *FileCam::update() {
 
     unsigned long long frame_number_new;
     double frame_time_new;
-    if (frames_ids.size() > 0) {
-        frame_number_new = frames_ids.at(frame_cnt - 1).rs_id;
-        frame_time_new = frames_ids.at(frame_cnt - 1).time;
+
+    if (frame_cnt >= frame_ids.size())
+        frame_number_new = ULONG_MAX;
+    else if (frame_ids.size() > 0) {
+        frame_number_new = frame_ids.at(frame_cnt - 1).rs_id;
+        frame_time_new = frame_ids.at(frame_cnt - 1).time;
     } else {
         auto f = current();
         frame_number_new = f->rs_id + 1;

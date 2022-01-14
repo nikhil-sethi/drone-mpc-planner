@@ -54,7 +54,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
             if (file_exist(demo_waypoint_fn)) {
                 std::cout << "Waypoint demo!" << std::endl;
                 rename(demo_waypoint_fn.c_str(), (data_output_dir + "pats_demo_trigger.xml").c_str());
-                _patser->drone.demo_flight(data_output_dir + "pats_demo_trigger.xml");
+                _patser->drone.waypoint_flight(data_output_dir + "pats_demo_trigger.xml");
             }
             if (file_exist(shake_fn)) {
                 std::cout << "Shaking_drone!" << std::endl;

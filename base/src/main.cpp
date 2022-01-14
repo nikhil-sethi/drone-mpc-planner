@@ -444,7 +444,7 @@ bool handle_key(double time [[maybe_unused]]) {
             if (patser.drone.drone_ready_and_waiting()) {
                 std::string fp = "../xml/flightplans/thrust-calib.xml";
                 std::cout << "Flightplan trigger:" << fp << std::endl;
-                patser.drone.demo_flight(fp);
+                patser.drone.waypoint_flight(fp);
             }
             break;
         case '2':
@@ -454,7 +454,7 @@ bool handle_key(double time [[maybe_unused]]) {
             if (patser.drone.drone_ready_and_waiting()) {
                 std::string fp = "../xml/flightplans/simple-demo-darkroom.xml";
                 std::cout << "Flightplan trigger:" << fp << std::endl;
-                patser.drone.demo_flight(fp);
+                patser.drone.waypoint_flight(fp);
             }
             break;
         case '3':
@@ -464,14 +464,14 @@ bool handle_key(double time [[maybe_unused]]) {
             if (patser.drone.drone_ready_and_waiting()) {
                 std::string fp = "../xml/flightplans/simple-demo-koppert.xml";
                 std::cout << "Flightplan trigger:" << fp << std::endl;
-                patser.drone.demo_flight(fp);
+                patser.drone.waypoint_flight(fp);
             }
             break;
         case '$':
             if (patser.drone.drone_ready_and_waiting()) {
                 std::string fp = "../xml/flightplans/bejo.xml";
                 std::cout << "Flightplan trigger:" << fp << std::endl;
-                patser.drone.demo_flight(fp);
+                patser.drone.waypoint_flight(fp);
             }
             break;
         case '4':
@@ -898,13 +898,11 @@ void save_results_log() {
     results_log << "n_hunts:" << patser.drone.n_hunt_flights() << '\n';
     results_log << "n_replay_hunts:" << cmdcenter.n_replay_moth() << '\n';
     results_log << "n_wp_flights:" << patser.drone.n_wp_flights() << '\n';
-    results_log << "best_interception_distance:" << patser.interceptor.best_distance() << '\n';
     results_log << "n_drone_detects:" << patser.drone.n_drone_detects() << '\n';
     results_log << "drone_problem:" << nav->drone_problem() << '\n';
-    results_log << "Flight_time:" << nav->flight_time() << '\n';
-    results_log << "Run_time:" << visdat.current_time() << '\n';
-    results_log << "Start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
-    results_log << "End_datetime:" <<  std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "run_time:" << visdat.current_time() << '\n';
+    results_log << "start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "end_datetime:" <<  std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
     results_log.close();
 }
 

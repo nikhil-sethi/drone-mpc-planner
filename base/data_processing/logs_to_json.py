@@ -18,7 +18,8 @@ import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from cut_moths import cut_all
 
-version = "1.11"
+version_c = "1.11"
+version_x = "1.0"
 
 
 def measured_exposure(terminal_log_path):
@@ -121,27 +122,25 @@ def process_system_status_in_folder(folder):
     return (data_status, pats_xml_mode, operational_log_start)
 
 
-def process_hunts_in_folder(folder, operational_log_start):
-    logging.getLogger('logs_to_json').info('Processing hunts...')
+def process_flight_status_in_folder(folder, operational_log_start):
+    logging.getLogger('logs_to_json').info('Processing flight session status...')
     results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
         return []
     drone_flights = 0
     n_drone_detects = 0
-    n_insects = 0
+    n_detections = 0
     n_takeoffs = 0
     n_landings = 0
     n_hunts = 0
     n_replay_hunts = 0
-    best_interception_distance = -1
-    drone_problem = 0
     with open(results_path, "r", encoding="utf-8") as results_txt:
         result_lines = results_txt.readlines()
         for line in result_lines:
             if line.find('n_drone_detects') != -1:
                 n_drone_detects = int(line.strip().split(':')[1])
             if line.find('n_insects') != -1:
-                n_insects = int(line.strip().split(':')[1])
+                n_detections = int(line.strip().split(':')[1])
             if line.find('n_takeoffs') != -1:
                 n_takeoffs = int(line.strip().split(':')[1])
             if line.find('n_landings') != -1:
@@ -150,39 +149,121 @@ def process_hunts_in_folder(folder, operational_log_start):
                 n_hunts = int(line.strip().split(':')[1])
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
-            if line.find('best_interception_distance') != -1:
-                best_interception_distance = float(line.strip().split(':')[1])
-            if line.find('drone problem') != -1 or line.find('drone_problem') != -1:
-                drone_problem = int(line.strip().split(':')[1])
 
-    data_hunt = {"from": operational_log_start,
-                 "till": os.path.basename(folder),
-                 "drone_flights": drone_flights,
-                 "n_drone_detects": n_drone_detects,
-                 "n_insects": n_insects,
-                 "n_takeoffs": n_takeoffs,
-                 "n_landings": n_landings,
-                 "n_hunts": n_hunts,
-                 "n_replay_hunts": n_replay_hunts,
-                 "best_interception_distance": best_interception_distance,
-                 "drone_problem": drone_problem
-                 }
+    data = {"from": operational_log_start,
+            "till": os.path.basename(folder),
+            "drone_flights": drone_flights,
+            "n_drone_detects": n_drone_detects,
+            "n_insects": n_detections,
+            "n_takeoffs": n_takeoffs,
+            "n_landings": n_landings,
+            "n_hunts": n_hunts,
+            "n_replay_hunts": n_replay_hunts,
+            "mode": mode,
+            "version": version_x
+            }
 
-    return data_hunt
+    return data
 
 
-def autocorr(x, lags):
-    '''numpy.corrcoef, partial'''
-    corr = [1. if lag == 0 else np.corrcoef(x[lag:], x[:-lag])[0][1] for lag in lags]
-    return np.array(corr)
+def process_flight_results(results_fn):
+    logging.getLogger('logs_to_json').info('Processing flight results.txt...')
+
+    flight_time = 0
+    crashed = 0
+    best_interception_distance = -1
+    take_off_datetime = ''
+    land_datetime = ''
+
+    if os.path.exists(results_fn):
+        with open(results_fn, "r", encoding="utf-8") as results_txt:
+            result_lines = results_txt.readlines()
+            for line in result_lines:
+                if line.find('flight_time') != -1:
+                    flight_time = float(line.strip().split(':')[1])
+                if line.find('crashed') != -1:
+                    crashed = int(line.strip().split(':')[1])
+                if line.find('best_interception_distance') != -1:
+                    best_interception_distance = int(line.strip().split(':')[1])
+                if line.find('take_off_datetime') != -1:
+                    take_off_datetime = line.strip().split(':')[1]
+                if line.find('land_datetime') != -1:
+                    land_datetime = line.strip().split(':')[1]
+    return flight_time, crashed, best_interception_distance, take_off_datetime, land_datetime
 
 
-def process_log(detection_fn, folder, mode, monitoring_start_datetime):
+def process_flight_log(log_fn, folder, session_start_datetime):
+    logger = logging.getLogger('logs_to_json')
+
+    flight_id = int(os.path.basename(log_fn)[10:])
+    flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + 'flight_results' + flight_id + '.txt')
+
+    try:
+        log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
+    except Exception as e:  # pylint: disable=broad-except
+        logger.info(log_fn + ': ' + str(e))
+        return {}
+
+    elapsed_time = log["elapsed"].values
+    lost = log['n_frames_lost_drone'].values > 0
+    remove_ids = [i for i, x in enumerate(lost) if x]
+    if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
+        return {}
+
+    vxs = log['svelX_drone'].values
+    inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
+    if len(inf_ids):
+        remove_ids.extend(inf_ids)
+        logger.warning('Detected infs in velocity. See #540')
+
+    rs_id = log['rs_id'].values
+
+    filtered_elepased = np.delete(elapsed_time, remove_ids)
+    start = filtered_elepased[0]
+    end = filtered_elepased[-1]
+    duration = end - start
+    first_rs_id = str(rs_id[0])
+    filename = os.path.basename(log_fn)
+    video_filename = os.path.dirname(log_fn) + '/' + filename.replace('log_flight', 'flight').replace('csv', 'mkv')
+    if os.path.exists(video_filename) and duration > 0.5:
+        if os.stat(video_filename).st_size > 30000:
+            render_tag_filename = os.path.dirname(log_fn) + '/' + filename.replace('log_flight', 'flight').replace('csv', 'render_tag')
+            Path(render_tag_filename).touch()
+            video_filename = os.path.basename(video_filename)
+        else:
+            logger.warning("video file doesn't have many bytes" + str(os.stat(video_filename).st_size))
+            video_filename = 'NA; video corrupted'
+    elif not os.path.exists(video_filename):
+        logger.warning("video file source does not exist: " + video_filename)
+        video_filename = 'NA; video not available'
+    else:
+        logger.info("flight too short to render video: " + str(duration))
+        video_filename = 'NA; flight too short'
+
+    takeoff_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
+
+    detection_data = {"time": takeoff_time,
+                      "duration": duration,
+                      "flight_time": flight_time,
+                      "best_interception_distance": best_interception_distance,
+                      "crashed": crashed,
+                      "rs_id": first_rs_id,
+                      "detection_ids"
+                      "filename": filename,
+                      "folder": os.path.basename(folder),
+                      "video_filename": video_filename,
+                      "mode": mode,
+                      "version": version_x
+                      }
+    return detection_data
+
+
+def process_detection_log(log_fn, folder, mode, session_start_datetime):
     logger = logging.getLogger('logs_to_json')
     try:
-        log = pd.read_csv(detection_fn, sep=";", dtype=float, converters={'fp': str})
+        log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
     except Exception as e:  # pylint: disable=broad-except
-        logger.info(detection_fn + ': ' + str(e))
+        logger.info(log_fn + ': ' + str(e))
         return {}
 
     elapsed_time = log["elapsed"].values
@@ -252,16 +333,22 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = True
 
+    hunted = False
+    if 'hunted' in log:
+        fps = log['hunted'].values
+        if fps[-1]:
+            hunted = True
+
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
     end = filtered_elepased[-1]
     duration = end - start
     first_rs_id = str(rs_id[0])
-    filename = os.path.basename(detection_fn)
-    video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'mkv')
+    filename = os.path.basename(log_fn)
+    video_filename = os.path.dirname(log_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'mkv')
     if os.path.exists(video_filename) and duration > 1 and duration < 10:  # this filter is also used in PATS-C
         if os.stat(video_filename).st_size > 30000:
-            render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'render_tag')
+            render_tag_filename = os.path.dirname(log_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'render_tag')
             Path(render_tag_filename).touch()
             video_filename = os.path.basename(video_filename)
         else:
@@ -274,47 +361,62 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
         logger.info("detection too short to render video: " + str(duration))
         video_filename = 'NA; detection too short'
 
-    detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
+    detection_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
 
     detection_data = {"time": detection_time,
                       "duration": duration,
                       "rs_id": first_rs_id,
-                      "Dist_traveled": dist_traveled,
-                      "Dist_traject": dist_traject,
-                      "Size": size,
-                      "Wing_beat": wing_beat,
-                      "Vel_mean": v_mean,
-                      "Vel_std": v_std,
-                      "Vel_max": v.max(),
-                      "Alpha_horizontal_start": alpha_horizontal_start,
-                      "Alpha_horizontal_end": alpha_horizontal_end,
-                      "Alpha_vertical_start": alpha_vertical_start,
-                      "Alpha_vertical_end": alpha_vertical_end,
-                      "Filename": filename,
-                      "Folder": os.path.basename(folder),
-                      "Video_Filename": video_filename,
-                      "Mode": mode,
-                      "Monster": monster,
-                      "Version": version
+                      "dist_traveled": dist_traveled,
+                      "dist_traject": dist_traject,
+                      "size": size,
+                      "wing_beat": wing_beat,
+                      "vel_mean": v_mean,
+                      "vel_std": v_std,
+                      "vel_max": v.max(),
+                      "alpha_horizontal_start": alpha_horizontal_start,
+                      "alpha_horizontal_end": alpha_horizontal_end,
+                      "alpha_vertical_start": alpha_vertical_start,
+                      "alpha_vertical_end": alpha_vertical_end,
+                      "filename": filename,
+                      "folder": os.path.basename(folder),
+                      "video_filename": video_filename,
+                      "mode": mode,
+                      "monster": monster,
+                      "hunted": hunted,
+                      "version": version_c
                       }
     return detection_data
 
 
-def process_detections_in_folder(folder, operational_log_start, mode):
-
+def process_flights_in_folder(folder, operational_log_start):
     logger = logging.getLogger('logs_to_json')
-    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv")) if "itrk0" not in fp])
-    monitoring_start_datetime = str_to_datetime(operational_log_start)
+    flight_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_f*.csv"))])
+    start_datetime = str_to_datetime(operational_log_start)
 
-    valid_detections = []
+    session_data = []
 
+    for flight_fn in flight_fns:
+        logger.info("Processing flights in " + flight_fn)
+        data = process_flight_log(flight_fn, folder, start_datetime)
+        if data:
+            session_data.append(data)
+
+    return session_data
+
+
+def process_detections_in_folder(folder, operational_log_start, mode):
+    logger = logging.getLogger('logs_to_json')
+    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv"))])
+    session_start_datetime = str_to_datetime(operational_log_start)
+
+    session_data = []
     for detection_fn in detection_fns:
-        logger.info("Processing insects in " + detection_fn)
-        detection_data = process_log(detection_fn, folder, mode, monitoring_start_datetime)
-        if detection_data:
-            valid_detections.append(detection_data)
+        logger.info("Processing detections in " + detection_fn)
+        data = process_detection_log(detection_fn, folder, mode, session_start_datetime)
+        if data:
+            session_data.append(data)
 
-    return valid_detections
+    return session_data
 
 
 def logs_to_json(json_fn, data_folder, sys_str):
@@ -328,7 +430,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
 
     detections = []
     statuss = []
-    hunts = []
+    flights = []
+    flight_sessions = []
     errors = []
     cam_resets = 0
     t_start = datetime.max
@@ -358,14 +461,17 @@ def logs_to_json(json_fn, data_folder, sys_str):
             if lb.str_to_datetime(operational_log_start) < t_start:
                 t_start = lb.str_to_datetime(operational_log_start)
 
-        if mode == 'c' or mode == 'x':
-            detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
-            if detections_in_folder != []:
-                detections.extend(detections_in_folder)
+        detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
+        if detections_in_folder != []:
+            detections.extend(detections_in_folder)
         if mode == 'x':
-            hunts_in_folder = process_hunts_in_folder(folder, operational_log_start)
-            if hunts_in_folder != []:
-                hunts.append(hunts_in_folder)
+            flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start)
+            if flight_status_in_folder != []:
+                flight_sessions.append(flight_status_in_folder)
+            flights_in_folder = process_flights_in_folder(folder, operational_log_start)
+            if flights_in_folder != []:
+                flights.extend(flights_in_folder)
+
         if mode.startswith('Error:'):
             errors.append(mode + '(' + folder + ')')
         if mode.startswith('Resetting cam'):
@@ -378,14 +484,15 @@ def logs_to_json(json_fn, data_folder, sys_str):
 
     data_detections = {"from": lb.datetime_to_str(t_start),
                        "till": lb.datetime_to_str(t_end),
-                       "moth_counts": len(detections),
-                       "moths": detections,
-                       "hunts": hunts,
+                       "detection_count": len(detections),
+                       "detections": detections,
+                       "flights": flights,
+                       "flight_sessions": flight_sessions,
                        "mode": statuss,
                        "errors": errors,
                        "cam_resets": cam_resets,
                        "system": sys_str,
-                       "version": version}
+                       "version": version_c}
     with open(json_fn, 'w', encoding="utf-8") as outfile:
         json.dump(data_detections, outfile)
     logger.info("Counting complete, saved in " + json_fn)
@@ -425,7 +532,7 @@ def send_all_jsons():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Script that counts the number of valid insect detections in a directory, bound by the minimum and maximum date.')
+    parser = argparse.ArgumentParser(description='Script that counts the number of valid detections in a directory, bound by the minimum and maximum date.')
     parser.add_argument('-i', help="Path to the folder with logs", required=False, default=lb.data_dir)
     parser.add_argument('--dry-run', help="Dry run process system status just this one log", required=False)
     parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")

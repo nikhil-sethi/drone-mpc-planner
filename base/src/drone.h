@@ -121,10 +121,13 @@ private:
 
     std::ofstream *main_logger;
     std::ofstream flight_logger;
+    time_t take_off_datetime;
+    time_t land_datetime;
 
     void pre_flight(double time);
     void post_flight(double time);
     void take_off(bool hunt, double time);
+    void save_flight_results();
     void blink(double time);
 
 public:
@@ -148,7 +151,7 @@ public:
     RC *rc() { return _rc;}
     uint rc_id() { return _rc_id;}
 
-    void demo_flight(std::string flightplan_fn_) {
+    void waypoint_flight(std::string flightplan_fn_) {
         flightplan_fn = flightplan_fn_;
         trigger_waypoint_flight = true;
     }

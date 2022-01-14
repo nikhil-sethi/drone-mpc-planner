@@ -72,6 +72,7 @@ void Drone::update(double time) {
                 flight_logger << _visdat->frame_id << ";" << time << ";" << state.dt << ";" << drone_state_str() << ";";
                 nav.update(time);
                 control.control(state, nav.setpoint(), _interceptor->target_last_trackdata(), time, true);
+                _interceptor->target_is_hunted();
                 flight_logger << std::endl;
                 if (nav.drone_problem())
                     _state = ds_crashed;
@@ -227,7 +228,9 @@ void Drone::pre_flight(double time) {
 void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
+                land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
+                save_flight_results();
                 if ((_baseboard->charging() || _baseboard->disabled()))
                     post_flight_state = post_wait_after_shake_init;
                 else {
@@ -291,6 +294,7 @@ void Drone::post_flight(double time) {
 
 void Drone::take_off(bool hunt, double time) {
     _n_take_offs++;
+    take_off_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
     if (hunt)
         _n_hunt_flights++;
     else
@@ -309,6 +313,17 @@ void Drone::take_off(bool hunt, double time) {
     control.init_flight(&flight_logger, _n_take_offs);
 
     flight_logger << std::endl;
+}
+
+void Drone::save_flight_results() {
+    std::ofstream results_log;
+    results_log.open(data_output_dir  + "flight_results" + to_string(_n_take_offs) + ".txt", std::ofstream::out);
+    results_log << "take_off_datetime:" << std::put_time(std::localtime(&take_off_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "land_datetime:" <<  std::put_time(std::localtime(&land_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "flight_time:" << nav.flight_time() << '\n';
+    results_log << "crashed:" << nav.drone_problem() << '\n';
+    results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
+    results_log.close();
 }
 
 void Drone::blink(double time) {
