@@ -207,7 +207,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
 
     double mind, maxd;
     cv::Mat tmp;
-    for (uint i = 0 ; i < data.size(); i++) {
+    for (size_t i = 0 ; i < data.size(); i++) {
         cv::Mat vec = data.at(i);
         cv::Mat vect = cv::Mat(vec, cv::Rect(cv::Point(0, start), cv::Point(1, start + current_buf_size)));
         tmp.push_back(vect);
@@ -232,7 +232,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     const float scaleX = static_cast<float>(fsizex) / (bufsize);
     const float scaleY = static_cast<float>(fsizey) / (max - min);
 
-    for (uint i = 0 ; i < data.size(); i++) {
+    for (size_t i = 0 ; i < data.size(); i++) {
         int prev_y = 0;
         int prev_x = 0;
         for (int j = start; j < data.at(i).rows - 1; j++)  {
@@ -387,7 +387,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     cv::Mat frameL_small_drone;
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i < path.size(); i++) {
+        for (size_t i = 0; i < path.size(); i++) {
             if (path.at(i).predicted_image_item.valid) {
                 cv::KeyPoint k(path.at(i).predicted_image_item.pt.x / pparams.imscalef, path.at(i).predicted_image_item.pt.y / pparams.imscalef, 24 / pparams.imscalef);
                 keypoints.push_back(k);
@@ -400,7 +400,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i < path.size(); i++) {
+        for (size_t i = 0; i < path.size(); i++) {
             if (path.at(i).world_item.image_item.valid) {
                 cv::KeyPoint k(path.at(i).world_item.image_item.x / pparams.imscalef, path.at(i).world_item.image_item.y / pparams.imscalef, 12 / pparams.imscalef);
                 keypoints.push_back(k);
@@ -533,12 +533,12 @@ void Visualizer::draw_tracker_viz() {
         viz_drone_pos_after_burn_im.x += 15;
         putText(frameL_color, to_string_with_precision(_patser->drone.control.viz_time_after_burn, 2), viz_drone_pos_after_burn_im, cv::FONT_HERSHEY_SIMPLEX, 0.5, pink);
 
-        for (uint i = 0; i < _patser->drone.control.viz_trajectory.size(); i++) {
+        for (size_t i = 0; i < _patser->drone.control.viz_trajectory.size(); i++) {
             cv::Point2f p = world2im_2d(_patser->drone.control.viz_trajectory.at(i).pos, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
             cv::circle(frameL_color, p, 1, pink);
         }
 
-        for (uint i = 0; i < drn_path.size(); i++) {
+        for (size_t i = 0; i < drn_path.size(); i++) {
             cv::Point2f p = world2im_2d(drn_path.at(i).world_item.pt, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
             cv::circle(frameL_color, p, 1, blue);
         }

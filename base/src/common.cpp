@@ -147,7 +147,7 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef)
     //find max height and total width:
     int width = 0;
     int height = -1;
-    for (uint i = 0; i < ims.size(); i++)
+    for (size_t i = 0; i < ims.size(); i++)
     {
         if (ims.at(i).rows > height)
         {
@@ -160,7 +160,7 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef)
 
     cv::Point p1(0, 0);
 
-    for (uint i = 0; i < ims.size(); i++)
+    for (size_t i = 0; i < ims.size(); i++)
     {
         cv::Mat im = ims.at(i);
         cv::Point p2(p1.x + im.cols * resizef, im.rows * resizef);
@@ -187,7 +187,7 @@ cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef)
     //find max width and total height:
     int width = -1;
     int height = 0;
-    for (uint i = 0; i < ims.size(); i++)
+    for (size_t i = 0; i < ims.size(); i++)
     {
         if (ims.at(i).cols > width)
         {
@@ -200,7 +200,7 @@ cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef)
 
     cv::Point p1(0, 0);
 
-    for (uint i = 0; i < ims.size(); i++)
+    for (size_t i = 0; i < ims.size(); i++)
     {
         cv::Mat im = ims.at(i);
         cv::Point p2(im.cols * resizef, p1.y + im.rows * resizef);

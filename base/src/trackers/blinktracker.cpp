@@ -168,7 +168,7 @@ bool BlinkTracker::check_ignore_blobs(BlobProps *props) {
 //Removes all ignore points which timed out
 void BlinkTracker::clean_ignore_blobs(double time) {
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
-    for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
+    for (size_t i = 0; i < ignores_for_other_trkrs.size(); i++) {
         if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after >= 0)
             ignores_for_other_trkrs.at(i).invalid_after += 1. / pparams.fps;
         ignores_for_other_trkrs.at(i).was_used = false;

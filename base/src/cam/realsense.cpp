@@ -299,7 +299,7 @@ void Realsense::init_real() {
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
     rs2::stream_profile infrared1, infrared2;
-    for (uint i = 0; i < stream_profiles.size(); i++) {
+    for (size_t i = 0; i < stream_profiles.size(); i++) {
         try {
             if (auto video_stream = stream_profiles[i].as<rs2::video_stream_profile>()) {
                 rs2_intrinsics intrinsics = video_stream.get_intrinsics();
@@ -595,7 +595,7 @@ void Realsense::reset() {
     } else if (devices.size() > 1) {
         std::cout << "Warning detected more then one device. Resetting everything" << std::endl;
         rs2::device devt;
-        for (uint i = 0; i < devices.size(); i++) {
+        for (size_t i = 0; i < devices.size(); i++) {
             devt = devices[i];
             std::cout << i << std::endl;
             devt.hardware_reset();

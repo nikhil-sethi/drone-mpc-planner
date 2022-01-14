@@ -207,7 +207,7 @@ public:
     }
     std::vector<Plane> planes() {
         std::vector<Plane> res;
-        for (uint i = 0; i < planes_xml.size(); i++) {
+        for (size_t i = 0; i < planes_xml.size(); i++) {
             res.push_back(planes_xml.getItem(i)->plane());
         }
         return res;

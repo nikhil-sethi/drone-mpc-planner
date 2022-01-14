@@ -197,7 +197,7 @@ public:
     }
 
     void preset(cv::Point3f init_state) {
-        for (uint i = 0; i < buffer_size; i++) {
+        for (size_t i = 0; i < buffer_size; i++) {
             buffer.at(i) = init_state;
         }
     }

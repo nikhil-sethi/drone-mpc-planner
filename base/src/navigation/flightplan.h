@@ -103,7 +103,7 @@ public:
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; waypoint_flight_modes_str[i] != string(""); i++) {
+        for (uint16_t i = 0; waypoint_flight_modes_str[i] != string(""); i++) {
             if (waypoint_flight_modes_str[i] == sHelp)
                 return static_cast<waypoint_flight_modes>(i);
         }
@@ -245,7 +245,7 @@ public:
     }
     std::vector<Waypoint> waypoints() {
         std::vector<Waypoint> res;
-        for (uint i = 0; i < waypointsxml.size(); i++) {
+        for (size_t i = 0; i < waypointsxml.size(); i++) {
             res.push_back(waypointsxml.getItem(i)->waypoint());
         }
         return res;

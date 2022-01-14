@@ -168,7 +168,7 @@ void MultiModule::convert_channels(uint16_t *channels, unsigned char *packet) {
     uint8_t bitsavailable = 0;
     uint16_t ii = 0;
     // byte 4-25, channels 0..2047
-    for (int i = 0; i < MULTI_CHANS; i++) {
+    for (uint16_t i = 0; i < MULTI_CHANS; i++) {
         uint16_t value = channels[i];
         bits |= value << bitsavailable;
         bitsavailable += MULTI_CHAN_BITS;
@@ -210,7 +210,7 @@ void MultiModule::send_rc_data(void) {
         //packet[4] to [25] = Channels, 16 channels of 11 bits (-> which makes 22 bytes)
 
         uint16_t channels[16];
-        for (int i = 0; i < 16; i++) {
+        for (uint16_t i = 0; i < 16; i++) {
             channels[i] = 0;
         }
 

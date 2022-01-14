@@ -219,8 +219,8 @@ cv::Point3f FlightAreaConfig::project_inside_plane_polygon(cv::Point3f point, st
     cv::Point3f closest_point = point;
     float ref_distance = 9999.f;
 
-    for (uint i = 0; i < plane_corner_points.size() - 1; i++) {
-        for (uint j = i + 1; j < plane_corner_points.size(); j++) {
+    for (size_t i = 0; i < plane_corner_points.size() - 1; i++) {
+        for (size_t j = i + 1; j < plane_corner_points.size(); j++) {
             if (vertices_on_one_edge(plane_corner_points.at(i), plane_corner_points.at(j))) {
                 cv::Point3f cmp_point = project_between_two_points(point, plane_corner_points.at(i).pos, plane_corner_points.at(j).pos);
                 float distance = norm(cmp_point - point);
@@ -238,8 +238,8 @@ bool FlightAreaConfig::in_plane_polygon(cv::Point3f point, std::vector<CornerPoi
     // If the plane is in the segment (polygon) then the sum of all angles between the point and the pairwise vertices is 2pi or -2pi.
     // http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
     float angle_sum = 0;
-    for (uint i = 0; i < plane_corner_points.size() - 1; i++) {
-        for (uint j = i + 1; j < plane_corner_points.size(); j++) {
+    for (size_t i = 0; i < plane_corner_points.size() - 1; i++) {
+        for (size_t j = i + 1; j < plane_corner_points.size(); j++) {
             if (vertices_on_one_edge(plane_corner_points.at(i), plane_corner_points.at(j))) {
                 angle_sum += angle_between_points(plane_corner_points.at(i).pos, point, plane_corner_points.at(j).pos);
             }
