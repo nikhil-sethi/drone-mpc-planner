@@ -38,6 +38,8 @@ void Drone::update(double time) {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
                 if (_baseboard->battery_ready_for_flight() || _baseboard->disabled())
                     _state = ds_ready;
+                else if (_baseboard->charging_problem() || !_baseboard->drone_on_pad())
+                    _state = ds_charging_failure;
                 break;
         } case ds_ready: {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
@@ -89,6 +91,8 @@ void Drone::update(double time) {
                 break;
         } case ds_charging_failure: {
                 //TODO: notify user
+                if (!_baseboard->charging_problem() &&  _baseboard->drone_on_pad())
+                    _state = ds_charging;
                 break;
         } case ds_rc_loss: {
                 //TODO: notify user

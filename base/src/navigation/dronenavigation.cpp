@@ -222,6 +222,7 @@ void DroneNavigation::update(double time) {
                     setpoint_pos_world += current_waypoint->xyz;
                 }
                 setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
+                check_abort_autonomus_flight_conditions();
                 break;
         } case ns_correcting_yaw: {
                 if (!_tracker->check_yaw(time) || (static_cast<float>(time - time_start_reset_headless_yaw) > duration_correct_yaw && drone_at_wp()))
@@ -338,11 +339,14 @@ bool DroneNavigation::drone_at_wp() {
 }
 
 void DroneNavigation::check_abort_autonomus_flight_conditions() {
+    if (!_tracker->tracking())
+        _navigation_status = ns_flight_failure;
     if (_control->telemetry().batt_cell_v > 2 && _control->telemetry().batt_cell_v  < dparams.land_cell_v && !low_battery_triggered) {
         if (current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_thrust_calib && current_waypoint->mode != wfm_yaw_reset)
             _navigation_status = ns_goto_yaw_waypoint;
         low_battery_triggered = true;
     }
+
 }
 
 void DroneNavigation::next_waypoint(Waypoint wp, double time) {
