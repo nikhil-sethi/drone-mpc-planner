@@ -360,6 +360,7 @@ void process_frame(StereoPair *frame) {
     patser.update(frame->time);
     if (pparams.drone != drone_none && dparams.tx != tx_none)
         rc->send_commands(frame->time);
+    baseboard.time(frame->time);
 
     if (pparams.has_screen || render_mode) {
         visualizer.add_plot_sample();
@@ -640,6 +641,7 @@ void init_loggers() {
 
     if (rc->connected())
         rc->init_logger();
+    baseboard.init_logger();
 }
 
 void init_video_recorders() {

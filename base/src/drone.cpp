@@ -231,7 +231,7 @@ void Drone::post_flight(double time) {
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
                 save_flight_results();
-                if ((_baseboard->charging() || _baseboard->disabled()))
+                if (_baseboard->charging())
                     post_flight_state = post_wait_after_shake_init;
                 else {
                     time_reset_yaw_on_pad = time;

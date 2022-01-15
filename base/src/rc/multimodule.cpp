@@ -75,7 +75,7 @@ void MultiModule::init(int drone_id) {
     }
 }
 void MultiModule::init_logger() {
-    std::string logger_fn = data_output_dir  + "log_telem.txt";
+    std::string logger_fn = data_output_dir  + "log_telemetry.txt";
     telem_logger.open(logger_fn, std::ofstream::out);
     logger_initialized = true;
 }
@@ -500,11 +500,13 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                         telemetry.roll = received_roll;
                         telemetry.pitch = received_pitch;
                         telemetry.roll_pitch_package_id++;
+                        if (logger_initialized) {
+                            telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
+                            telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";
+                        }
                     }
-                    if (logger_initialized) {
-                        telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
-                        telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";
-                    }
+                    if (logger_initialized)
+                        telem_logger << _time << ";FSSP_DATAID_ROLL_PITCH;" << data << ";" << received_roll << ";" << received_pitch << "\n";
                     break;
             } default:
                 break;

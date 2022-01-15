@@ -58,18 +58,21 @@ private:
         const char ender = '\n';
     };
 
+    double _time = 0;
     bool _disabled = false;
     bool _replay_mode;
     bool _exit_now = false;
     std::thread thread_send;
     std::thread thread_receive;
     bool initialized = false;
+    bool logger_initialized = false;
     bool exit_thread = false;
     int read_timeouts = 0;
     std::string disable_flag = "/home/pats/pats/flags/disable_baseboard";
 
     int sock;
     sockaddr_un deamon_address;
+    std::ofstream baseboard_logger;
 
     ChargingState _charging_state = state_drone_not_on_pad;
     float _bat_voltage = -1;
@@ -82,11 +85,13 @@ private:
 public:
 
     void init(bool replay_mode);
+    void init_logger();
+    void time(double time) {_time = time;}
     void close();
 
     void inject_log() {
-        // some default values for when no flight log is available yet...
-        // we should probably a create dedicated bb log?
+        // todo: read dedicated bb log
+        // some default values for now:
         _charging_state  = state_trickle_charging;
         _bat_voltage = 4.2;
         _charging = true;

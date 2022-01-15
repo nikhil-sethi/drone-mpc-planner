@@ -28,6 +28,27 @@ void Baseboard::init(bool replay_mode) {
         initialized = true;
     }
 }
+void Baseboard::init_logger() {
+    std::string logger_fn = data_output_dir  + "log_baseboard.csv";
+    baseboard_logger.open(logger_fn, std::ofstream::out);
+    baseboard_logger << "time" <<
+                     ";" << "version" <<
+                     ";" << "led_state" <<
+                     ";" << "watchdog_state" <<
+                     ";" << "up_duration" <<
+                     ";" << "charging_state" <<
+                     ";" << "battery_volts" <<
+                     ";" << "charging_volts" <<
+                     ";" << "charging_amps" <<
+                     ";" << "setpoint_amp" <<
+                     ";" << "mah_charged" <<
+                     ";" << "charge_resistance" <<
+                     ";" << "drone_amps_burn" <<
+                     ";" << "charging_pwm" <<
+                     ";" << "charging_duration" <<
+                     ";" << "fan_speed" << std::endl;
+    logger_initialized = true;
+}
 
 void Baseboard::worker_receive() {
     char buffer[sizeof(SerialPackage)] = {0};
@@ -49,6 +70,22 @@ void Baseboard::worker_receive() {
                 _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
                 _charging_state = static_cast<ChargingState>(pkg->charging_state);
                 _bat_voltage = pkg->battery_volts;
+                baseboard_logger << _time <<
+                                 ";" << pkg->version <<
+                                 ";" << static_cast<uint16_t>(pkg->led_state) <<
+                                 ";" << static_cast<uint16_t>(pkg->watchdog_state) <<
+                                 ";" << pkg->up_duration <<
+                                 ";" << static_cast<uint16_t>(pkg->charging_state) <<
+                                 ";" << pkg->battery_volts <<
+                                 ";" << pkg->charging_volts <<
+                                 ";" << pkg->charging_amps <<
+                                 ";" << pkg->setpoint_amp <<
+                                 ";" << pkg->mah_charged <<
+                                 ";" << pkg->charge_resistance <<
+                                 ";" << pkg->drone_amps_burn <<
+                                 ";" << static_cast<uint16_t>(pkg->charging_pwm) <<
+                                 ";" << pkg->charging_duration <<
+                                 ";" << pkg->fan_speed << "\n";
             } else { // allign
                 std::cout << "Warning: realligning baseboard socket" << std::endl;
                 while (true) {
@@ -89,5 +126,9 @@ void Baseboard::close() {
     if (initialized) {
         thread_receive.join();
         thread_send.join();
+    }
+    if (logger_initialized) {
+        baseboard_logger.flush();
+        baseboard_logger.close();
     }
 }

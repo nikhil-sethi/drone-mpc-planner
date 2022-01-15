@@ -2,7 +2,7 @@
 
 void ReplayRC::init(int drone_id) {
     _drone_id_rxnum = drone_id;
-    logger_rfn = _replay_dir  + "/log_telem.txt";
+    logger_rfn = _replay_dir  + "/log_telemetry.txt";
     infile = ifstream(logger_rfn);
     getline(infile, next_line);
     initialized = true;
