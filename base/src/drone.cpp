@@ -280,7 +280,7 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_shaking_drone;
                     time_shake_start = time;
                 }
-                if (dparams.static_shakeit_throttle < 0) {
+                if (dparams.static_shakeit_thrust < 0) {
                     post_flight_state = post_wait_after_shake;
                 }
                 break;

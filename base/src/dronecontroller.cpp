@@ -395,7 +395,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 if (dt > land_ctrl.time_ff_landing()) {
                     auto_throttle = RC_BOUND_MIN;
                     _landed = true;
-                    if (dparams.static_shakeit_throttle > 0)
+                    if (dparams.static_shakeit_thrust > 0)
                         _flight_mode = fm_wait;
                     else
                         _flight_mode = fm_inactive;
@@ -411,9 +411,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
                 const double shake_period = 0.2;
                 const double shake_pause_period = 0.2;
-                const int spin_value_static = max(static_cast<int>(thrust_to_throttle(4.f)), dparams.spinup_throttle_non3d);
-                const int spin_value_shake = max(static_cast<int>(thrust_to_throttle(6.f)), dparams.spinup_throttle_non3d);
-                const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(8.f)), dparams.spinup_throttle_non3d);
+                const int spin_value_static = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 1.5)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 2.f)), dparams.spinup_throttle_non3d);
 
                 //defaults:
                 mode += bf_spin_motor;
@@ -1066,7 +1066,7 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     auto [pos_err_p, pos_err_d] = control_error(data_drone, setpoint_pos, enable_horizontal_integrators, dry_run);
 
     cv::Point3f error = {0};
-    error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
+    error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
 
     bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
 
@@ -1092,11 +1092,9 @@ integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_ve
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, bool enable_horizontal_integrators) {
     float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
-    cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
-    cv::Point3f scale_pos_i = {0.001f, 0.001f, 0.001f};
-    cv::Point3f scale_pos_d = {0.01f, 0.01f, 0.01f};
-    cv::Point3f scale_vel_p = {0.01f, 0.01f, 0.01f};
-    cv::Point3f scale_vel_d = {0.01f, 0.01f, 0.01f};
+    cv::Point3f scale_pos_p = {1.f, 1.f, 1.f};
+    cv::Point3f scale_pos_i = {1.f, 1.f, 1.f};
+    cv::Point3f scale_pos_d = {1.f, 1.f, 1.f};
 
     if (!enable_horizontal_integrators) {
         scale_pos_i.x = 0;
@@ -1134,12 +1132,12 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
         kd_pos_roll_scaled = scale_pos_d.x * dparams.kd_pos_roll;
         kd_pos_throttle_scaled = scale_pos_d.y * dparams.kd_pos_throttle;
         kd_pos_pitch_scaled = scale_pos_d.z * dparams.kd_pos_pitch;
-        kp_v_roll_scaled = scale_vel_p.x * dparams.kp_v_roll;
-        kp_v_throttle_scaled = scale_vel_p.x * dparams.kp_v_throttle;
-        kp_v_pitch_scaled = scale_vel_p.x * dparams.kp_v_pitch;
-        kd_v_roll_scaled = scale_vel_d.x * dparams.kd_v_roll;
-        kd_v_throttle_scaled = scale_vel_d.x * dparams.kd_v_throttle;
-        kd_v_pitch_scaled = scale_vel_d.x * dparams.kd_v_pitch;
+        kp_v_roll_scaled =  dparams.kp_v_roll;
+        kp_v_throttle_scaled = dparams.kp_v_throttle;
+        kp_v_pitch_scaled = dparams.kp_v_pitch;
+        kd_v_roll_scaled =  dparams.kd_v_roll;
+        kd_v_throttle_scaled = dparams.kd_v_throttle;
+        kd_v_pitch_scaled = dparams.kd_v_pitch;
     }
 
     // Arrange gains (needed because may be updated from trackbars)

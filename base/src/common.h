@@ -482,14 +482,8 @@ class DroneParameters: public Serializable {
 private:
     xString _name;
     xInt _initial_hover_throttle;
-    xFloat _throttle_bank_factor;
-    xFloat _max_burn_time;
     xInt _min_throttle;
-    xFloat _full_bat_and_throttle_im_effect;
-    xFloat _full_bat_and_throttle_take_off_acc;
     xFloat _full_bat_and_throttle_spinup_duration;
-    xFloat _hover_throttle_a;
-    xFloat _hover_throttle_b;
     xFloat _blink_period;
     xFloat _radius;
     xFloat _pad_radius;
@@ -502,30 +496,24 @@ private:
     xFloat _land_cell_v;
     xInt _max_flight_time;
     xFloat _min_hunt_cell_v;
-    xInt _static_shakeit_throttle;
+    xInt _static_shakeit_thrust;
     xFloat _target_takeoff_velocity;
     xLed_types _led_type;
 
-    xInt _kp_pos_roll, _kp_pos_pitch, _kp_pos_throttle;
-    xInt _ki_pos_roll, _ki_pos_pitch, _ki_thrust;
-    xInt _kd_pos_roll, _kd_pos_pitch, _kd_pos_throttle;
-    xInt _kp_pos_roll_hover, _kp_pos_pitch_hover, _kp_pos_throttle_hover;
-    xInt _ki_pos_roll_hover, _ki_pos_pitch_hover, _ki_thrust_hover;
-    xInt _kd_pos_roll_hover, _kd_pos_pitch_hover, _kd_pos_throttle_hover;
-    xInt _kp_v_roll, _kp_v_pitch, _kp_v_throttle;
-    xInt _kd_v_roll, _kd_v_pitch, _kd_v_throttle;
+    xFloat _kp_pos_roll, _kp_pos_pitch, _kp_pos_throttle;
+    xFloat _ki_pos_roll, _ki_pos_pitch, _ki_thrust;
+    xFloat _kd_pos_roll, _kd_pos_pitch, _kd_pos_throttle;
+    xFloat _kp_pos_roll_hover, _kp_pos_pitch_hover, _kp_pos_throttle_hover;
+    xFloat _ki_pos_roll_hover, _ki_pos_pitch_hover, _ki_thrust_hover;
+    xFloat _kd_pos_roll_hover, _kd_pos_pitch_hover, _kd_pos_throttle_hover;
+    xFloat _kp_v_roll, _kp_v_pitch, _kp_v_throttle;
+    xFloat _kd_v_roll, _kd_v_pitch, _kd_v_throttle;
 
 public:
     std::string name;
     int initial_hover_throttle;
-    float throttle_bank_factor;
-    double max_burn_time;
     int min_throttle;
-    float full_bat_and_throttle_im_effect; // how many pixels per second will the drone go up given full throttle
-    float full_bat_and_throttle_take_off_acc;
     float full_bat_and_throttle_spinup_duration;
-    float hover_throttle_a;
-    float hover_throttle_b;
     float blink_period;
     float radius;
     float pad_radius;
@@ -538,14 +526,14 @@ public:
     float land_cell_v;
     int max_flight_time;
     float min_hunt_cell_v;
-    int static_shakeit_throttle;
+    int static_shakeit_thrust;
     float target_takeoff_velocity;
     led_types led_type;
     bool Telemetry() { return tx == tx_frskyd16; }
 
-    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
-    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
-    int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
+    float kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    float kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
+    float kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
 
     DroneParameters() {
         // Set the XML class name.
@@ -553,19 +541,13 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.14");
+        setVersion("1.16");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name", &_name);
         Register("initial_hover_throttle", &_initial_hover_throttle);
-        Register("throttle_bank_factor", &_throttle_bank_factor);
-        Register("max_burn_time", &_max_burn_time);
         Register("min_throttle", &_min_throttle);
-        Register("full_bat_and_throttle_im_effect", &_full_bat_and_throttle_im_effect);
-        Register("full_bat_and_throttle_take_off_acc", &_full_bat_and_throttle_take_off_acc);
-        Register("full_bat_and_throttle_spinup_time", &_full_bat_and_throttle_spinup_duration);
-        Register("hover_throttle_a", &_hover_throttle_a);
-        Register("hover_throttle_b", &_hover_throttle_b);
+        Register("full_bat_and_throttle_spinup_duration", &_full_bat_and_throttle_spinup_duration);
         Register("blink_period", &_blink_period);
         Register("radius", &_radius);
         Register("pad_radius", &_pad_radius);
@@ -578,7 +560,7 @@ public:
         Register("land_cell_v", &_land_cell_v);
         Register("max_flight_time", &_max_flight_time);
         Register("min_hunt_cell_v", &_min_hunt_cell_v);
-        Register("static_shakeit_throttle", &_static_shakeit_throttle);
+        Register("static_shakeit_thrust", &_static_shakeit_thrust);
         Register("target_takeoff_velocity", &_target_takeoff_velocity);
         Register("led_type", &_led_type);
 
@@ -601,16 +583,8 @@ public:
         Register("kd_pos_roll_hover", &_kd_pos_roll_hover);
         Register("kd_pos_pitch_hover", &_kd_pos_pitch_hover);
         Register("kd_pos_throttle_hover", &_kd_pos_throttle_hover);
-
-        Register("kp_v_roll", &_kp_v_roll);
-        Register("kp_v_pitch", &_kp_v_pitch);
-        Register("kp_v_throttle", &_kp_v_throttle);
-        Register("kd_v_roll", &_kd_v_roll);
-        Register("kd_v_pitch", &_kd_v_pitch);
-        Register("kd_v_throttle", &_kd_v_throttle);
-
-
     }
+
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
         if (file_exist(filepath)) {
@@ -635,14 +609,8 @@ public:
 
         name = _name.value();
         initial_hover_throttle = _initial_hover_throttle.value();
-        throttle_bank_factor = _throttle_bank_factor.value();
-        max_burn_time = _max_burn_time.value();
         min_throttle = _min_throttle.value();
-        full_bat_and_throttle_im_effect = _full_bat_and_throttle_im_effect.value();
-        full_bat_and_throttle_take_off_acc = _full_bat_and_throttle_take_off_acc.value();
         full_bat_and_throttle_spinup_duration = _full_bat_and_throttle_spinup_duration.value();
-        hover_throttle_a = _hover_throttle_a.value();
-        hover_throttle_b = _hover_throttle_b.value();
         blink_period = _blink_period.value();
         max_thrust = _max_thrust.value();
         radius = _radius.value();
@@ -655,7 +623,7 @@ public:
         land_cell_v = _land_cell_v.value();
         max_flight_time = _max_flight_time.value();
         min_hunt_cell_v = _min_hunt_cell_v.value();
-        static_shakeit_throttle = _static_shakeit_throttle.value();
+        static_shakeit_thrust = _static_shakeit_thrust.value();
         target_takeoff_velocity = _target_takeoff_velocity.value();
         led_type = _led_type.value();
 
@@ -677,26 +645,13 @@ public:
         kd_pos_roll_hover = _kd_pos_roll_hover.value();
         kd_pos_pitch_hover = _kd_pos_pitch_hover.value();
         kd_pos_throttle_hover = _kd_pos_throttle_hover.value();
-
-        kp_v_roll = _kp_v_roll.value();
-        kp_v_pitch = _kp_v_pitch.value();
-        kp_v_throttle = _kp_v_throttle.value();
-        kd_v_roll = _kd_v_roll.value();
-        kd_v_pitch = _kd_v_pitch.value();
-        kd_v_throttle = _kd_v_throttle.value();
     }
 
     void serialize(std::string filepath) {
         _name = name;
         _initial_hover_throttle = initial_hover_throttle;
-        _throttle_bank_factor = throttle_bank_factor;
-        _max_burn_time = max_burn_time;
         _min_throttle = min_throttle;
-        _full_bat_and_throttle_im_effect = full_bat_and_throttle_im_effect;
-        _full_bat_and_throttle_take_off_acc = full_bat_and_throttle_take_off_acc;
         _full_bat_and_throttle_spinup_duration = full_bat_and_throttle_spinup_duration;
-        _hover_throttle_a = hover_throttle_a;
-        _hover_throttle_b = hover_throttle_b;
         _blink_period = blink_period;
         _max_thrust = max_thrust;
         _radius = radius;
@@ -709,7 +664,7 @@ public:
         _land_cell_v = land_cell_v;
         _max_flight_time = max_flight_time;
         _min_hunt_cell_v = min_hunt_cell_v;
-        _static_shakeit_throttle = static_shakeit_throttle;
+        _static_shakeit_thrust = static_shakeit_thrust;
         _target_takeoff_velocity = target_takeoff_velocity;
         _led_type = led_type;
 
