@@ -18,7 +18,7 @@ HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
-./executor --rs-reset | /usr/bin/tee terminal.log || true
+./executor --rs-reset | /usr/bin/tee terminal_cam_reset.log || true
 sleep 15s # wait some time to enumerate device again after a reset
 
 while [ 1 ]; do
