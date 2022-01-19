@@ -158,6 +158,10 @@ void Charger::run() {
                     battery_volts = smoothed_volts;
                 }
                 break;
+        } case state_wait_until_drone_ready: {
+                disable_charging();
+                update_volts(0.5f);
+                break;
         } case state_calibrating: {
                 disable_charging();
                 update_readings(0.02f);
@@ -190,9 +194,7 @@ void Charger::update_readings(float alpha) {
 }
 
 float Charger::volts_on_pads_uncalibrated() {
-    // read volts pin twice to give the internal capacitor time to settle
-    // analogRead(VOLTAGE_PIN);
-    // delay(3);
+
     return (analogRead(VOLTAGE_PIN) + 0.5f) * 5.0f / 1024.0f;
 }
 float Charger::volts_on_pads() {
@@ -280,7 +282,7 @@ void Charger::volt_control(float measured_battery_volts) {
 }
 
 /*** serial commands handling ***/
-void Charger::fill_serial_package(SerialPackage *pkg) {
+void Charger::fill_serial_output_package(SerialBaseboard2NUCPackage *pkg) {
     pkg->charging_state = _charging_state;
     pkg->battery_volts = battery_volts;
     pkg->charging_volts = smoothed_volts;
@@ -293,27 +295,27 @@ void Charger::fill_serial_package(SerialPackage *pkg) {
     pkg->charging_duration  = charging_duration;
 }
 
-void Charger::handle_commands(char *input) {
-    handle_calibration_commands(input);
-    handle_enable_commands(input);
+void Charger::handle_serial_input_package(SerialExecutor2BaseboardAllowChargingPackage *pkg) {
+    if (!pkg->allow_charging)
+        _charging_state = state_wait_until_drone_ready;
+    else if (_charging_state == state_wait_until_drone_ready)
+        _charging_state = state_measure;
 }
-void Charger::handle_enable_commands(char  *input) {
-    if (match_command(input, (char *)"enable charger")) {
+
+void Charger::handle_serial_input_package(SerialNUC2BaseboardChargingPackage *pkg) {
+    if (pkg->enable_charging && _charging_state == state_disabled) {
+        debugln("Enable charging");
         write_charger_state_eeprom(true);
         _charging_state = state_init;
-    } else if (match_command(input, (char *)"disable charger")) {
+    } else  if (!pkg->enable_charging && _charging_state != state_disabled) {
+        debugln("Disable charging");
         _charging_state = state_disabled;
         write_charger_state_eeprom(false);
     }
-}
-void Charger::handle_calibration_commands(char *input) {
-    char subbuff[5];
-    memcpy(subbuff, &input[6], 4);
-    subbuff[4] = '\0';
 
-    if (match_command(input, "calib"))
-        calibrate_voltage_measurement(atof(subbuff));
-    else if (match_command(input, "reset"))
+    if (pkg->calibrate)
+        calibrate_voltage_measurement(pkg->volts);
+    if (pkg->reset_calibration)
         reset_voltage_calibration();
 }
 

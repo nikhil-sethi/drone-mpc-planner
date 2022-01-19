@@ -15,12 +15,14 @@ class socket_communication:
     last_msg_time = datetime.now()
     conn = socket.socket()
     exit_now = False
+    receiver_callback = None
 
-    def __init__(self, name, socket_path, server) -> None:
+    def __init__(self, name, socket_path, server, receiver=None) -> None:
         self.logger = logging.getLogger('baseboard')
         self.target_name = name
         self.socket_path = socket_path
         self.server = server
+        self.receiver_callback = receiver
         self.connecter_thread = threading.Thread(target=self.__connecter)
         self.connecter_thread.start()
 
@@ -88,6 +90,8 @@ class socket_communication:
             while self.connection_ok and not self.exit_now:
                 data = self.conn.recv(1024)
                 if data:
+                    if self.receiver_callback:
+                        self.receiver_callback(data)
                     # print('Received', repr(data))
                     self.last_msg_time = datetime.now()
                 else:

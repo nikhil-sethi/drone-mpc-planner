@@ -46,28 +46,36 @@ void Drone::update(double time) {
                 if (_interceptor->target_acquired(time)) {
                     take_off(true, time);
                     _state = ds_flight;
+                    _baseboard->allow_charging(false);
                     break;
                 } else if (_interceptor->target_detected(time)) {
                     control.flight_mode(DroneController::fm_spinup);
+                    _baseboard->allow_charging(false);
                 } else if (control.manual_override_take_off_now()) {
                     flightplan_fn = pparams.flightplan;
                     take_off(false, time);
                     _state = ds_flight;
+                    _baseboard->allow_charging(false);
                     break;
                 } else if (trigger_waypoint_flight) {
                     trigger_waypoint_flight = false;
                     take_off(false, time);
                     _state = ds_flight;
+                    _baseboard->allow_charging(false);
                     break;
                 } else {
                     control.flight_mode(DroneController::fm_inactive);
+                    _baseboard->allow_charging(true);
                 }
                 if (_baseboard->contact_problem() || !_baseboard->drone_on_pad() || _baseboard->charging_problem())
                     _state = ds_pre_flight;
-                else if (_baseboard->drone_battery_voltage() < dparams.min_hunt_cell_v - 0.1f && !_baseboard->disabled())
+                else if (_baseboard->drone_battery_voltage() < dparams.min_hunt_cell_v - 0.1f && !_baseboard->disabled()) {
                     _state = ds_charging;
-                else if (!control.rc_ok(time))
+                    _baseboard->allow_charging(true);
+                } else if (!control.rc_ok(time)) {
                     _state = ds_rc_loss;
+                    _baseboard->allow_charging(true);
+                }
                 break;
         } case ds_flight: {
                 auto state = tracker.last_track_data();
@@ -117,6 +125,7 @@ void Drone::pre_flight(double time) {
                 _trackers->mode(tracking::TrackerManager::t_idle);
                 time_start_locating_drone = time;
                 pre_flight_state = pre_locate_drone_init;
+                _baseboard->allow_charging(true);
                 [[fallthrough]];
         } case pre_locate_drone_init: {
                 control.LED(true);
@@ -279,6 +288,7 @@ void Drone::post_flight(double time) {
                     else if (control.attitude_on_pad_OK() && (_baseboard->charging() || _baseboard->disabled())) {
                         post_flight_state = post_init;
                         _state = ds_charging;
+                        _baseboard->allow_charging(true);
                     } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state())
                         post_flight_state = post_start_shaking;
                     else

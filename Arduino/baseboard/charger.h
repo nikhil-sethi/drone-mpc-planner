@@ -3,7 +3,6 @@
 #include "utility.h"
 
 #define LED_ENABLE_PIN 7
-// #define DEBUG
 class Charger {
 public:
     enum ChargingState {
@@ -18,6 +17,7 @@ public:
         state_trickle_charging,
         state_discharge,
         state_measure,
+        state_wait_until_drone_ready,
         state_calibrating
     };
 
@@ -98,20 +98,18 @@ private:
     void charge(ChargingMode mode);
     void disable_charging();
 
-    void handle_enable_commands(char  *input);
     void print_voltage_calibration();
     void init_voltage_calibration();
     void calibrate_voltage_measurement(float volts);
     void reset_voltage_calibration();
-    void handle_calibration_commands(char  *input);
 
 public:
     void init();
-    void handle_commands(char  *input);
+    void handle_serial_input_package(SerialNUC2BaseboardChargingPackage *pkg);
+    void handle_serial_input_package(SerialExecutor2BaseboardAllowChargingPackage *pkg);
     void run();
-    void append_charging_log(char *buf);
     bool enabled() {return _charging_state != state_disabled;};
     bool calibrating() {return _charging_state == state_calibrating;}
     ChargingState charging_state() {return _charging_state;}
-    void fill_serial_package(SerialPackage *pkg);
+    void fill_serial_output_package(SerialBaseboard2NUCPackage *pkg);
 };

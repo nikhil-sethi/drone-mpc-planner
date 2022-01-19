@@ -33,7 +33,9 @@ unsigned long nuc_watchdog_timer = millis();
 uint8_t watchdog_reset_count = 0;
 uint16_t watchdog_boot_count = 0;
 uint16_t baseboard_boot_count = 0;
-uint16_t fan_speed = 0;
+uint16_t measured_fan_speed = 0;
+
+unsigned char serial_input_buffer[MAX_PACKAGE_READ_SIZE] = {0};
 
 void setup() {
     init_values_from_eeprom();
@@ -71,7 +73,7 @@ void setup() {
     //restart_usb()
     read_buttons();
 
-    debugln("baseboard started");
+    debugln("Baseboard started!");
 }
 
 void init_values_from_eeprom() {
@@ -91,28 +93,91 @@ void apply_loop_delay(int loop_time) {
         delay(min(wait_time, 1));
 }
 
-void handle_serial_commands() {
-    const int size = 100;
-    char input[size];
+void handle_serial_input() {
+    auto n = serial_read_to_buf(serial_input_buffer);
+    if (n > 2) {
+        if (serial_input_buffer[0] == PACKAGE_PRE_HEADER && serial_input_buffer[1] == VERSION) {
+            switch (serial_input_buffer[3])
+            {
+                case header_SerialNUC2BaseboardChargingPackage: {
+                        SerialNUC2BaseboardChargingPackage *pkg = reinterpret_cast<SerialNUC2BaseboardChargingPackage * >(&serial_input_buffer);
+                        charger.handle_serial_input_package(pkg);
+                        break;
+                } case header_SerialNUC2BaseboardLedPowerPackage: {
+                        SerialNUC2BaseboardLedPowerPackage *pkg = reinterpret_cast<SerialNUC2BaseboardLedPowerPackage * >(&serial_input_buffer);
+                        if (pkg->led_power) {
+                            debugln("Enable LED");
+                            digitalWrite(LED_ENABLE_PIN, 1);
+                        } else {
+                            debugln("Disable LED");
+                            digitalWrite(LED_ENABLE_PIN, 0);
+                        }
+                        break;
+                } case header_SerialNUC2BaseboardWatchdogPackage: {
+                        SerialNUC2BaseboardWatchdogPackage *pkg = reinterpret_cast<SerialNUC2BaseboardWatchdogPackage * >(&serial_input_buffer);
+                        nuc_watchdog_timer = millis();
+                        watchdog_trigger_imminent = false;
+                        nuc_has_been_reset = false;
+                        write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
 
-    if (serial_input(input, size)) {
-        if (!handle_watchdog_commands(input))
-            Serial.println(input);
-        handle_led_commands(input);
-        handle_reboot_commands(input);
-        handle_eeprom_commands(input);
-        charger.handle_commands(input);
+                        if (pkg->watchdog_enabled && !watchdog_enabled) {
+                            digitalWrite(WATCHDOG_STATUS_LED, 1);
+                            write_watchdog_state_eeprom(watchdog_enabled);
+                            watchdog_enabled = true;
+                            debugln("Watchdog enabled");
+                        } else if (!pkg->watchdog_enabled && watchdog_enabled) {
+                            digitalWrite(WATCHDOG_STATUS_LED, 0);
+                            write_watchdog_state_eeprom(watchdog_enabled);
+                            watchdog_enabled = false;
+                            debugln("Watchdog disabled");
+                        }
+                        break;
+                } case header_SerialNUC2BaseboardFanPackage: {
+                        SerialNUC2BaseboardFanPackage *pkg = reinterpret_cast<SerialNUC2BaseboardFanPackage * >(&serial_input_buffer);
+                        debugln("Warning fan package not yet implemented");
+                        break;
+                } case header_SerialNUC2BaseboardNUCResetPackage: {
+                        SerialNUC2BaseboardNUCResetPackage *pkg = reinterpret_cast<SerialNUC2BaseboardNUCResetPackage * >(&serial_input_buffer);
+                        debugln("Reboot NUC");
+                        reset_nuc = true;
+                        break;
+                } case header_SerialNUC2BaseboardEEPROMPackage: {
+                        SerialNUC2BaseboardEEPROMPackage *pkg = reinterpret_cast<SerialNUC2BaseboardEEPROMPackage *>(&serial_input_buffer);
+                        if (pkg->clear_config_all) {
+                            debugln("clear config all");
+                            clear_eeprom_all();
+                            init_values_from_eeprom();
+                        }
+                        if (pkg->clear_config_log) {
+                            debugln("clear config log");
+                            clear_eeprom_exept_calib();
+                            init_values_from_eeprom();
+                        }
+                        if (pkg->clear_config_hard) {
+                            debugln("clear config hard");
+                            clear_eeprom_hard();
+                            init_values_from_eeprom();
+                        }
+                        break;
+                } case header_SerialExecutor2BaseboardAllowChargingPackage: {
+                        SerialExecutor2BaseboardAllowChargingPackage *pkg = reinterpret_cast<SerialExecutor2BaseboardAllowChargingPackage * >(&serial_input_buffer);
+                        charger.handle_serial_input_package(pkg);
+                        break;
+                } default:
+                    break;
+            }
+        }
     }
 }
 
 void loop() {
     apply_loop_delay(15);
 
-    handle_serial_commands();
+    handle_serial_input();
     handle_watchdog();
     handle_nuc_reset();
-    // fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
     set_watchdog_indicator_led();
+    // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
 
     charger.run();
     if (!charger.calibrating())
@@ -128,13 +193,13 @@ void write_serial() {
     uint8_t deci_hours_since_reset = (value_update_time - last_nuc_reset) * 10 / HOUR_IN_MILLIS;
     write_watchdog_time_eeprom(value_update_time - last_nuc_reset);
 
-    SerialPackage pkg;
+    SerialBaseboard2NUCPackage pkg;
     pkg.led_state = digitalRead(LED_ENABLE_PIN);
     pkg.watchdog_state = watchdog_enabled;
     pkg.up_duration = millis();
-    pkg.fan_speed = fan_speed;
-    charger.fill_serial_package(&pkg);
-    Serial.write((char *)&pkg, sizeof(SerialPackage));
+    pkg.measured_fan_speed = measured_fan_speed;
+    charger.fill_serial_output_package(&pkg);
+    Serial.write((char *)&pkg, sizeof(SerialBaseboard2NUCPackage));
 
     if (watchdog_trigger_imminent)
         debugln("Watchdog will trigger in %d seconds!", (int)((WATCHDOG_TIMEOUT + nuc_watchdog_timer - millis()) / 1000));
@@ -166,38 +231,6 @@ void handle_nuc_reset() {
     }
 }
 
-void enable_watchdog() {
-    debugln("Watchdog enabled");
-    watchdog_enabled = true;
-    digitalWrite(WATCHDOG_STATUS_LED, 1);
-    write_watchdog_state_eeprom(watchdog_enabled);
-}
-
-void disable_watchdog() {
-    debugln("Watchdog disabled");
-    watchdog_enabled = false;
-    digitalWrite(WATCHDOG_STATUS_LED, 0);
-    write_watchdog_state_eeprom(watchdog_enabled);
-}
-
-bool handle_watchdog_commands(char *input) {
-    if ((match_command(input, "Harrow!"))) {
-        nuc_watchdog_timer = millis();
-        watchdog_trigger_imminent = false;
-        nuc_has_been_reset = false;
-        write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
-        leds[0] = CRGB(0, 0, 0);
-        FastLED.show();
-        return true; // surpress serial output
-    }
-
-    if (match_command(input, "enable watchdog"))
-        enable_watchdog();
-    else if (match_command(input, "disable watchdog"))
-        disable_watchdog();
-    return false;
-}
-
 void handle_watchdog() {
     if (!watchdog_enabled)
         return;
@@ -207,24 +240,6 @@ void handle_watchdog() {
         reset_nuc = true;
     else if (millis() - nuc_watchdog_timer > WATCHDOG_TIMEOUT - 10000L)
         watchdog_trigger_imminent = true;
-}
-
-void handle_led_commands(char *input) {
-    if (match_command(input, "enable led")) {
-        debugln("Enable LED");
-        digitalWrite(LED_ENABLE_PIN, 1);
-    }
-    else if (match_command(input, "disable led")) {
-        debugln("Disable LED");
-        digitalWrite(LED_ENABLE_PIN, 0);
-    }
-}
-
-void handle_reboot_commands(char *input) {
-    if (match_command(input, "reboot nuc")) {
-        debugln("Reboot NUC");
-        reset_nuc = true;
-    }
 }
 
 void hardware_version() {
@@ -274,20 +289,3 @@ void set_watchdog_indicator_led() {
 
 }
 
-void handle_eeprom_commands(char *input) {
-    if (match_command(input, "clear config all")) {
-        debugln("clear config all");
-        clear_eeprom_all();
-        init_values_from_eeprom();
-    }
-    if (match_command(input, "clear config log")) {
-        debugln("clear config log");
-        clear_eeprom_exept_calib();
-        init_values_from_eeprom();
-    }
-    if (match_command(input, "clear config hard")) {
-        debugln("clear config hard");
-        clear_eeprom_hard();
-        init_values_from_eeprom();
-    }
-}

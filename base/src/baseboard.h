@@ -3,8 +3,10 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <condition_variable>
 #include "versions.h"
 #include "common.h"
+using namespace std::chrono_literals;
 
 static const char *charging_state_names[] = {
     "disabled",
@@ -35,12 +37,26 @@ enum ChargingState {
     state_measure,
     state_calibrating
 };
+#define PACKAGE_PRE_HEADER 'B'
 class Baseboard {
 private:
+
+    enum baseboard_package_headers {
+        header_SerialBaseboard2NUCPackage = 'P',
+        header_SerialNUC2BaseboardChargingPackage = 'C',
+        header_SerialNUC2BaseboardLedPowerPackage = 'L',
+        header_SerialNUC2BaseboardWatchdogPackage = 'W',
+        header_SerialNUC2BaseboardFanPackage = 'F',
+        header_SerialNUC2BaseboardNUCResetPackage = 'N',
+        header_SerialNUC2BaseboardEEPROMPackage = 'E',
+        header_SerialExecutor2BaseboardAllowChargingPackage = 'S',
+    };
+
     //copy from utility.h Arduino code
-    struct __attribute__((packed)) SerialPackage {
-        const char header = 'P';
-        uint16_t version = required_firmware_version_baseboard;
+    struct __attribute__((packed)) SerialBaseboard2NUCPackage {
+        const char pre_header = PACKAGE_PRE_HEADER;
+        const uint16_t version = required_firmware_version_baseboard;
+        const char header = header_SerialBaseboard2NUCPackage;
         uint8_t led_state;
         uint8_t watchdog_state;
         uint32_t up_duration; // uint32_t = unsigned long in arduino
@@ -54,7 +70,15 @@ private:
         float drone_amps_burn;
         unsigned char charging_pwm;
         uint32_t charging_duration;
-        uint16_t fan_speed;
+        uint16_t measured_fan_speed;
+        const char ender = '\n';
+    };
+
+    struct __attribute__((packed)) SerialExecutor2BaseboardAllowChargingPackage {
+        const char pre_header = PACKAGE_PRE_HEADER;
+        const uint16_t version = required_firmware_version_baseboard;
+        const char header = header_SerialExecutor2BaseboardAllowChargingPackage;
+        uint8_t allow_charging;
         const char ender = '\n';
     };
 
@@ -73,6 +97,10 @@ private:
     int sock;
     sockaddr_un deamon_address;
     std::ofstream baseboard_logger;
+
+    std::condition_variable cv_to_baseboard;
+    std::mutex cv_m_to_baseboard;
+    SerialExecutor2BaseboardAllowChargingPackage pkg_to_baseboard;
 
     ChargingState _charging_state = state_drone_not_on_pad;
     float _bat_voltage = -1;
@@ -114,4 +142,5 @@ public:
     }
     float uptime() { return _uptime;}
     float drone_battery_voltage() { return _bat_voltage;}
+    void allow_charging(bool b);
 };
