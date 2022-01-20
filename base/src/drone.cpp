@@ -40,9 +40,20 @@ void Drone::update(double time) {
                     _state = ds_ready;
                 else if (_baseboard->charging_problem() || !_baseboard->drone_on_pad())
                     _state = ds_charging_failure;
+
+                if (_rc->telemetry.batt_cell_v > 4.7f) {
+                    _baseboard->allow_charging(false);
+                    _state = ds_charging_failure;
+                    break;
+                }
                 break;
         } case ds_ready: {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
+                if (_rc->telemetry.batt_cell_v > 4.7f) {
+                    _baseboard->allow_charging(false);
+                    _state = ds_charging_failure;
+                    break;
+                }
                 if (_interceptor->target_acquired(time)) {
                     take_off(true, time);
                     _state = ds_flight;
@@ -99,8 +110,10 @@ void Drone::update(double time) {
                 break;
         } case ds_charging_failure: {
                 //TODO: notify user
-                if (!_baseboard->charging_problem() &&  _baseboard->drone_on_pad())
+                if (!_baseboard->charging_problem() &&  _baseboard->drone_on_pad() && _rc->telemetry.batt_cell_v < 4.3f) {
+                    _baseboard->allow_charging(true);
                     _state = ds_charging;
+                }
                 break;
         } case ds_rc_loss: {
                 //TODO: notify user
