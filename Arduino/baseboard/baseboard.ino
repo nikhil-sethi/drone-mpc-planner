@@ -37,7 +37,28 @@ uint16_t measured_fan_speed = 0;
 
 unsigned char serial_input_buffer[MAX_PACKAGE_READ_SIZE] = {0};
 
+bool wait_for_timer1 = true;
+ISR(TIMER1_COMPA_vect) {
+    wait_for_timer1 = false;
+}
+
 void setup() {
+
+    cli(); // stop interrupts
+    // http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
+    TCCR1A = 0; // set entire TCCR1A register to 0
+    TCCR1B = 0; // same for TCCR1B
+    TCNT1  = 0; // initialize counter value to 0
+    // set compare match register for 66.000066000066 Hz increments
+    OCR1A = 30302; // = 16000000 / (8 * 66.000066000066) - 1 (must be <65536)
+    // turn on CTC mode
+    TCCR1B |= (1 << WGM12);
+    // Set CS12, CS11 and CS10 bits for 8 prescaler
+    TCCR1B |= (0 << CS12) | (1 << CS11) | (0 << CS10);
+    // enable timer compare interrupt
+    TIMSK1 |= (1 << OCIE1A);
+    sei(); // allow interrupts
+
     init_values_from_eeprom();
     write_baseboard_boot_count_eeprom(++baseboard_boot_count);
 
@@ -83,14 +104,6 @@ void init_values_from_eeprom() {
     watchdog_reset_count = watchdog_count_eeprom();
     watchdog_boot_count = watchdog_boot_count_eeprom();
     baseboard_boot_count = baseboard_boot_count_eeprom();
-}
-
-void apply_loop_delay(int loop_time) {
-    static unsigned long timer = millis();
-    int wait_time = min(loop_time, timer + loop_time - millis());
-    timer = millis();
-    if (wait_time > 0)
-        delay(min(wait_time, 1));
 }
 
 void handle_serial_input() {
@@ -171,7 +184,8 @@ void handle_serial_input() {
 }
 
 void loop() {
-    apply_loop_delay(15);
+    if (!wait_for_timer1) {
+        wait_for_timer1 = true;
 
     handle_serial_input();
     handle_watchdog();
