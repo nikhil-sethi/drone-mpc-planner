@@ -369,7 +369,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 break;
         } case fm_reset_yaw_on_pad: {
                 mode += bf_headless_disabled;
-                auto_throttle = max(static_cast<int>(thrust_to_throttle(4.f)), dparams.spinup_throttle_non3d);
+                auto_throttle = max(static_cast<int>(thrust_to_throttle(2.f)), dparams.spinup_throttle_non3d);
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
@@ -411,9 +411,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
                 const double shake_period = 0.2;
                 const double shake_pause_period = 0.2;
-                const int spin_value_static = RC_BOUND_MIN + dparams.static_shakeit_throttle;
-                const int spin_value_shake = spin_value_static + 75;
-                const int spin_value_shake_reversed = spin_value_static + 150;
+                const int spin_value_static = max(static_cast<int>(thrust_to_throttle(4.f)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake = max(static_cast<int>(thrust_to_throttle(6.f)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(8.f)), dparams.spinup_throttle_non3d);
 
                 //defaults:
                 mode += bf_spin_motor;
@@ -424,17 +424,17 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
                 static int shake_state = 0;
                 switch (shake_state) {
-                    case 0: // yaw
+                    case 0: // roll
+                        auto_roll = spin_value_shake;
                         auto_pitch = spin_value_shake;
-                        auto_throttle = spin_value_shake;
                         if (time - state_start_time > shake_period) {
                             state_start_time = time;
                             shake_state++;
                         }
                         break;
                     case 2:
-                        auto_pitch = spin_value_shake;
                         auto_throttle = spin_value_shake;
+                        auto_yaw = spin_value_shake;
                         if (time - state_start_time > shake_period) {
                             state_start_time = time;
                             shake_state++;
@@ -475,18 +475,17 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                             shake_state++;
                         }
                         break;
-
-                    case 12: // roll
-                        auto_roll = spin_value_shake;
+                    case 12: // yaw
                         auto_pitch = spin_value_shake;
+                        auto_throttle = spin_value_shake;
                         if (time - state_start_time > shake_period) {
                             state_start_time = time;
                             shake_state++;
                         }
                         break;
                     case 14:
+                        auto_pitch = spin_value_shake;
                         auto_throttle = spin_value_shake;
-                        auto_yaw = spin_value_shake;
                         if (time - state_start_time > shake_period) {
                             state_start_time = time;
                             shake_state++;
