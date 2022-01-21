@@ -11,6 +11,11 @@ private:
     const float safety = 2.f;
     safety_margin_types used_safety_margin = relaxed;
 
+    const float kp_pos_kiv = 4;
+    const float kd_pos_kiv = 0.1;
+    const float kp_vel_kiv = 0.5;
+    const float kd_vel_kiv = 0.01;
+
     // States:
     bool enabled = true;
     std::vector<float> pos_err_kiv;

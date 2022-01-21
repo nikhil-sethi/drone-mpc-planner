@@ -45,11 +45,12 @@ cv::Point3f KeepInViewController::kiv_acceleration(std::vector<bool> violated_pl
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
         if (violated_planes_inview.at(plane_id)) {
             int d_against_p_error = (sign(d_pos_err_kiv.at(plane_id).current_output()) != sign(pos_err_kiv.at(plane_id)));
-            correction_acceleration += _flight_area_config->plane(plane_id).normal * (4.f * pos_err_kiv.at(plane_id)
-                                       + d_against_p_error * 0.1f * d_pos_err_kiv.at(plane_id).current_output());
+            correction_acceleration += _flight_area_config->plane(plane_id).normal * (kp_pos_kiv * pos_err_kiv.at(plane_id)
+                                       + d_against_p_error * kd_pos_kiv * d_pos_err_kiv.at(plane_id).current_output());
         }
         if (violated_planes_brake_distance.at(plane_id))
-            correction_acceleration += _flight_area_config->plane(plane_id).normal * (0.5f * vel_err_kiv.at(plane_id) + 0.01f * d_vel_err_kiv.at(plane_id).current_output());
+            correction_acceleration += _flight_area_config->plane(plane_id).normal * (kp_vel_kiv * vel_err_kiv.at(plane_id)
+                                       + kd_vel_kiv * d_vel_err_kiv.at(plane_id).current_output());
     }
     return correction_acceleration;
 }
