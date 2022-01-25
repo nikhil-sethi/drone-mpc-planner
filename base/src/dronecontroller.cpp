@@ -951,12 +951,12 @@ void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f 
 }
 
 float DroneController::thrust_to_throttle(float thrust) {
-    float thrust_ratio = thrust / calibration.max_thrust;
-    float p1 = 3433.2;
-    float p2 = -4833.5;
-    float p3 = 1838.6;
-    float p4 = 1011.6;
-    float p5 = 355.45;
+    const float thrust_ratio = thrust / calibration.max_thrust;
+    const float p1 = 1985.43232918;
+    const float p2 = -2029.22780781;
+    const float p3 = 48.2837516242;
+    const float p4 = 1501.36671279;
+    const float p5 = 292.80869993;
     return p1 * powf(thrust_ratio, 4) + p2 * powf(thrust_ratio, 3) + p3 * powf(thrust_ratio, 2) + p4 * thrust_ratio + p5;
 }
 
