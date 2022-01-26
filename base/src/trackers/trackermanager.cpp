@@ -132,6 +132,7 @@ void TrackerManager::find_blobs() {
                     auto pre_select_roi_rect = pre_select_roi(ipi, diff);
                     Point min_pos_pre_roi, max_pos_pre_roi;
                     minMaxLoc(diff(pre_select_roi_rect), &min_val_double, &max_val_double, &min_pos_pre_roi, &max_pos_pre_roi);
+                    uint8_t max_val = max_val_double;
                     int motion_noise = motion_filtered_noise_mapL(pre_select_roi_rect).at<uint8_t>(max_pos_pre_roi.y, max_pos_pre_roi.x);
 
                     float chance = 1;
@@ -140,9 +141,9 @@ void TrackerManager::find_blobs() {
                         if (ipi.valid && ipi.pixel_max < 1.5f * motion_noise)
                             chance += chance_multiplier_pixel_max;
                     }
-                    if (static_cast<uint8_t>(max_val_double) > motion_noise + (motion_noise / chance)) {
+                    if (max_val > motion_noise + (motion_noise / chance)) {
                         cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
-                        floodfind_and_remove(max_pos, max_val_double, motion_noise, diff, motion_filtered_noise_mapL);
+                        floodfind_and_remove(max_pos, max_val, motion_noise, diff, motion_filtered_noise_mapL);
                     }
 
                     itrkr++;
@@ -183,8 +184,10 @@ void TrackerManager::find_blobs() {
 }
 
 void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_max_val, uint8_t motion_noise, cv::Mat diff, cv::Mat motion_filtered_noise_mapL) {
-    cv::Point2i bound_min = seed_max_pos;
-    cv::Point2i bound_max = seed_max_pos;
+    cv::Point2i bound_min_floodfill = seed_max_pos;
+    cv::Point2i bound_max_floodfill = seed_max_pos;
+    cv::Point2i bound_min_size = seed_max_pos;
+    cv::Point2i bound_max_size = seed_max_pos;
 
     std::vector<cv::Point2i> todo_pts;
 
@@ -204,20 +207,31 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
             todo_pts.pop_back();
             if (diff.at<uint8_t>(p) > motion_filtered_noise_mapL.at<uint8_t>(p)) {
                 motion_sum += diff.at<uint8_t>(p) - motion_filtered_noise_mapL.at<uint8_t>(p);
-                // Only use the pixels that are 1/3 of the max diff, based on full width half max.
+
+                if (p.x < bound_min_floodfill.x)
+                    bound_min_floodfill.x = p.x;
+                else if (p.x > bound_max_floodfill.x)
+                    bound_max_floodfill.x = p.x;
+                if (p.y < bound_min_floodfill.y)
+                    bound_min_floodfill.y = p.y;
+                else if (p.y > bound_max_floodfill.y)
+                    bound_max_floodfill.y = p.y;
+
+                // For size calc, only use the pixels that are 1/3 of the max diff, based on full width half max.
                 if (diff.at<uint8_t>(p) > max_diff / 3) {
                     npixels++;
                     COG.x += p.x;
                     COG.y += p.y;
-                    if (p.x < bound_min.x)
-                        bound_min.x = p.x;
-                    else if (p.x > bound_max.x)
-                        bound_max.x = p.x;
-                    if (p.y < bound_min.y)
-                        bound_min.y = p.y;
-                    else if (p.y > bound_max.y)
-                        bound_max.y = p.y;
+                    if (p.x < bound_min_size.x)
+                        bound_min_size.x = p.x;
+                    else if (p.x > bound_max_size.x)
+                        bound_max_size.x = p.x;
+                    if (p.y < bound_min_size.y)
+                        bound_min_size.y = p.y;
+                    else if (p.y > bound_max_size.y)
+                        bound_max_size.y = p.y;
                 }
+
                 diff.at<uint8_t>(p) = 0;
 
                 //add pixel directly above, below or besides the max point
@@ -242,7 +256,7 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
                 //     todo_pts.push_back(cv::Point2i(p.x-3,p.y+3));
             }
         }
-        cv::Rect bounding_box = clamp_rect(cv::Rect(bound_min + cv::Point(-4, -4), bound_max + cv::Point(4, 4)), diff.cols, diff.rows);
+        cv::Rect bounding_box = clamp_rect(cv::Rect(bound_min_floodfill + cv::Point(-4, -4), bound_max_floodfill + cv::Point(4, 4)), diff.cols, diff.rows);
         double max_val_double;
         cv::minMaxLoc(diff(bounding_box), &min_val, &max_val_double, &min_pos, &max_pos);
         max_val = max_val_double;
@@ -252,16 +266,16 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
         COG = seed_max_pos;
     else
         COG /= npixels;
-    float size = normf(bound_max - bound_min);
+    float size = normf(bound_max_size - bound_min_size);
     _blobs.push_back(tracking::BlobProps(COG, size, npixels, motion_sum, seed_max_val, motion_noise, _visdat->overexposed(COG), _visdat->frame_id));
 
     if (_enable_viz_blob) {
-        bound_max += Point(8, 8);
-        bound_min -= Point(8, 8);
-        cv::Rect bounding_box = clamp_rect(cv::Rect(bound_min, bound_max), diff.cols, diff.rows);
+        bound_max_floodfill += Point(8, 8);
+        bound_min_floodfill -= Point(8, 8);
+        cv::Rect bounding_box = clamp_rect(cv::Rect(bound_min_floodfill, bound_max_floodfill), diff.cols, diff.rows);
 
         Mat viz;
-        Rect bounding_box_unscaled = clamp_rect(cv::Rect(bound_min * pparams.imscalef, bound_max * pparams.imscalef), IMG_W, IMG_H);;
+        Rect bounding_box_unscaled = clamp_rect(cv::Rect(bound_min_floodfill * pparams.imscalef, bound_max_floodfill * pparams.imscalef), IMG_W, IMG_H);;
         cv::Mat frameL_roi = _visdat->frameL(bounding_box_unscaled);
         cv::Mat frameL_small_roi;
         cv::resize(frameL_roi, frameL_small_roi, cv::Size(frameL_roi.cols / pparams.imscalef, frameL_roi.rows / pparams.imscalef));
@@ -276,9 +290,8 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
         cv::Mat diff_annotated = diff(bounding_box);
         cvtColor(diff_annotated, diff_annotated, cv::COLOR_GRAY2BGR);
         cv::insertChannel(_visdat->diffL_small(bounding_box), diff_annotated, 2);
-        diff_annotated *= 10;
 
-        viz = create_row_image({diff_annotated, _visdat->diffL_small(bounding_box) * 10, frameL_small_roi, motion_filtered_noise_mapL(bounding_box) * 10, overexposed_roi}, CV_8UC3, viz_blobs_resizef);
+        viz = create_row_image({diff_annotated * 10, _visdat->diffL_small(bounding_box) * 10, frameL_small_roi, motion_filtered_noise_mapL(bounding_box) * 10, overexposed_roi}, CV_8UC3, viz_blobs_resizef);
         cv::Point2i COG_viz = cv::Point(COG.x - bounding_box.x, COG.y - bounding_box.y) * viz_blobs_resizef;
         cv::circle(viz, COG_viz, 1, Scalar(0, 255, 0), 2, cv::FILLED);
         vizs_blobs.push_back(viz);
