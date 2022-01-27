@@ -242,8 +242,15 @@ void Drone::pre_flight(double time) {
                     _visdat->reset_motion_integration();
                     _trackers->mode(tracking::TrackerManager::t_x);
                     pre_flight_state = pre_init;
-                    _state = ds_charging;
+                    if (_baseboard_link->charging())
+                        _state = ds_charging;
+                    else
+                        pre_flight_state = pre_wait_charging;
                 }
+                break;
+        } case pre_wait_charging: {
+                if (_baseboard_link->charging())
+                    _state = ds_charging;
                 break;
         } case pre_locate_time_out: {
                 // #1177

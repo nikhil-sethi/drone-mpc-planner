@@ -29,6 +29,7 @@ static const char *pre_flight_state_names[] = {
     "wait to arm",
     "arming",
     "init_led",
+    "wait_charge",
     "locate_fail"
 };
 static const char *post_flight_state_names[] = {
@@ -64,6 +65,7 @@ public:
         pre_wait_to_arm,
         pre_arming,
         pre_wait_init_led,
+        pre_wait_charging,
         pre_locate_time_out
     };
     enum post_flight_states {
