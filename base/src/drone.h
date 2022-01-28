@@ -3,7 +3,7 @@
 #include "dronecontroller.h"
 #include "navigation.h"
 #include "dronenavigation.h"
-#include "baseboard.h"
+#include "baseboardlink.h"
 #include "interceptor.h"
 #include "dronereader.h"
 
@@ -77,7 +77,7 @@ public:
     };
 private:
     Interceptor *_interceptor;
-    Baseboard *_baseboard;
+    BaseboardLink *_baseboard_link;
     VisionData *_visdat;
     tracking::TrackerManager *_trackers;
 
@@ -172,7 +172,7 @@ public:
         _state = ds_pre_flight;
     }
 
-    void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard);
+    void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
     void update(double time);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drone.h"
-#include "baseboard.h"
+#include "baseboardlink.h"
 #include "visiondata.h"
 #include "trackermanager.h"
 
@@ -25,7 +25,7 @@ private:
 
     patser_states _pats_state = pats_init;
     VisionData *_visdat;
-    Baseboard *_baseboard;
+    BaseboardLink *_baseboard_link;
     RC *_rc;
     std::ofstream *_logger;
 
@@ -41,9 +41,9 @@ public:
     Interceptor interceptor;
     FlightArea flight_area;
     RC *rc() { return _rc;}
-    Baseboard *baseboard() { return _baseboard;}
+    BaseboardLink *baseboard() { return _baseboard_link;}
 
-    void init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  Baseboard *baseboard);
+    void init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  BaseboardLink *baseboard);
     void init_insect_replay();
     void init_flight_replay(std::string replay_dir, int flight_id);
     void update(double time);

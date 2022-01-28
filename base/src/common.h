@@ -41,17 +41,14 @@ float deadzone(float v, float lo, float hi);
 cv::Point3f deadzone(cv::Point3f p, float lo, float hi);
 cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
-void set_external_wdt_flag();
-void set_no_realsense_flag();
-void set_realsense_buf_overflow_flag();
-std::string exec(const char *cmd);
-void set_fps_warning_flag();
-void set_frame_loss_warning_flag();
+void reset_external_wdt_flag();
+std::string execute(const char *cmd);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
 
 extern std::string data_output_dir;
+
 
 struct ControlData {
     ControlData(float r, float tr, float p, double t) {
@@ -191,7 +188,6 @@ static const char *op_modes_str[] = {
     "op_mode_x"
     "" // must be the last entry! (check in serializer)
 };
-
 
 namespace xmls {
 
@@ -960,3 +956,51 @@ public: void serialize(std::string filepath) {
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;
+
+
+#define EXECUTOR_PACKAGE_PRE_HEADER '@'
+enum executor_package_headers {
+    header_SocketExecutorStatePackage = 's'
+};
+
+
+struct __attribute__((packed)) SocketExecutorStatePackage {
+    const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;
+    const char header = header_SocketExecutorStatePackage;
+    uint8_t executor_state;
+    double time;
+    const char ender = '\n';
+};
+
+enum executor_states {
+    es_daemon_disabled = 0,
+    es_starting,
+    es_hardware_check,
+    es_init,
+    es_init_vision,
+    es_realsense_init,
+    es_realsense_reset,
+    es_realsense_not_found,
+    es_wait_for_darkness,
+    es_wait_for_angle,
+    es_wait_for_plukker,
+    es_pats_c,
+    es_pats_x,
+    es_closing,
+    es_periodic_restart,
+    es_watchdog_restart,
+    es_user_restart,
+    es_brightness_restart,
+    es_plukker_restart,
+    es_drone_version_mismatch,
+    es_drone_config_restart,
+    es_realsense_fps_problem,
+    es_realsense_frame_loss_problem,
+    es_rc_problem,
+    es_baseboard_problem,
+    es_daemon_problen, // to be implemented
+    es_realsense_error,
+    es_xml_config_problem, // to be implemented
+    es_runtime_error
+};
+extern void communicate_state(executor_states s);

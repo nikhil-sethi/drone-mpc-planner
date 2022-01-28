@@ -8,6 +8,7 @@ import logging.handlers
 import abc
 import subprocess
 import sys
+import struct
 import socket
 import re
 import shutil
@@ -22,8 +23,11 @@ from status_cc import send_status_update
 from render_videos import render_last_day
 from logs_to_json import process_all_logs_to_jsons, send_all_jsons
 from cut_moths import cut_all
+import lib_serialization as ls
 
-status_cc_status_str = ''
+status_cc_status_str = '-'
+daemon2baseboard_pkg = ls.SocketDaemon2BaseboardLinkPackage()
+executor2daemon_pkg = ls.SocketExecutorStatePackage()
 
 
 def status_cc_worker():
@@ -149,6 +153,7 @@ class logs_to_json_task(pats_task):
         super(logs_to_json_task, self).__init__('logs_to_json', timedelta(hours=8, minutes=30), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
+        daemon2baseboard_pkg.post_processing = 1
         process_all_logs_to_jsons()
         tries = 0
         retry = True
@@ -161,6 +166,7 @@ class logs_to_json_task(pats_task):
                 pause.until(datetime.today() + timedelta(minutes=10))
         if retry:
             self.logger.error('Sending jsons failed 5 times.')
+        daemon2baseboard_pkg.post_processing = 0
 
 
 class errors_to_vps_task(pats_task):
@@ -197,10 +203,13 @@ class render_task(pats_task):
         super(render_task, self).__init__('render', timedelta(hours=9), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
+        daemon2baseboard_pkg.rendering = 1
         render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
+        daemon2baseboard_pkg.rendering = 0
 
 
 class wdt_pats_task(pats_task):
+
     def __init__(self, error_file_handler, baseboard_comm):
         self.baseboard_comm = baseboard_comm
         super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
@@ -208,37 +217,30 @@ class wdt_pats_task(pats_task):
         self.last_realsense_reset = datetime.min
 
     def task_func(self):
-        self.baseboard_comm.send(b"Harrow from Daemon!")
         if os.path.exists(lb.disable_flag):
             return
 
-        if not os.path.exists(lb.no_realsense_flag):
+        dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
+        if dt_last_executor_msg > 60:
+            self.error_cnt += 1
+            self.logger.error('executor process watchdog alert! Executor does not seem to function. Restarting...')
+            Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
+            cmd = 'killall -9 executor'
+            lb.execute(cmd, 1, logger_name=self.name)
+        elif executor2daemon_pkg.executor_state != ls.executor_states.es_realsense_error:
             self.no_realsense_cnt = 0
-            if os.path.exists(lb.proces_wdt_flag):
-                os.remove(lb.proces_wdt_flag)
-            else:
-                self.error_cnt += 1
-                self.logger.error('executor process watchdog alert! executor does not seem to function. Restarting...')
-                Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
-                Path(lb.wdt_fired_flag).touch()
-                cmd = 'killall -9 executor'
-                lb.execute(cmd, 1, logger_name=self.name)
         else:
-            os.remove(lb.no_realsense_flag)
             self.no_realsense_cnt += 1
             self.logger.warning('Could not find realsense. #' + str(self.no_realsense_cnt))
+
         if self.no_realsense_cnt > 12:  # 5 x 12 = 1 hour
             self.logger.error('Could not find realsense for over an hour! Rebooting...')
             cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
 
-        if os.path.exists(lb.reset_realsense_flag):
-            if (self.last_realsense_reset - datetime.now) > timedelta(minutes=10):
-                self.logger.error('Realsense reset unsuccessful?')
-            else:
-                self.logger.warning('Realsense was reset')
-            self.last_realsense_reset = datetime.now
-            os.remove(lb.reset_realsense_flag)
+        if executor2daemon_pkg.executor_state == ls.executor_states.es_realsense_reset:
+            self.logger.info('Realsense was reset')
+            self.last_realsense_reset = datetime.now()
 
 
 class wdt_tunnel_task(pats_task):
@@ -261,6 +263,10 @@ class wdt_tunnel_task(pats_task):
     tunnel_ok_time = datetime.today()
 
     def task_func(self):
+        if os.path.exists(lb.disable_tunnel_flag):
+            daemon2baseboard_pkg.internet_OK = 1
+            return
+
         cmd = 'lsof -i tcp:22'
         output = ''
         try:
@@ -271,12 +277,14 @@ class wdt_tunnel_task(pats_task):
             output = output.decode(sys.stdout.encoding)
             output = output.splitlines()
         tunnel_ok = False
+        daemon2baseboard_pkg.internet_OK = 0
 
         for line in output:
             if line:
                 if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
                     self.tunnel_ok_time = datetime.today()
                     tunnel_ok = True
+                    daemon2baseboard_pkg.internet_OK = 1
 
         if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
             self.error_cnt += 1
@@ -321,6 +329,18 @@ def init_status_cc():
     status_cc_thr.start()
 
 
+def executor_receive(msg):
+    while len(msg) > 3:
+        if msg[0] == ord(ls.EXECUTOR_PACKAGE_PRE_HEADER):
+            if msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
+                executor2daemon_pkg.parse(msg[:struct.calcsize(executor2daemon_pkg.format)])
+                msg = msg[struct.calcsize(executor2daemon_pkg.format):]
+            else:
+                msg = ''
+        else:
+            msg = ''
+
+
 logging.basicConfig()
 if not os.path.exists(lb.log_dir):
     os.mkdir(lb.log_dir)
@@ -337,6 +357,7 @@ error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.
 error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
 
 baseboard_comm = socket_communication('baseboard', lb.socket_baseboard2daemon, False)
+executor_comm = socket_communication('executor', lb.socket_executor2daemon, True, executor_receive)
 
 tasks: List[pats_task] = []
 tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
@@ -352,16 +373,31 @@ tasks.append(check_system_task(error_file_handler))
 start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
 start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
 
+
 while True:
     os.system('clear')  # nosec
     print('PATS daemon ' + start_sha + '. Started: ' + start_time)
-    print('Status sender: ' + status_cc_status_str)
+    print('CC status sender: ' + status_cc_status_str)
+    if os.path.exists(lb.disable_baseboard_flag):
+        print('Baseboard: disabled')
+    elif not baseboard_comm.connection_ok:
+        print('Baseboard LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+    else:
+        baseboard_comm.send(daemon2baseboard_pkg.pack())
+        print('Baseboard communication OK')
+
+    if os.path.exists(lb.disable_daemonlink_flag):
+        print('Executor daemon link: disabled')
+    elif not executor_comm.connection_ok:
+        print('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+    else:
+        print('Executor daemon link OK: ' + str(round(executor2daemon_pkg.time)))
 
     for task in tasks:
         print(task.name + ': ' + task.status_str + ' #Errors:' + str(task.error_cnt))
 
-    Path(lb.daemon_wdt_flag).touch()
     current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
     if start_sha != current_sha:
         exit(0)
+
     time.sleep(1)

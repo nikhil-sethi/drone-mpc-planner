@@ -37,29 +37,26 @@ enum ChargingState {
     state_measure,
     state_calibrating
 };
-#define PACKAGE_PRE_HEADER 'B'
-class Baseboard {
+#define BASEBOARD_PACKAGE_PRE_HEADER '@'
+class BaseboardLink {
 private:
-
     enum baseboard_package_headers {
         header_SerialBaseboard2NUCPackage = 'P',
-        header_SerialNUC2BaseboardChargingPackage = 'C',
-        header_SerialNUC2BaseboardLedPowerPackage = 'L',
-        header_SerialNUC2BaseboardWatchdogPackage = 'W',
-        header_SerialNUC2BaseboardFanPackage = 'F',
-        header_SerialNUC2BaseboardNUCResetPackage = 'N',
-        header_SerialNUC2BaseboardEEPROMPackage = 'E',
-        header_SerialExecutor2BaseboardAllowChargingPackage = 'S',
+        header_SerialExecutor2BaseboardAllowChargingPackage = 'A',
+        header_SerialExecutor2BaseboardStatePackage = 'S',
     };
 
     //copy from utility.h Arduino code
     struct __attribute__((packed)) SerialBaseboard2NUCPackage {
-        const char pre_header = PACKAGE_PRE_HEADER;
-        const uint16_t version = required_firmware_version_baseboard;
+        const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
+        const uint16_t firmware_version = required_firmware_version_baseboard;
         const char header = header_SerialBaseboard2NUCPackage;
-        uint8_t led_state;
-        uint8_t watchdog_state;
+        uint16_t hardware_version;
+        uint16_t baseboard_boot_count;
+        uint16_t watchdog_boot_count;
         uint32_t up_duration; // uint32_t = unsigned long in arduino
+        uint8_t ir_led_state;
+        uint8_t watchdog_state;
         uint8_t charging_state;
         float battery_volts;
         float charging_volts;
@@ -73,10 +70,16 @@ private:
         uint16_t measured_fan_speed;
         const char ender = '\n';
     };
-
+    struct __attribute__((packed)) SerialExecutor2BaseboardStatePackage {
+        const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
+        const uint16_t firmware_version = required_firmware_version_baseboard;
+        const char header = header_SerialExecutor2BaseboardStatePackage;
+        uint8_t executor_state;
+        const char ender = '\n';
+    };
     struct __attribute__((packed)) SerialExecutor2BaseboardAllowChargingPackage {
-        const char pre_header = PACKAGE_PRE_HEADER;
-        const uint16_t version = required_firmware_version_baseboard;
+        const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
+        const uint16_t firmware_version = required_firmware_version_baseboard;
         const char header = header_SerialExecutor2BaseboardAllowChargingPackage;
         uint8_t allow_charging;
         const char ender = '\n';
@@ -100,7 +103,10 @@ private:
 
     std::condition_variable cv_to_baseboard;
     std::mutex cv_m_to_baseboard;
-    SerialExecutor2BaseboardAllowChargingPackage pkg_to_baseboard;
+    bool update_allow_charging_pkg_to_baseboard = false;
+    SerialExecutor2BaseboardAllowChargingPackage allow_charging_pkg_to_baseboard;
+    bool update_executor_state_pkg_to_baseboard = false;
+    SocketExecutorStatePackage executor_state_pkg_to_baseboard;
 
     ChargingState _charging_state = state_drone_not_on_pad;
     float _bat_voltage = -1;
@@ -109,6 +115,7 @@ private:
 
     void worker_receive();
     void worker_send();
+    void send_over_socket(unsigned char *data, ssize_t len);
 
 public:
 
@@ -118,7 +125,7 @@ public:
     void close();
 
     void inject_log() {
-        // todo: read dedicated bb log
+        // #1178
         // some default values for now:
         _charging_state  = state_trickle_charging;
         _bat_voltage = 4.2;
@@ -142,5 +149,14 @@ public:
     }
     float uptime() { return _uptime;}
     float drone_battery_voltage() { return _bat_voltage;}
-    void allow_charging(bool b);
+    void allow_charging(bool b) {
+        allow_charging_pkg_to_baseboard.allow_charging = b;
+        update_allow_charging_pkg_to_baseboard = true;
+        cv_to_baseboard.notify_all();
+    }
+    void executor_state(executor_states s) {
+        executor_state_pkg_to_baseboard.executor_state = s;
+        update_executor_state_pkg_to_baseboard  = true;
+        cv_to_baseboard.notify_one();
+    }
 };

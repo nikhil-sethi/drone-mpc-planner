@@ -7,13 +7,13 @@ using namespace std;
 
 namespace navigation {
 
-void DroneNavigation::init(tracking::DroneTracker *tracker, DroneController *control, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard) {
+void DroneNavigation::init(tracking::DroneTracker *tracker, DroneController *control, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard_link) {
     _control = control;
     _tracker = tracker;
     _visdat = visdat;
     _flight_area = flight_area;
     _iceptor = interceptor;
-    _baseboard = baseboard;
+    _baseboard_link = baseboard_link;
     deserialize_settings();
     initialized = true;
 }
@@ -316,7 +316,7 @@ void DroneNavigation::update(double time) {
                 break;
             }
     }
-    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard->charging_state()) << ";";
+    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";";
 
 }
 void DroneNavigation::close() {

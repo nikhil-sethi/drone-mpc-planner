@@ -19,6 +19,11 @@ SSH_PORT=${2:-22}
 echo "Creating tunnel at $IP:$SSH_PORT with port $PORT"
 while [ 1 ]; do
 
+	while [ -f /home/pats/pats/flags/disable_tunnel ]; do
+		sleep 10
+		echo "Waiting until disable_tunnel flag disappears"
+	done
+
  	dt=$(date '+%d/%m/%Y %H:%M:%S');
 	echo "${dt}: waiting 10s for starting tunnel"
  	sleep 10s # sleep first so that if the wifi is still being conencted, that happens before the tunnel is created

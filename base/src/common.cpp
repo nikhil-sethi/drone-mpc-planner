@@ -142,8 +142,7 @@ void combine_gray_image(cv::Mat iml, cv::Mat imr, cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef)
-{
+cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef) {
     //find max height and total width:
     int width = 0;
     int height = -1;
@@ -182,8 +181,7 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef)
     return res;
 }
 
-cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef)
-{
+cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef) {
     //find max width and total height:
     int width = -1;
     int height = 0;
@@ -243,15 +241,13 @@ cv::Rect clamp_rect(cv::Rect r, int w, int h) {
     return r;
 }
 
-std::string to_string_with_precision(float f, const int n)
-{
+std::string to_string_with_precision(float f, const int n) {
     std::ostringstream out;
     out << std::fixed << std::setprecision(n) << f;
     return out.str();
 }
 
-std::string to_string_with_precision(double f, const int n)
-{
+std::string to_string_with_precision(double f, const int n) {
     std::ostringstream out;
     out << std::fixed << std::setprecision(n) << f;
     return out.str();
@@ -286,40 +282,16 @@ cv::Point3f betaflight_to_pats_coord(cv::Point3f vec) {
     return cv::Point3f(-vec.y, -vec.z, -vec.x);
 }
 
-void set_external_wdt_flag() {
-    std::ofstream output("../../../../pats/flags/proces_wdt_flag"); //set a file flag that is periodically being checked by an external python script:
-}
-void set_no_realsense_flag() {
-    std::ofstream output("../../../../pats/flags/no_realsense_flag");
-}
-void set_realsense_reset_flag() {
-    std::ofstream output("../../../../pats/flags/reset_realsense_flag");
-}
-void set_realsense_buf_overflow_flag() {
-    std::ofstream output("../../../../pats/flags/buf_overflow_realsense_flag");
-}
-std::string exec(const char *cmd) {
+std::string execute(const char *cmd) {
     std::array<char, 128> buffer;
     std::string result;
 
-    auto pipe = popen(cmd, "r"); // get rid of shared_ptr
-
+    auto pipe = popen(cmd, "r");
     if (!pipe) throw std::runtime_error("popen() failed!");
 
     while (!feof(pipe)) {
         if (fgets(buffer.data(), 128, pipe) != nullptr)
             result += buffer.data();
     }
-
-    auto rc = pclose(pipe);
-
-    if (rc == EXIT_SUCCESS) { // == 0
-
-    } else if (rc == EXIT_FAILURE) {  // EXIT_FAILURE is not used by all programs, maybe needs some adaptation.
-
-    }
     return result;
 }
-
-void set_fps_warning_flag() { std::ofstream output("../../../../pats/flags/fps_warning_flag"); }
-void set_frame_loss_warning_flag() { std::ofstream output("../../../../pats/flags/frame_loss_warning_flag"); }

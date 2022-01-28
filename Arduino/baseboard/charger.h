@@ -2,10 +2,9 @@
 #include <WString.h>
 #include "utility.h"
 
-#define LED_ENABLE_PIN 7
 class Charger {
 public:
-    enum ChargingState {
+    enum charging_states {
         state_disabled,
         state_init,
         state_drone_not_on_pad,
@@ -21,7 +20,7 @@ public:
         state_calibrating
     };
 
-    enum ChargingMode {
+    enum charging_modes {
         charging_mode_not_charging,
         charging_mode_contact_problem,
         charging_mode_normal,
@@ -58,7 +57,7 @@ private:
     const float ff_current_gain = 100.f;
     const float p_volts_gain = 0.01f;
 
-    ChargingState _charging_state = state_disabled;
+    charging_states _charging_state = state_disabled;
     float setpoint_amp = 0.f;
     float setpoint_amp_prev = 0.f;
     float pv = 0.f; // control process variable
@@ -95,7 +94,7 @@ private:
 
     bool measuring_time();
     void measure_during_charge();
-    void charge(ChargingMode mode);
+    void charge(charging_modes mode);
     void disable_charging();
 
     void print_voltage_calibration();
@@ -110,6 +109,6 @@ public:
     void run();
     bool enabled() {return _charging_state != state_disabled;};
     bool calibrating() {return _charging_state == state_calibrating;}
-    ChargingState charging_state() {return _charging_state;}
+    charging_states charging_state() {return _charging_state;}
     void fill_serial_output_package(SerialBaseboard2NUCPackage *pkg);
 };

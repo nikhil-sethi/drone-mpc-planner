@@ -1,16 +1,16 @@
 #include "pats.h"
 
-void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  Baseboard *baseboard) {
+void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_dir, Cam *cam, VisionData *visdat,  BaseboardLink *baseboard_link) {
     _logger = logger;
     (*_logger) << "pats_state_str;pats_state;";
     _visdat = visdat;
-    _baseboard = baseboard;
+    _baseboard_link = baseboard_link;
     _rc = rc;
 
     trackers.init(logger, replay_dir, visdat, &interceptor);
     if (pparams.op_mode == op_mode_x) {
         flight_area.init(replay_dir, cam);
-        drone.init(logger, rc_id, rc, &trackers, visdat, &flight_area, &interceptor, baseboard);
+        drone.init(logger, rc_id, rc, &trackers, visdat, &flight_area, &interceptor, baseboard_link);
         interceptor.init(&trackers, visdat, &flight_area, &drone);
     }
 }
@@ -50,8 +50,11 @@ void Patser::update(double time) {
                     if (pparams.op_mode == op_mode_c) {
                         trackers.mode(tracking::TrackerManager::t_c);
                         _pats_state = pats_c;
-                    } else if (pparams.op_mode == op_mode_x)
+                        communicate_state(es_pats_c);
+                    } else if (pparams.op_mode == op_mode_x) {
+                        communicate_state(es_pats_x);
                         _pats_state = pats_x;
+                    }
                 }
                 if (pparams.op_mode == op_mode_x)
                     drone.dummy_log();

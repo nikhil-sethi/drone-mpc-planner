@@ -5,7 +5,7 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
-killall ssh
+killall ssh || true
 sudo nmcli device wifi connect "$1" password "$2" &
 sleep 60
 set +e

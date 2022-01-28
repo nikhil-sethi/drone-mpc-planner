@@ -7,7 +7,7 @@
 // #include "interceptor.h" // recipe for disaster
 #include "navigation.h"
 #include "flightplan.h"
-#include "baseboard.h"
+#include "baseboardlink.h"
 #include <string>
 
 
@@ -52,7 +52,7 @@ private:
     Interceptor *_iceptor;
     VisionData *_visdat;
     FlightArea *_flight_area;
-    Baseboard *_baseboard;
+    BaseboardLink *_baseboard_link;
 
     cv::Point3f setpoint_pos_world = {0};
     cv::Point3f setpoint_pos_world_landing = {0};
@@ -69,7 +69,7 @@ private:
 
 public:
     void close(void);
-    void init(tracking::DroneTracker *tracker, DroneController *control, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard);
+    void init(tracking::DroneTracker *tracker, DroneController *control, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight(bool hunt, std::ofstream *logger);
     void update(double time);
     void flightplan(std::string flightplan_fn);

@@ -1,28 +1,11 @@
 #include "utility.h"
+#include "defines.h"
 #include "charger.h"
+#include "rgbleds.h"
 #include "eeprom_settings.h"
-#include <FastLED.h>
-
-#define INDICATOR_LEDS_PIN 2
-#define NUM_INDICATOR_LEDS 2
-CRGB leds[NUM_INDICATOR_LEDS];
-
-#define NUC_ENABLE_PIN 8
-#define FAN_RPM_PIN 3
-
-#define SECOND_IN_MILLIS 1000L
-#define MINUTE_IN_MILLIS (60L * SECOND_IN_MILLIS)
-#define HOUR_IN_MILLIS (60L * MINUTE_IN_MILLIS)
-#define DAY_IN_MILLIS (24L * HOUR_IN_MILLIS)
-#define NUC_OFF_TIME (30L * SECOND_IN_MILLIS)
-#define WATCHDOG_TIMEOUT HOUR_IN_MILLIS
-#define WATCHDOG_STATUS_LED 13
-#define HARDWARE_VERSION_PIN A1
-#define BUTTON_1_PIN 4
-#define BUTTON_2_PIN 6
-#define USB_ENABLE_PIN 5
 
 Charger charger;
+RGBLeds rgb_leds;
 
 bool reset_nuc = false;
 bool watchdog_enabled = false;
@@ -34,6 +17,7 @@ uint8_t watchdog_reset_count = 0;
 uint16_t watchdog_boot_count = 0;
 uint16_t baseboard_boot_count = 0;
 uint16_t measured_fan_speed = 0;
+uint16_t hardware_version = 0;
 
 unsigned char serial_input_buffer[MAX_PACKAGE_READ_SIZE] = {0};
 
@@ -43,7 +27,44 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 void setup() {
+    init_values_from_eeprom();
+    write_baseboard_boot_count_eeprom(++baseboard_boot_count);
 
+    // set pin high before and after setting pinmode to prevent NUC from resetting
+    digitalWrite(NUC_ENABLE_PIN, 1);
+    pinMode(NUC_ENABLE_PIN, OUTPUT);
+    digitalWrite(NUC_ENABLE_PIN, 1);
+
+    digitalWrite(USB_ENABLE_PIN, 1);
+    pinMode(USB_ENABLE_PIN, OUTPUT);
+    digitalWrite(USB_ENABLE_PIN, 1);
+
+    pinMode(WATCHDOG_STATUS_LED_PIN, OUTPUT);
+    digitalWrite(WATCHDOG_STATUS_LED_PIN, watchdog_enabled);
+
+    pinMode(IR_LED_ENABLE_PIN, OUTPUT);
+    digitalWrite(IR_LED_ENABLE_PIN, 1);
+
+    pinMode(FAN_RPM_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_1_PIN, INPUT);
+    pinMode(BUTTON_2_PIN, INPUT);
+    pinMode(HARDWARE_VERSION_PIN, INPUT);
+
+    Serial.begin(115200);
+    Serial.setTimeout(5);
+
+    rgb_leds.init();
+    init_main_loop_timer();
+    charger.init();
+    init_hardware_version();
+    // restart_usb()
+    // read_buttons();
+
+    debugln("Baseboard started!");
+}
+
+
+void init_main_loop_timer() {
     cli(); // stop interrupts
     // http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
     TCCR1A = 0; // set entire TCCR1A register to 0
@@ -58,43 +79,6 @@ void setup() {
     // enable timer compare interrupt
     TIMSK1 |= (1 << OCIE1A);
     sei(); // allow interrupts
-
-    init_values_from_eeprom();
-    write_baseboard_boot_count_eeprom(++baseboard_boot_count);
-
-    // set pin high before and after setting pinmode to prevent NUC from resetting
-    digitalWrite(NUC_ENABLE_PIN, 1);
-    pinMode(NUC_ENABLE_PIN, OUTPUT);
-    digitalWrite(NUC_ENABLE_PIN, 1);
-
-    digitalWrite(USB_ENABLE_PIN, 1);
-    pinMode(USB_ENABLE_PIN, OUTPUT);
-    digitalWrite(USB_ENABLE_PIN, 1);
-
-    Serial.begin(115200);
-    Serial.setTimeout(5);
-
-    pinMode(WATCHDOG_STATUS_LED, OUTPUT);
-    digitalWrite(WATCHDOG_STATUS_LED, watchdog_enabled);
-
-    pinMode(LED_ENABLE_PIN, OUTPUT);
-    digitalWrite(LED_ENABLE_PIN, 1);
-
-    pinMode(FAN_RPM_PIN, INPUT_PULLUP);
-    pinMode(BUTTON_1_PIN, INPUT);
-    pinMode(BUTTON_2_PIN, INPUT);
-    pinMode(HARDWARE_VERSION_PIN, INPUT);
-
-    charger.init();
-
-    FastLED.addLeds<WS2812, INDICATOR_LEDS_PIN, GRB>(leds, NUM_INDICATOR_LEDS);
-
-    set_indicator_leds({0, 0, 100 }, {0, 100, 0});
-    hardware_version();
-    //restart_usb()
-    read_buttons();
-
-    debugln("Baseboard started!");
 }
 
 void init_values_from_eeprom() {
@@ -108,8 +92,8 @@ void init_values_from_eeprom() {
 
 void handle_serial_input() {
     auto n = serial_read_to_buf(serial_input_buffer);
-    if (n > 2) {
-        if (serial_input_buffer[0] == PACKAGE_PRE_HEADER && serial_input_buffer[1] == VERSION) {
+    if (n > 3) {
+        if (serial_input_buffer[0] == BASEBOARD_PACKAGE_PRE_HEADER && serial_input_buffer[1] == FIRMWARE_VERSION) {
             switch (serial_input_buffer[3])
             {
                 case header_SerialNUC2BaseboardChargingPackage: {
@@ -119,11 +103,11 @@ void handle_serial_input() {
                 } case header_SerialNUC2BaseboardLedPowerPackage: {
                         SerialNUC2BaseboardLedPowerPackage *pkg = reinterpret_cast<SerialNUC2BaseboardLedPowerPackage * >(&serial_input_buffer);
                         if (pkg->led_power) {
-                            debugln("Enable LED");
-                            digitalWrite(LED_ENABLE_PIN, 1);
+                            debugln("Enable IR LED");
+                            digitalWrite(IR_LED_ENABLE_PIN, 1);
                         } else {
-                            debugln("Disable LED");
-                            digitalWrite(LED_ENABLE_PIN, 0);
+                            debugln("Disable IR LED");
+                            digitalWrite(IR_LED_ENABLE_PIN, 0);
                         }
                         break;
                 } case header_SerialNUC2BaseboardWatchdogPackage: {
@@ -134,12 +118,12 @@ void handle_serial_input() {
                         write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
 
                         if (pkg->watchdog_enabled && !watchdog_enabled) {
-                            digitalWrite(WATCHDOG_STATUS_LED, 1);
+                            digitalWrite(WATCHDOG_STATUS_LED_PIN, 1);
                             write_watchdog_state_eeprom(watchdog_enabled);
                             watchdog_enabled = true;
                             debugln("Watchdog enabled");
                         } else if (!pkg->watchdog_enabled && watchdog_enabled) {
-                            digitalWrite(WATCHDOG_STATUS_LED, 0);
+                            digitalWrite(WATCHDOG_STATUS_LED_PIN, 0);
                             write_watchdog_state_eeprom(watchdog_enabled);
                             watchdog_enabled = false;
                             debugln("Watchdog disabled");
@@ -148,6 +132,17 @@ void handle_serial_input() {
                 } case header_SerialNUC2BaseboardFanPackage: {
                         SerialNUC2BaseboardFanPackage *pkg = reinterpret_cast<SerialNUC2BaseboardFanPackage * >(&serial_input_buffer);
                         debugln("Warning fan package not yet implemented");
+                        break;
+                } case header_SerialNUC2BaseboardRGBLEDPackage: {
+                        SerialNUC2BaseboardRGBLEDPackage *pkg = reinterpret_cast<SerialNUC2BaseboardRGBLEDPackage * >(&serial_input_buffer);
+                        // Serial.print("Received SerialNUC2BaseboardRGBLEDPackage with led1_state: ");
+                        // Serial.print(pkg->led1_state);
+                        // Serial.print(" and internet: ");
+                        // Serial.print(pkg->internet_OK);
+                        rgb_leds.led1_state(static_cast<RGBLeds::rgb_led_1_states>(pkg->led1_state));
+                        rgb_leds.internet_OK(pkg->internet_OK);
+                        rgb_leds.post_processing(pkg->postprocessing);
+                        rgb_leds.daemon_OK(pkg->daemon_OK);
                         break;
                 } case header_SerialNUC2BaseboardNUCResetPackage: {
                         SerialNUC2BaseboardNUCResetPackage *pkg = reinterpret_cast<SerialNUC2BaseboardNUCResetPackage * >(&serial_input_buffer);
@@ -187,15 +182,18 @@ void loop() {
     if (!wait_for_timer1) {
         wait_for_timer1 = true;
 
-    handle_serial_input();
-    handle_watchdog();
-    handle_nuc_reset();
-    set_watchdog_indicator_led();
-    // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
+        handle_serial_input();
+        handle_watchdog();
+        handle_nuc_reset();
+        // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
+        if (millis() - nuc_watchdog_timer > 20000L)
+            rgb_leds.nuc_inresponsive();
+        rgb_leds.run();
 
-    charger.run();
-    if (!charger.calibrating())
-        write_serial();
+        charger.run();
+        if (!charger.calibrating())
+            write_serial();
+    }
 }
 
 void write_serial() {
@@ -208,7 +206,9 @@ void write_serial() {
     write_watchdog_time_eeprom(value_update_time - last_nuc_reset);
 
     SerialBaseboard2NUCPackage pkg;
-    pkg.led_state = digitalRead(LED_ENABLE_PIN);
+    pkg.hardware_version = hardware_version;
+    pkg.baseboard_boot_count = baseboard_boot_count;
+    pkg.ir_led_state = digitalRead(IR_LED_ENABLE_PIN);
     pkg.watchdog_state = watchdog_enabled;
     pkg.up_duration = millis();
     pkg.measured_fan_speed = measured_fan_speed;
@@ -256,7 +256,7 @@ void handle_watchdog() {
         watchdog_trigger_imminent = true;
 }
 
-void hardware_version() {
+void init_hardware_version() {
     uint16_t analog_value = analogRead(A1);
     delay(10);
     analog_value = analogRead(A1);
@@ -265,12 +265,7 @@ void hardware_version() {
     analog_value &= 0b11111;
     Serial.print("Hardware version ");
     Serial.println(analog_value);
-}
-
-void set_indicator_leds(CRGB led0, CRGB led1) {
-    leds[0] = led0;
-    leds[1] = led1;
-    FastLED.show();
+    hardware_version = analog_value;
 }
 
 void read_buttons() {
@@ -287,19 +282,3 @@ void restart_usb() {
     delay(1000);
     digitalWrite(USB_ENABLE_PIN, 1);
 }
-
-void set_watchdog_indicator_led() {
-    static int blink = 0;
-    if (watchdog_enabled) {
-        if ((!watchdog_trigger_imminent && millis() - nuc_watchdog_timer > 50L) || blink++ % 100 > 50)
-            leds[0] = CRGB(0, 0, 100);
-        else
-            leds[0] = CRGB(0, 0, 0);
-    }
-    else
-        leds[0] = CRGB(0, 0, 0);
-
-    FastLED.show();
-
-}
-

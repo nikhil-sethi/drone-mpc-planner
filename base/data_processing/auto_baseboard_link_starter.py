@@ -3,5 +3,5 @@ import os
 import time
 
 while True:
-    os.system('python3 baseboard.py')  # nosec
+    os.system('python3 baseboardlink.py')  # nosec
     time.sleep(1)

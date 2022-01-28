@@ -39,7 +39,7 @@ void GStream::manual_unblock() {
 }
 
 GStream::vp9_modes GStream::vp9_mode() {
-    auto res = exec("lscpu | grep -i 'model name' | uniq");
+    auto res = execute("lscpu | grep -i 'model name' | uniq");
     if (res.find("i3-7100U") != string::npos)
         return vp9_modes::nuc7_8;
     else if (res.find("i3-8109U") != string::npos)

@@ -62,7 +62,7 @@ Version 1.3 (and up?) only
 12. Pull down resistor 
 
 ### Programming Bootloader
-1. Run Adruino IDE (with sudo)
+1. Run Adruino IDE
 2. Select Tools->Board->Arduino_Nano
 3. Select Tools->Processor->Atmega328P
 4. Place Olimex AVR-ISP-MK2 pins on the board

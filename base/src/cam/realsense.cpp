@@ -141,14 +141,12 @@ void Realsense::rs_callback(rs2::frame f) {
                 buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(), sp));
                 buf_overflow_count = 0;
             } else if (last_sync_id > pparams.fps * 2) {
-                // buf_overflow_count++;
-                // std::cout << "BUF OVERFLOW, SKIPPING A FRAME: " << buf_overflow_count << std::endl;
-                // if (buf_overflow_count > 5 * static_cast<int>(pparams.fps)) {
-                //     set_realsense_buf_overflow_flag();
-                //     std::cout << "Realsense issue!" << std::endl;
-                //     exit(1);
-                //     throw std::runtime_error("Realsense issue!");
-                // }
+                buf_overflow_count++;
+                std::cout << "BUF OVERFLOW, SKIPPING A FRAME: " << buf_overflow_count << std::endl;
+                if (buf_overflow_count > 5 * static_cast<int>(pparams.fps)) {
+                    std::cout << "Realsense issue!" << std::endl;
+                    throw std::runtime_error("Realsense issue!");
+                }
             }
 
             {   // signal to processor that a new frame is ready to be processed

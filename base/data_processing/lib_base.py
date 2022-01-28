@@ -20,20 +20,17 @@ daily_errs_log = log_dir + 'all_errors.log'
 term_log_path = log_dir + 'term.log'
 disable_flag = flags_dir + 'disable'
 cc_update_request = flags_dir + 'cc_update_request'
-daemon_wdt_flag = flags_dir + 'daemon_wdt_flag'
-proces_wdt_flag = flags_dir + 'proces_wdt_flag'
-no_realsense_flag = flags_dir + 'no_realsense_flag'
-reset_realsense_flag = flags_dir + 'reset_realsense_flag'
+disable_tunnel_flag = flags_dir + 'disable_tunnel'
+disable_daemonlink_flag = flags_dir + 'disable_daemonlink'
 disable_baseboard_flag = flags_dir + 'disable_baseboard'
 disable_charging_flag = flags_dir + 'disable_charging'
 disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
 
-wdt_fired_flag = executor_log_dir + 'wdt_fired'
-
 socket_baseboard2executor = socket_dir + 'baseboard2executor.socket'
 socket_baseboard2daemon = socket_dir + 'baseboard2daemon.socket'
+socket_executor2daemon = socket_dir + 'executor2daemon.socket'
 
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')

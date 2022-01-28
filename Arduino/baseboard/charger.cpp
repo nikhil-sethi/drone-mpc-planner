@@ -1,19 +1,18 @@
 #include "charger.h"
+#include "defines.h"
 #include "utility.h"
 #include "eeprom_settings.h"
 #include <EEPROM.h>
 #include "Arduino.h"
 
-#define PWM_PIN 9
-#define VOLTAGE_PIN A2
-#define CURRENT_PIN A0
+
 
 void Charger::init() {
     analogReference(EXTERNAL);
 
-    pinMode(PWM_PIN, OUTPUT);
-    pinMode(VOLTAGE_PIN, INPUT);
-    pinMode(CURRENT_PIN, INPUT);
+    pinMode(CHARGING_PWM_PIN, OUTPUT);
+    pinMode(CHARGING_VOLTAGE_PIN, INPUT);
+    pinMode(CHARGING_CURRENT_PIN, INPUT);
 
     if (charger_state_eeprom())
         _charging_state = state_init;
@@ -195,7 +194,7 @@ void Charger::update_readings(float alpha) {
 
 float Charger::volts_on_pads_uncalibrated() {
 
-    return (analogRead(VOLTAGE_PIN) + 0.5f) * 5.0f / 1024.0f;
+    return (analogRead(CHARGING_VOLTAGE_PIN) + 0.5f) * 5.0f / 1024.0f;
 }
 float Charger::volts_on_pads() {
     return volts_on_pads_uncalibrated() + voltage_calibration_value;
@@ -207,7 +206,7 @@ void Charger::update_volts(float alpha) {
 }
 
 void Charger::update_amps() {
-    float volts = analogRead(CURRENT_PIN) / 1024.0f * 5.0f;
+    float volts = analogRead(CHARGING_CURRENT_PIN) / 1024.0f * 5.0f;
     measured_amps = volts / current_measurement_resistance;
     measured_smoothed_amps = moving_average(0.05, measured_amps, measured_smoothed_amps);
     measured_display_amps = moving_average(0.005, measured_amps, measured_display_amps);
@@ -216,15 +215,15 @@ void Charger::update_amps() {
 
 void Charger::disable_charging() {
     pwm = 0;
-    analogWrite(PWM_PIN, 0);
+    analogWrite(CHARGING_PWM_PIN, 0);
 }
-void Charger::charge(ChargingMode mode) {
+void Charger::charge(charging_modes mode) {
     update_readings(0.1f);
     volts_before_measuring = smoothed_volts;
     estimate_resistance();
     if (mode == charging_mode_contact_problem) {
         pwm = min_charge_pwm;
-        analogWrite(PWM_PIN, pwm);
+        analogWrite(CHARGING_PWM_PIN, pwm);
     } else if (mode != charging_mode_trickle)
         current_control();
 }
@@ -266,9 +265,9 @@ void Charger::current_control() {
 
         pv = constrain(pv + constrain(ff_term + fb_term, -60, 60), 0, 255); // constrained because some serious non-lineairy of the charger
         pwm = roundf(pv);
-        analogWrite(PWM_PIN, pwm);
+        analogWrite(CHARGING_PWM_PIN, pwm);
     } else
-        analogWrite(PWM_PIN, 0);
+        analogWrite(CHARGING_PWM_PIN, 0);
     setpoint_amp_prev = setpoint_amp;
 }
 void Charger::volt_control(float measured_battery_volts) {
@@ -277,7 +276,7 @@ void Charger::volt_control(float measured_battery_volts) {
     float error = (max_battery_volts - measured_battery_volts);
     pv = constrain(pv + error * p_volts_gain * dt, 0, 255);
     pwm = roundf(pv);
-    analogWrite(PWM_PIN, pwm);
+    analogWrite(CHARGING_PWM_PIN, pwm);
     setpoint_amp = drone_amps_burn;
 }
 
@@ -296,7 +295,9 @@ void Charger::fill_serial_output_package(SerialBaseboard2NUCPackage *pkg) {
 }
 
 void Charger::handle_serial_input_package(SerialExecutor2BaseboardAllowChargingPackage *pkg) {
-    if (!pkg->allow_charging)
+    if (_charging_state == state_disabled)
+        return;
+    else if (!pkg->allow_charging)
         _charging_state = state_wait_until_drone_ready;
     else if (_charging_state == state_wait_until_drone_ready)
         _charging_state = state_measure;
@@ -313,10 +314,12 @@ void Charger::handle_serial_input_package(SerialNUC2BaseboardChargingPackage *pk
         write_charger_state_eeprom(false);
     }
 
-    if (pkg->calibrate)
-        calibrate_voltage_measurement(pkg->volts);
-    if (pkg->reset_calibration)
-        reset_voltage_calibration();
+    if (_charging_state != state_disabled) {
+        if (pkg->calibrate)
+            calibrate_voltage_measurement(pkg->volts);
+        if (pkg->reset_calibration)
+            reset_voltage_calibration();
+    }
 }
 
 void Charger::reset_voltage_calibration() {
@@ -353,7 +356,7 @@ void Charger::print_voltage_calibration() {
     if (millis() - calibration_print_time > 250) {
         calibration_print_time = millis();
         Serial.print("analog val ");
-        Serial.print(analogRead(VOLTAGE_PIN));
+        Serial.print(analogRead(CHARGING_VOLTAGE_PIN));
         Serial.print(" volt_raw ");
         Serial.print(volts_on_pads_uncalibrated());
         Serial.print(" voltage_calibration_value ");

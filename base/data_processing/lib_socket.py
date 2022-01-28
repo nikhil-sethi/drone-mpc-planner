@@ -3,6 +3,7 @@ import time
 import threading
 import os
 import logging
+import struct
 from datetime import datetime
 
 
@@ -11,6 +12,7 @@ class socket_communication:
     send_trigger = threading.Condition()
     send_data = None
     connection_ok = False
+    connection_lost_datetime = datetime.now()
     target_name = ''
     last_msg_time = datetime.now()
     conn = socket.socket()
@@ -18,7 +20,7 @@ class socket_communication:
     receiver_callback = None
 
     def __init__(self, name, socket_path, server, receiver=None) -> None:
-        self.logger = logging.getLogger('baseboard')
+        self.logger = logging.getLogger(name)
         self.target_name = name
         self.socket_path = socket_path
         self.server = server
@@ -67,7 +69,8 @@ class socket_communication:
         if self.connection_ok:
             self.conn.shutdown(socket.SHUT_WR)
             self.conn.close()
-        self.connection_ok = False
+            self.connection_lost_datetime = datetime.now()
+            self.connection_ok = False
         with self.send_trigger:
             self.send_trigger.notify()
         self.connecter_thread.join()
@@ -81,7 +84,9 @@ class socket_communication:
                         self.conn.send(self.send_data)
         except Exception as e:  # pylint: disable=broad-except
             self.logger.error('Sending to ' + self.target_name + '  failed: ' + str(e))
-            self.connection_ok = False
+            if self.connection_ok:
+                self.connection_lost_datetime = datetime.now()
+                self.connection_ok = False
         self.logger.info('Sender ' + self.target_name + ' out')
         self.conn.close()
 
@@ -91,15 +96,23 @@ class socket_communication:
                 data = self.conn.recv(1024)
                 if data:
                     if self.receiver_callback:
-                        self.receiver_callback(data)
+                        try:
+                            self.receiver_callback(data)
+                        except struct.error as e:
+                            self.logger.error("Serialization config problem. Has the package changed in the executor? " + str(e))
+                            raise e  # handle log here, but pass the error for local handling
                     # print('Received', repr(data))
                     self.last_msg_time = datetime.now()
                 else:
                     self.logger.info('Connection closed?? Bye bye ' + self.target_name)
-                    self.connection_ok = False
+                    if self.connection_ok:
+                        self.connection_lost_datetime = datetime.now()
+                        self.connection_ok = False
         except Exception as e:  # pylint: disable=broad-except
             self.logger.error('Receiving from ' + self.target_name + ' failed: ' + str(e))
-            self.connection_ok = False
+            if self.connection_ok:
+                self.connection_lost_datetime = datetime.now()
+                self.connection_ok = False
         self.logger.info('Stopping ' + self.target_name + ' receiver')
         with self.send_trigger:
             self.send_trigger.notify()

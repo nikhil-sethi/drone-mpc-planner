@@ -42,7 +42,8 @@
 #include "airsimcam.h"
 #include "airsimcontroller.h"
 #include "interceptor.h"
-#include "baseboard.h"
+#include "baseboardlink.h"
+#include "daemonlink.h"
 
 
 using namespace cv;
@@ -87,7 +88,8 @@ Visualizer visualizer;
 Visualizer3D visualizer_3d;
 logging::LogReader logreader;
 CommandCenterLink cmdcenter;
-Baseboard baseboard;
+BaseboardLink baseboard_link;
+DaemonLink daemon_link;
 Patser patser;
 std::unique_ptr<Cam> cam;
 VisionData visdat;
@@ -117,6 +119,7 @@ void save_results_log();
 void print_warnings();
 void close(bool sig_kill);
 void watchdog_worker(void);
+void communicate_state(executor_states s);
 
 /************ code ***********/
 void process_video() {
@@ -159,21 +162,28 @@ void process_video() {
 
         if (term_sig_fired == 2) {
             std::cout << "\nCaught ctrl-c: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
             exit_now = true;
         } else if (term_sig_fired == 15) {
             std::cout << "\nCaught TERM signal: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
             exit_now = true;
         } else if (term_sig_fired) {
             std::cout << "\nCaught unknown signal: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
             exit_now = true;
-        } else if (escape_key_pressed)
+        } else if (escape_key_pressed) {
+            communicate_state(es_user_restart);
             exit_now = true;
+        }
 
         if (rc->init_package_failure()) {
             exit_now = true;
+            communicate_state(es_rc_problem);
             cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
         } else if (rc->bf_version_error() and !patser.drone.drone_flying()) {
             exit_now = true;
+            communicate_state(es_drone_version_mismatch);
             cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
         } else if (rc->bf_uid_error()) {
             if (rc->bf_uid_str() == "hacr") {
@@ -207,11 +217,18 @@ void process_video() {
             }
             if (!patser.drone.drone_flying()) {
                 exit_now = true;
+                communicate_state(es_drone_config_restart);
                 cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
             }
-        } else if (baseboard.exit_now()) {
+        } else if (baseboard_link.exit_now()) {
             exit_now = true;
-            cmdcenter.reset_commandcenter_status_file("Baseboard problem", true);
+            communicate_state(es_baseboard_problem);
+            cmdcenter.reset_commandcenter_status_file("BaseboardLink problem", true);
+            std::cout << " BaseboardLink problem" << std::endl;
+        } else if (daemon_link.exit_now()) {
+            exit_now = true;
+            std::cout << " Daemon link problem" << std::endl;
+            cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
         }
 
         if (pparams.video_raw) {
@@ -243,13 +260,13 @@ void process_video() {
             std::cout << "FPS WARNING: " << n_fps_warnings << std::endl;
             if (t_cam < 2) {
                 std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
-                set_fps_warning_flag();
+                communicate_state(es_realsense_fps_problem);
                 exit_now = true;
             }
         }
         if (cam->frame_loss_cnt() > 500) {
             std::cout << "Error: Too many frames lost, assuming there's some camera problem. Cowardly exiting." << std::endl;
-            set_frame_loss_warning_flag();
+            communicate_state(es_realsense_frame_loss_problem);
             exit_now = true;
         }
 
@@ -277,7 +294,7 @@ void process_video() {
                        ", thr: " << rc->throttle <<
                        ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
                        ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
-                       ", t_base: " << static_cast<int>(baseboard.uptime());
+                       ", t_base: " << static_cast<int>(baseboard_link.uptime());
         }
         if (patser.trackers.monster_alert())
             std:: cout << ", monsters: " << patser.trackers.fp_monsters_count();
@@ -299,17 +316,22 @@ void process_video() {
 
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
+                communicate_state(es_periodic_restart);
                 exit_now = true;
             } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
                 std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than threshold (" << pparams.exposure_threshold << ")" << std::endl;
+                communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
                 std::cout << "Initiating restart because gain (" << cam->measured_gain() << ") is lower than threshold (" << pparams.gain_threshold << ")" << std::endl;
+                communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if (visdat.average_brightness() > pparams.brightness_threshold + 10 && pparams.exposure_threshold > 0 && frame->time > 3) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold + 10 << ")" << std::endl;
+                communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
+                communicate_state(es_plukker_restart);
                 std::cout << "Initiating restart because plukker humans are in the way" << std::endl;
                 exit_now = true;
             }
@@ -338,11 +360,11 @@ void process_frame(StereoPair *frame) {
         static_cast<FileCam *>(cam.get())->inject_log(logreader.current_entry);
         patser.trackers.process_replay_moth(frame->rs_id);
         if (logreader.log_drone()->current_entry.rs_id == frame->rs_id) {
-            baseboard.inject_log(logreader.log_drone()->current_entry.charging_state);
+            baseboard_link.inject_log(logreader.log_drone()->current_entry.charging_state);
             if (frame->rs_id > logreader.log_drone()->start_rs_id())
                 patser.drone.inject_log(logreader.log_drone()->current_entry, frame->rs_id);
         } else {
-            baseboard.inject_log();
+            baseboard_link.inject_log();
         }
     }
 
@@ -356,11 +378,12 @@ void process_frame(StereoPair *frame) {
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
            << frame->time << ";"
            << cam->measured_exposure() << ";" << cam->measured_gain() << ";"
-           << baseboard.charging_state_str() << ";" << static_cast<uint16_t>(baseboard.charging_state()) << ";";
+           << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
     patser.update(frame->time);
     if (pparams.drone != drone_none && dparams.tx != tx_none)
         rc->send_commands(frame->time);
-    baseboard.time(frame->time);
+    baseboard_link.time(frame->time);
+    daemon_link.time(frame->time);
 
     if (pparams.has_screen || render_mode) {
         visualizer.add_plot_sample();
@@ -378,6 +401,11 @@ void process_frame(StereoPair *frame) {
     logger  << '\n';
 }
 
+
+void communicate_state(executor_states s) {
+    daemon_link.executor_state(s);
+    baseboard_link.executor_state(s);
+}
 
 void init_insect_log(int n) {
     patser.trackers.init_replay_moth(n);
@@ -641,7 +669,7 @@ void init_loggers() {
 
     if (rc->connected())
         rc->init_logger();
-    baseboard.init_logger();
+    baseboard_link.init_logger();
 }
 
 void init_video_recorders() {
@@ -736,7 +764,8 @@ void process_arg(int argc, char **argv) {
     }
 }
 
-void check_hardware_x() {
+void check_hardware() {
+    communicate_state(es_hardware_check);
     if (pparams.op_mode == op_mode_x && !log_replay_mode && !generator_mode) {
         // Ensure that joystick was found and that we can use it
         if (!patser.drone.control.joystick_ready() && pparams.joystick != rc_none && ! airsim_wp_mode) {
@@ -787,10 +816,12 @@ void check_hardware_x() {
 }
 
 void init() {
+    communicate_state(es_init);
     init_terminal_signals();
     init_loggers();
     init_video_recorders();
 
+    communicate_state(es_realsense_init);
     cam->init();
     if (flight_replay_mode)
         static_cast<FileCam *>(cam.get())->start_cnt(logreader.log_drone()->video_start_rs_id());
@@ -799,12 +830,12 @@ void init() {
     if (render_mode)
         cam->turbo = true;
     prev_frame = cam->current();
+    communicate_state(es_init_vision);
     visdat.init(cam.get());
 
-    baseboard.init(log_replay_mode || generator_mode || airsim_mode);
+    communicate_state(es_init);
     rc->init(rc_id);
-
-    patser.init(&logger, rc_id, rc.get(), replay_dir, cam.get(), &visdat,  &baseboard);
+    patser.init(&logger, rc_id, rc.get(), replay_dir, cam.get(), &visdat,  &baseboard_link);
     if (flight_replay_mode) {
         patser.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
         visdat.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
@@ -831,6 +862,8 @@ void init() {
 
     logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
+
+    communicate_state(es_init_vision); // patser still has to do some initializing, like motion calibration
 }
 
 void close(bool sig_kill) {
@@ -839,6 +872,7 @@ void close(bool sig_kill) {
     if (cam)
         cam->stop(); //cam needs to be closed after dnav, because of the camview class!
 
+    communicate_state(es_closing);
     cmdcenter.reset_commandcenter_status_file("Closing", false);
 
     if (pparams.has_screen)
@@ -856,7 +890,7 @@ void close(bool sig_kill) {
     if (pparams.has_screen || render_mode)
         visualizer.close();
     visdat.close();
-    baseboard.close();
+    baseboard_link.close();
     patser.close();
     if (cam)
         cam->close(); //cam needs to be closed after dnav, because of the camview class!
@@ -873,6 +907,7 @@ void close(bool sig_kill) {
         video_render.close();
 
     cmdcenter.close();
+    daemon_link.close();
 
     print_warnings();
     if (cam)
@@ -939,19 +974,13 @@ void wait_for_cam_angle() {
                 prev_imwrite_time = elapsed_time;
                 cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
             }
-            static double prev_wdt_flag_time = 0;
-            if (elapsed_time - prev_wdt_flag_time > 10) {
-                prev_wdt_flag_time = elapsed_time;
-                set_external_wdt_flag();
-            }
-
             cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll, 2), false);
 
             if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
                 break;
             else if (fabs(roll)  > pparams.max_cam_roll) {
                 if (!enable_delay)
-                    std::ofstream output("logging/cam_roll_problem_flag"); //set a file flag that is periodically being checked by an external python script:
+                    communicate_state(es_wait_for_angle);
                 enable_delay = 60;
             } else
                 enable_delay--;
@@ -968,10 +997,10 @@ void wait_for_plukker() {
         while (true) {
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             if (std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
+                communicate_state(es_wait_for_plukker);
                 cmdcenter.reset_commandcenter_status_file("Waiting. Plukkers: ", false);
                 std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << " Waiting for plukkers" << std::endl;
-                set_external_wdt_flag();
-                usleep(10000000);
+                usleep(1e7);
             } else {
                 break;
             }
@@ -991,6 +1020,7 @@ void wait_for_dark() {
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
+            communicate_state(es_wait_for_darkness);
             cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain))  + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())), false);
 
             if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour != 13)  ||
@@ -1003,8 +1033,7 @@ void wait_for_dark() {
                 cv::imwrite("stereoR_" + date_ss.str() + ".png", frameR);
                 last_save_bgr_hour = std::localtime(&t)->tm_hour;
             }
-            set_external_wdt_flag();
-            usleep(10000000); // measure every 10 seconds
+            usleep(1e7); // measure every 10 seconds
         }
     }
 }
@@ -1024,6 +1053,7 @@ void watchdog_worker(void) {
         }
         if (!watchdog && !exit_now) {
             std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
+            communicate_state(es_watchdog_restart);
 
             if (imgcount > 0)
                 save_results_log();
@@ -1054,9 +1084,9 @@ void watchdog_worker(void) {
             auto res [[maybe_unused]] = std::system(kill_cmd.c_str());
         }
         watchdog = false;
-        set_external_wdt_flag();
     }
 }
+
 
 int main(int argc, char **argv)
 {
@@ -1065,15 +1095,6 @@ int main(int argc, char **argv)
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         process_arg(argc, argv);
-        cmdcenter.reset_commandcenter_status_file("Starting", false);
-
-        if (realsense_reset) {
-            cmdcenter.reset_commandcenter_status_file("Reseting realsense", false);
-            Realsense rs;
-            rs.reset();
-            return 0;
-        }
-
         pparams.deserialize(pats_xml_fn);
         if (drone_xml_fn == "") // should be empty still, but can have the --drone-xml arg override
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
@@ -1086,6 +1107,18 @@ int main(int argc, char **argv)
         if (render_mode)
             pparams.video_render = video_file;
 
+        daemon_link.init(log_replay_mode || generator_mode || airsim_mode);
+        baseboard_link.init(log_replay_mode || generator_mode || airsim_mode);
+        cmdcenter.reset_commandcenter_status_file("Starting", false);
+        communicate_state(es_starting);
+        if (realsense_reset) {
+            communicate_state(es_realsense_reset);
+            cmdcenter.reset_commandcenter_status_file("Reseting realsense", false);
+            Realsense rs;
+            rs.reset();
+            return 0;
+        }
+
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         struct std::tm *tm_start = std::localtime(&time_now);;
         if (pparams.plukker_start.compare("disabled") != 0) {
@@ -1095,7 +1128,7 @@ int main(int argc, char **argv)
         } else
             plukker_time = -1;
 
-        check_hardware_x();
+        check_hardware();
         if (!generator_mode && !log_replay_mode && !airsim_mode) {
             wait_for_plukker();
             wait_for_cam_angle();
@@ -1104,6 +1137,7 @@ int main(int argc, char **argv)
             pparams.joystick = rc_none;
     } catch (rs2::error const &err) {
         std::cout << "Realsense error: " << err.what() << std::endl;
+        communicate_state(es_realsense_error);
         cmdcenter.reset_commandcenter_status_file("Resetting realsense", false);
         try {
             static_cast<Realsense *>(cam.get())->reset();
@@ -1114,13 +1148,15 @@ int main(int argc, char **argv)
         return 1;
     } catch (std::runtime_error const &err) {
         std::cout << "Error: " << err.what() << std::endl;
+        communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.what(), true);
         return 1;
     } catch (NoRealsenseConnected const &err) {
-        set_no_realsense_flag();
+        communicate_state(es_realsense_not_found);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
     } catch (cv::Exception const &err) {
+        communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.msg, true);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
@@ -1136,6 +1172,7 @@ int main(int argc, char **argv)
         exit_now = true;
         close(false);
         std::cout << "Error: " << e.what() << std::endl;
+        communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(e.what(), true);
         return 1;
     }
