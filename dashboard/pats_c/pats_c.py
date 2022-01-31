@@ -782,12 +782,13 @@ def dash_application():
                     selected_heat = pd.DataFrame(columns=columns)
                 else:
                     selected_heat = pd.read_json(selected_heat, orient='split')
-                for index, _ in selected_heat.iterrows():
-                    if cel['z'] <= Heatmap_Cell.selected_cell.value:
-                        unselected_heat = unselected_heat.append(selected_heat.loc[index, :])
-                        selected_heat = selected_heat.drop(index=index)
-                        unclicked = True
-                        break
+                if cel['z'] <= Heatmap_Cell.selected_cell.value:
+                    for index_heat, heat in selected_heat.iterrows():
+                        if int(cel['x'].replace('h', '')) == heat['hour'] and cel['y'] == heat['lalaladate']:
+                            unselected_heat = unselected_heat.append(heat.to_frame().T)
+                            selected_heat = selected_heat.drop(index=index_heat)
+                            unclicked = True
+                            break
 
                 if not unclicked:
                     df_row = pd.DataFrame([[x, cel['y'], int(hour_labels[x].replace('h', ''))]], columns=columns)
