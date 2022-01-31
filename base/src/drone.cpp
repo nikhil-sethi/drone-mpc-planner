@@ -264,13 +264,9 @@ void Drone::post_flight(double time) {
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
                 save_flight_results();
-                if (_baseboard_link->charging())
-                    post_flight_state = post_wait_after_shake_init;
-                else {
-                    time_reset_yaw_on_pad = time;
-                    control.freeze_attitude_reset_yaw_on_pad();
-                    post_flight_state = post_reset_yaw_on_pad;
-                }
+                time_reset_yaw_on_pad = time;
+                control.freeze_attitude_reset_yaw_on_pad();
+                post_flight_state = post_reset_yaw_on_pad;
                 break;
         } case post_reset_yaw_on_pad: {
                 control.flight_mode(DroneController::fm_reset_yaw_on_pad);
