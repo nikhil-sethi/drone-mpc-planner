@@ -16,7 +16,7 @@
       "program": "${workspaceFolder}/jsons_to_db.py",
       "args": [
         "-i",
-        "~/jsons"
+        "~/patsc/jsons"
       ],
       "console": "integratedTerminal"
     },

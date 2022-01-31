@@ -391,4 +391,4 @@ def jsons_to_db(input_folder, dry_run):
 
 
 if __name__ == "__main__":
-    jsons_to_db('~/jsons/', False)
+    jsons_to_db('~/patsc/jsons/', False)

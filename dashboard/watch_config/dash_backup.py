@@ -21,7 +21,7 @@ def backup(now):
     from pathlib import Path
     Path("~/dash_backups/").expanduser().mkdir(parents=True, exist_ok=True)
     target_str = now.strftime('%Y%m%d_%H%M%S') + '.tar.gz'
-    cmd = 'rsync -azvP dash:jsons/* ~/jsons/'
+    cmd = 'rsync -azvP dash:patsc/jsons/* ~/patsc/jsons/'
     execute(cmd)
     cmd = 'rsync -az dash:patsc/db/pats.db ~/patsc/db/'
     execute(cmd)
@@ -33,7 +33,7 @@ def backup(now):
     execute(cmd)
     cmd = 'rsync -az dash:patsc/db/pats_systems.db ~/patsc/db/'
     execute(cmd)
-    cmd = 'tar -zcvf ~/dash_backups/' + target_str + ' ~/patsc/db/ ~/jsons'
+    cmd = 'tar -zcvf ~/dash_backups/' + target_str + ' ~/patsc/db/ ~/patsc/jsons'
     execute(cmd)
     return target_str
 

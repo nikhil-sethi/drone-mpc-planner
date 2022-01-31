@@ -25,7 +25,7 @@ def execute(cmd, retry=1):
 
 def download_jsons():
     global source_folder
-    rsync_src = 'dash:/home/pats/jsons/'
+    rsync_src = 'dash:/home/pats/patsc/jsons/'
     subprocess.call(['mkdir -p ' + source_folder], shell=True)
     cmd = ['rsync -zvaP --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' ' + source_folder]
     execute(cmd)
@@ -48,10 +48,10 @@ def download_renders_all():
     download_renders(38)
     download_renders(39)
 
-    #download_renders(52)
-    #download_renders(66)
-    #download_renders(68)
-    #download_renders(69)
+    # download_renders(52)
+    # download_renders(66)
+    # download_renders(68)
+    # download_renders(69)
 
 
 def natural_sort(line):

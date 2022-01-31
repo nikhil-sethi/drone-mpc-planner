@@ -317,7 +317,7 @@ def jsons_to_LG(input_folder, dry_run=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
-    parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
+    parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/patsc/jsons/')
     parser.add_argument('--dry-run', help="Run script now without sending mail", dest='dry_run', action='store_true')
     args = parser.parse_args()
 
