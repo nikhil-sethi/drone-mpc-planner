@@ -294,7 +294,7 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
-    hist_24h_data = pd.DataFrame(index=range(0, 23), columns=selected_systems)
+    hist_24h_data = pd.DataFrame(index=range(0, 24), columns=selected_systems)
     for system, customer in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby(insect_df.system):
         hist_data[system] = customer.groupby(customer.time.dt.date).count()
         hist_24h_data[system] = customer.groupby(customer.time.dt.hour).count()
