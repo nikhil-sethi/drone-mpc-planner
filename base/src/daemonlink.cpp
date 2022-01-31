@@ -57,9 +57,9 @@ void DaemonLink::worker_send() {
 }
 
 void DaemonLink::close() {
-    std::cout << "Closing daemon socket" << std::endl;
     exit_thread = true;
     if (initialized) {
+        std::cout << "Closing daemon socket" << std::endl;
         thread_receive.join();
         thread_send.join();
     }

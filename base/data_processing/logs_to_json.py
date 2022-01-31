@@ -86,8 +86,6 @@ def process_system_status_in_folder(folder):
     if log_start == '':
         return ([], 'Error: log_start empty!?', '')
 
-    if os.path.exists(Path(folder, 'cam_roll_problem_flag')):
-        return ([], 'Error: Cam roll angle problem!', '')
     if not os.path.exists(pats_xml_path):
         line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
         return ([], 'Error: xml does not exist. Last terminal line: ' + line, '')
@@ -105,7 +103,7 @@ def process_system_status_in_folder(folder):
     with open(results_path, "r", encoding="utf-8") as results_txt:
         result_lines = results_txt.readlines()
         for line in result_lines:
-            if line.find('Run_time') != -1:
+            if line.find('run_time') != -1:
                 runtime = float(line.split(':')[1])
                 break
     if runtime < 0:
@@ -461,21 +459,21 @@ def logs_to_json(json_fn, data_folder, sys_str):
             if lb.str_to_datetime(operational_log_start) < t_start:
                 t_start = lb.str_to_datetime(operational_log_start)
 
-        detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
-        if detections_in_folder != []:
-            detections.extend(detections_in_folder)
-        if mode == 'x':
-            flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start)
-            if flight_status_in_folder != []:
-                flight_sessions.append(flight_status_in_folder)
-            flights_in_folder = process_flights_in_folder(folder, operational_log_start)
-            if flights_in_folder != []:
-                flights.extend(flights_in_folder)
-
         if mode.startswith('Error:'):
             errors.append(mode + '(' + folder + ')')
-        if mode.startswith('Resetting cam'):
+        elif mode.startswith('Resetting cam'):
             cam_resets += 1
+        else:
+            detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
+            if detections_in_folder != []:
+                detections.extend(detections_in_folder)
+            if mode == 'x':
+                flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start)
+                if flight_status_in_folder != []:
+                    flight_sessions.append(flight_status_in_folder)
+                flights_in_folder = process_flights_in_folder(folder, operational_log_start)
+                if flights_in_folder != []:
+                    flights.extend(flights_in_folder)
 
         if mode == 'c' or mode == 'x':
             Path(folder + '/OK').touch()

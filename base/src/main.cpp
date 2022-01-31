@@ -910,10 +910,13 @@ void close(bool sig_kill) {
     daemon_link.close();
 
     print_warnings();
+    std::cout << "Releasing cam..." << std::endl;
     if (cam)
         cam.release();
+    std::cout << "Releasing rc..." << std::endl;
     if (rc)
         rc.release();
+    std::cout << "Watchdog thread join..." << std::endl;
     if (!pparams.has_screen)
         thread_watchdog.join();
     std::cout << "Closed" << std::endl;

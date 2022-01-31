@@ -136,14 +136,16 @@ void BaseboardLink::worker_send() {
 }
 
 void BaseboardLink::close() {
-    std::cout << "Closing baseboard socket" << std::endl;
+
     exit_thread = true;
     if (initialized) {
+        std::cout << "Closing baseboard socket" << std::endl;
         thread_receive.join();
         thread_send.join();
-    }
-    if (logger_initialized) {
-        baseboard_logger.flush();
-        baseboard_logger.close();
+
+        if (logger_initialized) {
+            baseboard_logger.flush();
+            baseboard_logger.close();
+        }
     }
 }
