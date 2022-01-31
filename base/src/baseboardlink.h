@@ -20,6 +20,7 @@ static const char *charging_state_names[] = {
     "trickle",
     "discharge",
     "bat_measure",
+    "wait_till_drone_ready",
     "bat_calibrating"
 };
 //copy from charging.h Arduino code
@@ -35,8 +36,10 @@ enum ChargingState {
     state_trickle_charging,
     state_discharge,
     state_measure,
+    state_wait_until_drone_ready,
     state_calibrating
 };
+
 #define BASEBOARD_PACKAGE_PRE_HEADER '@'
 class BaseboardLink {
 private:
