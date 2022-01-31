@@ -42,7 +42,7 @@ def execute(cmd):
     popen.stdout.close()
 
 
-def get_moth_counts(now):
+def read_processed_jsons(now):
     today_str = now.strftime('%Y%m%d')
     files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
     systems = load_systems()
@@ -63,7 +63,7 @@ def get_moth_counts(now):
     return systems
 
 
-def get_daily_errors(now):
+def daily_errors(now):
     today_str = now.strftime('%Y%m%d')
     err_files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser('~/daily_basestation_errors/*' + today_str + '*'))])
     systems = load_systems()
@@ -131,8 +131,8 @@ def n_errors_from_file(file, now: datetime):
 
 
 def send_mail(now, dry_run):
-    systems = get_moth_counts(now)
-    systems = systems.merge(get_daily_errors(now), how='inner', on=['system', 'maintenance'])
+    systems = read_processed_jsons(now)
+    systems = systems.merge(daily_errors(now), how='inner', on=['system', 'maintenance'])
     daemon_errors = n_errors_from_file(patsc.daemon_error_log, now)
     patsc_errors = n_errors_from_file(patsc.patsc_error_log, now)
 

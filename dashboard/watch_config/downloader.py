@@ -6,7 +6,7 @@ import glob
 import re
 import argparse
 from tqdm import tqdm
-source_folder = '~/Downloads/moth_jsons'
+source_folder = '~/Downloads/detection_jsons'
 
 
 def execute(cmd, retry=1):

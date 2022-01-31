@@ -11,13 +11,13 @@ db_path = os.path.expanduser('~/patsc/db/pats.db')
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 
-columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
-moths = cur.execute('SELECT * FROM moth_records where time LIKE "2020102________"').fetchall()
-df_all = pd.DataFrame.from_records(moths, columns=columns)
+columns = [i[1] for i in cur.execute('PRAGMA table_info(detections)')]
+detections = cur.execute('SELECT * FROM detections where time LIKE "2020102________"').fetchall()
+df_all = pd.DataFrame.from_records(detections, columns=columns)
 
 simple = True
 if (simple):
-    fig1 = px.scatter(df_all, x="duration", y="Size", color="system", hover_data=['Video_Filename'], title='Too Many Moths')
+    fig1 = px.scatter(df_all, x="duration", y="size", color="system", hover_data=['video_filename'], title='Too Many Moths')
     fig1.show()
     fig2 = px.histogram(df_all, x="duration", color="system", title='Duurt lang')
     fig2.show()
@@ -33,7 +33,7 @@ else:
 
     scatter1 = go.Scattergl(
         x=df_all['duration'],
-        y=df_all['Size'],
+        y=df_all['size'],
         mode='markers',
         marker=dict(
             color=df_all['system_ids'],
@@ -44,10 +44,10 @@ else:
         "Duration: %{x}<br>"
     )
 
-    moths = cur.execute('SELECT * FROM moth_records where system="pats-proto13" AND time LIKE "2020102________"').fetchall()
-    df1 = pd.DataFrame.from_records(moths, columns=columns)
-    moths = cur.execute('SELECT * FROM moth_records where system="pats-proto17" AND time LIKE "2020102________"').fetchall()
-    df2 = pd.DataFrame.from_records(moths, columns=columns)
+    detections = cur.execute('SELECT * FROM detections where system="pats-proto13" AND time LIKE "2020102________"').fetchall()
+    df1 = pd.DataFrame.from_records(detections, columns=columns)
+    detections = cur.execute('SELECT * FROM detections where system="pats-proto17" AND time LIKE "2020102________"').fetchall()
+    df2 = pd.DataFrame.from_records(detections, columns=columns)
 
     hist1 = go.Histogram(
         x=df1['duration'],

@@ -28,7 +28,7 @@ logger = logging.Logger('Dash_errors', level='ERROR')
 logger.addHandler(error_file_handler)
 
 
-def get_error_count():
+def error_count():
     logger.error('rotate!')
     with open(patsc.daemon_error_log, 'r') as f:
         lines = f.readlines

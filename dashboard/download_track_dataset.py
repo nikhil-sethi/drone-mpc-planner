@@ -13,38 +13,38 @@ start_date = datetime.date.today() - datetime.timedelta(days=14)
 if insect == 'tomato_looper':  # (turkse mot)
     selected_systems = ['pats4', 'pats6']
     filter_str = f'''" AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}"
-    AND Dist_traveled > 0.15
-    AND Dist_traveled < 4
-    AND Size > 0.015'''
+    AND dist_traveled > 0.15
+    AND dist_traveled < 4
+    AND size > 0.015'''
 elif insect == 'tuta':
     selected_systems = ['pats52', 'pats66', 'pats68', 'pats69']
     filter_str = f'''" AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}"
-    AND Dist_traveled > 0.15
-    AND Dist_traveled < 4
-    AND Size > 0.01'''
+    AND dist_traveled > 0.15
+    AND dist_traveled < 4
+    AND size > 0.01'''
 elif insect == 'duponchelia':
     selected_systems = ['pats7']
     filter_str = f'''" AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}"
-    AND Dist_traveled > 0.15
-    AND Dist_traveled < 4
-    AND Size > 0.01'''
+    AND dist_traveled > 0.15
+    AND dist_traveled < 4
+    AND size > 0.01'''
 elif insect == 'stinky':
     selected_systems = ['pats53']
     filter_str = f'''" AND time >= "20210412_224000" AND time < "20210412_231500"
-    AND Dist_traveled > 0.15
-    AND Dist_traveled < 4
-    AND Size > 0.01
+    AND dist_traveled > 0.15
+    AND dist_traveled < 4
+    AND size > 0.01
     AND duration > 0.3 AND duration < 10'''
 filter_str = filter_str.replace('\n', '')
 
 with patsc.open_data_db() as con:
     cur = con.cursor()
     for system in selected_systems:
-        columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
-        sql_str = 'SELECT Folder,Filename FROM moth_records WHERE system="' + system + filter_str
+        columns = [i[1] for i in cur.execute('PRAGMA table_info(detections)')]
+        sql_str = 'SELECT folder,filename FROM detections WHERE system="' + system + filter_str
         df = pd.read_sql_query(sql_str, con)
 
-        download_list = df['Folder'] + '/logging/' + df['Filename']
+        download_list = df['folder'] + '/logging/' + df['filename']
         download_list.to_csv('files_to_be_tarred.tmp', index=False, header=False)
         rsync_upload_cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + 'files_to_be_tarred.tmp' + ' ' + system + ':files_to_be_tarred.tmp']
         patsc.execute(rsync_upload_cmd, 5)

@@ -18,7 +18,7 @@ import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from cut_moths import cut_all
 
-version_c = "1.11"
+version_c = "2.0"
 version_x = "1.0"
 
 
@@ -60,8 +60,8 @@ def process_wait_for_dark_status(folder):
     if os.path.exists(terminal_log_path):
         exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
         if exposure_valid:
-            data_wait_for_dark = {"from": daylight_start,
-                                  "till": daylight_end,
+            data_wait_for_dark = {"start_datetime": daylight_start,
+                                  "end_datetime": daylight_end,
                                   "mode": 'wait_for_dark'
                                   }
             return (exposure_valid, data_wait_for_dark, daylight_start, daylight_end)
@@ -113,14 +113,14 @@ def process_system_status_in_folder(folder):
     log_end_datetime = str_to_datetime(os.path.basename(folder))
     operational_log_start = datetime_to_str(log_end_datetime - timedelta(seconds=runtime))
 
-    data_status = {"from": operational_log_start,
-                   "till": os.path.basename(folder),
+    data_status = {"start_datetime": operational_log_start,
+                   "end_datetime": os.path.basename(folder),
                    "mode": pats_xml_mode
                    }
     return (data_status, pats_xml_mode, operational_log_start)
 
 
-def process_flight_status_in_folder(folder, operational_log_start):
+def process_flight_status_in_folder(folder, operational_log_start, mode):
     logging.getLogger('logs_to_json').info('Processing flight session status...')
     results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
@@ -148,8 +148,8 @@ def process_flight_status_in_folder(folder, operational_log_start):
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
 
-    data = {"from": operational_log_start,
-            "till": os.path.basename(folder),
+    data = {"start_datetime": operational_log_start,
+            "end_datetime": os.path.basename(folder),
             "drone_flights": drone_flights,
             "n_drone_detects": n_drone_detects,
             "n_insects": n_detections,
@@ -190,7 +190,7 @@ def process_flight_results(results_fn):
     return flight_time, crashed, best_interception_distance, take_off_datetime, land_datetime
 
 
-def process_flight_log(log_fn, folder, session_start_datetime):
+def process_flight_log(log_fn, folder, session_start_datetime, mode):
     logger = logging.getLogger('logs_to_json')
 
     flight_id = int(os.path.basename(log_fn)[10:])
@@ -240,7 +240,7 @@ def process_flight_log(log_fn, folder, session_start_datetime):
 
     takeoff_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
 
-    detection_data = {"time": takeoff_time,
+    detection_data = {"start_datetime": takeoff_time,
                       "duration": duration,
                       "flight_time": flight_time,
                       "best_interception_distance": best_interception_distance,
@@ -361,7 +361,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
 
     detection_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
 
-    detection_data = {"time": detection_time,
+    detection_data = {"start_datetime": detection_time,
                       "duration": duration,
                       "rs_id": first_rs_id,
                       "dist_traveled": dist_traveled,
@@ -386,7 +386,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
     return detection_data
 
 
-def process_flights_in_folder(folder, operational_log_start):
+def process_flights_in_folder(folder, operational_log_start, mode):
     logger = logging.getLogger('logs_to_json')
     flight_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_f*.csv"))])
     start_datetime = str_to_datetime(operational_log_start)
@@ -395,7 +395,7 @@ def process_flights_in_folder(folder, operational_log_start):
 
     for flight_fn in flight_fns:
         logger.info("Processing flights in " + flight_fn)
-        data = process_flight_log(flight_fn, folder, start_datetime)
+        data = process_flight_log(flight_fn, folder, start_datetime, mode)
         if data:
             session_data.append(data)
 
@@ -468,10 +468,10 @@ def logs_to_json(json_fn, data_folder, sys_str):
             if detections_in_folder != []:
                 detections.extend(detections_in_folder)
             if mode == 'x':
-                flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start)
+                flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start, mode)
                 if flight_status_in_folder != []:
                     flight_sessions.append(flight_status_in_folder)
-                flights_in_folder = process_flights_in_folder(folder, operational_log_start)
+                flights_in_folder = process_flights_in_folder(folder, operational_log_start, mode)
                 if flights_in_folder != []:
                     flights.extend(flights_in_folder)
 
@@ -480,8 +480,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
         else:
             Path(folder + '/junk').touch()
 
-    data_detections = {"from": lb.datetime_to_str(t_start),
-                       "till": lb.datetime_to_str(t_end),
+    data_detections = {"start_datetime": lb.datetime_to_str(t_start),
+                       "end_datetime": lb.datetime_to_str(t_end),
                        "detection_count": len(detections),
                        "detections": detections,
                        "flights": flights,
@@ -546,7 +546,7 @@ if __name__ == "__main__":
     sys_str = args.system
 
     if args.dry_run:
-        status_in_folder, mode, operational_log_start = process_system_status_in_folder(args.dry_run)
+        process_system_status_in_folder(args.dry_run)
     else:
         process_all_logs_to_jsons()
         send_all_jsons()

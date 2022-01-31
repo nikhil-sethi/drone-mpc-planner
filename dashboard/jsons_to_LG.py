@@ -97,16 +97,16 @@ def write_values(token, module_id, col_id, name, json):
 def sys_info_table(token):
     # LG uses a module for each sensor (a system, in our case) (identified with a module_id),
     # which can deliver multiple data streams (e.g. temperature, humidity,... ) (identified
-    # with a colId). Currently LG has added two datastreams per insect type for us, we have a unique
-    # colId for 5-minute-binned insect counts (writable), and one for total insect counts (read-only).
+    # with a colId). Currently LG has added two datastreams per detection type for us, we have a unique
+    # colId for 5-minute-binned detection counts (writable), and one for total detection counts (read-only).
     # The last one is useless as far as I'm concerned, but LG is fond of it anyway. For the
     # state of the system LG has added two datastreams as well, again we need to write to
-    # 5-minute stream, and there is still the old insect data stream that we now use for total instects.
+    # 5-minute stream, and there is still the old detection data stream that we now use for total instects.
     # In order to write data, we need to specify both the colId and the moduleId.
     # This function creates a dictionairy that puts all the id data together,
     # later to be combined with our system_database (which contains the moduleId's per system).
     # To filter out the colIds we check the binning type (5 minutes = 4) and whether that column
-    # is writable. The ItemCode should translate to a insect type or to MOTHNU for all insects or
+    # is writable. The ItemCode should translate to a detection type or to MOTHNU for all detections or
     # PATSONOF for the system data.
 
     modules = retrieve_modules(token)
@@ -129,50 +129,50 @@ def sys_info_table(token):
     return LG_lookup
 
 
-def process_insects_in_json(data, sys_info):
+def process_detections_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
-    insects = pd.DataFrame(data['moths'])
+    detections = pd.DataFrame(data['detections'])
     LG_data: Dict[str, List] = {}
-    if insects.empty:
+    if detections.empty:
         LG_data['MOTHNU'] = []
         return LG_data
 
-    insects['time'] = pd.to_datetime(insects['time'], format='%Y%m%d_%H%M%S')
-    insects = insects.loc[(insects['time'] > sys_info['start_date']) & (insects['time'] < sys_info['expiration_date'])]
-    if 'Monster' in insects:
-        insects = insects.loc[insects['Monster'] != 1]
-        monsters = insects.loc[insects['Monster'] == 1]
-        insects = insects[insects.apply(patsc.true_positive, axis=1)]
-        if not insects.empty:
-            insects = patsc.window_filter_monster(insects, monsters)
+    detections['start_datetime'] = pd.to_datetime(detections['start_datetime'], format='%Y%m%d_%H%M%S')
+    detections = detections.loc[(detections['start_datetime'] > sys_info['start_date']) & (detections['start_datetime'] < sys_info['expiration_date'])]
+    if 'monster' in detections:
+        detections = detections.loc[detections['monster'] != 1]
+        monsters = detections.loc[detections['monster'] == 1]
+        detections = detections[detections.apply(patsc.true_positive, axis=1)]
+        if not detections.empty:
+            detections = patsc.window_filter_monster(detections, monsters)
     else:
-        insects = insects[insects.apply(patsc.true_positive, axis=1)]
+        detections = detections[detections.apply(patsc.true_positive, axis=1)]
 
-    insects_info = patsc.get_insects_for_system(sys_info['system'].lower())
-    for insect_name, insect_min, insect_max, insect_floodfill_min, insect_floodfill_max in insects_info:
-        right_insects = pd.DataFrame()
-        if 'Size' in insects:
+    detection_classes = patsc.detection_classes(sys_info['system'].lower())
+    for detection_name, detection_min, detection_max, detection_floodfill_min, detection_floodfill_max in detection_classes:
+        right_detections = pd.DataFrame()
+        if 'size' in detections:
             if patsc.check_verion(data['version'], '1.10'):
-                right_insects = insects.loc[(insects['Size'] >= insect_floodfill_min) & (insects['Size'] <= insect_floodfill_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
+                right_detections = detections.loc[(detections['size'] >= detection_floodfill_min) & (detections['size'] <= detection_floodfill_max), ['start_datetime', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
             else:
-                right_insects = insects.loc[(insects['Size'] >= insect_min) & (insects['Size'] <= insect_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
+                right_detections = detections.loc[(detections['size'] >= detection_min) & (detections['size'] <= detection_max), ['start_datetime', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
 
-        if not right_insects.empty:
-            binned_insects = right_insects.resample(str(lg_bin_width) + 'T', on='time').count()  # T means minute for some reason
-            LG_data[insect_name] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_insects.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_insects.values[:, 0]}).to_dict('records')
+        if not right_detections.empty:
+            binned_detections = right_detections.resample(str(lg_bin_width) + 'T', on='time').count()  # T means minute for some reason
+            LG_data[detection_name] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_detections.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_detections.values[:, 0]}).to_dict('records')
         else:
-            LG_data[insect_name] = []
-    if not insects.empty:
-        binned_insects = insects.resample(str(lg_bin_width) + 'T', on='time').count()
-        LG_data['MOTHNU'] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_insects.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_insects.values[:, 0]}).to_dict('records')
+            LG_data[detection_name] = []
+    if not detections.empty:
+        binned_detections = detections.resample(str(lg_bin_width) + 'T', on='time').count()
+        LG_data['MOTHNU'] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_detections.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_detections.values[:, 0]}).to_dict('records')
     else:
         LG_data['MOTHNU'] = []
 
     return LG_data
 
 
-def process_mode_in_json(data, sys_info):
+def process_status_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
     t0 = sys_info['expiration_date']
@@ -185,15 +185,15 @@ def process_mode_in_json(data, sys_info):
             sub_entries = [entry]
 
         for status in sub_entries:
-            t_from = datetime.datetime.strptime(status['from'], '%Y%m%d_%H%M%S')
-            if t_from > sys_info['start_date']:  # LG date subscription boundries
-                if t_from < t0:
-                    t0 = t_from
-            t_till = datetime.datetime.strptime(status['till'], '%Y%m%d_%H%M%S')
-            if t_till > sys_info['expiration_date']:
+            start_datetime = datetime.datetime.strptime(status['start_datetime'], '%Y%m%d_%H%M%S')
+            if start_datetime > sys_info['start_date']:  # LG date subscription boundries
+                if start_datetime < t0:
+                    t0 = start_datetime
+            end_datetime = datetime.datetime.strptime(status['end_datetime'], '%Y%m%d_%H%M%S')
+            if end_datetime > sys_info['expiration_date']:
                 t1 = sys_info['expiration_date']
-            elif t_till > t1:
-                t1 = t_till
+            elif end_datetime > t1:
+                t1 = end_datetime
 
     t0 = t0 - datetime.timedelta(seconds=t0.second, minutes=t0.minute - math.floor(t0.minute / lg_bin_width) * lg_bin_width)
     t1 = t1 - datetime.timedelta(seconds=t1.second, minutes=t1.minute - math.ceil(datetime.timedelta(seconds=t1.second, minutes=t1.minute).total_seconds() / (60 * lg_bin_width)) * lg_bin_width)
@@ -210,10 +210,10 @@ def process_mode_in_json(data, sys_info):
             sub_entries = [entry]
 
         for status in sub_entries:
-            dt_start = datetime.datetime.strptime(status['from'], '%Y%m%d_%H%M%S') - t0
+            dt_start = datetime.datetime.strptime(status['start_datetime'], '%Y%m%d_%H%M%S') - t0
             id_start = math.floor(dt_start.total_seconds() / 300)
             id_start = int(np.clip(id_start, 0, bin_cnt))
-            dt_final = datetime.datetime.strptime(status['till'], '%Y%m%d_%H%M%S') - t0
+            dt_final = datetime.datetime.strptime(status['end_datetime'], '%Y%m%d_%H%M%S') - t0
             id_final = math.floor(dt_final.total_seconds() / 300)
             id_final = int(np.clip(id_final, 0, bin_cnt))
             for i in range(id_start, id_final):
@@ -235,15 +235,15 @@ def process_mode_in_json(data, sys_info):
 
 
 def upload_json_to_LG(token, json_data, sys_info, dry_run):
-    binned_insect_data = process_insects_in_json(json_data, sys_info)
-    binned_mode_data = process_mode_in_json(json_data, sys_info)
-    if (len(binned_insect_data) or len(binned_mode_data)) and not dry_run:
-        for insect_type in binned_insect_data.keys():
-            if insect_type in sys_info:
-                write_values(token, sys_info['lg_module_id'], sys_info[insect_type], sys_info['name'], binned_insect_data[insect_type])
+    binned_detection_data = process_detections_in_json(json_data, sys_info)
+    binned_status_data = process_status_in_json(json_data, sys_info)
+    if (len(binned_detection_data) or len(binned_status_data)) and not dry_run:
+        for detection_type in binned_detection_data.keys():
+            if detection_type in sys_info:
+                write_values(token, sys_info['lg_module_id'], sys_info[detection_type], sys_info['name'], binned_detection_data[detection_type])
             else:
-                print(sys_info['name'] + ' does not know ' + insect_type)
-        write_values(token, sys_info['lg_module_id'], sys_info['PATSONOF'], sys_info['name'], binned_mode_data)
+                print(sys_info['name'] + ' does not know ' + detection_type)
+        write_values(token, sys_info['lg_module_id'], sys_info['PATSONOF'], sys_info['name'], binned_status_data)
         return 'OK'
     elif dry_run:
         return 'DRY RUN'
@@ -252,7 +252,7 @@ def upload_json_to_LG(token, json_data, sys_info, dry_run):
 
 
 def load_system_info():
-    sql_str = '''SELECT system,active,LG FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE active = 1 AND LG'''
+    sql_str = '''SELECT system,active,lg FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE active = 1 AND lg'''
     with patsc.open_systems_db() as con:
         systems = pd.read_sql_query(sql_str, con)
         systems['system'] = systems['system'].str.upper()
@@ -279,11 +279,11 @@ def jsons_to_LG(input_folder, dry_run=False):
                             sys_name = json_data['system'].replace('-proto', '').upper()
                             if sys_name in systems_df['system'].values:
                                 sys_info = systems_df.loc[systems_df['system'] == sys_name]
-                                if sys_info.iloc[0]['active'] and sys_info.iloc[0]['LG']:
+                                if sys_info.iloc[0]['active'] and sys_info.iloc[0]['lg']:
                                     min_required_version = 1.0
                                     if 'version' in json_data and float(json_data['version']) >= min_required_version:
-                                        if int(sys_info['LG']) in LG_lookup:
-                                            sys_LG = LG_lookup[int(sys_info['LG'])]
+                                        if int(sys_info['lg']) in LG_lookup:
+                                            sys_LG = LG_lookup[int(sys_info['lg'])]
                                             sys_info = {**sys_info.to_dict('records')[0], **sys_LG}
                                             try:
                                                 res = upload_json_to_LG(token, json_data, sys_info, dry_run)

@@ -60,63 +60,63 @@ def natural_sort(line):
     return sorted(line, key=alphanum_key)
 
 
-def window_filter_monster(insect_df, monster_df):
+def window_filter_monster(detection_df, monster_df):
     monster_times = monster_df['time'].values
-    insect_times = insect_df['time'].values
-    monster_times_mesh, insect_times_mesh = np.meshgrid(monster_times, insect_times, sparse=True)
-    insects_with_monsters = np.sum((monster_times_mesh >= insect_times_mesh - monster_window) * (monster_times_mesh <= insect_times_mesh + monster_window), axis=1)
-    insect_without_monsters = insect_df.iloc[insects_with_monsters == 0]
-    return insect_without_monsters
+    detection_times = detection_df['time'].values
+    monster_times_mesh, detection_times_mesh = np.meshgrid(monster_times, detection_times, sparse=True)
+    detections_with_monsters = np.sum((monster_times_mesh >= detection_times_mesh - monster_window) * (monster_times_mesh <= detection_times_mesh + monster_window), axis=1)
+    detections_without_monsters = detection_df.iloc[detections_with_monsters == 0]
+    return detections_without_monsters
 
 
-def clean_moth_json_entry(moth, data):
-    # fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
-    if "version" in data and "Version" in moth:
-        if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
-            moth["Version"] = "1.2"
+def clean_detection_json_entry(detection, data):
+    # fix a bug that lived for a few days having different versioning in the system table and the detections table (can be removed if these jsons are obsolete)
+    if "version" in data and "version" in detection:
+        if data["version"] != detection["version"] and str(detection["version"]) == "1.1":
+            detection["version"] = "1.2"
     else:
-        moth["Version"] = "1.0"
+        detection["version"] = "1.0"
 
     # remove unused data from jsons version < 1.4:
-    if float(moth["Version"]) < 1.4:
-        if 'FP' in moth:
-            moth.pop('FP')
-        if 'TA_mean' in moth:
-            moth.pop('TA_mean')
-        if 'TA_std' in moth:
-            moth.pop('TA_std')
-        if 'TA_max' in moth:
-            moth.pop('TA_max')
-        if 'RA_mean' in moth:
-            moth.pop('RA_mean')
-        if 'RA_std' in moth:
-            moth.pop('RA_std')
-        if 'RA_max' in moth:
-            moth.pop('RA_max')
-    return moth
+    if float(detection["version"]) < 1.4:
+        if 'FP' in detection:
+            detection.pop('FP')
+        if 'TA_mean' in detection:
+            detection.pop('TA_mean')
+        if 'TA_std' in detection:
+            detection.pop('TA_std')
+        if 'TA_max' in detection:
+            detection.pop('TA_max')
+        if 'RA_mean' in detection:
+            detection.pop('RA_mean')
+        if 'RA_std' in detection:
+            detection.pop('RA_std')
+        if 'RA_max' in detection:
+            detection.pop('RA_max')
+    return detection
 
 
-def true_positive(moth):
-    if 'Version' in moth:
-        if moth['Version'] == '1.0':
-            return moth['duration'] > 1 and moth['duration'] < 10
+def true_positive(detection):
+    if 'version' in detection:
+        if detection['version'] == '1.0':
+            return detection['duration'] > 1 and detection['duration'] < 10
         else:
-            return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4
+            return detection['duration'] > 1 and detection['duration'] < 10 and detection['dist_traveled'] > 0.15 and detection['dist_traveled'] < 4
     else:
         return False
 
 
-def get_insects_for_system(system):
-    sql_str = f'''  SELECT insects.LG_name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM insects
-                    JOIN crop_insect_connection ON insects.insect_id = crop_insect_connection.insect_id
-                    JOIN crops ON crop_insect_connection.crop_id = crops.crop_id
+def detection_classes(system):
+    sql_str = f'''  SELECT detections.lg_label,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM detections
+                    JOIN crop_detection_connection ON detections.detection_id = crop_detection_connection.detection_id
+                    JOIN crops ON crop_detection_connection.crop_id = crops.crop_id
                     JOIN customers ON crops.crop_id = customers.crop_id
                     JOIN systems ON customers.customer_id = systems.customer_id
                     WHERE systems.system = '{system}'  '''
     with open_systems_db() as con:
-        insect_info = con.execute(sql_str).fetchall()
-        insect_info = [(name, avg_size - std_size, avg_size + 2 * std_size, floodfill_avg_size - floodfill_std_size, floodfill_avg_size + 2 * floodfill_std_size) for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in insect_info]
-        return insect_info
+        detection_info = con.execute(sql_str).fetchall()
+        detection_info = [(name, avg_size - std_size, avg_size + 2 * std_size, floodfill_avg_size - floodfill_std_size, floodfill_avg_size + 2 * floodfill_std_size) for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in detection_info]
+        return detection_info
 
 
 def check_verion(current_version, minimal_version):

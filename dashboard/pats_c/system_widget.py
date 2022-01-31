@@ -26,7 +26,15 @@ class main_buttons_options(Enum):
         return f'{self.name}'
 
 
-def get_available_tables():
+def username():
+    user = 'NOBODY'
+    if current_user:
+        if current_user.is_authenticated:
+            user = current_user.username
+    return user
+
+
+def available_tables():
     with open_systems_db() as con:
         sql_str = '''SELECT name FROM sqlite_master ORDER BY name COLLATE NOCASE'''
         tables = con.execute(sql_str).fetchall()
@@ -68,7 +76,7 @@ def get_column_info(table_name):
     return column_info.fillna(0)
 
 
-def get_table_connection(table_name):
+def table_connection(table_name):
     connection_info = pd.DataFrame()
     with open_systems_db() as con:
         sql_str = f'''SELECT name FROM sqlite_master WHERE name LIKE '%{table_name[:-1] + '%connection'}' '''
@@ -79,7 +87,7 @@ def get_table_connection(table_name):
     return '', connection_info
 
 
-def get_fk_options(fk_str):
+def fk_options(fk_str):
     if isinstance(fk_str, str):
         options = []
         with open_systems_db() as con:
@@ -92,7 +100,7 @@ def get_fk_options(fk_str):
         return []
 
 
-def get_fk_values_for_ids(fk_str, id):
+def fk_values_for_ids(fk_str, id):
     with open_systems_db() as con:
         foreign_table = fk_str.split('"')[1]
         foreign_column = fk_str.split('"')[3]
@@ -101,7 +109,7 @@ def get_fk_values_for_ids(fk_str, id):
     return values
 
 
-def get_fk_ids_for_values(fk_str, values):
+def fk_ids_for_values(fk_str, values):
     with open_systems_db() as con:
         foreign_table = fk_str.split('"')[1]
         foreign_column = fk_str.split('"')[3]
@@ -110,7 +118,7 @@ def get_fk_ids_for_values(fk_str, values):
     return ids
 
 
-def get_table_data(table_name):
+def table_data(table_name):
     column_info = get_column_info(table_name)
     name_column_exsists = False
     sql_str = 'SELECT '
@@ -137,7 +145,7 @@ def get_table_data(table_name):
     with open_systems_db() as con:
         data = pd.read_sql_query(sql_str, con)
 
-    connection_name, connection_info = get_table_connection(table_name)
+    connection_name, connection_info = table_connection(table_name)
     if connection_name:
         for column in connection_info.to_dict('records'):
             if pk_name not in column['name']:
@@ -149,7 +157,7 @@ def get_table_data(table_name):
                     with open_systems_db() as con:
                         ids = con.execute(connection_str, {'id': id}).fetchall()
                         ids = [i[0] for i in ids]
-                    fk_values = get_fk_values_for_ids(column['fk'], ids)
+                    fk_values = fk_values_for_ids(column['fk'], ids)
                     data.loc[data[pk_name] == id, fk_table] = ', '.join([value[0] for value in fk_values])
 
     return data
@@ -165,19 +173,10 @@ def get_max_id(table_name, column_info):
     return max_id
 
 
-def get_username():
-    username = 'NOBODY'
-    if current_user:
-        if current_user.is_authenticated:
-            username = current_user.username
-    return username
-
-
 def count_unsaved_changes():
     count = 0
-    username = get_username()
     with open_systems_db() as con:
-        sql_str = f'''SELECT COUNT(time) FROM change_log WHERE user = '{username}' AND saved = 0 '''
+        sql_str = f'''SELECT COUNT(time) FROM change_log WHERE user = '{username()}' AND saved = 0 '''
         count = con.execute(sql_str).fetchone()[0]
     return count
 
@@ -252,7 +251,7 @@ def apply_unsaved_changes(data, table_name):
                         fk = column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0]
                         fk_table = fk.replace('"', '').split('(')[0][:-1]
                         if value is not None:
-                            data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
+                            data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
                         else:
                             data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = ''
                     elif column == 'DELETE':
@@ -290,7 +289,7 @@ def handle_edit_button(choosen_table, selected_rows, rows):
                     if col['fk'].split('"')[1][:-1] in values:  # To remove the s from customers, this should be solved better
                         label = values[col['fk'].split('"')[1][:-1]]
                     fk_table = col['fk'].replace('"', '').split('(')[0]
-                    options = get_fk_options(col['fk'])
+                    options = fk_options(col['fk'])
                     options_dict = {option['label']: option['value']for option in options}
                     children.extend([dbc.Label(col['name'].replace('"', '') + ':'), dcc.Dropdown(
                         id=col['name'] + '_fk_' + fk_table[:-1],
@@ -304,7 +303,7 @@ def handle_edit_button(choosen_table, selected_rows, rows):
                     if len(selected_rows) > 1:
                         value = '~'
                     children.extend([dbc.Label(col['name'].replace('"', '') + ':'), dbc.Input(value=value, id=col['name'], type='text')])
-    connection_name, connection_info = get_table_connection(choosen_table)
+    connection_name, connection_info = table_connection(choosen_table)
     if not connection_info.empty:
         for col in connection_info.to_dict('records'):
             if choosen_table[:-1] not in col['name']:
@@ -313,7 +312,7 @@ def handle_edit_button(choosen_table, selected_rows, rows):
                     if col['fk'].split('"')[1] in values:
                         label = values[col['fk'].split('"')[1]]
                     labels = label.split(', ')
-                    options = get_fk_options(col['fk'])
+                    options = fk_options(col['fk'])
                     options_dict = {option['label']: option['value']for option in options}
                     children.extend([dbc.Label(col['name'].replace('"', '') + ':'), dcc.Dropdown(
                         id=f"{connection_name}({col['name']})",
@@ -331,9 +330,8 @@ def handle_delete_button(selected_rows):
 
 def handle_undo_button():
     children = []
-    username = get_username()
     with open_systems_db() as con:
-        sql_last_change = f'''DELETE FROM change_log WHERE user='{username}' AND saved = 0 AND time = (SELECT MAX(time) FROM change_log WHERE user = '{username}' AND saved = 0 )'''
+        sql_last_change = f'''DELETE FROM change_log WHERE user='{username()}' AND saved = 0 AND time = (SELECT MAX(time) FROM change_log WHERE user = '{username()}' AND saved = 0 )'''
         try:
             con.execute(sql_last_change)
             con.commit()
@@ -345,15 +343,15 @@ def handle_undo_button():
 
 def handle_save_button():
     err_msg = ''
-    username = get_username()
+    user = username()
     with open_systems_db() as con:
-        sql_all_tables = f'''SELECT DISTINCT table_name FROM change_log WHERE user = '{username}' AND saved = 0 '''
+        sql_all_tables = f'''SELECT DISTINCT table_name FROM change_log WHERE user = '{user}' AND saved = 0 '''
         all_tables = con.execute(sql_all_tables).fetchall()
         tables_info = {}
         for table_name, in all_tables:
             tables_info[table_name] = get_column_info(table_name)
 
-        sql_get_unsaved = f'''SELECT table_name,column_name,id,value FROM change_log WHERE user = '{username}' AND saved = 0 '''
+        sql_get_unsaved = f'''SELECT table_name,column_name,id,value FROM change_log WHERE user = '{user}' AND saved = 0 '''
         unsaved_changes = con.execute(sql_get_unsaved).fetchall()
         sql_save = ''' '''
         for table_name, column_name, index, value in unsaved_changes:
@@ -373,7 +371,7 @@ def handle_save_button():
                     sql_save += f'''UPDATE {table_name} SET {column_name} = '{value}' WHERE {' AND '.join([f'{pk} = {id}' for pk,id in zip(pks,id_list)])} ; '''
 
         if sql_save:
-            sql_save += f'''UPDATE change_log SET saved = 1 WHERE user = '{username}' AND saved = 0 ;'''
+            sql_save += f'''UPDATE change_log SET saved = 1 WHERE user = '{user}' AND saved = 0 ;'''
             try:
                 con.executescript(sql_save)
                 con.commit()
@@ -436,7 +434,7 @@ def process_edit(children, choosen_table, selected_rows, current_data):
 
     sql_insert = '''INSERT INTO change_log(time,table_name,column_name,id,value,user,saved) VALUES '''
     now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    username = get_username()
+    user = username()
     table_info = get_column_info(choosen_table)
     pk = table_info.loc[table_info['pk'] == 1, 'name'].values[0].replace('"', '')
     for input in changes:
@@ -444,19 +442,19 @@ def process_edit(children, choosen_table, selected_rows, current_data):
             db_id = current_data.loc[row, pk]
             if input['column'] in current_data.columns:
                 if input['value'] != current_data[input['column']].values[row]:
-                    sql_insert += f'''({now},'{choosen_table}','{input['column']}',{db_id},'{input['value']}','{username}',0), '''
+                    sql_insert += f'''({now},'{choosen_table}','{input['column']}',{db_id},'{input['value']}','{user}',0), '''
             elif 'fk' in input['column']:
                 column_name = input['column'].split('_fk_')[0]
                 fk_table = input['column'].split('_fk_')[1]
                 if fk_table in current_data.columns:
                     if input['value'] is not None and (input['value'] or not isinstance(input['value'], str)):
-                        named_value = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column_name}"', 'fk'].values[0], [input['value']])[0][0]
+                        named_value = fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column_name}"', 'fk'].values[0], [input['value']])[0][0]
                         if named_value != current_data[fk_table].values[row]:
-                            sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},'{input['value']}','{username}',0), '''
+                            sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},'{input['value']}','{user}',0), '''
                     elif (current_data[fk_table].values[row] is not None and (current_data[fk_table].values[row] or not isinstance(current_data[fk_table].values[row], str))) and len(selected_rows) == 1:
-                        sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},NULL,'{username}',0), '''
+                        sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},NULL,'{user}',0), '''
             elif 'connection' in input['column']:
-                connection_name, connection_info = get_table_connection(choosen_table)
+                connection_name, connection_info = table_connection(choosen_table)
                 if connection_name in input['column']:
                     current_name = current_data.loc[row, 'name'] if 'name' in current_data else db_id
                     connecting_tables = connection_name.split('_')
@@ -470,20 +468,20 @@ def process_edit(children, choosen_table, selected_rows, current_data):
                     fk_str = connection_info.loc[connection_info['name'] == f'"{con_col_name}"', 'fk'].values[0]
 
                     table_values = current_data[fk_str.split('"')[1]].values[row].split(', ')
-                    input_values = get_fk_values_for_ids(fk_str, input['value'])
+                    input_values = fk_values_for_ids(fk_str, input['value'])
                     for input_value, input_id in input_values:
                         if input_value not in table_values:
                             edited_values[1 - primairy_table_index] = str(input_value)
                             edited_ids[1 - primairy_table_index] = str(input_id)
-                            sql_insert += f'''({now},'{connection_name}','ADD','{','.join(edited_ids)}','{','.join(edited_values)}','{username}',0), '''
+                            sql_insert += f'''({now},'{connection_name}','ADD','{','.join(edited_ids)}','{','.join(edited_values)}','{user}',0), '''
                         else:
                             table_values.remove(input_value)
                     if len(selected_rows) == 1 and len(table_values):
-                        table_ids = get_fk_ids_for_values(fk_str, table_values)
+                        table_ids = fk_ids_for_values(fk_str, table_values)
                         for table_id, table_name in table_ids:
                             edited_values[1 - primairy_table_index] = table_name
                             edited_ids[1 - primairy_table_index] = str(table_id)
-                            sql_insert += f'''({now},'{connection_name}','DELETE','{','.join(edited_ids)}','{','.join(edited_values)}','{username}',0), '''
+                            sql_insert += f'''({now},'{connection_name}','DELETE','{','.join(edited_ids)}','{','.join(edited_values)}','{user}',0), '''
 
     if sql_insert.split(' ')[-2] != 'VALUES':
         with open_systems_db() as con:
@@ -504,15 +502,14 @@ def process_delete(choosen_table, selected_rows, current_data):
     err_msg = ''
     sql_delete = '''INSERT INTO change_log(time,table_name,column_name,id,value,user,saved) VALUES '''
     now = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    username = get_username()
     table_info = get_column_info(choosen_table)
     pk = table_info.loc[table_info['pk'] == 1, 'name'].values[0].replace('"', '')
 
-    connection_name, connection_info = get_table_connection(choosen_table)
+    connection_name, connection_info = table_connection(choosen_table)
     for row in selected_rows:
         db_id = current_data.loc[row, pk]
         current_name = current_data.loc[row, 'name'] if 'name' in current_data else db_id
-        sql_delete += f'''({now},'{choosen_table}','DELETE',{db_id},'{current_name}','{username}',0), '''
+        sql_delete += f'''({now},'{choosen_table}','DELETE',{db_id},'{current_name}','{username()}',0), '''
         if connection_name:
             current_name = current_data.loc[row, 'name'] if 'name' in current_data else db_id
             connecting_tables = connection_name.split('_')
@@ -520,7 +517,7 @@ def process_delete(choosen_table, selected_rows, current_data):
             second_table = connecting_tables[1 - primairy_table_index]
             foreign_values = current_data.loc[row, current_data.columns.str.contains(second_table)][0]
             fk_str = connection_info.loc[connection_info['name'].str.contains(second_table), 'fk'].values[0]
-            foreign_ids = get_fk_ids_for_values(fk_str, foreign_values.split(', '))
+            foreign_ids = fk_ids_for_values(fk_str, foreign_values.split(', '))
 
             ids = ['', '']
             ids[primairy_table_index] = str(db_id)
@@ -530,7 +527,7 @@ def process_delete(choosen_table, selected_rows, current_data):
             for id, value in foreign_ids:
                 ids[1 - primairy_table_index] = str(id)
                 values[1 - primairy_table_index] = str(value)
-                sql_delete += f'''({now},'{connection_name}','DELETE','{','.join(ids)}','{','.join(values)}','{username}',0), '''
+                sql_delete += f'''({now},'{connection_name}','DELETE','{','.join(ids)}','{','.join(values)}','{username()}',0), '''
 
     if sql_delete.split(' ')[-2] != 'VALUES':
         with open_systems_db() as con:
@@ -547,9 +544,8 @@ def process_delete(choosen_table, selected_rows, current_data):
 
 
 def process_cancel():
-    username = get_username()
     with open_systems_db() as con:
-        sql_str = f'''DELETE FROM change_log WHERE user='{username}' and saved = 0'''
+        sql_str = f'''DELETE FROM change_log WHERE user='{username()}' and saved = 0'''
         try:
             con.execute(sql_str)
             con.commit()
@@ -578,7 +574,7 @@ def dash_application():
         if not choosen_table:
             return dash_table.DataTable(), {'width': '75%', 'display': 'None', 'margin': 'auto'}
 
-        data = get_table_data(choosen_table)
+        data = table_data(choosen_table)
 
         data = apply_unsaved_changes(data, choosen_table)
 
@@ -714,9 +710,9 @@ def dash_application():
     def make_layout():
         if current_user:
             if current_user.is_authenticated:
-                username = current_user.username.lower()
-                if username == 'bram' or username == 'kevin' or username == 'sjoerd' or username == 'jorn':
-                    tables = get_available_tables()
+                user = current_user.username.lower()
+                if user == 'bram' or user == 'kevin' or user == 'sjoerd' or user == 'jorn':
+                    tables = available_tables()
                     return html.Div(children=[
                         dbc.Navbar([
                             dbc.Col(html.H1(children='PATS-C admin')),
