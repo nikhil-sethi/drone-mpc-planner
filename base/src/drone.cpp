@@ -296,16 +296,20 @@ void Drone::post_flight(double time) {
                 post_flight_state = post_wait_after_shake;
                 [[fallthrough]];
         } case post_wait_after_shake: {
+                _baseboard_link->allow_charging(true);
                 if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait) {
                     if (!control.new_attitude_package_available()) { /* wait some more until we receive new package */ }
                     else if (control.attitude_on_pad_OK() && (_baseboard_link->charging() || _baseboard_link->disabled())) {
                         post_flight_state = post_init;
                         _state = ds_charging;
-                        _baseboard_link->allow_charging(true);
-                    } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state())
+                    } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state()) {
                         post_flight_state = post_start_shaking;
-                    else
+                        _baseboard_link->allow_charging(false);
+                    }
+                    else {
                         post_flight_state = post_lost;
+                        _baseboard_link->allow_charging(false);
+                    }
                 }
                 break;
         } case post_lost: {
