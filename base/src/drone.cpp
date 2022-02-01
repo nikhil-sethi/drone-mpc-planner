@@ -311,7 +311,6 @@ void Drone::post_flight(double time) {
                     }
                     else {
                         post_flight_state = post_lost;
-                        _baseboard_link->allow_charging(false);
                     }
                 }
                 break;
