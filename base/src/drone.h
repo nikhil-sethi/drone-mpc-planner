@@ -110,7 +110,7 @@ private:
     int _n_hunt_flights = 0;
 
     //post flight:
-    const float duration_post_shake_wait = 1;
+    const float duration_post_shake_wait = 5;
     const float duration_shake = 3;
     const float duration_reset_yaw_on_pad = 1.5f;
     const float duration_wait_before_shake = 1;
