@@ -33,6 +33,10 @@ if os.path.exists(lb.disable_baseboard_flag):
     logger.info('System does not have a basboard...')
     while os.path.exists(lb.disable_baseboard_flag):
         time.sleep(10)
+elif not os.path.exists('/dev/baseboard'):
+    logger.error('No baseboard connected! Add the disable_baseboard flag to work around this issue.')
+    while not os.path.exists('/dev/baseboard'):
+        time.sleep(10)
 
 Path(lb.socket_dir).mkdir(parents=True, exist_ok=True)
 logger.info('Starting baseboard!')
@@ -123,13 +127,8 @@ executor = socket_communication('Executor', lb.socket_baseboard2executor, True, 
 
 while True:
     try:
-        try:
-            logger.info('Connecting baseboard...')
-            comm = serial.Serial('/dev/baseboard', 115200)
-        except Exception as e:  # pylint: disable=broad-except
-            logger.error('Connection to baseboard failed: ' + str(e))
-            time.sleep(10)
-            continue
+        logger.info('Connecting baseboard...')
+        comm = serial.Serial('/dev/baseboard', 115200, timeout=1)
         logger.info('Connected to baseboard')
 
         time.sleep(2)  # allow the baseboard to boot before sending commands:
@@ -212,29 +211,39 @@ while True:
                 logger.warning("Receiving serial data garbage...")
                 serial_data.clear()
 
-            if ord(c) == ord(prev_pkg.ender) and len(serial_data) >= struct.calcsize(prev_pkg.format):
-                pkg_start = len(serial_data) - struct.calcsize(prev_pkg.format)
-                if serial_data[pkg_start] == ord(prev_pkg.pre_header):
-                    new_pkg = ls.SerialBaseboard2NUCPackage()
-                    new_pkg.parse(serial_data[pkg_start:])
+            if c:
+                if ord(c) == ord(prev_pkg.ender) and len(serial_data) >= struct.calcsize(prev_pkg.format):
+                    pkg_start = len(serial_data) - struct.calcsize(prev_pkg.format)
+                    if serial_data[pkg_start] == ord(prev_pkg.pre_header):
+                        new_pkg = ls.SerialBaseboard2NUCPackage()
+                        new_pkg.parse(serial_data[pkg_start:])
 
-                    if pkg_start > 0:
-                        try:
-                            logger.info("Serial received: " + serial_data[:pkg_start].decode('utf-8'))
-                        except Exception as e:  # pylint: disable=broad-except
-                            logger.info('Received corrupted data from baseboard :( ' + str(e))
-                    if new_pkg.firmware_version == prev_pkg.firmware_version:
-                        led()
+                        if pkg_start > 0:
+                            try:
+                                logger.info("Serial received: " + serial_data[:pkg_start].decode('utf-8'))
+                            except Exception as e:  # pylint: disable=broad-except
+                                logger.info('Received corrupted data from baseboard :( ' + str(e))
+                        if new_pkg.firmware_version == prev_pkg.firmware_version:
+                            led()
 
-                        if first_pkg:
-                            first_pkg = False
-                            logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
-                        logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amp, 2)) + 'A ' + str("%.2f" % round(new_pkg.charging_volts, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v ' + str("%.2f" % round(new_pkg.charge_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(new_pkg.watchdog_state) + ' exe: ' + str(executor_state_pkg.executor_state))
-                        executor_pkg = serial_data[pkg_start:]
-                        executor.send(executor_pkg)
-                        prev_pkg = new_pkg
-                        serial_data.clear()
-                    else:
-                        logger.warning('pkg version mismatch')
+                            if first_pkg:
+                                first_pkg = False
+                                logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
+                            logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amp, 2)) + 'A ' + str("%.2f" % round(new_pkg.charging_volts, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v ' + str("%.2f" % round(new_pkg.charge_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(new_pkg.watchdog_state) + ' exe: ' + str(executor_state_pkg.executor_state))
+                            executor_pkg = serial_data[pkg_start:]
+                            executor.send(executor_pkg)
+                            prev_pkg = new_pkg
+                            serial_data.clear()
+                        else:
+                            logger.warning('pkg version mismatch')
     except Exception as e:  # pylint: disable=broad-except
         logger.error('Baseboard: ' + str(e))
+        time.sleep(10)
+        if 'readiness' in str(e) or 'could not open port /dev/baseboard' in str(e):
+            logger.info('Try to reset Baseboard.')
+            if time.monotonic() > 3600 * 24:  # time.monotonic() is uptime in seconds
+                cmd = 'sudo rtcwake -m off -s 120'
+                lb.execute(cmd, 1, logger_name='baseboard')
+            else:
+                logger.info('Last reboot was less than a day ago, so waiting for hardware watchdog...')
+                time.sleep(60)
