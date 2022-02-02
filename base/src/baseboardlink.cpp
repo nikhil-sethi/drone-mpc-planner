@@ -27,6 +27,7 @@ void BaseboardLink::init(bool replay_mode) {
         thread_receive = std::thread(&BaseboardLink::worker_receive, this);
         thread_send = std::thread(&BaseboardLink::worker_send, this);
         initialized = true;
+        allow_charging(true);
     }
 }
 void BaseboardLink::init_logger() {
