@@ -697,7 +697,7 @@ def create_scatter(detections, system_labels, scatter_x_value, scatter_y_value, 
     df_scatter['symbol'] = df_scatter['video_symbol'] + df_scatter['classification_symbol']
 
     scat_fig = go.Figure()
-    scat_fig.update_yaxes({'range': (df_scatter[scatter_y_value].min() - 0.005, df_scatter[scatter_y_value].max() + 0.005)})
+    scat_fig.update_yaxes({'range': (np.max(df_scatter[scatter_y_value].min() - 0.005, 0), df_scatter[scatter_y_value].max() + 0.005)})
     for sys in system_labels.keys():
         df_scatter_sys = df_scatter[df_scatter['system'] == sys]
         for classification in classification_options:
