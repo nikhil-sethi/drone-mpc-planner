@@ -8,10 +8,16 @@ import argparse
 import glob
 import os
 import re
-
+from enum import Enum
 from datetime import datetime, timedelta
 from pytz import timezone
 import pandas as pd
+
+
+class operation_statuses(Enum):
+    inactive = 0
+    active = 1
+    testing = 2
 
 
 def natural_sort_systems(line):
@@ -25,7 +31,7 @@ def natural_sort_systems(line):
 
 def load_systems():
     with pc.open_meta_db() as con:
-        sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
+        sql_str = '''SELECT system,operation_status,maintenance,installation_date FROM systems WHERE operation_status IN (1, 2) ORDER BY system_id'''
         con.execute(sql_str)
         systems = pd.read_sql_query(sql_str, con)
     return systems
@@ -42,11 +48,35 @@ def execute(cmd):
     popen.stdout.close()
 
 
+def activate_system(system_name):
+    system_id = int(system_name.replace('pats', ''))
+
+    activate_sql = f'''UPDATE systems SET operation_status = 1 WHERE system_id = {system_id}; '''
+    change_log_sql = f'''INSERT INTO change_log(time,table_name,column_name,id,value,user,saved) VALUES
+                            ('{datetime.now().strftime('%Y%m%d_%H%M%S')}','systems','operation_status',{system_id},1,'{system_name}',1); '''
+    with pc.open_meta_db() as con:
+        con.executescript(activate_sql + change_log_sql)
+        con.commit()
+
+
+def check_operational_status(systems):
+    for system, _, _, installation_date, _, _ in systems[(systems['msg'] == '') & (systems['operation_status'] == operation_statuses.testing.value)].to_numpy():
+        if installation_date and installation_date != '20000101_120000':
+            try:
+                installation_date = datetime.strptime(systems.loc[systems['system'] == system, 'installation_date'].values[0], '%Y%m%d_%H%M%S')
+                if datetime.today() > installation_date:
+                    systems.loc[systems['system'] == system, 'activation_msg'] = 'Installation date has passed, system still inactive.'
+            except Exception:
+                systems.loc[systems['system'] == system, 'activation_msg'] = 'Installation date invalled.'
+    return systems
+
+
 def read_processed_jsons(now):
     today_str = now.strftime('%Y%m%d')
     files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
     systems = load_systems()
     systems['msg'] = ''
+    systems['activation_msg'] = ''
     for file in files:
         f = os.path.splitext(os.path.basename((file)))[0]
         if f.startswith('pats'):
@@ -56,10 +86,18 @@ def read_processed_jsons(now):
                     if f_sys in systems['system'].values:
                         msg = fr_processed.readline()
                         systems.loc[systems['system'] == f_sys, 'msg'] = msg
+                        if systems.loc[systems['system'] == f_sys, 'operation_status'].values[0] == operation_statuses.testing.value:
+                            if 'At office' in msg:
+                                at_office = int(msg.split('At office: ')[1].strip()[0])
+                                if not at_office:
+                                    activate_system(f_sys)
+                                    systems.loc[systems['system'] == f_sys, 'activation_msg'] = 'System was activated.'
                     else:
                         print('Warning, system does not exist: ' + f_sys)
             except Exception:
                 pass
+    systems = check_operational_status(systems)
+    systems = systems.drop(columns=['operation_status', 'installation_date'])
     return systems
 
 
@@ -76,28 +114,30 @@ def daily_errors(now):
                 f_sys = e_f.split('_')[0].replace('-proto', '')
                 with open(err_file, "r") as fr_processed:
                     if f_sys in systems['system'].values:
-                        msgs = fr_processed.readlines()
-                        n_errs = len(msgs)
-                        sum_overheat_temp = 0
-                        cnt_overheat_temp = 0
-                        try:
-                            for msg in msgs:
-                                if 'CPU Temperature too high' in msg:
-                                    sum_overheat_temp += float(msg.split('+')[1].split('°')[0])
-                                    cnt_overheat_temp += 1
-                        except Exception as e:
-                            print('Log processing error, could not process overheat temperature for system:' + f_sys)
-                            print(e)
-                        if cnt_overheat_temp:
-                            systems.loc[systems['system'] == f_sys, 'overheat_temp'] = sum_overheat_temp / cnt_overheat_temp
-                            n_errs -= cnt_overheat_temp
-                        else:
-                            systems.loc[systems['system'] == f_sys, 'overheat_temp'] = 0
-                        systems.loc[systems['system'] == f_sys, 'err'] = n_errs
+                        if systems.loc[systems['system'] == f_sys, 'operation_status'].values[0]:
+                            msgs = fr_processed.readlines()
+                            n_errs = len(msgs)
+                            sum_overheat_temp = 0
+                            cnt_overheat_temp = 0
+                            try:
+                                for msg in msgs:
+                                    if 'CPU Temperature too high' in msg:
+                                        sum_overheat_temp += float(msg.split('+')[1].split('°')[0])
+                                        cnt_overheat_temp += 1
+                            except Exception as e:
+                                print('Log processing error, could not process overheat temperature for system:' + f_sys)
+                                print(e)
+                            if cnt_overheat_temp:
+                                systems.loc[systems['system'] == f_sys, 'overheat_temp'] = sum_overheat_temp / cnt_overheat_temp
+                                n_errs -= cnt_overheat_temp
+                            else:
+                                systems.loc[systems['system'] == f_sys, 'overheat_temp'] = 0
+                            systems.loc[systems['system'] == f_sys, 'err'] = n_errs
                     else:
                         print('Warning, system does not exist: ' + f_sys)
             except Exception:
                 pass
+    systems = systems.drop(columns=['installation_date'])
     return systems
 
 
@@ -130,15 +170,10 @@ def n_errors_from_file(file, now: datetime):
     return n_error
 
 
-def send_mail(now, dry_run):
-    systems = read_processed_jsons(now)
-    systems = systems.merge(daily_errors(now), how='inner', on=['system', 'maintenance'])
-    daemon_errors = n_errors_from_file(pc.daemon_error_log, now)
-    patsc_errors = n_errors_from_file(pc.patsc_error_log, now)
-
+def system_info_to_mail(systems: pd.DataFrame, daemon_errors, patsc_errors):
     mail_warnings = ''
     if (sum(systems['msg'] == '') > 0):
-        for system, maintenance, _, _, _ in systems[systems['msg'] == ''].to_numpy():
+        for system, maintenance, _, _, _, _, _ in systems[systems['msg'] == ''].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
@@ -152,7 +187,7 @@ def send_mail(now, dry_run):
                 mail_warnings += system + ', '
         mail_warnings = mail_warnings[:-2] + '\n'
 
-        for system, _, message, err, _ in systems.to_numpy():
+        for system, _, message, _, _, err, _ in systems.to_numpy():
             if not message.startswith('OK.') and message:
                 err_message = ''
                 if err > 1:
@@ -162,8 +197,9 @@ def send_mail(now, dry_run):
     mail_err = ''
     if daemon_errors or patsc_errors:
         mail_err += 'Deamon erros: ' + str(daemon_errors) + ' Pats-c errors: ' + str(patsc_errors) + '\n'
+
     if (sum(systems['err'] > 1) > 0):  # err > 1 because we force rotation with an error
-        for system, maintenance, _, _, _ in systems[systems['err'] > 1].to_numpy():
+        for system, maintenance, _, _, _, _, _ in systems[systems['err'] > 1].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
@@ -179,7 +215,7 @@ def send_mail(now, dry_run):
 
     mail_overheat = ''
     if (sum(systems['overheat_temp'] > 0) > 0):
-        for system, maintenance, _, _, temp in systems[systems['overheat_temp'] > 1].to_numpy():
+        for system, maintenance, _, _, _, _, temp in systems[systems['overheat_temp'] > 1].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
@@ -193,26 +229,56 @@ def send_mail(now, dry_run):
                 mail_overheat += system + ' (' + str(round(temp)) + '°C)' + ', '
         mail_overheat = mail_overheat[:-2] + '\n'
 
-    mail_txt = 'Pats status report ' + str(now) + '\n\n'
-    if mail_err:
-        mail_txt += 'ERRORS\n' + mail_err + '\n'
-    if mail_warnings or mail_overheat:
-        mail_txt += 'WARNINGS\n'
-        if mail_warnings:
-            mail_txt += 'Nothing received from: ' + mail_warnings
-        if mail_overheat:
-            mail_txt += 'Overheating: ' + mail_overheat
-        mail_txt += '\n\n'
+    mail_activation = ''
+    if (sum(systems['activation_msg'] != '') > 0):
+        for system, _, _, activation_msg, _, _, _ in systems[systems['activation_msg'] != ''].to_numpy():
+            mail_activation += system + ': ' + activation_msg.strip() + '\n'
 
-    mail_txt += 'System status:\n'
-    for system, _, message, err, _ in systems.to_numpy():
+    if mail_warnings:
+        mail_warnings = 'Nothing received from: ' + mail_warnings
+    if mail_overheat:
+        mail_warnings += 'Overheating: ' + mail_overheat
+
+    system_txt = ''
+    for system, _, message, _, _, err, _ in systems.to_numpy():
         if message.startswith('OK. '):
             err_message = ''
             if err > 1:
                 err_message = ' System errors: ' + str(err - 1) + '. '
             elif not err:
                 err_message = ' System errors error!!!'
-            mail_txt += system + ':\t' + message.replace('OK.', '').strip() + err_message + '\n'
+            system_txt += system + ':\t' + message.replace('OK.', '').strip() + err_message + '\n'
+
+    return system_txt, mail_err, mail_warnings, mail_activation
+
+
+def send_mail(now, dry_run):
+    systems = read_processed_jsons(now)
+    systems = systems.merge(daily_errors(now), how='inner', on=['system', 'maintenance'])
+    daemon_errors = n_errors_from_file(pc.daemon_error_log, now)
+    patsc_errors = n_errors_from_file(pc.patsc_error_log, now)
+
+    system_txt, mail_err, mail_warnings, mail_activation = system_info_to_mail(systems[systems['operation_status'] == 1], daemon_errors, patsc_errors)
+    system_txt_test, mail_err_test, mail_warnings_test, mail_activation_test = system_info_to_mail(systems[systems['operation_status'] == 2], None, None)
+    if system_txt_test:
+        system_txt += '\nTest systems:\n' + system_txt_test
+    if mail_err_test:
+        mail_err += 'Test systems:\n' + mail_err_test
+    if mail_warnings_test:
+        mail_warnings += 'Test systems:\n' + 'Nothing received from: ' + mail_warnings_test
+    if mail_activation_test:
+        mail_activation += 'Test systems:\n' + mail_activation_test + '\n'
+
+    mail_txt = 'Pats status report ' + str(now) + '\n\n'
+    if mail_err:
+        mail_txt += 'ERRORS\n' + mail_err + '\n'
+    if mail_warnings:
+        mail_txt += 'WARNINGS\n' + mail_warnings + '\n'
+    if mail_activation:
+        mail_txt += 'Activated systems: \n' + mail_activation + '\n'
+    mail_txt += '\n'
+    if system_txt:
+        mail_txt += 'System status: \n' + system_txt
 
     print(mail_txt)
     with open('mail.tmp', 'w') as mail_f:

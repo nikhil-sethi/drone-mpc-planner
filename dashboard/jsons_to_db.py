@@ -262,12 +262,20 @@ def count_errors(data):
         return 0
 
 
+def check_at_office(data):
+    if 'system_at_office' in data:
+        return data['system_at_office']
+    else:
+        return None
+
+
 def process_json(data, dry_run):
     n_statuses = store_status(data, dry_run)
     n_detections = store_detections(data, dry_run)
     n_flights = store_flights(data, dry_run)
     n_errors = count_errors(data)
-    return n_detections, n_statuses, n_flights, n_errors
+    system_at_office = check_at_office(data)
+    return n_detections, n_statuses, n_flights, n_errors, system_at_office
 
 
 def jsons_to_db(input_folder, dry_run):
@@ -292,14 +300,17 @@ def jsons_to_db(input_folder, dry_run):
                                 data_start = datetime.datetime.now() - datetime.timedelta(days=365)
                             if data_start < first_date:
                                 first_date = data_start
+
                             min_required_version = 1.0  # legacy v1
                             if float(data["version"]) >= min_required_version:
-                                n_detections, n_statuses, n_flights, n_errors = process_json(data, dry_run)
+                                n_detections, n_statuses, n_flights, n_errors, system_at_office = process_json(data, dry_run)
                                 if n_statuses:
                                     flag_f.write('OK')
                                     flag_f.write('. Statuses: ' + str(n_statuses))
                                     flag_f.write('. Detections: ' + str(n_detections))
                                     flag_f.write('. Flights: ' + str(n_flights))
+                                    if system_at_office is not None:
+                                        flag_f.write('. At office: ' + str(int(system_at_office)))
                                     flag_f.write('. Errors from jsons: ' + str(n_errors))
                                     flag_f.write('.\n')
                                 else:

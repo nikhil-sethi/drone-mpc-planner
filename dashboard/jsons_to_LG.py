@@ -268,7 +268,7 @@ def upload_json_to_LG(token, json_data, sys_info, dry_run):
 
 
 def load_system_info():
-    sql_str = '''SELECT system,active,lg FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE active = 1 AND lg'''
+    sql_str = '''SELECT system,operation_status,lg FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE operation_status = 1 AND lg'''
     with pc.open_meta_db() as con:
         systems = pd.read_sql_query(sql_str, con)
         systems['system'] = systems['system'].str.upper()
@@ -295,7 +295,7 @@ def jsons_to_LG(input_folder, dry_run=False):
                             sys_name = json_data['system'].replace('-proto', '').upper()
                             if sys_name in systems_df['system'].values:
                                 sys_info = systems_df.loc[systems_df['system'] == sys_name]
-                                if sys_info.iloc[0]['active'] and sys_info.iloc[0]['lg']:
+                                if sys_info.iloc[0]['operation_status'] and sys_info.iloc[0]['lg']:
                                     min_required_version = '1.0'
                                     if 'version' in json_data and pc.check_verion(json_data['version'], min_required_version):
                                         if int(sys_info['lg']) in LG_lookup:

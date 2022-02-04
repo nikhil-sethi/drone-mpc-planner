@@ -18,8 +18,8 @@ import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from cut_moths import cut_all
 
-version_c = "2.0"
-version_x = "1.0"
+version_c = "2.1"
+version_x = "1.1"
 
 
 def measured_exposure(terminal_log_path):
@@ -420,6 +420,13 @@ def process_detections_in_folder(folder, operational_log_start, mode):
     return session_data
 
 
+def check_if_system_at_office():
+    cmd = 'sudo nmcli dev wifi | grep PATS'
+    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p_result = popen.stdout.readline().decode('utf-8')
+    return not p_result
+
+
 def logs_to_json(json_fn, data_folder, sys_str):
 
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
@@ -484,8 +491,11 @@ def logs_to_json(json_fn, data_folder, sys_str):
             with open(folder + '/junk', 'w', encoding="utf-8") as outfile:
                 outfile.write(mode + '\n')
 
+    system_at_office = check_if_system_at_office()
+
     data_detections = {"start_datetime": lb.datetime_to_str(t_start),
                        "end_datetime": lb.datetime_to_str(t_end),
+                       "system_at_office": system_at_office,
                        "detection_count": len(detections),
                        "detections": detections,
                        "flights": flights,

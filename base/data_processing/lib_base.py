@@ -28,6 +28,7 @@ disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_executor_flag = flags_dir + 'disable_executor'
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
+remain_inactive_flag = flags_dir + 'remain_inactive'
 
 socket_baseboard2executor = socket_dir + 'baseboard2executor.socket'
 socket_baseboard2daemon = socket_dir + 'baseboard2daemon.socket'
