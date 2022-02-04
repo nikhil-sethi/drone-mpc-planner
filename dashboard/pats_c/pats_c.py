@@ -424,13 +424,18 @@ def load_status_data(unique_dates, heatmap_detection_counts, heatmap_monster_cou
     systems = installation_dates(systems)
 
     for (sys, installation_date) in systems:
-        installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
-        start_datetime_str = start_datetime.strftime('%Y%m%d_%H%M%S')
+        try:
+            installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
+            real_start_datetime = max([installation_date, start_date])
+        except ValueError as e:
+            print(f'ERROR startdate {sys}: ' + str(e))
+            real_start_datetime = start_datetime
+        start_datetime_str = real_start_datetime.strftime('%Y%m%d_%H%M%S')
         end_datetime_str = end_datetime.strftime('%Y%m%d_%H%M%S')
         sql_str = 'SELECT start_datetime,end_datetime,op_mode FROM status WHERE system="' + sys + '" AND end_datetime > "' + start_datetime_str + '" AND start_datetime < "' + end_datetime_str + '" ORDER BY start_datetime'  # nosec see #952
         with patsc.open_data_db() as con:
             statuses = con.execute(sql_str).fetchall()
-        statuses = insert_down_time(statuses, start_datetime, end_datetime, t_start_id, t_end_id)
+        statuses = insert_down_time(statuses, real_start_datetime, end_datetime, t_start_id, t_end_id)
 
         for status in statuses:
             status_start = datetime.datetime.strptime(status[t_start_id], '%Y%m%d_%H%M%S')
