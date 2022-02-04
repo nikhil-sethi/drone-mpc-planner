@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required
 from .models import User
 from . import db
+import urllib
 
 
 auth = Blueprint('auth', __name__)
@@ -21,12 +22,21 @@ def login_post():
 
     user = User.query.filter_by(username=username).first()
 
+    splitted_url = request.referrer.split('next=')
+    if len(splitted_url) > 1:
+        requested_page = urllib.parse.unquote(splitted_url[1])
+    else:
+        requested_page = None
+
     if not user or not check_password_hash(user.password, password):
         flash('Please check your login details and try again.')
         return redirect(url_for('auth.login'))
 
     login_user(user, remember=remember)
-    return redirect(url_for('/pats-c/'))
+    if requested_page:
+        return redirect(url_for(requested_page))
+    else:
+        return redirect(url_for('/pats-c/'))
 
 
 @auth.route('/logout')
