@@ -54,7 +54,7 @@ void setup() {
     Serial.setTimeout(5);
 
     rgb_leds.init();
-    init_main_loop_timer();
+    // init_main_loop_timer();
     charger.init();
     init_hardware_version();
     // restart_usb()
@@ -178,22 +178,32 @@ void handle_serial_input() {
     }
 }
 
+void apply_loop_delay(int loop_time) {
+    static unsigned long timer = millis();
+    int wait_time = min(loop_time, timer + loop_time - millis());
+    timer = millis();
+    if (wait_time > 0)
+        delay(min(wait_time, 1));
+}
+
 void loop() {
-    if (!wait_for_timer1) {
-        wait_for_timer1 = true;
+    // if (!wait_for_timer1 || true) {
+    //     wait_for_timer1 = true;
 
-        handle_serial_input();
-        handle_watchdog();
-        handle_nuc_reset();
-        // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
-        if (millis() - nuc_watchdog_timer > 20000L)
-            rgb_leds.nuc_inresponsive();
-        rgb_leds.run();
+    apply_loop_delay(15);
 
-        charger.run();
-        if (!charger.calibrating())
-            write_serial();
-    }
+    handle_serial_input();
+    handle_watchdog();
+    handle_nuc_reset();
+    // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
+    if (millis() - nuc_watchdog_timer > 20000L)
+        rgb_leds.nuc_inresponsive();
+    rgb_leds.run();
+
+    charger.run();
+    if (!charger.calibrating())
+        write_serial();
+    // }
 }
 
 void write_serial() {
