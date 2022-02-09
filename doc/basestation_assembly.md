@@ -40,6 +40,7 @@ Add following components to the 3D printed enclosure:
  - Interconnect PCB + power cable for NUC
  - Realsense camera + USB-cable
  - Cooling fan in top cover (air should be blown out of the system, text/arrow on fan should point outwards)
+ - PATS logo stickers
  - Optional: 4G stick + USB-cable
  - Optional: Multimodule + USB-cable ( only for hunting systems)
 
