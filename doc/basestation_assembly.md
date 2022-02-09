@@ -20,7 +20,9 @@ While running continue to step 4 - 6.
 Add nuc data & number to [pats-c.com/sys-adm](pats-c.com/sys-adm)
 	
 ## 5. Serial number registration
-```ssh dash``` in server
+
+```ssh dash``` 
+
 ```nano id_db.txt```
 
 ## 6. Label Nuc
