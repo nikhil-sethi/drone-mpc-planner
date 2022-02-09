@@ -104,6 +104,10 @@ def open_systems_db():
     return con
 
 
+def datetime_to_str(d):
+    return d.strftime('%Y%m%d_%H%M%S')
+
+
 def natural_sort(line):
     def convert(text):
         return int(text) if text.isdigit() else text.lower()

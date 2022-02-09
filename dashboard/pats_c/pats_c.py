@@ -169,30 +169,30 @@ def window_filter_monster(detection_df, monster_df):
     return detections_without_monsters
 
 
-def load_detection_df(systems, start_date, end_date, detection_class_info, selected_filter, columns=[]):
+def load_detections_df(systems, start_datetime, end_datetime, detection_class_info, selected_filter, columns=[]):
     columns.extend(['system', 'start_datetime', 'monster'])
     detection_df = pd.DataFrame()
     monster_df = pd.DataFrame()
-    systems = installation_dates(systems)
+    systems = installation_datetimes(systems)
     with patsc.open_data_db() as con:
-        for (system, installation_date) in systems:
+        for (system, installation_datetime_str) in systems:
             try:
-                installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
-                real_start_date = max([installation_date, start_date])
+                installation_datetime = datetime.datetime.strptime(installation_datetime_str, '%Y%m%d_%H%M%S')
+                real_start_date = max([installation_datetime, start_datetime])
             except ValueError as e:
                 print(f'ERROR startdate {system}: ' + str(e))
-                real_start_date = start_date
+                real_start_date = start_datetime
 
-            time_str = f'''start_datetime > '{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' AND start_datetime <= '{(end_date+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' '''  # with added monster window
-            system_str = create_system_filter_sql_str(start_date, system)
+            time_str = f'''start_datetime > '{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' AND start_datetime <= '{(end_datetime+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' '''  # with added monster window
+            system_str = create_system_filter_sql_str(start_datetime, system)
             if selected_filter == 'LIA':
                 detection_str = create_lia_filter_sql_str(detection_class_info)
             else:
-                detection_str = create_classic_filter_sql_str(start_date, detection_class_info)
+                detection_str = create_classic_filter_sql_str(start_datetime, detection_class_info)
             sql_str = f'''SELECT {', '.join(set(columns))} FROM detections
-                         WHERE {system_str}
-                         AND {time_str}
-                         AND {detection_str}'''  # nosec see #952
+                        WHERE {system_str}
+                        AND {time_str}
+                        AND {detection_str}'''  # nosec see #952
             detection_sys_df = pd.read_sql_query(sql_str, con)
             detection_sys_df['start_datetime'] = pd.to_datetime(detection_sys_df['start_datetime'], format='%Y%m%d_%H%M%S')
 
@@ -200,30 +200,30 @@ def load_detection_df(systems, start_date, end_date, detection_class_info, selec
 
             if 'Anomalies' not in detection_class_info['label']:
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
-                detection_sys_df = detection_sys_df[(detection_sys_df['start_datetime'] > real_start_date) & (detection_sys_df['start_datetime'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
+                detection_sys_df = detection_sys_df[(detection_sys_df['start_datetime'] > real_start_date) & (detection_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_sys_df = window_filter_monster(detection_sys_df, monster_sys_df)
-                monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
+                monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_df = detection_df.append(detection_sys_df)
             else:
-                monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
+                monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_df = detection_df.append(monster_sys_df)
 
             monster_df = monster_df.append(monster_sys_df)
 
-    if use_proto(start_date):
+    if use_proto(start_datetime):
         detection_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
     return detection_df, monster_df
 
 
 def load_detections_of_hour(systems, start_date, end_date, hour, detection_class_info):
-    systems = installation_dates(systems)
+    systems = installation_datetimes(systems)
     hour_strs = [str(hour - 1).rjust(2, '0'), str(hour).rjust(2, '0'), str(hour + 1).rjust(2, '0')]
     detections_df = pd.DataFrame()
     with patsc.open_data_db() as con:
-        for (system, installation_date) in systems:
+        for (system, installation_datetime) in systems:
             try:
-                installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
-                real_start_date = max([installation_date, start_date])
+                installation_datetime = datetime.datetime.strptime(installation_datetime, '%Y%m%d_%H%M%S')
+                real_start_date = max([installation_datetime, start_date])
             except ValueError as e:
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
@@ -276,7 +276,7 @@ def load_detection_data(selected_systems, start_date, end_date, detection_class_
     # A detection seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
     start_datetime = start_date + datetime.timedelta(hours=12)
     end_datetime = end_date + datetime.timedelta(hours=12)
-    detection_df, monster_df = load_detection_df(selected_systems, start_datetime, end_datetime, detection_class_info, selected_filter)  # Shift to include the detections of today until 12:00 in the afternoon.
+    detection_df, monster_df = load_detections_df(selected_systems, start_datetime, end_datetime, detection_class_info, selected_filter)  # Shift to include the detections of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
@@ -333,7 +333,7 @@ def insert_down_time(statuses, start_date, end_date, t_start_id, t_end_id):
     return down_statuses
 
 
-def installation_dates(systems):
+def installation_datetimes(systems):
     with patsc.open_systems_db() as con:
         username = current_user.username
         systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
@@ -358,12 +358,12 @@ def load_status_data(unique_dates, heatmap_detection_counts, heatmap_monster_cou
     t_start_id = 0
     t_end_id = 1
     status_id = 2
-    systems = installation_dates(systems)
+    systems = installation_datetimes(systems)
 
-    for (sys, installation_date) in systems:
+    for (sys, installation_datetime) in systems:
         try:
-            installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
-            real_start_datetime = max([installation_date, start_date])
+            installation_datetime = datetime.datetime.strptime(installation_datetime, '%Y%m%d_%H%M%S')
+            real_start_datetime = max([installation_datetime, start_date])
         except ValueError as e:
             print(f'ERROR startdate {sys}: ' + str(e))
             real_start_datetime = start_datetime
@@ -843,6 +843,7 @@ def dash_application():
         Output('staaf24h_kaart', 'style'),
         Output('selected_heatmap_data', 'children'),
         Output('Loading_animation', 'style'),
+        Output('download_csv_container', 'style'),
         Input('date_range_picker', 'start_date'),
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
@@ -860,6 +861,7 @@ def dash_application():
     def update_ui_hist_and_heat(start_date, end_date, selected_systems, selected_detection_class, clickData_hm, selected_filter, selected_heat, system_options, hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style):  # pylint: disable=unused-variable
         loading_animation_style = {'display': 'block'}
         system_labels = {x['value']: x['label'] for x in system_options if x['value'] in selected_systems}
+        download_csv_style = {'display': 'none'}
 
         prop_id = dash.callback_context.triggered[0]['prop_id']
         if prop_id == 'date_range_picker.value' or prop_id == 'systems_dropdown.value' or prop_id == 'detection_class_dropdown.value':
@@ -875,7 +877,7 @@ def dash_application():
             hm_style = {'display': 'none'}
             hist_style = {'display': 'none'}
             hist24h_style = {'display': 'none'}
-            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style, download_csv_style
 
         if prop_id != 'hete_kaart.clickData' and prop_id != 'classification_dropdown.value':
             unique_dates, heatmap_detection_counts, heatmap_monster_counts, df_hist, hist_24h_data = load_detection_data(selected_systems, start_date, end_date, selected_detection_class, selected_filter)
@@ -883,7 +885,7 @@ def dash_application():
                 hm_style = {'display': 'none'}
                 hist_style = {'display': 'none'}
                 hist24h_style = {'display': 'none'}
-                return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+                return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style, download_csv_style
 
             hist_fig, hist_style = create_hist(df_hist, unique_dates, system_labels)
             hist24h_fig, hist24h_style = create_24h_hist(hist_24h_data, hour_labels, system_labels)
@@ -894,8 +896,39 @@ def dash_application():
             selected_heat, unselected_heat = update_selected_heat(clickData_hm, selected_heat)
             hm_fig = update_heatmap(selected_heat, unselected_heat, hm_fig)
         loading_animation_style = {'display': 'none'}
+        download_csv_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%', 'textAlign': 'center'}
 
-        return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+        return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style, download_csv_style
+
+    @app.callback(
+        Output("download_csv", "data"),
+        State('date_range_picker', 'start_date'),
+        State('date_range_picker', 'end_date'),
+        State('systems_dropdown', 'value'),
+        State('detection_class_dropdown', 'value'),
+        State('filter_dropdown', 'value'),
+        Input("btn_csv", "n_clicks"),
+        prevent_initial_call=True,
+    )
+    def download_csv_click(start_date_str, end_date_str, systems, detection_class_info, selected_filter, n_clicks):
+        if not start_date_str or not end_date_str or not systems or not selected_filter:
+            return []
+
+        end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_datetime = datetime.datetime.combine(end_date, datetime.datetime.min.time()) + datetime.timedelta(hours=12)
+        start_datetime = datetime.datetime.combine(start_date, datetime.datetime.min.time()) + datetime.timedelta(hours=12)
+
+        csv_fn = ''
+        for sys_name in systems:
+            csv_fn += sys_name + '_'
+        csv_fn += patsc.datetime_to_str(start_datetime) + '_' + patsc.datetime_to_str(end_datetime) + '_' + selected_filter + '.csv'
+
+        columns = ['system', 'start_datetime', 'duration', 'vel_mean', 'vel_std', 'vel_max', 'dist_traveled', 'dist_traject', 'size', 'monster']
+        detection_df, _ = load_detections_df(systems, start_datetime, end_datetime, detection_class_info, selected_filter, columns)
+        detection_df.drop('monster', 1, inplace=True)
+
+        return dcc.send_data_frame(detection_df.to_csv, csv_fn, index=False)
 
     @ app.callback(
         Output('verstrooide_kaart', 'figure'),
@@ -913,7 +946,7 @@ def dash_application():
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'),
         State('filter_dropdown', 'value'))
-    def update_ui_scatter(start_date, end_date, selected_systems, selected_detection_class, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options, selected_filter):  # pylint: disable=unused-variable
+    def update_ui_scatter(start_date_str, end_date_str, selected_systems, selected_detection_class, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options, selected_filter):  # pylint: disable=unused-variable
         scat_fig = go.Figure(data=go.Scatter())
         scat_style = {'display': 'none'}
         scat_axis_select_style = {'display': 'none'}
@@ -940,18 +973,18 @@ def dash_application():
                     hour = hm_cell['hour']
                     if hour < 12:
                         hour += 24
-                    start_date = datetime.datetime.strptime(hm_cell['start_date'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    detections_hour, _ = load_detection_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
+                    start_datetime = datetime.datetime.strptime(hm_cell['start_date'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
+                    detections_hour, _ = load_detections_df(selected_systems, start_datetime, start_datetime + datetime.timedelta(hours=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
                     detections = detections.append(detections_hour)
             elif hist_selected_bars and (prop_id == 'staaf_kaart.selectedData' or axis_change):
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
-                    start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    detections_day, _ = load_detection_df([sys], start_date, start_date + datetime.timedelta(days=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
+                    start_datetime = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
+                    detections_day, _ = load_detections_df([sys], start_datetime, start_datetime + datetime.timedelta(days=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
                     detections = detections.append(detections_day)
             elif hist24h_selected_bars and (prop_id == 'staaf24h_kaart.selectedData' or axis_change):
-                start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-                end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+                start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d')
+                end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d')
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
@@ -1188,6 +1221,14 @@ def dash_application():
             ([
                 dcc.Graph(id='hete_kaart', style={'display': 'none'}, figure=fig_hm)
             ]),
+            html.Div
+            ([
+                html.Br(),
+                dbc.Button("Export CSV", id="btn_csv"),
+                dcc.Download(id="download_csv"),
+                html.Br()
+            ], style={'display': 'none'}, id="download_csv_container"),
+            html.Br(),
             html.Div
             ([
                 html.Br(),
