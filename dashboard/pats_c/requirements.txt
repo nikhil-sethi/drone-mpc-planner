@@ -13,3 +13,4 @@ dash_daq
 plotly
 gunicorn
 aenum
+pillow

@@ -9,11 +9,16 @@ from pathlib import Path
 sys.path.append('pats_c/lib')  # noqa
 import lib_patsc as patsc
 
-from . import pats_c, system_widget
+from . import pats_c, system_widget, live, timelapse
+
+if not os.path.exists(os.path.expanduser('~/patsc/static/')):
+    os.makedirs(os.path.expanduser('~/patsc/static/'))
 
 db = SQLAlchemy()
-dash_c = pats_c.dash_application()
-dash_sys_wid = system_widget.dash_application()
+patsc_view = pats_c.dash_application()
+sys_wid_view = system_widget.dash_application()
+live_view = live.dash_application()
+timelapse_view = timelapse.dash_application()
 
 Path(Path(patsc.patsc_error_log).parent.absolute()).mkdir(parents=True, exist_ok=True)
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -39,13 +44,19 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(server)
 
-    dash_c.init_app(app=server)
-    dash_sys_wid.init_app(app=server)
+    patsc_view.init_app(app=server)
+    sys_wid_view.init_app(app=server)
+    live_view.init_app(app=server)
+    timelapse_view.init_app(app=server)
 
     for view_func in server.view_functions:
-        if view_func.startswith(dash_c.config['url_base_pathname']):
+        if view_func.startswith(patsc_view.config['url_base_pathname']):
             server.view_functions[view_func] = login_required(server.view_functions[view_func])
-        if view_func.startswith(dash_sys_wid.config['url_base_pathname']):
+        if view_func.startswith(sys_wid_view.config['url_base_pathname']):
+            server.view_functions[view_func] = login_required(server.view_functions[view_func])
+        if view_func.startswith(live_view.config['url_base_pathname']):
+            server.view_functions[view_func] = login_required(server.view_functions[view_func])
+        if view_func.startswith(timelapse_view.config['url_base_pathname']):
             server.view_functions[view_func] = login_required(server.view_functions[view_func])
 
     from .models import User

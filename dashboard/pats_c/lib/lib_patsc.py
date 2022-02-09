@@ -6,6 +6,7 @@ import subprocess
 import sqlite3
 import numpy as np
 import pandas as pd
+from flask_login import current_user
 
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
 db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
@@ -14,6 +15,58 @@ daemon_error_log = os.path.expanduser('~/patsc/logs/daemon_error.log')
 patsc_error_log = os.path.expanduser('~/patsc/logs/patsc_error.log')
 
 monster_window = pd.Timedelta(minutes=5)
+
+
+def init_system_and_customer_options(customer_dict, demo):
+    sys_options = []
+    customer_options = []
+    for customer in customer_dict.keys():
+        if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
+            customer_options.append({'label': customer, 'value': customer})
+            for i, (system, location, crop) in enumerate(customer_dict[customer]):
+                if customer == 'Pats':
+                    sys_options.append({'label': system, 'value': system, 'title': system})
+                elif demo:
+                    sys_options.append({'label': 'Demo ' + crop, 'value': system, 'title': system})
+                    break  # This break makes sure that only one system per customer is added for the demo user, like Bram wanted. Dirty demo hack part uno.
+                elif location:
+                    if len(customer_dict.keys()) == 1:
+                        sys_options.append({'label': location, 'value': system, 'title': system})
+                    else:
+                        sys_options.append({'label': customer + ' ' + location, 'value': system, 'title': system})
+                else:
+                    sys_options.append({'label': customer + ' ' + str(i + 1), 'value': system, 'title': system})
+    return customer_options, sys_options
+
+
+def load_systems_customer(customer_name, cur):
+    sql_str = '''SELECT system,location,crops.name FROM systems
+                 JOIN customers ON customers.customer_id = systems.customer_id
+                 JOIN crops ON crops.crop_id = customers.crop_id
+                 WHERE customers.name = :customer_name
+                 ORDER BY system_id''', {'customer_name': customer_name}
+    systems = cur.execute(*sql_str).fetchall()
+    return systems
+
+
+def load_customers():
+    if current_user:
+        if current_user.is_authenticated:
+            username = current_user.username
+            demo = 'demo' in username
+            with open_systems_db() as con:
+                sql_str = '''SELECT customers.name FROM customers
+                            JOIN user_customer_connection ON user_customer_connection.customer_id=customers.customer_id
+                            JOIN users ON users.user_id=user_customer_connection.user_id
+                            WHERE users.name = :username
+                            ORDER BY customers.name''', {'username': username}
+                cur = con.execute(*sql_str)
+                customers = cur.fetchall()
+                customer_dict = {}
+                for customer in customers:
+                    customer_dict[customer[0]] = load_systems_customer(customer[0], cur)
+            return customer_dict, demo
+    return {}, False
 
 
 def regexp(expr, item):

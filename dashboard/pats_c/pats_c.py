@@ -7,7 +7,6 @@ from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
 from enum import Enum
-
 import dash
 from dash import dcc
 from dash import html
@@ -16,10 +15,10 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
-import pats_c.lib.lib_patsc as patsc
-
 from flask_login import current_user
 from urllib.parse import quote as urlquote
+import pats_c.lib.lib_patsc as patsc
+
 
 customer_dict: Dict[str, List[Tuple[str, str]]] = {}
 detection_columns: List[str] = []
@@ -38,36 +37,6 @@ class Heatmap_Cell(Enum):
     selected_cell = -3
     system_down_cell = -2
     system_offline_cell = -1
-
-
-def load_systems_customer(customer_name, cur):
-    sql_str = '''SELECT system,location,crops.name FROM systems
-                 JOIN customers ON customers.customer_id = systems.customer_id
-                 JOIN crops ON crops.crop_id = customers.crop_id
-                 WHERE customers.name = :customer_name
-                 ORDER BY system_id''', {'customer_name': customer_name}
-    systems = cur.execute(*sql_str).fetchall()
-    return systems
-
-
-def load_customers():
-    if current_user:
-        if current_user.is_authenticated:
-            username = current_user.username
-            demo = 'demo' in username
-            with patsc.open_systems_db() as con:
-                sql_str = '''SELECT customers.name FROM customers
-                             JOIN user_customer_connection ON user_customer_connection.customer_id=customers.customer_id
-                             JOIN users ON users.user_id=user_customer_connection.user_id
-                             WHERE users.name = :username
-                             ORDER BY customers.name''', {'username': username}
-                cur = con.execute(*sql_str)
-                customers = cur.fetchall()
-                customer_dict = {}
-                for customer in customers:
-                    customer_dict[customer[0]] = load_systems_customer(customer[0], cur)
-            return customer_dict, demo
-    return {}, False
 
 
 def init_lia_options():
@@ -114,36 +83,14 @@ def init_classic_options():
     return detection_classes
 
 
-def init_system_and_customer_options(customer_dict, demo):
-    sys_options = []
-    customer_options = []
-    for customer in customer_dict.keys():
-        if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
-            customer_options.append({'label': customer, 'value': customer})
-            for i, (system, location, crop) in enumerate(customer_dict[customer]):
-                if customer == 'Pats':
-                    sys_options.append({'label': system, 'value': system, 'title': system})
-                elif demo:
-                    sys_options.append({'label': 'Demo ' + crop, 'value': system, 'title': system})
-                    break  # This break makes sure that only one system per customer is added for the demo user, like Bram wanted. Dirty demo hack part uno.
-                elif location:
-                    if len(customer_dict.keys()) == 1:
-                        sys_options.append({'label': location, 'value': system, 'title': system})
-                    else:
-                        sys_options.append({'label': customer + ' ' + location, 'value': system, 'title': system})
-                else:
-                    sys_options.append({'label': customer + ' ' + str(i + 1), 'value': system, 'title': system})
-    return customer_options, sys_options
-
-
 def init_dropdowns():
-    customer_dict, demo = load_customers()
+    customer_dict, demo = patsc.load_customers()
     customer_value = None
     customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
     detection_classes_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
     filter_style = {'width': '0%', 'display': 'none', 'float': 'right'}
-    customer_options, sys_options = init_system_and_customer_options(customer_dict, demo)
+    customer_options, sys_options = patsc.init_system_and_customer_options(customer_dict, demo)
 
     if len(customer_dict.keys()) == 1 or demo:
         customer_value = [list(customer_dict)[0]]
@@ -321,16 +268,6 @@ def remove_unauthoirized_system(selected_systems):  # this is solely a security 
         if s in systems:
             authorized_systems.append(s)
     return authorized_systems
-
-
-def system_sql_str(systems):
-    if not isinstance(systems, list):
-        systems = [systems]
-    systems_str = ' ('
-    for system in systems:
-        systems_str = systems_str + 'system="' + system + '" OR ' + 'system="' + system.replace('pats', 'pats-proto') + '" OR '
-    systems_str = systems_str[:-4] + ') '
-    return systems_str
 
 
 def load_detection_data(selected_systems, start_date, end_date, detection_class_info, selected_filter):
@@ -817,7 +754,7 @@ def download_video(selected_detection, detection_columns):
 
 
 def dash_application():
-    print("Starting PATS-C dash application!")
+    print("Starting PATS-C dashboard!")
     app = dash.Dash(__name__, server=False, url_base_pathname='/pats-c/', title='PATS-C')
 
     pio.templates.default = 'plotly_dark'
@@ -826,7 +763,7 @@ def dash_application():
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
     def select_system_customer(selected_customer):  # pylint: disable=unused-variable
-        customer_dict, demo = load_customers()
+        customer_dict, demo = patsc.load_customers()
         value = []
         if selected_customer:
             for customer in selected_customer:
@@ -1124,9 +1061,6 @@ def dash_application():
                 con_class.commit()
 
         return selected_classification
-
-    if not os.path.exists(os.path.expanduser('~/patsc/static/')):
-        os.makedirs(os.path.expanduser('~/patsc/static/'))
 
     with patsc.open_data_db() as con:
         detection_columns = [i[1] for i in con.execute('PRAGMA table_info(detections)')]
