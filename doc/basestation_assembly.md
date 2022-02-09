@@ -4,7 +4,11 @@
 ## 1. Nuc assembly (time: 3 min)
 - 1 RAM strip
 - 1 SSD
-	
+
+Ensure correct assembly of RAM module:
+
+![IMG_20220209_111140](https://user-images.githubusercontent.com/14312271/153180176-b3d0ffe1-f0ed-4357-b9a8-eb36c5735425.jpg)
+
 ## 2. Change boot settings
 Press F8 while booting
 
