@@ -1,46 +1,55 @@
-Nuc assembly (time: 3 min)
-	1 RAM strip
-	1 SSD
+# Building a PATS-C system
+
+
+## 1. Nuc assembly (time: 3 min)
+- 1 RAM strip
+- 1 SSD
 	
-Change boot settings (Boot F8)
-	Power - Secondary Power Settings - After Power Failure: Power On
-	Boot - disable Secure Boot
+## 2. Change boot settings
+Press F8 while booting
 
-Flash Nuc with flash USB
+Power --> Secondary Power Settings --> After Power Failure: Power On
+
+Boot --> disable Secure Boot
+
+## 3. Flash Nuc with flash USB
+While running continue to step 4 - 6.
 	
-Nuc sign up to database
-	pats-c.com/sys-adm
+## 4. Add nuc to database
+
+Add nuc data & number to [pats-c.com/sys-adm](pats-c.com/sys-adm)
 	
-Serial number registration
-	"ssh dash" in server
-	"nano id_db.txt"
+## 5. Serial number registration
+```ssh dash``` in server
+```nano id_db.txt```
 
-Label Nuc
+## 6. Label Nuc
+Print "PATSXXX" twice (for nuc and basestation)
 
-Assemble PATS-C
-
-Mount PATS-C on test pole
-
-Check processes in tab 'Bb' and 'PATS'
-	"ssh patsXXX"
-	check processes
-	in /pats/flags remove disable and disable_baseboard
-
-Commands:
-cd	(change dir)
-ls	(list items)
-rm	(remove)
-sudo halt -p (shut down)
-
-After installing the software on the NUC, it can be inserted in the printed basestation together with the following components:
-
+## 7. Assemble PATS-C
+Add following components to the 3D printed enclosure:
 
  - NUC
  - 19V Power adapter
  - Interconnect PCB + power cable for NUC
  - Realsense camera + USB-cable
- - 4G stick + USB-cable
  - Cooling fan in top cover (air should be blown out of the system, text/arrow on fan should point outwards)
+ - Optional: 4G stick + USB-cable
  - Optional: Multimodule + USB-cable ( only for hunting systems)
 
+## 8. Test PATS-C
 
+Mount PATC-C on test pole and connect to mains.
+
+
+``` ssh patsXXX ```
+
+Check processes in tab 'Bb' and 'PATS'
+
+in /pats/flags remove disable and disable_baseboard
+
+Commands:
+```cd```	(change dir)
+```ls```	(list items)
+```rm```	(remove)
+```sudo halt -p``` (shut down)
