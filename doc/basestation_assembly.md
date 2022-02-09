@@ -48,8 +48,13 @@ Check processes in tab 'Bb' and 'PATS'
 
 in /pats/flags remove disable and disable_baseboard
 
-Commands:
+
+Commonly used commands:
+
 ```cd```	(change dir)
+
 ```ls```	(list items)
+
 ```rm```	(remove)
+
 ```sudo halt -p``` (shut down)
