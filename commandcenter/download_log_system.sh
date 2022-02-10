@@ -5,9 +5,9 @@ OUTDIR_LOG=/home/pats/pats/data/$fdt
 echo "Save bag $1"
 count=0
 until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
-	if pgrep -x "pats" > /dev/null
+	if pgrep -x "executor" > /dev/null
 	then
-		killall pats || true
+		killall executor || true
 	fi
 	sleep 0.5
 	mkdir ${OUTDIR_LOG}
@@ -15,9 +15,9 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	mv ~/code/pats/base/build/terminal.log $OUTDIR_LOG/ || true
 	touch ${OUTDIR_LOG}/cc_download
 	sleep 2
-	if pgrep -x "pats" > /dev/null
+	if pgrep -x "executor" > /dev/null
 	then
-		killall pats -9 || true
+		killall executor -9 || true
 	fi
 EOF
 do
