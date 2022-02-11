@@ -6,6 +6,23 @@ BASEBOARD_PACKAGE_PRE_HEADER = '@'
 EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
 
+charging_state_names = [
+    'disabled',
+    'init',
+    'drone_not_on_pad',
+    'contact_problem',
+    'bat_dead',
+    'bat_does_not_charge',
+    'revive_charging',
+    'normal_charging',
+    'trickle_charging',
+    'discharge',
+    'measure',
+    'wait_until_drone_ready',
+    'calibrating'
+]
+
+
 class baseboard_package_headers(Enum):
     header_SerialBaseboard2NUCPackage = 'P',
     header_SerialNUC2BaseboardChargingPackage = 'C',
@@ -164,7 +181,7 @@ class SerialNUC2BaseboardChargingPackage:
     header = baseboard_package_headers.header_SerialNUC2BaseboardChargingPackage.value[0]
     enable_charging = 0
     calibrate = 0
-    volts = 0
+    volts = 0.0
     reset_calibration = 0
     ender = '\n'
 

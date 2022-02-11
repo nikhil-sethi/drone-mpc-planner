@@ -34,7 +34,37 @@ void RGBLeds::blink(int periods[], int n_period, unsigned long millis, int led_i
 
 void RGBLeds::run() {
 
-    if (update_state) {
+    if (update_state[0]) {
+        blink_leds[0] = blink_solid;
+        update_FastLED = true;
+        switch (_led0_state) {
+            case LED0_init: { // solid white
+                    rgb_setpoint_leds[0] = CRGB(5, 5, 5);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
+            } case LED0_disabled: { // solid white
+                    rgb_setpoint_leds[0] = CRGB(15, 15, 15);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
+            } case LED0_calibrating: { // solid yellow
+                    rgb_setpoint_leds[0] = CRGB(200, 200, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
+            } case LED0_not_charging: { // solid red
+                    rgb_setpoint_leds[0] = CRGB(50, 0, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
+            } case LED0_charging: { // solid blue
+                    rgb_setpoint_leds[0] = CRGB(0, 0, 50);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
+                }
+        }
+        update_state[0] = false;
+    }
+
+
+    if (update_state[1]) {
         blink_leds[1] = blink_solid;
         update_FastLED = true;
         switch (_led1_state) {
@@ -82,7 +112,7 @@ void RGBLeds::run() {
                     break;
                 }
         }
-        update_state = false;
+        update_state[1] = false;
     }
 
     //some states that can exist in parallel with the main state:

@@ -48,6 +48,10 @@ void setup() {
     pinMode(FAN_RPM_PIN, INPUT_PULLUP);
     pinMode(BUTTON_1_PIN, INPUT);
     pinMode(BUTTON_2_PIN, INPUT);
+
+    pinMode(HARDWARE_VERSION_PIN, OUTPUT);
+    analogWrite(HARDWARE_VERSION_PIN, 0);
+    delay(1);
     pinMode(HARDWARE_VERSION_PIN, INPUT);
 
     Serial.begin(115200);
@@ -55,7 +59,7 @@ void setup() {
 
     rgb_leds.init();
     // init_main_loop_timer();
-    charger.init();
+    charger.init(&rgb_leds);
     init_hardware_version();
     // restart_usb()
     // read_buttons();
@@ -201,8 +205,7 @@ void loop() {
     rgb_leds.run();
 
     charger.run();
-    if (!charger.calibrating())
-        write_serial();
+    write_serial();
     // }
 }
 
@@ -267,12 +270,14 @@ void handle_watchdog() {
 }
 
 void init_hardware_version() {
-    uint16_t analog_value = analogRead(A1);
+    uint16_t analog_value = analogRead(HARDWARE_VERSION_PIN);
     delay(10);
-    analog_value = analogRead(A1);
+    analog_value = analogRead(HARDWARE_VERSION_PIN);
     analog_value = ~analog_value;
     analog_value = analog_value >> 4;
     analog_value &= 0b11111;
+    if (analog_value == 31)
+        analog_value = 0;
     Serial.print("Hardware version ");
     Serial.println(analog_value);
     hardware_version = analog_value;

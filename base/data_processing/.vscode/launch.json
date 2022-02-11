@@ -37,6 +37,17 @@
         "-d"
       ],
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Baseboard tool",
+      "type": "python",
+      "args": [
+        "-c",
+        "4.2"
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/baseboardtool.py",
+      "console": "integratedTerminal"
     }
   ]
 }
