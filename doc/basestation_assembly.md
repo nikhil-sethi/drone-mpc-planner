@@ -27,12 +27,19 @@ Add nuc data & number to [pats-c.com/sys-adm](pats-c.com/sys-adm)
 
 ```ssh dash``` 
 
+ctrl + a then 5
+
 ```nano id_db.txt```
 
-## 6. Label Nuc
-Print "PATSXXX" twice (for nuc and basestation)
+add serial number to the bottom of the file, followed by the next patsNUMBER.
 
-## 7. Assemble PATS-C
+Label the Nuc. Print "PATSXXX" twice (for nuc and basestation)
+
+"ctrl + X" to close, save under the same name.
+
+close dash with "ctrl + A" then "d".
+
+## 6. Assemble PATS-C
 Add following components to the 3D printed enclosure:
 
  - NUC
@@ -44,7 +51,7 @@ Add following components to the 3D printed enclosure:
  - Optional: 4G stick + USB-cable
  - Optional: Multimodule + USB-cable ( only for hunting systems)
 
-## 8. Test PATS-C
+## 7. Test PATS-C
 
 Mount PATC-C on test pole and connect to mains.
 
@@ -54,6 +61,9 @@ Mount PATC-C on test pole and connect to mains.
 Check processes in tab 'Bb' and 'PATS'
 
 in /pats/flags remove disable and disable_baseboard
+
+to close use "ctrl + A" then "d" _(not "ctrl + C"!)_
+
 
 
 Commonly used commands:
