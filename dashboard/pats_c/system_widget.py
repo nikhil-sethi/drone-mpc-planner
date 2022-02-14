@@ -711,7 +711,7 @@ def dash_application():
         if current_user:
             if current_user.is_authenticated:
                 user = current_user.username.lower()
-                if user == 'bram' or user == 'kevin' or user == 'sjoerd' or user == 'jorn':
+                if user == 'bram' or user == 'kevin' or user == 'sjoerd' or user == 'jorn' or user == 'joelle':
                     tables = available_tables()
                     return html.Div(children=[
                         dbc.Navbar([
