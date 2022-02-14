@@ -21,7 +21,7 @@ While running continue to step 4 - 6.
 	
 ## 4. Add nuc to database
 
-Add nuc data & number to [pats-c.com/sys-adm](pats-c.com/sys-adm)
+Add nuc data & number to [pats-c.com/sys-adm](http://pats-c.com/sys-adm)
 	
 ## 5. Serial number registration
 
