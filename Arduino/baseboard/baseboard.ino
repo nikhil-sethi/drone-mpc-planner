@@ -21,10 +21,6 @@ uint16_t hardware_version = 0;
 
 unsigned char serial_input_buffer[MAX_PACKAGE_READ_SIZE] = {0};
 
-bool wait_for_timer1 = true;
-ISR(TIMER1_COMPA_vect) {
-    wait_for_timer1 = false;
-}
 
 void setup() {
     init_values_from_eeprom();
@@ -58,31 +54,13 @@ void setup() {
     Serial.setTimeout(5);
 
     rgb_leds.init();
-    // init_main_loop_timer();
+
     charger.init(&rgb_leds);
     init_hardware_version();
     // restart_usb()
     // read_buttons();
 
     debugln("Baseboard started!");
-}
-
-
-void init_main_loop_timer() {
-    cli(); // stop interrupts
-    // http://www.8bit-era.cz/arduino-timer-interrupts-calculator.html
-    TCCR1A = 0; // set entire TCCR1A register to 0
-    TCCR1B = 0; // same for TCCR1B
-    TCNT1  = 0; // initialize counter value to 0
-    // set compare match register for 66.000066000066 Hz increments
-    OCR1A = 30302; // = 16000000 / (8 * 66.000066000066) - 1 (must be <65536)
-    // turn on CTC mode
-    TCCR1B |= (1 << WGM12);
-    // Set CS12, CS11 and CS10 bits for 8 prescaler
-    TCCR1B |= (0 << CS12) | (1 << CS11) | (0 << CS10);
-    // enable timer compare interrupt
-    TIMSK1 |= (1 << OCIE1A);
-    sei(); // allow interrupts
 }
 
 void init_values_from_eeprom() {
@@ -102,7 +80,7 @@ void handle_serial_input() {
             {
                 case header_SerialNUC2BaseboardChargingPackage: {
                         SerialNUC2BaseboardChargingPackage *pkg = reinterpret_cast<SerialNUC2BaseboardChargingPackage * >(&serial_input_buffer);
-                        if (hardware_version < 1)
+                        if (hardware_version != 1)
                             pkg->enable_charging = 0;
                         charger.handle_serial_input_package(pkg);
                         break;
@@ -193,9 +171,6 @@ void apply_loop_delay(int loop_time) {
 }
 
 void loop() {
-    // if (!wait_for_timer1 || true) {
-    //     wait_for_timer1 = true;
-
     apply_loop_delay(15);
 
     handle_serial_input();
@@ -208,7 +183,6 @@ void loop() {
 
     charger.run();
     write_serial();
-    // }
 }
 
 void write_serial() {

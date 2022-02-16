@@ -132,7 +132,7 @@ void Charger::run() {
                     if (smoothed_volts > dangerous_battery_volts) {
                         _charging_state = state_discharge;
                         volt_mode_pv_initialised = false;
-                    } else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps && volts_before_measuring > smoothed_volts + min_charge_volts_offset && smoothed_volts >= min_volts_detection) {
+                    } else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps && volts_before_measuring > smoothed_volts + min_charge_volts_offset && smoothed_volts >= min_volts_detection && smoothed_volts < 4.0f) {
                         _charging_state = state_contact_problem;
                         volt_mode_pv_initialised = false;
                     } else if (smoothed_volts >= min_battery_volts_trickle_charge && false) { // disabled trickle charging until we have the voltage measurement under control in bb v1.4
@@ -298,7 +298,7 @@ void Charger::current_control() {
         if (setpoint_amp - measured_smoothed_amps < -0.2f && pwm > min_charge_pwm) // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
             pv = min_charge_pwm;
         else
-            pv = constrain(pv + constrain(ff_term + fb_term, -255, 60), 0, 255); // constrained because some serious non-lineairy of the charger
+            pv = constrain(pv + constrain(ff_term + fb_term, -255, 60), 0, 100); // constrained because some serious non-lineairy of the charger
         update_pwm(roundf(pv));
     } else
         update_pwm(0);

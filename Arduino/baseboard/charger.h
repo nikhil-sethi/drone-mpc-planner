@@ -37,8 +37,8 @@ private:
     const float current_measurement_resistance = 0.33f;
     const float battery_size_mah = 300.f;
 
-    const float min_volts_detection = 0.6f;
-    const float min_battery_volts_revive_charge = 0.7f;
+    const float min_volts_detection = 0.8f;
+    const float min_battery_volts_revive_charge = 0.9f;
     const float min_battery_volts_normal_charge = 2.5f;
     const float battery_volts_very_empty = 3.5f;
     const float battery_volts_almost_full = 4.1f;
@@ -46,7 +46,7 @@ private:
     const float max_battery_volts = 4.20f;
     const float dangerous_battery_volts = 4.25f;
     const float min_charge_amps = 0.1f;
-    const float min_charge_volts_offset = 0.8f; // the voltage over vbat at which current actually starts to flow. Probably related to the diode. And probably its not really const... https://github.com/pats-drones/pats/issues/1047
+    const float min_charge_volts_offset = 0.6f; // the voltage over vbat at which current actually starts to flow. Probably related to the diode. And probably its not really const... https://github.com/pats-drones/pats/issues/1047
     const uint8_t min_charge_pwm = 10; // the minimum pwm at which a measurable current starts to flow. I define 0.03A - 0.07A as measurable
     const float charge_max = battery_size_mah * 0.001f * 1.2f; // 1.2C. Because more seems to overload the charger...
     const float charge_1C = battery_size_mah * 0.001f * 1.f;
