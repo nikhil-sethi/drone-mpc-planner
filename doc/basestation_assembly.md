@@ -19,11 +19,7 @@ Boot --> disable Secure Boot
 ## 3. Flash Nuc with flash USB
 While running continue to step 4 - 6.
 	
-## 4. Add nuc to database
-
-Add nuc data & number to [pats-c.com/sys-adm](http://pats-c.com/sys-adm)
-	
-## 5. Serial number registration
+## 4. Serial number registration
 
 ```ssh dash``` 
 
@@ -38,6 +34,14 @@ Label the Nuc. Print "PATSXXX" twice (for nuc and basestation)
 "ctrl + X" to close, save under the same name.
 
 close dash with "ctrl + A" then "d".
+
+
+## 5. Add nuc to database
+
+Add nuc data & number to [pats-c.com/sys-adm](http://pats-c.com/sys-adm)
+
+Working in batches saves time: create all new systems, select, edit all at the same time.
+Fill: NUC number, RealSense type (D455), LED version, Basestation version, baseboard version and customer_id (testpole systems).
 
 ## 6. Assemble PATS-C
 Add following components to the 3D printed enclosure:
