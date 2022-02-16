@@ -102,6 +102,8 @@ void handle_serial_input() {
             {
                 case header_SerialNUC2BaseboardChargingPackage: {
                         SerialNUC2BaseboardChargingPackage *pkg = reinterpret_cast<SerialNUC2BaseboardChargingPackage * >(&serial_input_buffer);
+                        if (hardware_version < 1)
+                            pkg->enable_charging = 0;
                         charger.handle_serial_input_package(pkg);
                         break;
                 } case header_SerialNUC2BaseboardLedPowerPackage: {
