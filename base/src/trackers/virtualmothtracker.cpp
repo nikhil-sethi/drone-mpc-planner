@@ -19,8 +19,8 @@ void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData
     init_logger();
     initialized = true;
     max_radius = 0.03;
-    insect_pos = {1., -0.4, -1.9};
-    insect_vel = {-.5, 0, 0};
+    insect_pos = {1., -1, -1.9};
+    insect_vel = {-1.5, 0, 0};
 }
 
 void VirtualMothTracker::init_logger() {
