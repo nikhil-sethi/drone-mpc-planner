@@ -41,7 +41,7 @@ void setup() {
     pinMode(IR_LED_ENABLE_PIN, OUTPUT);
     digitalWrite(IR_LED_ENABLE_PIN, 1);
 
-    pinMode(FAN_RPM_PIN, INPUT_PULLUP);
+    pinMode(FAN_RPM_PIN, INPUT);
     pinMode(BUTTON_1_PIN, INPUT);
     pinMode(BUTTON_2_PIN, INPUT);
 
@@ -163,11 +163,22 @@ void handle_serial_input() {
 }
 
 void apply_loop_delay(int loop_time) {
-    static unsigned long timer = millis();
-    int wait_time = min(loop_time, timer + loop_time - millis());
-    timer = millis();
-    if (wait_time > 0)
-        delay(min(wait_time, 1));
+    static unsigned long loop_time_start = millis();
+    unsigned long fan_cnt = 0;
+    bool fan_state_prev = analogRead(FAN_RPM_PIN) > 300;
+    int dt = loop_time_start - millis() + loop_time;
+
+    int fan_pin;
+    while (millis() < loop_time_start + loop_time) {
+        fan_pin = analogRead(FAN_RPM_PIN);
+        bool fan_state = fan_pin > 300;
+        if (fan_state != fan_state_prev) {
+            fan_cnt++;
+            fan_state_prev = fan_pin;
+        }
+    }
+    measured_fan_speed = moving_average(0.01, (fan_cnt * 1000) / dt, measured_fan_speed);
+    loop_time_start = millis();
 }
 
 void loop() {
@@ -176,7 +187,6 @@ void loop() {
     handle_serial_input();
     handle_watchdog();
     handle_nuc_reset();
-    // measured_fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
     if (millis() - nuc_watchdog_timer > 20000L)
         rgb_leds.nuc_inresponsive();
     rgb_leds.run();
