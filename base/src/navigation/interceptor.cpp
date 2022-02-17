@@ -21,12 +21,9 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         case  is_init: {
                 _interceptor_state = is_waiting_for_target;
                 _aim_pos = _flight_area->move_inside(cv::Point3f(0, 0, 0), strict);
+                _tti = -1;
                 [[fallthrough]];
-            }
-
-        case is_waiting_for_target: {
-                _aim_vel = {0, 0, 0};
-                _aim_acc = {0, 0, 0};
+        } case is_waiting_for_target: {
                 _n_frames_aim_not_in_range++;
                 _best_distance = INFINITY;
 
@@ -38,13 +35,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
 
                 [[fallthrough]];
-            }
-
-        case is_waiting_in_reach_zone: {
-                _aim_vel = {0, 0, 0};
-                _aim_acc = {0, 0, 0};
+        } case is_waiting_in_reach_zone: {
                 _best_distance = INFINITY;
-
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
@@ -55,16 +47,14 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
                 auto req_aim_pos = update_far_target(drone_at_base);
                 update_interceptability(req_aim_pos);
-
+                _tti = -1;
                 if (!_n_frames_aim_not_in_range)
                     _interceptor_state = is_move_to_intercept;
                 else
                     break;
 
                 [[fallthrough]];
-            }
-
-        case is_move_to_intercept: {
+        } case is_move_to_intercept: {
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
@@ -81,21 +71,13 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     auto req_aim_pos = update_far_target(drone_at_base);
                     update_interceptability(req_aim_pos);
                 }
-
-#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
-
-                if (fabs(_horizontal_separation) < 0.35f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
-#else
-                if (total_separation < 0.4f)
-#endif
+                if (hunt_distance < 0.4f)
                     _interceptor_state = is_close_chasing;
                 else
                     break;
 
                 [[fallthrough]];
-            }
-
-        case is_close_chasing: {
+        } case is_close_chasing: {
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
@@ -115,16 +97,10 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
                 break;
-            }
-        case is_killing: {
+        } case is_killing: {
                 update_close_target(drone_at_base);
 
-#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
-
-                if (!(fabs(_horizontal_separation) < 0.35f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
-#else
-                if (total_separation >= 0.45f)
-#endif
+                if (hunt_distance >= 0.45f)
                     _interceptor_state = is_move_to_intercept;
 
 
@@ -147,7 +123,6 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     TrackData target = target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
-    cv::Point3f predicted_acc = target.acc();
     // std::cout << "far_target: predicted_pos: " << predicted_pos;
 #if ENABLE_MOTH_PREDICTION
     float time_to_intercept = 0.2f;
@@ -160,19 +135,15 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
         drone_pos = _drone->tracker.pad_location();
 
     cv::Point3f drone_vel = dtd.vel();
-    calc_tti(predicted_pos, _aim_vel, drone_pos, drone_vel, drone_at_base); // only used for viz _tti
+    calc_tti(predicted_pos, predicted_vel, drone_pos, drone_vel, drone_at_base); // only used for viz _tti
+    _tti = time_to_intercept; //Overwrite with actual used tti
     auto req_aim_pos = predicted_pos;
-    req_aim_pos.y -= 0.2f;
-    _aim_vel = predicted_vel;
-    _aim_vel.y = 0;
-    _aim_acc = predicted_acc;
+    // req_aim_pos.y -= 0.2f;
     // std::cout << "; req_aim_pos: " << req_aim_pos << std::endl;
 
-    _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(predicted_pos.x, predicted_pos.z));
-    _vertical_separation = predicted_pos.y - drone_pos.y;
-    total_separation = normf(predicted_pos - drone_pos);
-    if ((total_separation < _best_distance) && !drone_at_base)
-        _best_distance = total_separation;
+    hunt_distance = normf(target.pos() - dtd.pos());
+    if (hunt_distance < _best_distance && !drone_at_base)
+        _best_distance = hunt_distance;
 
     return req_aim_pos;
 }
@@ -181,16 +152,15 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
     TrackData target = target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
-    cv::Point3f predicted_acc = target.acc();
     //std::cout << "close-target: predicted_pos: " << predicted_pos;
 #if ENABLE_MOTH_PREDICTION
     float time_to_intercept = 0.1f;
+    _tti = time_to_intercept; //Overwrite with actual used tti
     predicted_pos += time_to_intercept * predicted_vel;
 #endif
     TrackData dtd = _drone->tracker.last_track_data();
     cv::Point3f drone_pos = dtd.pos();
     auto req_aim_pos = predicted_pos;
-    _aim_acc = predicted_acc;
 #if ENABLE_VELOCITY_COMPENSATION
     req_aim_pos -= 0.2f * dtd.vel(); // The aiming oly works if we can compensate for the current velocity
 #endif
@@ -200,15 +170,10 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
     predicted_vel.y = 0; // we don't want to follow the vertical speed of the target, ever
     predicted_vel = 0.5f * predicted_vel + vector / norm_vector * 0.8f;
 
-    if (norm_vector > 0.05f) // when target and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
-        _aim_vel = predicted_vel;
 
-    // std::cout << "; req_aim_pos: " << req_aim_pos << std::endl;
-    _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(predicted_pos.x, predicted_pos.z));
-    _vertical_separation = predicted_pos.y - drone_pos.y;
-    total_separation = normf(predicted_pos - drone_pos);
-    if ((total_separation < _best_distance) && !drone_at_base)
-        _best_distance = total_separation;
+    hunt_distance = normf(target.pos() - dtd.pos());
+    if (hunt_distance < _best_distance && !drone_at_base)
+        _best_distance = hunt_distance;
     return req_aim_pos;
 }
 

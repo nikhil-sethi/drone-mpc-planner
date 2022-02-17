@@ -20,7 +20,7 @@ void DroneNavigation::init(tracking::DroneTracker *tracker, DroneController *con
 
 void DroneNavigation::init_flight(bool hunt, std::ofstream *logger) {
     _logger = logger;
-    (*_logger) << "nav_state_str;nav_flight_mode;insect_id;charging_state_str;charging_state;";
+    (*_logger) << "nav_state_str;nav_flight_mode;insect_id;charging_state_str;charging_state;tti;";
 
     _navigation_status = ns_takeoff;
     wpid = 0;
@@ -74,8 +74,6 @@ void DroneNavigation::update(double time) {
                 if (_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt) {
                     setpoint_pos_world = _iceptor->aim_pos();
                     setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->pad_location(false));
-                    setpoint_vel_world = _iceptor->aim_vel();
-                    setpoint_acc_world = _iceptor->aim_acc();
                 } else if (!_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt && _tracker->drone_on_landing_pad()) {
                     if (_control->abort_take_off())
                         _navigation_status = ns_flight_aborted;
@@ -109,8 +107,6 @@ void DroneNavigation::update(double time) {
         } case ns_chasing_insect: {
                 setpoint_pos_world = _iceptor->aim_pos();
                 setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->last_track_data().pos());
-                setpoint_vel_world = _iceptor->aim_vel();
-                setpoint_acc_world = _iceptor->aim_acc();
 
                 if (_iceptor->target_cleared())
                     _navigation_status = ns_goto_yaw_waypoint;
@@ -320,7 +316,7 @@ void DroneNavigation::update(double time) {
                 break;
             }
     }
-    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";";
+    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";" << _iceptor->tti() << ";";
 
 }
 void DroneNavigation::close() {

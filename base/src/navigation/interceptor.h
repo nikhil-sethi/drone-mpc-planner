@@ -27,7 +27,7 @@ private:
     Drone *_drone;
     bool initialized = false;
 
-    cv::Point3f _aim_pos, _aim_vel, _aim_acc;
+    cv::Point3f _aim_pos;
 
     FlightArea *_flight_area;
     bool target_in_flight_area = false;
@@ -38,7 +38,7 @@ private:
     tracking::InsectTracker *_target_insecttracker = NULL;
 
     float _horizontal_separation, _vertical_separation;
-    float total_separation;
+    float hunt_distance;
     float _best_distance = INFINITY;
     double _tti = -1;
     enum interceptor_states {
@@ -84,10 +84,9 @@ public:
     }
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}
     cv::Point3f aim_pos() {return _aim_pos;}
-    cv::Point3f aim_vel() {return _aim_vel;}
-    cv::Point3f aim_acc() {return _aim_acc;}
     double time_to_intercept() {return _tti;}
     float best_distance() {return _best_distance;}
+    double tti() {return _tti;};
     void target_is_hunted(int hunt_id) {
         if (_target_insecttracker)
             _target_insecttracker->hunt_id(hunt_id);
