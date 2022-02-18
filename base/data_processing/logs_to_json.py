@@ -117,7 +117,7 @@ def process_system_status_in_folder(folder):
                    "end_datetime": os.path.basename(folder),
                    "mode": pats_xml_mode
                    }
-    return (data_status, pats_xml_mode, operational_log_start)
+    return data_status, pats_xml_mode, operational_log_start
 
 
 def process_flight_status_in_folder(folder, operational_log_start, mode):
@@ -193,8 +193,8 @@ def process_flight_results(results_fn):
 def process_flight_log(log_fn, folder, session_start_datetime, mode):
     logger = logging.getLogger('logs_to_json')
 
-    flight_id = int(os.path.basename(log_fn)[10:])
-    flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + 'flight_results' + flight_id + '.txt')
+    flight_id = int(os.path.basename(log_fn)[10:-4])  # assuming the name is log_flight**.csv. Maybe replace this with  https://stackoverflow.com/questions/14008440/how-to-extract-numbers-from-filename-in-python
+    flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + 'flight_results' + str(flight_id) + '.txt')
 
     try:
         log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
@@ -478,7 +478,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
         if mode == 'c' or mode == 'x':
             Path(folder + '/OK').touch()
         else:
-            Path(folder + '/junk').touch()
+            with open(folder + '/junk', 'w', encoding="utf-8") as outfile:
+                outfile.write(mode + '\n')
 
     data_detections = {"start_datetime": lb.datetime_to_str(t_start),
                        "end_datetime": lb.datetime_to_str(t_end),

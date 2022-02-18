@@ -31,7 +31,10 @@ def detection_chance_columns():
 
 
 def store_detections(data, dry_run):
-    detections = data["detections"]
+    if not patsc.check_verion(data['version'], 2):  # legacy v1
+        detections = data["moths"]
+    else:
+        detections = data["detections"]
     if not len(detections):
         return 0
     with patsc.open_data_db() as con:
@@ -41,21 +44,22 @@ def store_detections(data, dry_run):
 
         sql_insert = ''
         for detection in detections:
-            date = detection['start_datetime']
-
-            detection = patsc.clean_detection_json_entry(detection, data)
+            if not patsc.check_verion(data['version'], 2):  # legacy v1
+                start_datetime = detection['time']
+            else:
+                start_datetime = detection['start_datetime']
 
             if sql_insert == '':
                 sql_insert = 'INSERT INTO detections(system,start_datetime,'
                 sql_values = ') VALUES(?,?,'
                 for key in list(detection.keys())[1:]:
-                    sql_insert = sql_insert + key + ','
+                    sql_insert = sql_insert + key.lower() + ','  # lower -> legacy v1
                     sql_values = sql_values + '?,'
                 sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
             if not dry_run:
-                cur.execute(sql_insert, (data["system"], date, *list(detection.values())[1:]))
+                cur.execute(sql_insert, (data["system"], start_datetime, *list(detection.values())[1:]))
             else:
-                print(sql_insert + ' ' + ' ,'.join([data["system"], date, *list(detection.values())[1:]]))
+                print(sql_insert + ' ' + ' ,'.join([data["system"], start_datetime, *list(detection.values())[1:]]))
         con.commit()
     return len(detections)
 
@@ -81,8 +85,12 @@ def store_status(data, dry_run):
             else:
                 sub_entries = [entry]
             for sub_entry in sub_entries:
-                start_datetime = sub_entry['start_datetime']
-                end_datetime = sub_entry['end_datetime']
+                if not patsc.check_verion(data['version'], 2):  # legacy v1
+                    start_datetime = sub_entry['from']
+                    end_datetime = sub_entry['till']
+                else:
+                    start_datetime = sub_entry['start_datetime']
+                    end_datetime = sub_entry['end_datetime']
                 if not dry_run:
                     cur.execute(sql_insert, (data["system"], start_datetime, end_datetime, sub_entry['mode']))
                 else:
@@ -217,6 +225,8 @@ def create_flights_table(con):
 
 
 def store_flights(data, dry_run):
+    if not patsc.check_verion(data['version'], 2):  # legacy v1
+        return 0
     flights = data["flights"]
     if not len(flights):
         return 0
@@ -275,13 +285,16 @@ def jsons_to_db(input_folder, dry_run):
                         try:
                             data = json.load(json_file)
                             try:
-                                data_start = to_datetime(data['start_datetime'])
+                                if 'start_datetime' in data:
+                                    data_start = to_datetime(data['start_datetime'])
+                                else:  # legacy v1
+                                    data_start = to_datetime(data['from'])
                             except Exception:  # issue #1002
                                 data_start = datetime.datetime.now() - datetime.timedelta(days=365)
                             if data_start < first_date:
                                 first_date = data_start
-                            min_required_version = 1.0
-                            if "version" in data and float(data["version"]) >= min_required_version:
+                            min_required_version = 1.0  # legacy v1
+                            if float(data["version"]) >= min_required_version:
                                 n_detections, n_statuses, n_flights, n_errors = process_json(data, dry_run)
                                 if n_statuses:
                                     flag_f.write('OK')

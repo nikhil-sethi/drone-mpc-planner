@@ -132,7 +132,12 @@ def sys_info_table(token):
 def process_detections_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
-    detections = pd.DataFrame(data['detections'])
+    if not patsc.check_verion(data['version'], 2):  # legacy v1
+        detections = pd.DataFrame(data["moths"])
+        detections.columns = map(str.lower, detections.columns)
+        detections = detections.rename(columns={'time': 'start_datetime'})
+    else:
+        detections = pd.DataFrame(data["detections"])
     LG_data: Dict[str, List] = {}
     if detections.empty:
         LG_data['MOTHNU'] = []
@@ -144,7 +149,7 @@ def process_detections_in_json(data, sys_info):
         detections = detections.loc[detections['monster'] != 1]
         monsters = detections.loc[detections['monster'] == 1]
         detections = detections[detections.apply(patsc.true_positive, axis=1)]
-        if not detections.empty:
+        if not detections.empty and not monsters.empty:
             detections = patsc.window_filter_monster(detections, monsters)
     else:
         detections = detections[detections.apply(patsc.true_positive, axis=1)]
@@ -159,12 +164,12 @@ def process_detections_in_json(data, sys_info):
                 right_detections = detections.loc[(detections['size'] >= detection_min) & (detections['size'] <= detection_max), ['start_datetime', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
 
         if not right_detections.empty:
-            binned_detections = right_detections.resample(str(lg_bin_width) + 'T', on='time').count()  # T means minute for some reason
+            binned_detections = right_detections.resample(str(lg_bin_width) + 'T', on='start_datetime').count()  # T means minute for some reason
             LG_data[detection_name] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_detections.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_detections.values[:, 0]}).to_dict('records')
         else:
             LG_data[detection_name] = []
     if not detections.empty:
-        binned_detections = detections.resample(str(lg_bin_width) + 'T', on='time').count()
+        binned_detections = detections.resample(str(lg_bin_width) + 'T', on='start_datetime').count()
         LG_data['MOTHNU'] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_detections.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_detections.values[:, 0]}).to_dict('records')
     else:
         LG_data['MOTHNU'] = []
@@ -177,6 +182,14 @@ def process_status_in_json(data, sys_info):
     # LG wants 5 minute binned data, so we need to align our window with that
     t0 = sys_info['expiration_date']
     t1 = sys_info['start_date']
+
+    if not patsc.check_verion(data['version'], 2):  # legacy v1
+        start_datetime_column_name = 'from'
+        end_datetime_id_str = 'till'
+    else:
+        start_datetime_column_name = 'start_datetime'
+        end_datetime_id_str = 'end_datetime'
+
     for entry in data['mode']:
         sub_entries = []  # there may be another nested level here, in case of waiting for darkness
         if type(entry) == list:
@@ -185,11 +198,11 @@ def process_status_in_json(data, sys_info):
             sub_entries = [entry]
 
         for status in sub_entries:
-            start_datetime = datetime.datetime.strptime(status['start_datetime'], '%Y%m%d_%H%M%S')
+            start_datetime = datetime.datetime.strptime(status[start_datetime_column_name], '%Y%m%d_%H%M%S')
             if start_datetime > sys_info['start_date']:  # LG date subscription boundries
                 if start_datetime < t0:
                     t0 = start_datetime
-            end_datetime = datetime.datetime.strptime(status['end_datetime'], '%Y%m%d_%H%M%S')
+            end_datetime = datetime.datetime.strptime(status[end_datetime_id_str], '%Y%m%d_%H%M%S')
             if end_datetime > sys_info['expiration_date']:
                 t1 = sys_info['expiration_date']
             elif end_datetime > t1:
@@ -210,21 +223,24 @@ def process_status_in_json(data, sys_info):
             sub_entries = [entry]
 
         for status in sub_entries:
-            dt_start = datetime.datetime.strptime(status['start_datetime'], '%Y%m%d_%H%M%S') - t0
+            dt_start = datetime.datetime.strptime(status[start_datetime_column_name], '%Y%m%d_%H%M%S') - t0
             id_start = math.floor(dt_start.total_seconds() / 300)
             id_start = int(np.clip(id_start, 0, bin_cnt))
-            dt_final = datetime.datetime.strptime(status['end_datetime'], '%Y%m%d_%H%M%S') - t0
+            dt_final = datetime.datetime.strptime(status[end_datetime_id_str], '%Y%m%d_%H%M%S') - t0
             id_final = math.floor(dt_final.total_seconds() / 300)
             id_final = int(np.clip(id_final, 0, bin_cnt))
             for i in range(id_start, id_final):
-                if status['mode'] == 'op_mode_monitoring' or status['mode'] == 'monitoring':
+                if status['mode'] == 'op_mode_monitoring' or status['mode'] == 'monitoring' or status['mode'] == 'op_mode_c':
                     bins[i] = 1
                 elif status['mode'] == 'wait_for_dark':
                     bins[i] = 2
                 elif status['mode'] == 'error':
                     bins[i] = 4
+                elif status['mode'] == 'op_mode_x':
+                    bins[i] = 5
                 else:
-                    bins[i] = 4  # this should not be possible
+                    bins[i] = 66  # this should not be possible.
+                    print("Error, some weird mode detected...?")  # until #1202
 
     LG_data = []
     times = [(t0 + datetime.timedelta(minutes=lg_bin_width) * x).strftime('%Y-%m-%dT%H:%M:%S') for x in range(bin_cnt)]
@@ -292,7 +308,7 @@ def jsons_to_LG(input_folder, dry_run=False):
                                                     LG_404_err = True
                                                 else:
                                                     print(e)
-                                                    exit(1)  # until we have developped proper logging #871
+                                                    exit(1)  # until we have developped proper logging #871 --> we have, so #1202
 
                                             else:
                                                 flag_f.write(res + '\n')

@@ -16,6 +16,12 @@ def dir_to_datetime(dir_name):
     return dir_date
 
 
+def disk_space(logger):
+    total_used_space, _, free_space = shutil.disk_usage(lb.data_dir)
+    logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' + str(round(free_space / total_used_space * 100)) + '% free')
+    return free_space / total_used_space > 0.2
+
+
 def strip_dir(dir_name, logger):
     logger.info('stripping: ' + dir_name)
     if os.path.isfile(dir_name + '/terminal.log'):
@@ -45,9 +51,7 @@ def strip_folders_until(min_date, logger):
     found_dirs = sorted(glob.glob(lb.data_dir + "*/202*_*"), key=dir_to_datetime)
     for dir_name in found_dirs:
         if check_free_space:
-            total_used_space, _, free_space = shutil.disk_usage(lb.data_dir)
-            logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' + str(round(free_space / total_used_space * 100)) + '% free')
-            if free_space / total_used_space > 0.2:
+            if disk_space(logger):
                 return True
         check_free_space = True
         try:
@@ -73,9 +77,7 @@ def strip_folders_until(min_date, logger):
 def remove_folders_until(min_date, logger):
     found_dirs = sorted(glob.glob(lb.data_dir + "*/202*_*"), key=dir_to_datetime)
     for dir_name in found_dirs:
-        total_used_space, _, free_space = shutil.disk_usage(lb.data_dir)
-        logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' + str(round(free_space / total_used_space * 100)) + '% free')
-        if free_space / total_used_space > 0.2:
+        if disk_space(logger):
             return True
         try:
             dir_date = datetime.strptime(os.path.basename(dir_name), "%Y%m%d_%H%M%S")
@@ -97,6 +99,9 @@ def clean_hd():
 
     if not os.path.exists(lb.data_dir):
         os.mkdir(lb.data_dir)
+
+    if disk_space(logger):
+        return True
 
     if strip_folders_until(datetime.today() - timedelta(days=14), logger):
         return

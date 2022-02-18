@@ -160,15 +160,6 @@ def create_system_filter_sql_str(start_date, system):
         return f'''system = '{system}' '''
 
 
-def window_filter_monster(detection_df, monster_df):
-    monster_times = monster_df['start_datetime'].values
-    detection_times = detection_df['start_datetime'].values
-    monster_times_mesh, detection_times_mesh = np.meshgrid(monster_times, detection_times, sparse=True)
-    detections_with_monsters = np.sum((monster_times_mesh >= detection_times_mesh - pd.Timedelta(minutes=5)) * (monster_times_mesh <= detection_times_mesh + pd.Timedelta(minutes=5)), axis=1)
-    detections_without_monsters = detection_df.iloc[detections_with_monsters == 0]
-    return detections_without_monsters
-
-
 def load_detections_df(systems, start_datetime, end_datetime, detection_class_info, selected_filter, columns=[]):
     columns.extend(['system', 'start_datetime', 'monster'])
     detection_df = pd.DataFrame()
@@ -201,7 +192,7 @@ def load_detections_df(systems, start_datetime, end_datetime, detection_class_in
             if 'Anomalies' not in detection_class_info['label']:
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
                 detection_sys_df = detection_sys_df[(detection_sys_df['start_datetime'] > real_start_date) & (detection_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
-                detection_sys_df = window_filter_monster(detection_sys_df, monster_sys_df)
+                detection_sys_df = patsc.window_filter_monster(detection_sys_df, monster_sys_df)
                 monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_df = detection_df.append(detection_sys_df)
             else:
@@ -246,7 +237,7 @@ def load_detections_of_hour(systems, start_date, end_date, hour, detection_class
             monster_sys_df = detection_sys_df.loc[detection_sys_df['monster'] == 1]
             if 'Anomalies' not in detection_class_info['label']:
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
-                detection_sys_df = window_filter_monster(detection_sys_df, monster_sys_df)
+                detection_sys_df = patsc.window_filter_monster(detection_sys_df, monster_sys_df)
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['start_datetime'].dt.hour == hour]
                 detections_df = detections_df.append(detection_sys_df)
             else:
