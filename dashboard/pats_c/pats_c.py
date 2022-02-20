@@ -6,6 +6,7 @@ from typing import List, Dict, Tuple
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
+import pandas_ta  # noqa used for trendline
 from enum import Enum
 import dash
 from dash import dcc
@@ -505,9 +506,8 @@ def update_heatmap(selected_heat, unselected_heat, fig: go.Heatmap):
 def create_hist(df_hist, unique_dates, system_labels):
     fig = go.Figure()
     fig.update_yaxes(rangemode="nonnegative")
-    cnt = 0
     bar_totals = df_hist.sum(axis=1).astype(int)
-    for sys in system_labels.keys():
+    for cnt, sys in enumerate(system_labels.keys()):
         hist_data = df_hist[sys]
         sys_str = [system_labels[sys]] * len(hist_data)
         sys_names = [sys] * len(hist_data)
@@ -519,8 +519,36 @@ def create_hist(df_hist, unique_dates, system_labels):
             name=system_labels[sys],
             hovertemplate='<b>%{customdata[0]}</b><br>Count: %{customdata[2]} / %{customdata[3]}<br><extra></extra>'
         )
-        cnt += 1
+
         fig.add_trace(hist)
+
+    if len(unique_dates) > 20:
+        df_sum = df_hist.sum(axis=1).to_frame('total_counts')
+        df_sum.ta.ema(close='total_counts', length=10, append=True)
+        df_sum = df_sum.iloc[10:]
+        unique_dates_for_ema10_trend = unique_dates[10:]
+        trend_line_ema_10 = go.Scatter(
+            x=unique_dates_for_ema10_trend.strftime('%d-%m-%Y'),
+            y=df_sum['EMA_10'],
+            mode="lines",
+            marker_color='white',
+            opacity=0.75,
+            name='Trend',
+            line_shape='spline'
+        )
+        fig.add_trace(trend_line_ema_10)
+
+    # this trend line is a bit simpler, and it starts from the start, but I think the ema follows the real trend a bit better.
+    # if len(unique_dates) > 10:
+    #     filtered_hist_data = df_hist.sum(axis=1).rolling(5, win_type='gaussian', min_periods=1, center=True).mean(std=3)
+    #     trend_line_gauss = go.Scatter(
+    #         x=unique_dates.strftime('%d-%m-%Y'),
+    #         y=filtered_hist_data,
+    #         mode="lines",
+    #         marker_color='yellow',
+    #         name='Trend'
+    #     )
+    #     fig.add_trace(trend_line_gauss)
 
     fig.update_layout(
         title_text='Activity summed per day',
@@ -536,10 +564,8 @@ def create_hist(df_hist, unique_dates, system_labels):
 def create_24h_hist(hist_24h_data, hour_labels, system_labels):
     fig = go.Figure()
     fig.update_yaxes(rangemode="nonnegative")
-    cnt = 0
     bar_totals = hist_24h_data.sum(axis=1).astype(int)
-
-    for sys in system_labels.keys():
+    for cnt, sys in enumerate(system_labels.keys()):
         hist_data = hist_24h_data[sys]
         sys_str = [system_labels[sys]] * len(hist_data)
         sys_names = [sys] * len(hist_data)
@@ -551,7 +577,6 @@ def create_24h_hist(hist_24h_data, hour_labels, system_labels):
             name=system_labels[sys],
             hovertemplate='<b>%{customdata[0]}</b><br>Count: %{customdata[2]} / %{customdata[3]}<br><extra></extra>'
         )
-        cnt += 1
         fig.add_trace(hist)
 
     fig.update_layout(
