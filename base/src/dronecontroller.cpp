@@ -792,9 +792,6 @@ bool DroneController::attitude_on_pad_OK() {
 }
 
 drone_on_pad_state DroneController::drone_pad_state() {
-    if (!new_attitude_package_available())
-        return drone_maybe_on_pad;
-
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
     if (check_att_bounds(current_att,

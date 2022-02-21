@@ -302,7 +302,7 @@ void Drone::post_flight(double time) {
                 _baseboard_link->allow_charging(true);
                 if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait) {
                     if (!control.new_attitude_package_available() || _baseboard_link->charging_waits_until_drone_ready()) { /* wait some more until we receive new data from either the drone telemetry or the baseboard */ }
-                    else if (control.attitude_on_pad_OK() && (_baseboard_link->charging() || _baseboard_link->disabled())) {
+                    else if (control.drone_pad_state() && (_baseboard_link->charging() || _baseboard_link->disabled())) {
                         post_flight_state = post_init;
                         _state = ds_charging;
                     } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state()) {
