@@ -12,7 +12,7 @@ import pats_c.lib.lib_patsc as patsc
 
 def download_timelapse(sys_name, source, start_date, end_date):
     src_video_fn = '~/pats/timelapse/timelapse_' + source + '_' + start_date + '_' + end_date + '.mp4'
-    target_video_mp4_fn = 'static/timelapse_' + source + '_' + start_date + '_' + end_date + '.mp4'
+    target_video_mp4_fn = 'static/timelapse_' + sys_name + '_' + source + '_' + start_date + '_' + end_date + '.mp4'
     cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + sys_name + ':' + src_video_fn + ' ' + target_video_mp4_fn]
     patsc.execute(cmd)
     return target_video_mp4_fn
