@@ -1240,7 +1240,7 @@ def dash_application():
             html.Div
             ([
                 html.Br(),
-                dbc.Button("Export CSV", id="btn_csv"),
+                dbc.Button("Export CSV", id="btn_csv", color='light'),
                 dcc.Download(id="download_csv"),
                 html.Br()
             ], style={'display': 'none'}, id="download_csv_container"),
