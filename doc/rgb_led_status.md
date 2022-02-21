@@ -1,7 +1,16 @@
-# led 0
-To be implemented
+# Led 0 (Charging)
 
-# led 1
+| Color           | State                         |
+| --------------------- | ------------------------------ |
+| Off                   | Charging disabled              |
+| Red (solid)           | Not charging                   |
+| Blue (solid)          | Charging (charge amps > thresh |
+| Yellow (solid)        | Calibration                    |
+
+Additional work planned in https://github.com/pats-drones/pats/issues/1177
+
+
+# Led 1 (system)
 
 | Color           | State                         |
 | --------------------- | ----------------------------- |
