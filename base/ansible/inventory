@@ -43,5 +43,17 @@ pats126
 pats136
 pats137
 
+[holstein]
+pats30
+pats33
+pats35
+pats36
+pats37
+pats38
+pats39
+pats81
+pats134
+pats140
+
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
