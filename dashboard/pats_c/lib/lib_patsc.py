@@ -149,7 +149,7 @@ def detection_classes(system):
         return detection_info
 
 
-def check_verion(current_version, minimal_version):
+def check_verion(current_version : str, minimal_version : str):
     if current_version == minimal_version:
         return True
     current_version = current_version.split('.')

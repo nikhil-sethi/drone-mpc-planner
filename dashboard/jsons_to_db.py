@@ -31,7 +31,7 @@ def detection_chance_columns():
 
 
 def store_detections(data, dry_run):
-    if not patsc.check_verion(data['version'], 2):  # legacy v1
+    if not patsc.check_verion(data['version'], '2'):  # legacy v1
         detections = data["moths"]
     else:
         detections = data["detections"]
@@ -44,7 +44,7 @@ def store_detections(data, dry_run):
 
         sql_insert = ''
         for detection in detections:
-            if not patsc.check_verion(data['version'], 2):  # legacy v1
+            if not patsc.check_verion(data['version'], '2'):  # legacy v1
                 start_datetime = detection['time']
             else:
                 start_datetime = detection['start_datetime']
@@ -85,7 +85,7 @@ def store_status(data, dry_run):
             else:
                 sub_entries = [entry]
             for sub_entry in sub_entries:
-                if not patsc.check_verion(data['version'], 2):  # legacy v1
+                if not patsc.check_verion(data['version'], '2'):  # legacy v1
                     start_datetime = sub_entry['from']
                     end_datetime = sub_entry['till']
                 else:
@@ -225,7 +225,7 @@ def create_flights_table(con):
 
 
 def store_flights(data, dry_run):
-    if not patsc.check_verion(data['version'], 2):  # legacy v1
+    if not patsc.check_verion(data['version'], '2'):  # legacy v1
         return 0
     flights = data["flights"]
     if not len(flights):

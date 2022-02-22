@@ -132,7 +132,7 @@ def sys_info_table(token):
 def process_detections_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
-    if not patsc.check_verion(data['version'], 2):  # legacy v1
+    if not patsc.check_verion(data['version'], '2'):  # legacy v1
         detections = pd.DataFrame(data["moths"])
         detections.columns = map(str.lower, detections.columns)
         detections = detections.rename(columns={'time': 'start_datetime'})
@@ -183,7 +183,7 @@ def process_status_in_json(data, sys_info):
     t0 = sys_info['expiration_date']
     t1 = sys_info['start_date']
 
-    if not patsc.check_verion(data['version'], 2):  # legacy v1
+    if not patsc.check_verion(data['version'], '2'):  # legacy v1
         start_datetime_column_name = 'from'
         end_datetime_id_str = 'till'
     else:
@@ -296,8 +296,8 @@ def jsons_to_LG(input_folder, dry_run=False):
                             if sys_name in systems_df['system'].values:
                                 sys_info = systems_df.loc[systems_df['system'] == sys_name]
                                 if sys_info.iloc[0]['active'] and sys_info.iloc[0]['lg']:
-                                    min_required_version = 1.0
-                                    if 'version' in json_data and float(json_data['version']) >= min_required_version:
+                                    min_required_version = '1.0'
+                                    if 'version' in json_data and patsc.check_verion(json_data['version'] , min_required_version):
                                         if int(sys_info['lg']) in LG_lookup:
                                             sys_LG = LG_lookup[int(sys_info['lg'])]
                                             sys_info = {**sys_info.to_dict('records')[0], **sys_LG}
