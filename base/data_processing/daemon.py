@@ -134,7 +134,7 @@ class pats_task(metaclass=abc.ABCMeta):
 
 class clean_hd_task(pats_task):
     def __init__(self, error_file_handler):
-        super(clean_hd_task, self).__init__('clean_hd', timedelta(hours=8), timedelta(hours=24), False, error_file_handler)
+        super(clean_hd_task, self).__init__('clean_hd', timedelta(hours=8), timedelta(hours=1), False, error_file_handler)
 
     def task_func(self):
         clean_hd()
