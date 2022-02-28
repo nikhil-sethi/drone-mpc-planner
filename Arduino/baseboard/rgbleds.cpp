@@ -42,8 +42,8 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[0] = CRGB(5, 5, 5);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
-            } case LED0_disabled: { // solid white
-                    rgb_setpoint_leds[0] = CRGB(15, 15, 15);
+            } case LED0_disabled: { // off
+                    rgb_setpoint_leds[0] = CRGB(0, 0, 0);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
             } case LED0_calibrating: { // solid yellow
@@ -63,21 +63,23 @@ void RGBLeds::run() {
         update_state[0] = false;
     }
 
-
     if (update_state[1]) {
         blink_leds[1] = blink_solid;
         update_FastLED = true;
+        if (_watchdog_trigger_imminent)
+            _led1_state = LED1_inresponsive_NUC;
+
         switch (_led1_state) {
             case LED1_init: { // solid red
                     rgb_setpoint_leds[1] = CRGB(50, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
-            } case LED1_inresponsive_NUC: { // red blink 0.5s
+            } case LED1_inresponsive_NUC: { // 1s symmetric blink
                     rgb_setpoint_leds[1] = CRGB(200, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
-                    blink_leds[1] = blink_200ms;
+                    blink_leds[1] = blink_500ms;
                     break;
-            } case LED1_internal_system_error: { // red blink 1s
+            } case LED1_executor_problem: { // red 1 short blink every second
                     rgb_setpoint_leds[1] = CRGB(200, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     blink_leds[1] = blink_1_short_blink;
@@ -116,7 +118,7 @@ void RGBLeds::run() {
     }
 
     //some states that can exist in parallel with the main state:
-    if (_led1_state != LED1_inresponsive_NUC) {
+    if (_led1_state != LED1_inresponsive_NUC && _led1_state != LED1_executor_problem) {
         if (!_internet_OK)
             blink_leds[1] = blink_3_short_blinks;
         else if (!_daemon_OK)

@@ -44,8 +44,8 @@ logger.info('Starting baseboard!')
 
 def led():
     dt_last_executor_msg = (datetime.now() - executor.last_msg_time).total_seconds()
-    if dt_last_executor_msg > 20:
-        rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_internal_system_error.value[0]
+    if dt_last_executor_msg > 20 and not os.path.exists(lb.disable_executor_flag):
+        rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_problem.value[0]
     rgb_led_pkg.internet_OK = daemon_pkg.internet_OK
     if os.path.exists(lb.disable_tunnel_flag):
         rgb_led_pkg.internet_OK = 1
@@ -56,8 +56,8 @@ def led():
             wdt_pkg.watchdog_enabled = 1
         comm.write(wdt_pkg.pack())
 
-        rgb_led_pkg.daemon_OK = dt_last_deamon_msg < 10
-        rgb_led_pkg.post_processing = daemon_pkg.post_processing + daemon_pkg.rendering
+        rgb_led_pkg.daemon_OK = dt_last_deamon_msg < 10 or os.path.exists(lb.disable_daemonlink_flag)
+        rgb_led_pkg.post_processing = daemon_pkg.post_processing or daemon_pkg.rendering
     elif not os.path.exists(lb.disable_daemonlink_flag):
         logger.warning('Uh oh. Nothing received from daemon.py. Do we need the hardware watchdog to hard reboot this thing?')
         rgb_led_pkg.daemon_OK = 0
@@ -107,7 +107,7 @@ def executor_receiver(msg):
                         or executor_state_pkg.executor_state == ls.executor_states.es_realsense_error.value[0] \
                         or executor_state_pkg.executor_state == ls.executor_states.es_daemon_problen.value[0] \
                         or executor_state_pkg.executor_state == ls.executor_states.es_runtime_error.value[0]:
-                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_internal_system_error.value[0]
+                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_problem.value[0]
             else:
                 msg = ''
                 logger.warning('Weird package received from executor...')
@@ -212,7 +212,7 @@ while True:
                             if first_pkg:
                                 first_pkg = False
                                 logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
-                            logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amp, 2)) + 'A ' + str("%.2f" % round(new_pkg.charging_volts, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v ' + str("%.2f" % round(new_pkg.charge_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(new_pkg.watchdog_state) + ' exe: ' + str(executor_state_pkg.executor_state))
+                            logger.debug("{:.1f}".format(new_pkg.up_duration / 1000) + 's:\t' + ls.charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % new_pkg.mah_charged) + 'mah in ' + str("%.2f" % (new_pkg.charging_duration / 1000)) + 's\t' + str("%.2f" % new_pkg.charging_amps) + 'A/' + str("%.2f" % new_pkg.setpoint_amps) + 'A\t' + str("%.2f" % new_pkg.charging_volts) + 'v\tbat: ' + str("%.2f" % new_pkg.battery_volts) + 'v ' + str("%.2f" % new_pkg.charge_resistance) + 'Ω. Drone: ' + str("%.2f" % new_pkg.drone_amps_burn) + ' A. PWM:' + str(new_pkg.charging_pwm) + '\tfan:' + str(new_pkg.measured_fan_speed) + '\twdt:' + str(new_pkg.watchdog_state) + '\texe:' + str(executor_state_pkg.executor_state))
                             executor_pkg = serial_data[pkg_start:]
                             executor.send(executor_pkg)
                             prev_pkg = new_pkg

@@ -1,11 +1,13 @@
-ACTION=="add", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60",  SYMLINK+="charging_pad"
+ACTION=="add", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60",  SYMLINK+="baseboard"
 
 SUBSYSTEM=="tty", \
-    ENV{ID_MODEL}=="CP2105_Dual_USB_to_UART_Bridge_Controller", \
-    ENV{ID_VENDOR_ID}=="10c4", ENV{ID_MODEL_ID}=="ea70", \
+    ENV{ID_MODEL}=="CP2104_USB_to_UART_Bridge_Controller", \
+    ENV{ID_VENDOR_ID}=="10c4", ENV{ID_MODEL_ID}=="ea60", \
     ENV{ID_USB_INTERFACE_NUM}=="01" \
     SYMLINK+="baseboard"
 
 SUBSYSTEM=="usb", ATTRS{idVendor}=="10c4", MODE="0666"
 SUBSYSTEM=="usb_device", ATTRS{idVendor}=="10c4", MODE="0666"
+
+
 

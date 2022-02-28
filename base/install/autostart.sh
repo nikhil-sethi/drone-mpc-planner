@@ -28,6 +28,11 @@ while [ 1 ]; do
 		echo "Waiting until disable flag disappears"
 	done
 
+	while [ -f /home/pats/pats/flags/disable_executor ]; do
+		sleep 10
+		echo "Waiting until executor disable flag disappears"
+	done
+
 	dt=$(date '+%d/%m/%Y %H:%M:%S');
 	echo "$dt"
 	fdt=$(date '+%Y%m%d_%H%M%S');

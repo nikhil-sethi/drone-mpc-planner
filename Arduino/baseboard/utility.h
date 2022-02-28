@@ -35,7 +35,7 @@ struct __attribute__((packed)) SerialBaseboard2NUCPackage {
     float battery_volts;
     float charging_volts;
     float charging_amps;
-    float setpoint_amp;
+    float setpoint_amps;
     float mah_charged;
     float charge_resistance;
     float drone_amps_burn;

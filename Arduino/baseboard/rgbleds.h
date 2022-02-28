@@ -17,7 +17,7 @@ public:
     enum rgb_led_1_states {
         LED1_init = 0,
         LED1_inresponsive_NUC,
-        LED1_internal_system_error, // (angle, realsense, etc)
+        LED1_executor_problem, // (angle, realsense, etc)
         LED1_realsense_reset,
         LED1_executor_start, // start / restart / closing
         LED1_wait_for_plukkers,
@@ -47,7 +47,6 @@ public:
         post_processing(false);
         daemon_OK(false);
     }
-
     void led0_state(rgb_led_0_states s) {
         if (s == _led0_state)
             return;
@@ -79,6 +78,12 @@ public:
         _post_processing = b;
         update_state[1] = true;
     }
+    void watchdog_trigger_imminent(bool b) {
+        if (b == _watchdog_trigger_imminent)
+            return;
+        _watchdog_trigger_imminent = b;
+        update_state[1] = true;
+    }
 
 private:
     rgb_led_0_states _led0_state = LED0_init;
@@ -86,6 +91,7 @@ private:
     bool _internet_OK = true;
     bool _daemon_OK = true;
     bool _post_processing = false;
+    bool _watchdog_trigger_imminent = false;
 
     bool update_state[NUM_RGB_LEDS] = {true};
     CRGB rgb_leds[NUM_RGB_LEDS];

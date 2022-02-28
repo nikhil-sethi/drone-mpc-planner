@@ -1,5 +1,5 @@
 ---
-- hosts: tree
+- hosts: holstein
   strategy: free
   tasks:
     - name: Disable all pats daemons
@@ -25,7 +25,7 @@
         repo: git@github.com:pats-drones/pats.git
         dest: /home/pats/code/pats
         update: yes
-        version: master
+        version: bb1.3_tune
         force: yes
         clone: no
     - name: Flash the baseboard

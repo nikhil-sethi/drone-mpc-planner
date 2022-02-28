@@ -387,6 +387,13 @@ if [[ $1 -eq 1 ]] ; then
 
 		sudo systemctl restart ssh.service
 
+		mkdir -p ~/Arduino
+		[ -d ~/Arduino/libraries ] && {
+			cp -r ~/Arduino/libraries{,.bak} --backup=numbered
+			rm ~/Arduino/libraries
+		}
+		ln -s ~/code/pats/Arduino/libraries ~/Arduino/libraries
+
 		touch $SYMLINK_FLAG
 	}
 fi

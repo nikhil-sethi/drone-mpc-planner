@@ -13,6 +13,7 @@ bool watchdog_trigger_imminent = false;
 bool nuc_has_been_reset = false;
 long last_nuc_reset = 0L;
 unsigned long nuc_watchdog_timer = millis();
+unsigned long nuc_last_serial_received_time = millis();
 uint8_t watchdog_reset_count = 0;
 uint16_t watchdog_boot_count = 0;
 uint16_t baseboard_boot_count = 0;
@@ -42,8 +43,7 @@ void setup() {
     digitalWrite(IR_LED_ENABLE_PIN, 1);
 
     pinMode(FAN_RPM_PIN, INPUT);
-    pinMode(BUTTON_1_PIN, INPUT);
-    pinMode(BUTTON_2_PIN, INPUT);
+    pinMode(BUTTON_PIN, INPUT);
 
     pinMode(HARDWARE_VERSION_PIN, OUTPUT);
     analogWrite(HARDWARE_VERSION_PIN, 0);
@@ -75,13 +75,16 @@ void init_values_from_eeprom() {
 void handle_serial_input() {
     auto n = serial_read_to_buf(serial_input_buffer);
     if (n > 3) {
+        nuc_last_serial_received_time = millis();
         if (serial_input_buffer[0] == BASEBOARD_PACKAGE_PRE_HEADER && serial_input_buffer[1] == FIRMWARE_VERSION) {
             switch (serial_input_buffer[3])
             {
                 case header_SerialNUC2BaseboardChargingPackage: {
                         SerialNUC2BaseboardChargingPackage *pkg = reinterpret_cast<SerialNUC2BaseboardChargingPackage * >(&serial_input_buffer);
-                        if (hardware_version != 1)
+                        if (hardware_version != 2) {
                             pkg->enable_charging = 0;
+                            debugln("WARNING: HARDWARE REV MISMATCH --> DISABLED CHARGING")
+                        }
                         charger.handle_serial_input_package(pkg);
                         break;
                 } case header_SerialNUC2BaseboardLedPowerPackage: {
@@ -160,6 +163,10 @@ void handle_serial_input() {
             }
         }
     }
+
+
+    if (millis() - nuc_last_serial_received_time > 10000L)
+        rgb_leds.nuc_inresponsive();
 }
 
 void apply_loop_delay(int loop_time) {
@@ -187,10 +194,7 @@ void loop() {
     handle_serial_input();
     handle_watchdog();
     handle_nuc_reset();
-    if (millis() - nuc_watchdog_timer > 20000L)
-        rgb_leds.nuc_inresponsive();
     rgb_leds.run();
-
     charger.run();
     write_serial();
 }
@@ -227,6 +231,7 @@ void handle_nuc_reset() {
         nuc_has_been_reset = true;
         write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
         watchdog_trigger_imminent = false;
+        rgb_leds.watchdog_trigger_imminent(false);
         nuc_off_timer = millis();
         last_nuc_reset = millis();
         nuc_watchdog_timer = millis();
@@ -251,30 +256,32 @@ void handle_watchdog() {
         return;
     else if (millis() - nuc_watchdog_timer > WATCHDOG_TIMEOUT)
         reset_nuc = true;
-    else if (millis() - nuc_watchdog_timer > WATCHDOG_TIMEOUT - 10000L)
+    else if (millis() - nuc_watchdog_timer > WATCHDOG_TIMEOUT - 10000L) {
         watchdog_trigger_imminent = true;
+        rgb_leds.watchdog_trigger_imminent(true);
+    }
 }
 
 void init_hardware_version() {
+    uint8_t l = 5;
     uint16_t analog_value = analogRead(HARDWARE_VERSION_PIN);
     delay(10);
     analog_value = analogRead(HARDWARE_VERSION_PIN);
     analog_value = ~analog_value;
-    analog_value = analog_value >> 4;
+    analog_value = analog_value >> l;
     analog_value &= 0b11111;
-    if (analog_value == 31)
-        analog_value = 0;
+    uint16_t r = 0;
+    for (int i = 0; i < l; i++)
+        r |= (analog_value >> i & 0x1) << l - i - 1;
+    analog_value = r;
     Serial.print("Hardware version ");
     Serial.println(analog_value);
     hardware_version = analog_value;
 }
 
 void read_buttons() {
-    // button 2 does not work in hardware version 1
-    Serial.print("button 1 is ");
-    Serial.print(digitalRead(BUTTON_1_PIN) ? " on  " : " off ");
-    Serial.print("button 2 is ");
-    Serial.println(digitalRead(BUTTON_2_PIN) ? " on  " : " off ");
+    Serial.print("button is ");
+    Serial.println(digitalRead(BUTTON_PIN) ? " on  " : " off ");
 }
 
 void restart_usb() {

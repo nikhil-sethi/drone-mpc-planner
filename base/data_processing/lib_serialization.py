@@ -7,19 +7,19 @@ EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
 
 charging_state_names = [
-    'disabled',
-    'init',
-    'drone_not_on_pad',
-    'contact_problem',
-    'bat_dead',
-    'bat_does_not_charge',
-    'revive_charging',
-    'normal_charging',
-    'trickle_charging',
-    'discharge',
-    'measure',
-    'wait_until_drone_ready',
-    'calibrating'
+    'disabled          ',
+    'init              ',
+    'drone_not_on_pad  ',
+    'contact_problem   ',
+    'bat_dead          ',
+    'does_not_charge   ',
+    'revive_charging   ',
+    'normal_charging   ',
+    'trickle_charging  ',
+    'discharge         ',
+    'measure           ',
+    'wait_drone_ready  ',
+    'calibrating       '
 ]
 
 
@@ -75,7 +75,7 @@ class executor_states(Enum):
 class rgb_led_1_states(Enum):
     LED1_init = 0,
     LED1_inresponsive_NUC = 1,
-    LED1_internal_system_error = 2,  # (angle, realsense, etc)
+    LED1_executor_problem = 2,  # (angle, realsense, executor proces not running, etc)
     LED1_realsense_reset = 3,
     LED1_executor_start = 4,  # start / restart / closing
     LED1_wait_for_plukkers = 5,
@@ -100,7 +100,7 @@ class SerialBaseboard2NUCPackage:
     battery_volts = 0
     charging_volts = 0
     charging_amps = 0
-    setpoint_amp = 0
+    setpoint_amps = 0
     mah_charged = 0
     charge_resistance = 0
     drone_amps_burn = 0
@@ -127,7 +127,7 @@ class SerialBaseboard2NUCPackage:
          self.battery_volts,
          self.charging_volts,
          self.charging_amps,
-         self.setpoint_amp,
+         self.setpoint_amps,
          self.mah_charged,
          self.charge_resistance,
          self.drone_amps_burn,

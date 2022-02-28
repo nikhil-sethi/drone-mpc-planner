@@ -25,6 +25,7 @@ disable_daemonlink_flag = flags_dir + 'disable_daemonlink'
 disable_baseboard_flag = flags_dir + 'disable_baseboard'
 disable_charging_flag = flags_dir + 'disable_charging'
 disable_watchdog_flag = flags_dir + 'disable_watchdog'
+disable_executor_flag = flags_dir + 'disable_executor'
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
 
