@@ -182,11 +182,14 @@ def process_flight_results(results_fn):
                 if line.find('crashed') != -1:
                     crashed = int(line.strip().split(':')[1])
                 if line.find('best_interception_distance') != -1:
-                    best_interception_distance = int(line.strip().split(':')[1])
+                    best_interception_distance = float(line.strip().split(':')[1])
                 if line.find('take_off_datetime') != -1:
                     take_off_datetime = line.strip().split(':')[1]
                 if line.find('land_datetime') != -1:
                     land_datetime = line.strip().split(':')[1]
+    else:
+        logging.getLogger('logs_to_json').warning('Flight results txt not found: ' + results_fn)
+
     return flight_time, crashed, best_interception_distance, take_off_datetime, land_datetime
 
 
@@ -194,10 +197,13 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
     logger = logging.getLogger('logs_to_json')
 
     flight_id = int(os.path.basename(log_fn)[10:-4])  # assuming the name is log_flight**.csv. Maybe replace this with  https://stackoverflow.com/questions/14008440/how-to-extract-numbers-from-filename-in-python
-    flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + 'flight_results' + str(flight_id) + '.txt')
+    flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + '/flight_results' + str(flight_id) + '.txt')
 
+    if flight_time < 0:
+        logger.info('Flight time invalid')
+        return {}
     try:
-        log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
+        log = pd.read_csv(log_fn, sep=";")
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
         return {}
@@ -206,6 +212,7 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
     lost = log['n_frames_lost_drone'].values > 0
     remove_ids = [i for i, x in enumerate(lost) if x]
     if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
+        logger.info('Flight log too short')
         return {}
 
     vxs = log['svelX_drone'].values
@@ -240,20 +247,19 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
 
     takeoff_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
 
-    detection_data = {"start_datetime": takeoff_time,
-                      "duration": duration,
-                      "flight_time": flight_time,
-                      "best_interception_distance": best_interception_distance,
-                      "crashed": crashed,
-                      "rs_id": first_rs_id,
-                      "detection_ids"
-                      "filename": filename,
-                      "folder": os.path.basename(folder),
-                      "video_filename": video_filename,
-                      "mode": mode,
-                      "version": version_x
-                      }
-    return detection_data
+    flight_data = {"start_datetime": takeoff_time,
+                   "duration": duration,
+                   "flight_time": flight_time,
+                   "best_interception_distance": best_interception_distance,
+                   "crashed": crashed,
+                   "rs_id": first_rs_id,
+                   "detection_ids": str(log['insect_id'].unique()),
+                   "filename": filename,
+                   "folder": os.path.basename(folder),
+                   "video_filename": video_filename,
+                   "version": version_x
+                   }
+    return flight_data
 
 
 def process_detection_log(log_fn, folder, mode, session_start_datetime):
@@ -378,7 +384,6 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
                       "filename": filename,
                       "folder": os.path.basename(folder),
                       "video_filename": video_filename,
-                      "mode": mode,
                       "monster": monster,
                       "hunted": hunted,
                       "version": version_c

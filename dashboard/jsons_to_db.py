@@ -220,8 +220,10 @@ def remove_double_data(table_name, start_date):
 
 
 def create_flights_table(con):
-    # TODO implement
-    pass
+    sql_create = 'CREATE TABLE flights(uid INTEGER PRIMARY KEY, system TEXT,start_datetime TEXT, duration REAL, rs_id INT, filename TEXT, video_filename TEXT,  folder TEXT, flight_time REAL, best_interception_distance REAL,detection_ids TEXT,crashed INT, version TEXT);'
+    con.execute(sql_create)
+    con.execute('CREATE INDEX idx_flights_sys_name ON flights(system);')
+    con.commit()
 
 
 def store_flights(data, dry_run):
@@ -237,6 +239,8 @@ def store_flights(data, dry_run):
         sql_insert = ''
         flights = data["flights"]
         for flight in flights:
+            if 'mode' in flight:
+                flight.pop('mode')
             start_datetime = flight['start_datetime']
             duration = flight['duration']
             if sql_insert == '':
