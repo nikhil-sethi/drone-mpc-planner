@@ -21,6 +21,14 @@
         chdir: /home/pats/code/pats/base/build
         params:
           NUM_THREADS: 4
+    - name: Kill (auto restart) daemon
+      shell: "kill $(pgrep -f daemon.py)"
+      failed_when: false
+      ignore_errors: yes
+    - name: Kill (auto restart) baseboard
+      shell: "kill $(pgrep -f baseboardlink.py)"
+      failed_when: false
+      ignore_errors: yes
     - name: Remove disable flag
       ansible.builtin.file:
         path: ~/pats/flags/disable
