@@ -12,7 +12,7 @@ private:
     uint16_t _fp_too_far_cnt = 0;
     float dist_integrator_fp = 0;
     std::ofstream insectlogger;
-    bool _hunted = false;
+    int _hunt_id = 0;
 
     void start_new_log_line(double time, unsigned long long frame_number);
     void close_log_line();
@@ -28,7 +28,7 @@ public:
     bool check_ignore_blobs(tracking::BlobProps *pbs);
     void update(double time);
     bool delete_me();
-    void hunted() {_hunted = true;}
+    void hunt_id(int hunt_id) {_hunt_id = hunt_id;}
 
     int16_t insect_trkr_id() {return _insect_trkr_id;}
     tracking::false_positive_type false_positive();

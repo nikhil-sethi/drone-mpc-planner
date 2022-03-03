@@ -93,7 +93,7 @@ void Drone::update(double time) {
                 flight_logger << _visdat->frame_id << ";" << time << ";" << state.dt << ";" << drone_state_str() << ";";
                 nav.update(time);
                 control.control(state, nav.setpoint(), _interceptor->target_last_trackdata(), time, true);
-                _interceptor->target_is_hunted();
+                _interceptor->target_is_hunted(_n_take_offs);
                 flight_logger << std::endl;
                 if (nav.drone_problem())
                     _state = ds_crashed;

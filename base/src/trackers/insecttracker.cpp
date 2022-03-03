@@ -18,7 +18,7 @@ void InsectTracker::init_logger() {
     insectlogger.open(logger_fn, std::ofstream::out);
     insectlogger << "rs_id;elapsed;";
     ItemTracker::init_logger(&insectlogger);
-    insectlogger << "fp;hunted;";
+    insectlogger << "fp;hunt_id;";
     insectlogger << std::endl;
 }
 void InsectTracker::start_new_log_line(double time, unsigned long long frame_number) {
@@ -27,7 +27,7 @@ void InsectTracker::start_new_log_line(double time, unsigned long long frame_num
 }
 void InsectTracker::close_log_line() {
     (*_logger) << false_positive_names[false_positive()] << ";";
-    (*_logger) << _hunted << ";";
+    (*_logger) << _hunt_id << ";";
     (*_logger) << '\n';
 }
 void InsectTracker::append_log(double time, unsigned long long frame_number) {

@@ -337,11 +337,9 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = True
 
-    hunted = False
-    if 'hunted' in log:
-        fps = log['hunted'].values
-        if fps[-1]:
-            hunted = True
+    hunt_id = 0
+    if 'hunt_id' in log:
+        hunt_id = log['hunt_id'].values[-1]
 
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
@@ -385,7 +383,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
                       "folder": os.path.basename(folder),
                       "video_filename": video_filename,
                       "monster": monster,
-                      "hunted": hunted,
+                      "hunted": hunt_id,
                       "version": version_c
                       }
     return detection_data
