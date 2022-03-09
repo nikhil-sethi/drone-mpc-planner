@@ -62,12 +62,12 @@ Version 1.3 (and up?) only
 12. Pull down resistor 
 
 ### Programming Bootloader
-1. Run Adruino IDE
-2. Select Tools->Board->Arduino_Nano
-3. Select Tools->Processor->Atmega328P
-4. Place Olimex AVR-ISP-MK2 pins on the board
-5. Select Tools->Burn_Bootloader 
+## bb version < 2
+$HOME/code/pats/config/firmwares/baseboard/avrdude/avrdude -C$HOME/code/pats/config/firmwares/baseboard/avrdude/avrdude.conf -v -patmega328p -cstk500v2 -Pusb -Uflash:w:$HOME/code/pats/config/firmwares/baseboard/avrdude/optiboot_atmega328.hex:i -Ulock:w:0x0F:m
+## bb version >= 2
+$HOME/code/pats/config/firmwares/baseboard/avrdude/avrdude -C$HOME/code/pats/config/firmwares/baseboard/avrdude/avrdude.conf -v -patmega328pb -cstk500v2 -Pusb -Uflash:w:$HOME/code/pats/config/firmwares/baseboard/avrdude/optiboot_atmega328.hex:i -Ulock:w:0x0F:m
 
+## bb version 
 ### Flashing the CP2105 
 1. Unpack AN721SW cp2105 costumizer from the baseboard folder (is available for Linux, but works best in Windows)
 2. alternatively: https://www.silabs.com/documents/public/example-code/AN721SW.zip
