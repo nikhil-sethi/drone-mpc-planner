@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 from aenum import Enum, NoAlias
 from flask_login import current_user
-from pats_c.lib.lib_patsc import open_systems_db
+from patsc.lib.lib_patsc import open_systems_db
 
 
 class main_buttons_options(Enum):

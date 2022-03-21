@@ -26,7 +26,7 @@
       "request": "launch",
       "module": "flask",
       "env": {
-        "FLASK_APP": "pats_c",
+        "FLASK_APP": "patsc",
         "FLASK_ENV": "development",
         "FLASK_DEBUG": "1"
       },

@@ -3,7 +3,7 @@ import os
 import datetime
 import pathlib
 import pandas as pd
-import pats_c.lib.lib_patsc as patsc
+import patsc.lib.lib_patsc as pc
 
 insect = 'tomato_looper'
 download_renders = False  # leave to false because it uses a lot of data
@@ -37,7 +37,7 @@ elif insect == 'stinky':
     AND duration > 0.3 AND duration < 10'''
 filter_str = filter_str.replace('\n', '')
 
-with patsc.open_data_db() as con:
+with pc.open_data_db() as con:
     cur = con.cursor()
     for system in selected_systems:
         columns = [i[1] for i in cur.execute('PRAGMA table_info(detections)')]
@@ -47,26 +47,26 @@ with patsc.open_data_db() as con:
         download_list = df['folder'] + '/logging/' + df['filename']
         download_list.to_csv('files_to_be_tarred.tmp', index=False, header=False)
         rsync_upload_cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + 'files_to_be_tarred.tmp' + ' ' + system + ':files_to_be_tarred.tmp']
-        patsc.execute(rsync_upload_cmd, 5)
+        pc.execute(rsync_upload_cmd, 5)
 
         print('Tarring ' + str(len(download_list)) + ' logs on ' + system + '...')
         tar_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system + ' "rm -rf  /home/pats/dataset_logs.tar.gz && cd /home/pats/pats/data/processed/ && tar --ignore-failed-read -czf /home/pats/dataset_logs.tar.gz --files-from=/home/pats/files_to_be_tarred.tmp"']
-        if patsc.execute(tar_cmd, 3) != 0:
+        if pc.execute(tar_cmd, 3) != 0:
             print('Error :(')
             exit(1)
         print('Downloading data from ' + system)
         target_path = os.path.expanduser('~/Downloads/pats_dataset/' + insect + '/')
         pathlib.Path(target_path).mkdir(parents=True, exist_ok=True)
         rsync_cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + system + ':dataset_logs.tar.gz' + ' ' + target_path + system + '_dataset_logs.tar.gz']
-        patsc.execute(rsync_cmd, 5)
+        pc.execute(rsync_cmd, 5)
 
         print('Untarring ' + target_path + system + '_dataset_logs.tar.gz')
         pathlib.Path(target_path + system).mkdir(parents=True, exist_ok=True)
         untar_cmd = 'tar -xf ' + target_path + system + '_dataset_logs.tar.gz -C ' + target_path + system + '/'
-        patsc.execute(untar_cmd)
+        pc.execute(untar_cmd)
 
         print('Clean up...')
         os.remove(target_path + system + '_dataset_logs.tar.gz')
         os.remove('files_to_be_tarred.tmp')
         cleanup_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system + ' "rm -rf  /home/pats/dataset_logs.tar.gz && rm /home/pats/files_to_be_tarred.tmp"']
-        patsc.execute(cleanup_cmd)
+        pc.execute(cleanup_cmd)

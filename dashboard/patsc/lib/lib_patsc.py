@@ -104,6 +104,11 @@ def open_systems_db():
     return con
 
 
+def check_if_table_exists(table_name, con):
+    cur = con.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='" + table_name + "'")
+    return cur.fetchone()[0]
+
+
 def datetime_to_str(d):
     return d.strftime('%Y%m%d_%H%M%S')
 
@@ -149,11 +154,11 @@ def detection_classes(system):
         return detection_info
 
 
-def check_verion(current_version : str, minimal_version : str):
-    if current_version == minimal_version:
+def check_verion(current_version_str: str, minimal_version_str: str):
+    if current_version_str == minimal_version_str:
         return True
-    current_version = current_version.split('.')
-    minimal_version = minimal_version.split('.')
+    current_version = current_version_str.split('.')
+    minimal_version = minimal_version_str.split('.')
     for i in range(0, np.max([len(current_version), len(minimal_version)])):
         if i == len(current_version) or i == len(minimal_version):
             return len(current_version) > len(minimal_version)

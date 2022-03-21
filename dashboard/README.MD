@@ -16,10 +16,10 @@ docker-compose -f docker-compose.beta_site.yml up --build
 ```
 
 ## Show the terminal output:
-`docker logs --follow dashboard_pats_c_1`
+`docker logs --follow dashboard_patsc_1`
 
 ## Start a shell inside the pats-c docker
-`docker exec -ti dashboard_pats_c_1 sh`
+`docker exec -ti dashboard_patsc_1 sh`
 
 ## Initialise a new server:
  Run the init letsencrypt script (possibly with sudo?) for the correct server type (normal/beta)

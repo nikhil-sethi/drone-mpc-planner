@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
-sys.path.append('pats_c/lib')  # noqa
-import lib_patsc as patsc
+sys.path.append('patsc/lib')  # noqa
+import lib_patsc as pc
 import subprocess
 import time
 import argparse
@@ -24,7 +24,7 @@ def natural_sort_systems(line):
 
 
 def load_systems():
-    with patsc.open_systems_db() as con:
+    with pc.open_systems_db() as con:
         sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
         con.execute(sql_str)
         systems = pd.read_sql_query(sql_str, con)
@@ -44,7 +44,7 @@ def execute(cmd):
 
 def read_processed_jsons(now):
     today_str = now.strftime('%Y%m%d')
-    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
+    files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
     systems = load_systems()
     systems['msg'] = ''
     for file in files:
@@ -65,7 +65,7 @@ def read_processed_jsons(now):
 
 def daily_errors(now):
     today_str = now.strftime('%Y%m%d')
-    err_files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser('~/daily_basestation_errors/*' + today_str + '*'))])
+    err_files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser('~/daily_basestation_errors/*' + today_str + '*'))])
     systems = load_systems()
     systems['err'] = 0
     systems['overheat_temp'] = 0
@@ -133,8 +133,8 @@ def n_errors_from_file(file, now: datetime):
 def send_mail(now, dry_run):
     systems = read_processed_jsons(now)
     systems = systems.merge(daily_errors(now), how='inner', on=['system', 'maintenance'])
-    daemon_errors = n_errors_from_file(patsc.daemon_error_log, now)
-    patsc_errors = n_errors_from_file(patsc.patsc_error_log, now)
+    daemon_errors = n_errors_from_file(pc.daemon_error_log, now)
+    patsc_errors = n_errors_from_file(pc.patsc_error_log, now)
 
     mail_warnings = ''
     if (sum(systems['msg'] == '') > 0):

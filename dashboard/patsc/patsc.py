@@ -18,7 +18,7 @@ from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
 from flask_login import current_user
 from urllib.parse import quote as urlquote
-import pats_c.lib.lib_patsc as patsc
+import patsc.lib.lib_patsc as pc
 
 
 customer_dict: Dict[str, List[Tuple[str, str]]] = {}
@@ -45,7 +45,7 @@ def init_lia_options():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
-            with patsc.open_systems_db() as con:
+            with pc.open_systems_db() as con:
                 sql_str = 'SELECT DISTINCT detection_classes.name, lia_label FROM detection_classes' \
                     + ' JOIN crop_detection_class_connection ON crop_detection_class_connection.class_id = detection_classes.class_id' \
                     + ' JOIN crops ON crops.crop_id = crop_detection_class_connection.crop_id' \
@@ -67,7 +67,7 @@ def init_classic_options():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
-            with patsc.open_systems_db() as con:
+            with pc.open_systems_db() as con:
                 sql_str = 'SELECT DISTINCT detection_classes.name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM detection_classes' \
                     + ' JOIN crop_detection_class_connection ON crop_detection_class_connection.class_id = detection_classes.class_id' \
                     + ' JOIN crops ON crops.crop_id = crop_detection_class_connection.crop_id' \
@@ -85,13 +85,13 @@ def init_classic_options():
 
 
 def init_dropdowns():
-    customer_dict, demo = patsc.load_customers()
+    customer_dict, demo = pc.load_customers()
     customer_value = None
     customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
     detection_classes_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
     filter_style = {'width': '0%', 'display': 'none', 'float': 'right'}
-    customer_options, sys_options = patsc.init_system_and_customer_options(customer_dict, demo)
+    customer_options, sys_options = pc.init_system_and_customer_options(customer_dict, demo)
 
     if len(customer_dict.keys()) == 1 or demo:
         customer_value = [list(customer_dict)[0]]
@@ -106,7 +106,7 @@ def init_dropdowns():
 
 
 def load_systems(username):
-    with patsc.open_systems_db() as con:
+    with pc.open_systems_db() as con:
         sql_str = '''SELECT DISTINCT systems.system FROM systems,user_customer_connection,users
                      WHERE  systems.customer_id = user_customer_connection.customer_id AND user_customer_connection.user_id = users.user_id AND users.name = ?
                      ORDER BY systems.system_id '''
@@ -166,7 +166,7 @@ def load_detections_df(systems, start_datetime, end_datetime, detection_class_in
     detection_df = pd.DataFrame()
     monster_df = pd.DataFrame()
     systems = installation_datetimes(systems)
-    with patsc.open_data_db() as con:
+    with pc.open_data_db() as con:
         for (system, installation_datetime_str) in systems:
             try:
                 installation_datetime = datetime.datetime.strptime(installation_datetime_str, '%Y%m%d_%H%M%S')
@@ -193,7 +193,7 @@ def load_detections_df(systems, start_datetime, end_datetime, detection_class_in
             if 'Anomalies' not in detection_class_info['label']:
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
                 detection_sys_df = detection_sys_df[(detection_sys_df['start_datetime'] > real_start_date) & (detection_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
-                detection_sys_df = patsc.window_filter_monster(detection_sys_df, monster_sys_df)
+                detection_sys_df = pc.window_filter_monster(detection_sys_df, monster_sys_df)
                 monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_df = detection_df.append(detection_sys_df)
             else:
@@ -211,7 +211,7 @@ def load_detections_of_hour(systems, start_date, end_date, hour, detection_class
     systems = installation_datetimes(systems)
     hour_strs = [str(hour - 1).rjust(2, '0'), str(hour).rjust(2, '0'), str(hour + 1).rjust(2, '0')]
     detections_df = pd.DataFrame()
-    with patsc.open_data_db() as con:
+    with pc.open_data_db() as con:
         for (system, installation_datetime) in systems:
             try:
                 installation_datetime = datetime.datetime.strptime(installation_datetime, '%Y%m%d_%H%M%S')
@@ -238,7 +238,7 @@ def load_detections_of_hour(systems, start_date, end_date, hour, detection_class
             monster_sys_df = detection_sys_df.loc[detection_sys_df['monster'] == 1]
             if 'Anomalies' not in detection_class_info['label']:
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
-                detection_sys_df = patsc.window_filter_monster(detection_sys_df, monster_sys_df)
+                detection_sys_df = pc.window_filter_monster(detection_sys_df, monster_sys_df)
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['start_datetime'].dt.hour == hour]
                 detections_df = detections_df.append(detection_sys_df)
             else:
@@ -326,7 +326,7 @@ def insert_down_time(statuses, start_date, end_date, t_start_id, t_end_id):
 
 
 def installation_datetimes(systems):
-    with patsc.open_systems_db() as con:
+    with pc.open_systems_db() as con:
         username = current_user.username
         systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
         JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
@@ -362,7 +362,7 @@ def load_status_data(unique_dates, heatmap_detection_counts, heatmap_monster_cou
         start_datetime_str = real_start_datetime.strftime('%Y%m%d_%H%M%S')
         end_datetime_str = end_datetime.strftime('%Y%m%d_%H%M%S')
         sql_str = 'SELECT start_datetime,end_datetime,op_mode FROM status WHERE system="' + sys + '" AND end_datetime > "' + start_datetime_str + '" AND start_datetime < "' + end_datetime_str + '" ORDER BY start_datetime'  # nosec see #952
-        with patsc.open_data_db() as con:
+        with pc.open_data_db() as con:
             statuses = con.execute(sql_str).fetchall()
         statuses = insert_down_time(statuses, real_start_datetime, end_datetime, t_start_id, t_end_id)
 
@@ -702,7 +702,7 @@ def download_log(selected_detection, detection_columns):
     if not os.path.isfile(target_log_fn):
         rsync_src = sys_name + ':pats/data/processed/' + log_folder + '/logging/' + log_fn
         cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
-        patsc.execute(cmd)
+        pc.execute(cmd)
     return target_log_fn
 
 
@@ -758,10 +758,10 @@ def download_video(selected_detection, detection_columns):
         if not os.path.isfile(target_video_mkv_fn) and not os.path.isfile(target_video_mp4_fn):
             rsync_src = sys_name + ':pats/data/processed/' + selected_detection[detection_columns.index('folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
-            patsc.execute(cmd)
+            pc.execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):
             mp4_to_mkv_cmd = ['ffmpeg -y -i ' + target_video_mkv_fn + ' -c:v copy -an ' + target_video_mkv_fn[0:-3] + 'mp4']
-            patsc.execute(mp4_to_mkv_cmd)
+            pc.execute(mp4_to_mkv_cmd)
         if not os.path.isfile(target_video_mp4_fn):
             return ''
         target_video_mp4_fn = '/' + target_video_mp4_fn
@@ -779,7 +779,7 @@ def dash_application():
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
     def select_system_customer(selected_customer):  # pylint: disable=unused-variable
-        customer_dict, demo = patsc.load_customers()
+        customer_dict, demo = pc.load_customers()
         value = []
         if selected_customer:
             for customer in selected_customer:
@@ -938,7 +938,7 @@ def dash_application():
         csv_fn = ''
         for sys_name in systems:
             csv_fn += sys_name + '_'
-        csv_fn += patsc.datetime_to_str(start_datetime) + '_' + patsc.datetime_to_str(end_datetime) + '_' + selected_filter + '.csv'
+        csv_fn += pc.datetime_to_str(start_datetime) + '_' + pc.datetime_to_str(end_datetime) + '_' + selected_filter + '.csv'
 
         columns = ['system', 'start_datetime', 'duration', 'vel_mean', 'vel_std', 'vel_max', 'dist_traveled', 'dist_traject', 'size', 'monster']
         detection_df, _ = load_detections_df(systems, start_datetime, end_datetime, detection_class_info, selected_filter, columns)
@@ -1052,7 +1052,7 @@ def dash_application():
 
         sql_str = 'SELECT * FROM detections WHERE uid=:uid'
         sql_params = {'uid': str(clickData_dot['points'][0]['customdata'][4])}
-        with patsc.open_data_db() as con:
+        with pc.open_data_db() as con:
             entry = con.execute(sql_str, sql_params).fetchall()
         if not len(entry):
             return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_detection, classification, classify_style, loading_animation_style
@@ -1092,11 +1092,11 @@ def dash_application():
             current_classification = classification_options[0]
         if current_classification != selected_classification:
             sql_str = 'UPDATE detections SET human_classification=:selected_classification WHERE uid=:uid', {'selected_classification': selected_classification, 'uid': str(selected_detection[detection_columns.index('uid')])}
-            with patsc.open_data_db() as con:
+            with pc.open_data_db() as con:
                 con.execute(*sql_str)
 
             # also save user classifications to a seperate database, because the detections database sometimes needs to be rebuild from the logs/jsons
-            with patsc.open_classification_db() as con_class:
+            with pc.open_classification_db() as con_class:
                 table_exists = con_class.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='classification_records' ''').fetchone()[0]
                 if not table_exists:
                     sql_create = 'CREATE TABLE classification_records(uid INTEGER PRIMARY KEY,moth_uid INTEGER,system TEXT,time TEXT,duration REAL,user TEXT,classification TEXT)'
@@ -1111,14 +1111,14 @@ def dash_application():
 
         return selected_classification
 
-    with patsc.open_data_db() as con:
+    with pc.open_data_db() as con:
         detection_columns = [i[1] for i in con.execute('PRAGMA table_info(detections)')]
         chance_columns = [col for col in detection_columns if 'chance_' in col]
         if 'human_classification' not in detection_columns:
             con.execute('ALTER TABLE detections ADD COLUMN human_classification TEXT')
 
-            if os.path.exists(patsc.db_classification_path):
-                with patsc.open_classification_db() as con_class:
+            if os.path.exists(pc.db_classification_path):
+                with pc.open_classification_db() as con_class:
                     classification_columns = [i[1] for i in con_class.execute('PRAGMA table_info(classification_records)')]
                     sql_str = 'SELECT * FROM classification_records'
                     classification_data = con_class.execute(sql_str).fetchall()

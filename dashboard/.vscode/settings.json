@@ -6,10 +6,10 @@
         "--ignore=E501"
     ],
     "python.analysis.extraPaths": [
-        "pats_c/lib"
+        "patsc/lib"
     ],
     "python.autoComplete.extraPaths": [
-        "/pats_c/lib"
+        "/patsc/lib"
     ],
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,

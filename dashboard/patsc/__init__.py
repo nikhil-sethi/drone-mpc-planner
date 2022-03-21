@@ -6,23 +6,23 @@ from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_required, LoginManager
 from pathlib import Path
-sys.path.append('pats_c/lib')  # noqa
-import lib_patsc as patsc
+sys.path.append('patsc/lib')  # noqa
+import lib_patsc as pc
 
-from . import pats_c, system_widget, live, timelapse
+from . import patsc, system_widget, live, timelapse
 
 if not os.path.exists(os.path.expanduser('~/patsc/static/')):
     os.makedirs(os.path.expanduser('~/patsc/static/'))
 
 db = SQLAlchemy()
-patsc_view = pats_c.dash_application()
+patsc_view = patsc.dash_application()
 sys_wid_view = system_widget.dash_application()
 live_view = live.dash_application()
 timelapse_view = timelapse.dash_application()
 
-Path(Path(patsc.patsc_error_log).parent.absolute()).mkdir(parents=True, exist_ok=True)
+Path(Path(pc.patsc_error_log).parent.absolute()).mkdir(parents=True, exist_ok=True)
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-error_file_handler = logging.handlers.RotatingFileHandler(filename=patsc.patsc_error_log, maxBytes=1024 * 1024 * 100, backupCount=1)
+error_file_handler = logging.handlers.RotatingFileHandler(filename=pc.patsc_error_log, maxBytes=1024 * 1024 * 100, backupCount=1)
 error_file_handler.setFormatter(file_format)
 error_file_handler.level = logging.ERROR
 

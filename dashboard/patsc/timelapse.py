@@ -7,20 +7,20 @@ from dash import html
 import plotly.io as pio
 from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
-import pats_c.lib.lib_patsc as patsc
+import patsc.lib.lib_patsc as pc
 
 
 def download_timelapse(sys_name, source, start_date, end_date):
     src_video_fn = '~/pats/timelapse/timelapse_' + source + '_' + start_date + '_' + end_date + '.mp4'
     target_video_mp4_fn = 'static/timelapse_' + sys_name + '_' + source + '_' + start_date + '_' + end_date + '.mp4'
     cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + sys_name + ':' + src_video_fn + ' ' + target_video_mp4_fn]
-    patsc.execute(cmd)
+    pc.execute(cmd)
     return target_video_mp4_fn
 
 
 def init_dropdown():
-    customer_dict, demo = patsc.load_customers()
-    _, sys_options = patsc.init_system_and_customer_options(customer_dict, demo)
+    customer_dict, demo = pc.load_customers()
+    _, sys_options = pc.init_system_and_customer_options(customer_dict, demo)
     return sys_options
 
 
@@ -46,16 +46,16 @@ def dash_application():
         if start_date and end_date and source and selected_system:
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-            end_date = patsc.datetime_to_str(datetime.datetime.combine(end_date, datetime.datetime.min.time()))
-            start_date = patsc.datetime_to_str(datetime.datetime.combine(start_date, datetime.datetime.min.time()))
+            end_date = pc.datetime_to_str(datetime.datetime.combine(end_date, datetime.datetime.min.time()))
+            start_date = pc.datetime_to_str(datetime.datetime.combine(start_date, datetime.datetime.min.time()))
         else:
             return target_video_fn, video_style, loading_animation_style
 
         sys = selected_system
 
         video_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
-        cmd = 'ssh -o StrictHostKeyChecking=no -T ' + sys + ' python < ./pats_c/timelapse_generator.py - --start ' + start_date + ' --end ' + end_date + ' --prefix ' + source
-        patsc.execute(cmd)
+        cmd = 'ssh -o StrictHostKeyChecking=no -T ' + sys + ' python < ./patsc/timelapse_generator.py - --start ' + start_date + ' --end ' + end_date + ' --prefix ' + source
+        pc.execute(cmd)
         target_video_fn = download_timelapse(sys, source, start_date, end_date)
         target_video_fn = '/' + target_video_fn
 

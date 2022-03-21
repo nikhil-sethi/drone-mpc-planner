@@ -1,20 +1,20 @@
 version: '3.5'
 
 services:
-  pats_c:
+  patsc:
     restart: unless-stopped
-    build: ./pats_c
+    build: ./patsc
     ports:
       - "8001:8001"
     volumes:
-      - /home/flask/pats_c
-      - ~/patsc/static/:/home/flask/pats_c/static/
+      - /home/flask/patsc
+      - ~/patsc/static/:/home/flask/patsc/static/
       - ~/patsc/db/:/home/flask/patsc/db/
       - ~/patsc/logs/:/home/flask/patsc/logs/
       - ~/.ssh/:/home/flask/patsc/ssh_tmp
       - ../base/install/:/home/flask/patsc/base_install
       - ~/code/pats/config/:/home/flask/code/pats/config/
-    command: gunicorn --workers=4 "pats_c:create_app()" -b :8001 --worker-tmp-dir
+    command: gunicorn --workers=4 "patsc:create_app()" -b :8001 --worker-tmp-dir
       /dev/shm
 
   nginx_beta_site:
@@ -32,9 +32,9 @@ services:
       - ./certbot_beta_site/conf:/etc/letsencrypt
       - ./certbot_beta_site/www:/var/www/certbot
     links:
-      - pats_c
+      - patsc
     depends_on:
-      - pats_c
+      - patsc
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done &
       nginx -g \"daemon off;\"'"
 

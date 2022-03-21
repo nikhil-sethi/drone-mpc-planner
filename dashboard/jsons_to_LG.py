@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys
 from typing import Dict, List
-sys.path.append('pats_c/lib')  # noqa
-import lib_patsc as patsc
+sys.path.append('patsc/lib')  # noqa
+import lib_patsc as pc
 import requests
 import json
 import datetime
@@ -132,7 +132,7 @@ def sys_info_table(token):
 def process_detections_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
-    if not patsc.check_verion(data['version'], '2'):  # legacy v1
+    if not pc.check_verion(data['version'], '2'):  # legacy v1
         detections = pd.DataFrame(data["moths"])
         detections.columns = map(str.lower, detections.columns)
         detections = detections.rename(columns={'time': 'start_datetime'})
@@ -148,17 +148,17 @@ def process_detections_in_json(data, sys_info):
     if 'monster' in detections:
         detections = detections.loc[detections['monster'] != 1]
         monsters = detections.loc[detections['monster'] == 1]
-        detections = detections[detections.apply(patsc.true_positive, axis=1)]
+        detections = detections[detections.apply(pc.true_positive, axis=1)]
         if not detections.empty and not monsters.empty:
-            detections = patsc.window_filter_monster(detections, monsters)
+            detections = pc.window_filter_monster(detections, monsters)
     else:
-        detections = detections[detections.apply(patsc.true_positive, axis=1)]
+        detections = detections[detections.apply(pc.true_positive, axis=1)]
 
-    detection_classes = patsc.detection_classes(sys_info['system'].lower())
+    detection_classes = pc.detection_classes(sys_info['system'].lower())
     for detection_name, detection_min, detection_max, detection_floodfill_min, detection_floodfill_max in detection_classes:
         right_detections = pd.DataFrame()
         if 'size' in detections:
-            if patsc.check_verion(data['version'], '1.10'):
+            if pc.check_verion(data['version'], '1.10'):
                 right_detections = detections.loc[(detections['size'] >= detection_floodfill_min) & (detections['size'] <= detection_floodfill_max), ['start_datetime', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
             else:
                 right_detections = detections.loc[(detections['size'] >= detection_min) & (detections['size'] <= detection_max), ['start_datetime', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
@@ -183,7 +183,7 @@ def process_status_in_json(data, sys_info):
     t0 = sys_info['expiration_date']
     t1 = sys_info['start_date']
 
-    if not patsc.check_verion(data['version'], '2'):  # legacy v1
+    if not pc.check_verion(data['version'], '2'):  # legacy v1
         start_datetime_column_name = 'from'
         end_datetime_id_str = 'till'
     else:
@@ -269,7 +269,7 @@ def upload_json_to_LG(token, json_data, sys_info, dry_run):
 
 def load_system_info():
     sql_str = '''SELECT system,active,lg FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE active = 1 AND lg'''
-    with patsc.open_systems_db() as con:
+    with pc.open_systems_db() as con:
         systems = pd.read_sql_query(sql_str, con)
         systems['system'] = systems['system'].str.upper()
 
@@ -281,7 +281,7 @@ def jsons_to_LG(input_folder, dry_run=False):
     LG_lookup = sys_info_table(token)
     systems_df = load_system_info()
     LG_404_err = False
-    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + '/*.json'))])
+    files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + '/*.json'))])
     pbar = tqdm(files)
     for filename in pbar:
         pbar.set_description('LG upload: ' + os.path.basename(filename))
@@ -297,7 +297,7 @@ def jsons_to_LG(input_folder, dry_run=False):
                                 sys_info = systems_df.loc[systems_df['system'] == sys_name]
                                 if sys_info.iloc[0]['active'] and sys_info.iloc[0]['lg']:
                                     min_required_version = '1.0'
-                                    if 'version' in json_data and patsc.check_verion(json_data['version'] , min_required_version):
+                                    if 'version' in json_data and pc.check_verion(json_data['version'], min_required_version):
                                         if int(sys_info['lg']) in LG_lookup:
                                             sys_LG = LG_lookup[int(sys_info['lg'])]
                                             sys_info = {**sys_info.to_dict('records')[0], **sys_LG}

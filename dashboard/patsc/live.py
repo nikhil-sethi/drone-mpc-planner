@@ -9,17 +9,17 @@ from dash import html
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
-from dash.dependencies import Output, Input, State
+from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
-import pats_c.lib.lib_patsc as patsc
+import patsc.lib.lib_patsc as pc
 
 
 def init_dropdowns():
-    customer_dict, demo = patsc.load_customers()
+    customer_dict, demo = pc.load_customers()
     customer_value = None
     customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
-    customer_options, sys_options = patsc.init_system_and_customer_options(customer_dict, demo)
+    customer_options, sys_options = pc.init_system_and_customer_options(customer_dict, demo)
 
     if len(customer_dict.keys()) == 1 or demo:
         customer_value = [list(customer_dict)[0]]
@@ -38,8 +38,8 @@ def dash_application():
     @ app.callback(
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
-    def select_system_customer(selected_customer):  # pylint: disable=unused-variable
-        customer_dict, demo = patsc.load_customers()
+    def select_customer(selected_customer):  # pylint: disable=unused-variable
+        customer_dict, demo = pc.load_customers()
         value = []
         if selected_customer:
             for customer in selected_customer:
@@ -70,10 +70,10 @@ def dash_application():
             rsync_src = sys + ':pats/status/monitor_tmp.jpg'
             rsync_target = 'static/' + sys + '_live_image.jpg'
             cmd_rsync = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + rsync_target]
-            patsc.execute(cmd_rsync)
+            pc.execute(cmd_rsync)
 
             cmd_trigger = 'ssh -o StrictHostKeyChecking=no -T ' + sys + ' touch pats/flags/cc_update_request'
-            patsc.execute(cmd_trigger)
+            pc.execute(cmd_trigger)
 
             rsync_target = './' + rsync_target
             image_ok = False

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
-sys.path.append('pats_c/lib')  # noqa
-import lib_patsc as patsc
+sys.path.append('patsc/lib')  # noqa
+import lib_patsc as pc
 import json
 import glob
 import os
@@ -17,34 +17,29 @@ def create_detections_table(con):
     con.commit()
 
 
-def check_if_table_exists(table_name_prefix, con):
-    cur = con.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='" + table_name_prefix + "'")
-    return cur.fetchone()[0]
-
-
 def detection_chance_columns():
     sql_str = 'SELECT lia_label FROM detections WHERE lia_label IS NOT NULL'
-    with patsc.open_systems_db() as con:
+    with pc.open_systems_db() as con:
         columns = con.execute(sql_str).fetchall()
         columns = [col[0] for col in columns]
     return columns
 
 
 def store_detections(data, dry_run):
-    if not patsc.check_verion(data['version'], '2'):  # legacy v1
+    if not pc.check_verion(data['version'], '2'):  # legacy v1
         detections = data["moths"]
     else:
         detections = data["detections"]
     if not len(detections):
         return 0
-    with patsc.open_data_db() as con:
-        if not check_if_table_exists('detections', con):
+    with pc.open_data_db() as con:
+        if not pc.check_if_table_exists('detections', con):
             create_detections_table(con)
         cur = con.cursor()
 
         sql_insert = ''
         for detection in detections:
-            if not patsc.check_verion(data['version'], '2'):  # legacy v1
+            if not pc.check_verion(data['version'], '2'):  # legacy v1
                 start_datetime = detection['time']
             else:
                 start_datetime = detection['start_datetime']
@@ -72,8 +67,8 @@ def create_status_table(con):
 
 
 def store_status(data, dry_run):
-    with patsc.open_data_db() as con:
-        if not check_if_table_exists('status', con):
+    with pc.open_data_db() as con:
+        if not pc.check_if_table_exists('status', con):
             create_status_table(con)
         cur = con.cursor()
         status_data = data["mode"]
@@ -85,7 +80,7 @@ def store_status(data, dry_run):
             else:
                 sub_entries = [entry]
             for sub_entry in sub_entries:
-                if not patsc.check_verion(data['version'], '2'):  # legacy v1
+                if not pc.check_verion(data['version'], '2'):  # legacy v1
                     start_datetime = sub_entry['from']
                     end_datetime = sub_entry['till']
                 else:
@@ -113,8 +108,8 @@ def to_datetime(string):
 
 def concat_statuses(start_date):
     start_date = start_date.strftime('%Y%m%d_%H%M%S')
-    with patsc.open_data_db() as con:
-        if not check_if_table_exists('status', con):
+    with pc.open_data_db() as con:
+        if not pc.check_if_table_exists('status', con):
             return
         cur = con.cursor()
         systems = load_systems(cur)
@@ -159,9 +154,9 @@ def concat_statuses(start_date):
 
 def remove_double_data(table_name, start_date):
     start_date = start_date.strftime('%Y%m%d_%H%M%S')
-    with patsc.open_data_db() as con:
+    with pc.open_data_db() as con:
         cur = con.cursor()
-        if not check_if_table_exists(table_name, con):
+        if not pc.check_if_table_exists(table_name, con):
             return
         systems = load_systems(cur)
         columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name + ')')]
@@ -227,14 +222,14 @@ def create_flights_table(con):
 
 
 def store_flights(data, dry_run):
-    if not patsc.check_verion(data['version'], '2'):  # legacy v1
+    if not pc.check_verion(data['version'], '2'):  # legacy v1
         return 0
     flights = data["flights"]
     if not len(flights):
         return 0
-    with patsc.open_data_db() as con:
+    with pc.open_data_db() as con:
         cur = con.cursor()
-        if not check_if_table_exists('flights', con):
+        if not pc.check_if_table_exists('flights', con):
             create_flights_table(con)
         sql_insert = ''
         flights = data["flights"]
@@ -276,7 +271,7 @@ def process_json(data, dry_run):
 
 
 def jsons_to_db(input_folder, dry_run):
-    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
+    files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
     pbar = tqdm(files)
     first_date = datetime.datetime.now()
     for filename in pbar:
