@@ -337,9 +337,9 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = True
 
-    hunt_id = 0
+    hunt_id = int(0)
     if 'hunt_id' in log:
-        hunt_id = log['hunt_id'].values[-1]
+        hunt_id = int(log['hunt_id'].values[-1])
 
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
