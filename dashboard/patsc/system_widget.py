@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 from aenum import Enum, NoAlias
 from flask_login import current_user
-from patsc.lib.lib_patsc import open_systems_db
+from patsc.lib.lib_patsc import open_meta_db
 
 
 class main_buttons_options(Enum):
@@ -35,7 +35,7 @@ def username():
 
 
 def available_tables():
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = '''SELECT name FROM sqlite_master ORDER BY name COLLATE NOCASE'''
         tables = con.execute(sql_str).fetchall()
         tables = [table[0] for table in tables if 'sqlite' not in table[0] and 'connection' not in table[0] and 'change_log' not in table[0]]
@@ -45,7 +45,7 @@ def available_tables():
 def get_column_info(table_name):
     columns = ['name', 'type', 'notnull', 'dft', 'unique', 'pk', 'fk']
     column_info = pd.DataFrame(columns=columns)
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = f'''SELECT sql FROM sqlite_master WHERE name = '{table_name}' '''
         table_info = con.execute(sql_str).fetchone()
         if table_info:
@@ -78,7 +78,7 @@ def get_column_info(table_name):
 
 def table_connection(table_name):
     connection_info = pd.DataFrame()
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = f'''SELECT name FROM sqlite_master WHERE name LIKE '%{table_name[:-1] + '%connection'}' '''
         connection_name = con.execute(sql_str).fetchone()
         if connection_name:
@@ -90,7 +90,7 @@ def table_connection(table_name):
 def fk_options(fk_str):
     if isinstance(fk_str, str):
         options = []
-        with open_systems_db() as con:
+        with open_meta_db() as con:
             foreign_table = fk_str.split('"')[1]
             foreign_column = fk_str.split('"')[3]
             sql_str = f'''SELECT name,{foreign_column} FROM {foreign_table} ORDER BY name COLLATE NOCASE'''
@@ -101,7 +101,7 @@ def fk_options(fk_str):
 
 
 def fk_values_for_ids(fk_str, id):
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         foreign_table = fk_str.split('"')[1]
         foreign_column = fk_str.split('"')[3]
         sql_str = f'''SELECT name,{foreign_column} FROM {foreign_table} WHERE {foreign_column} IN ({','.join([str(a) for a in id])}) '''
@@ -110,7 +110,7 @@ def fk_values_for_ids(fk_str, id):
 
 
 def fk_ids_for_values(fk_str, values):
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         foreign_table = fk_str.split('"')[1]
         foreign_column = fk_str.split('"')[3]
         sql_str = f'''SELECT {foreign_column},name FROM {foreign_table} WHERE name IN ({','.join([f'"{str(a)}"' for a in values])}) '''
@@ -142,7 +142,7 @@ def table_data(table_name):
         sql_str += f''' ORDER BY {table_name}.name COLLATE NOCASE'''
     else:
         sql_str += f''' ORDER BY {table_name}.{pk_name} COLLATE NOCASE'''
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         data = pd.read_sql_query(sql_str, con)
 
     connection_name, connection_info = table_connection(table_name)
@@ -154,7 +154,7 @@ def table_data(table_name):
                 connection_str = f'''SELECT {fk_column} FROM {connection_name} WHERE {pk_name} = :id'''
                 data[fk_table] = ''
                 for id in data[pk_name]:
-                    with open_systems_db() as con:
+                    with open_meta_db() as con:
                         ids = con.execute(connection_str, {'id': id}).fetchall()
                         ids = [i[0] for i in ids]
                     fk_values = fk_values_for_ids(column['fk'], ids)
@@ -165,7 +165,7 @@ def table_data(table_name):
 
 def get_max_id(table_name, column_info):
     pk_name = column_info.loc[column_info['pk'] == 1, 'name'].values[0].replace('"', '')
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = f'''SELECT max({pk_name}) FROM {table_name}'''
         max_id = con.execute(sql_str).fetchone()[0]
     if not max_id:
@@ -175,7 +175,7 @@ def get_max_id(table_name, column_info):
 
 def count_unsaved_changes():
     count = 0
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = f'''SELECT COUNT(time) FROM change_log WHERE user = '{username()}' AND saved = 0 '''
         count = con.execute(sql_str).fetchone()[0]
     return count
@@ -204,7 +204,7 @@ def add_row_to(table_name, column_info):
                     new_column_input.append(str(0))
             else:
                 new_column_input.append(str('NULL'))
-        with open_systems_db() as con:
+        with open_meta_db() as con:
             sql_str = f'''INSERT INTO {table_name}({','.join(column_names)}) VALUES ({','.join(new_column_input)})'''
             try:
                 con.execute(sql_str)
@@ -219,7 +219,7 @@ def add_row_to(table_name, column_info):
 def apply_unsaved_changes(data, table_name):
     sql_str = f'''SELECT table_name,column_name,id,value FROM change_log WHERE saved = 0 AND table_name LIKE '%{table_name[:-1] + '%'}' '''
     unsaved_changes = []
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         unsaved_changes = con.execute(sql_str).fetchall()
     if unsaved_changes:
         column_info = get_column_info(table_name)
@@ -330,7 +330,7 @@ def handle_delete_button(selected_rows):
 
 def handle_undo_button():
     children = []
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_last_change = f'''DELETE FROM change_log WHERE user='{username()}' AND saved = 0 AND time = (SELECT MAX(time) FROM change_log WHERE user = '{username()}' AND saved = 0 )'''
         try:
             con.execute(sql_last_change)
@@ -344,7 +344,7 @@ def handle_undo_button():
 def handle_save_button():
     err_msg = ''
     user = username()
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_all_tables = f'''SELECT DISTINCT table_name FROM change_log WHERE user = '{user}' AND saved = 0 '''
         all_tables = con.execute(sql_all_tables).fetchall()
         tables_info = {}
@@ -484,7 +484,7 @@ def process_edit(children, choosen_table, selected_rows, current_data):
                             sql_insert += f'''({now},'{connection_name}','DELETE','{','.join(edited_ids)}','{','.join(edited_values)}','{user}',0), '''
 
     if sql_insert.split(' ')[-2] != 'VALUES':
-        with open_systems_db() as con:
+        with open_meta_db() as con:
             sql_insert = sql_insert[:-2] + ';'
             try:
                 con.execute(sql_insert)
@@ -530,7 +530,7 @@ def process_delete(choosen_table, selected_rows, current_data):
                 sql_delete += f'''({now},'{connection_name}','DELETE','{','.join(ids)}','{','.join(values)}','{username()}',0), '''
 
     if sql_delete.split(' ')[-2] != 'VALUES':
-        with open_systems_db() as con:
+        with open_meta_db() as con:
             sql_delete = sql_delete[:-2] + ';'
             try:
                 con.execute(sql_delete)
@@ -544,7 +544,7 @@ def process_delete(choosen_table, selected_rows, current_data):
 
 
 def process_cancel():
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         sql_str = f'''DELETE FROM change_log WHERE user='{username()}' and saved = 0'''
         try:
             con.execute(sql_str)
@@ -559,7 +559,7 @@ def dash_application():
     print("Starting system-widget dash application!")
     app = dash.Dash(__name__, server=False, url_base_pathname='/sys-adm/', title='sys-adm')
 
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         table_exists = con.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='change_log' ''').fetchone()[0]
         if not table_exists:
             sql_create = 'CREATE TABLE change_log(time INTEGER ,table_name TEXT,column_name TEXT,id TEXT,value TEXT,user TEXT,saved INTEGER)'

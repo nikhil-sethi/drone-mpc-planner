@@ -24,7 +24,7 @@ def natural_sort_systems(line):
 
 
 def load_systems():
-    with pc.open_systems_db() as con:
+    with pc.open_meta_db() as con:
         sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
         con.execute(sql_str)
         systems = pd.read_sql_query(sql_str, con)

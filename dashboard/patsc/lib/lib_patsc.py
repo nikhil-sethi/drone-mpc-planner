@@ -10,7 +10,7 @@ from flask_login import current_user
 
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
 db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
-db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+db_meta_path = os.path.expanduser('~/patsc/db/pats_systems.db')
 daemon_error_log = os.path.expanduser('~/patsc/logs/daemon_error.log')
 patsc_error_log = os.path.expanduser('~/patsc/logs/patsc_error.log')
 
@@ -39,13 +39,13 @@ def init_system_and_customer_options(customer_dict, demo):
     return customer_options, sys_options
 
 
-def load_systems_customer(customer_name, cur):
+def load_systems_customer(customer_name, con):
     sql_str = '''SELECT system,location,crops.name FROM systems
                  JOIN customers ON customers.customer_id = systems.customer_id
                  JOIN crops ON crops.crop_id = customers.crop_id
                  WHERE customers.name = :customer_name
                  ORDER BY system_id''', {'customer_name': customer_name}
-    systems = cur.execute(*sql_str).fetchall()
+    systems = con.execute(*sql_str).fetchall()
     return systems
 
 
@@ -54,7 +54,7 @@ def load_customers():
         if current_user.is_authenticated:
             username = current_user.username
             demo = 'demo' in username
-            with open_systems_db() as con:
+            with open_meta_db() as con:
                 sql_str = '''SELECT customers.name FROM customers
                             JOIN user_customer_connection ON user_customer_connection.customer_id=customers.customer_id
                             JOIN users ON users.user_id=user_customer_connection.user_id
@@ -64,7 +64,7 @@ def load_customers():
                 customers = cur.fetchall()
                 customer_dict = {}
                 for customer in customers:
-                    customer_dict[customer[0]] = load_systems_customer(customer[0], cur)
+                    customer_dict[customer[0]] = load_systems_customer(customer[0], con)
             return customer_dict, demo
     return {}, False
 
@@ -94,10 +94,10 @@ def open_classification_db():
     return con
 
 
-def open_systems_db():
+def open_meta_db():
     con = None
     try:
-        con = sqlite3.connect(db_systems_path)
+        con = sqlite3.connect(db_meta_path)
         con.execute('pragma journal_mode=wal')
     except Exception as e:
         print(e)
@@ -148,7 +148,7 @@ def detection_classes(system):
                     JOIN customers ON crops.crop_id = customers.crop_id
                     JOIN systems ON customers.customer_id = systems.customer_id
                     WHERE systems.system = '{system}'  '''
-    with open_systems_db() as con:
+    with open_meta_db() as con:
         detection_info = con.execute(sql_str).fetchall()
         detection_info = [(name, avg_size - std_size, avg_size + 2 * std_size, floodfill_avg_size - floodfill_std_size, floodfill_avg_size + 2 * floodfill_std_size) for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in detection_info]
         return detection_info

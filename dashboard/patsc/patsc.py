@@ -45,7 +45,7 @@ def init_lia_options():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
-            with pc.open_systems_db() as con:
+            with pc.open_meta_db() as con:
                 sql_str = 'SELECT DISTINCT detection_classes.name, lia_label FROM detection_classes' \
                     + ' JOIN crop_detection_class_connection ON crop_detection_class_connection.class_id = detection_classes.class_id' \
                     + ' JOIN crops ON crops.crop_id = crop_detection_class_connection.crop_id' \
@@ -67,7 +67,7 @@ def init_classic_options():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
-            with pc.open_systems_db() as con:
+            with pc.open_meta_db() as con:
                 sql_str = 'SELECT DISTINCT detection_classes.name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM detection_classes' \
                     + ' JOIN crop_detection_class_connection ON crop_detection_class_connection.class_id = detection_classes.class_id' \
                     + ' JOIN crops ON crops.crop_id = crop_detection_class_connection.crop_id' \
@@ -106,7 +106,7 @@ def init_dropdowns():
 
 
 def load_systems(username):
-    with pc.open_systems_db() as con:
+    with pc.open_meta_db() as con:
         sql_str = '''SELECT DISTINCT systems.system FROM systems,user_customer_connection,users
                      WHERE  systems.customer_id = user_customer_connection.customer_id AND user_customer_connection.user_id = users.user_id AND users.name = ?
                      ORDER BY systems.system_id '''
@@ -326,7 +326,7 @@ def insert_down_time(statuses, start_date, end_date, t_start_id, t_end_id):
 
 
 def installation_datetimes(systems):
-    with pc.open_systems_db() as con:
+    with pc.open_meta_db() as con:
         username = current_user.username
         systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
         JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
@@ -778,7 +778,7 @@ def dash_application():
     @ app.callback(
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
-    def select_system_customer(selected_customer):  # pylint: disable=unused-variable
+    def select_customer(selected_customer):  # pylint: disable=unused-variable
         customer_dict, demo = pc.load_customers()
         value = []
         if selected_customer:

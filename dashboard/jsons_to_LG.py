@@ -104,7 +104,7 @@ def sys_info_table(token):
     # 5-minute stream, and there is still the old detection data stream that we now use for total instects.
     # In order to write data, we need to specify both the colId and the moduleId.
     # This function creates a dictionairy that puts all the id data together,
-    # later to be combined with our system_database (which contains the moduleId's per system).
+    # later to be combined with our meta database (which contains the moduleId's per system).
     # To filter out the colIds we check the binning type (5 minutes = 4) and whether that column
     # is writable. The ItemCode should translate to a detection type or to MOTHNU for all detections or
     # PATSONOF for the system data.
@@ -269,7 +269,7 @@ def upload_json_to_LG(token, json_data, sys_info, dry_run):
 
 def load_system_info():
     sql_str = '''SELECT system,active,lg FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE active = 1 AND lg'''
-    with pc.open_systems_db() as con:
+    with pc.open_meta_db() as con:
         systems = pd.read_sql_query(sql_str, con)
         systems['system'] = systems['system'].str.upper()
 

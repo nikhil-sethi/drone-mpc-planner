@@ -19,7 +19,7 @@ def create_detections_table(con):
 
 def detection_chance_columns():
     sql_str = 'SELECT lia_label FROM detections WHERE lia_label IS NOT NULL'
-    with pc.open_systems_db() as con:
+    with pc.open_meta_db() as con:
         columns = con.execute(sql_str).fetchall()
         columns = [col[0] for col in columns]
     return columns
