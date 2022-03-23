@@ -383,7 +383,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
                       "folder": os.path.basename(folder),
                       "video_filename": video_filename,
                       "monster": monster,
-                      "hunted": hunt_id,
+                      "hunt_id": hunt_id,
                       "version": version_c
                       }
     return detection_data
