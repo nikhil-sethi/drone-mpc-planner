@@ -11,9 +11,9 @@ uint16_t serial_read_to_buf(unsigned char buf[MAX_PACKAGE_READ_SIZE]) {
         if (Serial.available() > 0) {
             buf[i] = Serial.read();
             if (buf[i] == '\n') {
-                uint16_t tmp = i;
+                uint16_t ii = i;
                 i = 0;
-                return tmp;
+                return ii;
             }
             i++;
         } else

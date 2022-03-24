@@ -132,32 +132,32 @@ void RGBLeds::run() {
         case blink_solid:
             break;
         case blink_1000ms: {
-                int tmp[] = {1000, 1000};
-                blink(tmp, 2, millis(), 1);
+                int periods[] = {1000, 1000};
+                blink(periods, 2, millis(), 1);
                 break;
         } case blink_500ms: {
-                int tmp[] = {500, 500};
-                blink(tmp, 2, millis(), 1);
+                int periods[] = {500, 500};
+                blink(periods, 2, millis(), 1);
                 break;
         } case blink_200ms: {
-                int tmp[] = {200, 200};
-                blink(tmp, 2, millis(), 1);
+                int periods[] = {200, 200};
+                blink(periods, 2, millis(), 1);
                 break;
         } case blink_1_short_blink: {
-                int tmp[] = {100, 1000};
-                blink(tmp, 2, millis(), 1);
+                int periods[] = {100, 1000};
+                blink(periods, 2, millis(), 1);
                 break;
         } case blink_1_short_blink_reversed: {
-                int tmp[] = {1000, 100};
-                blink(tmp, 2, millis(), 1);
+                int periods[] = {1000, 100};
+                blink(periods, 2, millis(), 1);
                 break;
         } case blink_2_short_blinks: {
-                int tmp[] = {150, 150, 150, 1000};
-                blink(tmp, 4, millis(), 1);
+                int periods[] = {150, 150, 150, 1000};
+                blink(periods, 4, millis(), 1);
                 break;
         } case blink_3_short_blinks: {
-                int tmp[] = {150, 150, 150, 150, 150, 1000};
-                blink(tmp, 6, millis(), 1);
+                int periods[] = {150, 150, 150, 150, 150, 1000};
+                blink(periods, 6, millis(), 1);
                 break;
         } default:
             break;
