@@ -12,6 +12,8 @@ static volatile unsigned char pwm = 0;
 void stop_charging_interrupt_handle() {
     if (pwm) {
         stop_charging_interrupt = true;
+        analogWrite(CHARGING_PWM_PIN, 0); // discharge the inductor
+        delay(1);
         digitalWrite(CHARGING_ENABLE_PIN, 0);
         analogWrite(CHARGING_PWM_PIN, 255);
     }
@@ -213,10 +215,10 @@ bool Charger::measuring_time() {
 void Charger::update_readings_while_not_charging() {
     charging_amps = 0;
     update_batt_volts();
+    charging_volts = 0;
     float dt = (millis() - last_mah_adjust_time);
     last_mah_adjust_time = millis();
     mah_charged -=  drone_amps_burn  * dt / 3600.f;
-    update_charging_volts();
 }
 
 void Charger::update_readings_while_charging() {
@@ -229,11 +231,18 @@ void Charger::update_readings_while_charging() {
 }
 
 void Charger::update_charging_volts() {
+    // noInterrupts();
+    // delay(1);
+    // analogRead(CHARGING_GND_PIN);
+    // analogRead(CHARGING_VOLT_PIN);
+    // delay(1);
     float v_gnd = (analogRead(CHARGING_GND_PIN) + 0.5f) * 5.0f / 1024.0f;
     float vdd = (analogRead(CHARGING_VOLT_PIN) + 0.5f) * 5.0f / 1024.0f;
+    // interrupts();
     float v = (vdd - v_gnd) * 4.f; // + voltage_calibration_value;
     d_charging_volts = charging_volts - v;
     charging_volts = v;
+    ground_volts = v_gnd * 4;
 }
 void Charger::update_batt_volts() {
     float v_gnd = (analogRead(CHARGING_GND_PIN) + 0.5f) * 5.0f / 1024.0f;
@@ -242,35 +251,32 @@ void Charger::update_batt_volts() {
     d_battery_volts = battery_volts - v;
     battery_volt_measurement_stable =  fabs(d_battery_volts) < d_volts_is_stable_threshold;
     battery_volts = v;
+    ground_volts = v_gnd * 4;
 }
 
 void Charger::update_amps() {
-    float volts = analogRead(CHARGING_AMPS_PIN) / 1024.0f * 5.0f;
+    float volts = analogRead(CHARGING_AMPS_PIN) / 1024.0f * 5.0f * 2.2f;
     charging_amps = volts / amps_measurement_resistance;
     charging_amps = moving_average(0.05, charging_amps, charging_amps);
 }
 
 void Charger::update_pwm(uint8_t pwm_) {
-    if (pwm_ > 50)
-        pwm_ = 50; //TMP
     pwm = pwm_;
 
-    if (pwm_) {
-        noInterrupts();
-        if (!stop_charging_interrupt) {
+    noInterrupts();
+    if (!stop_charging_interrupt) {
+        if (pwm_) {
             analogWrite(CHARGING_PWM_PIN, pwm);
             digitalWrite(CHARGING_ENABLE_PIN, 1);
-        }
-        interrupts();
-    } else {
-        noInterrupts();
-        if (!stop_charging_interrupt) {
+        } else {
+            analogWrite(CHARGING_PWM_PIN, 0); // discharge the inductor
+            delay(1);
             digitalWrite(CHARGING_ENABLE_PIN, 0);
             delay(1);
             analogWrite(CHARGING_PWM_PIN, 255);
         }
-        interrupts();
     }
+    interrupts();
 }
 
 void Charger::no_charging() {
@@ -347,6 +353,7 @@ void Charger::fill_serial_output_package(SerialBaseboard2NUCPackage *pkg) {
     pkg->charging_state = _charging_state;
     pkg->battery_volts = battery_volts;
     pkg->charging_volts = charging_volts;
+    pkg->ground_volts = ground_volts;
     pkg->charging_amps = charging_amps;
     pkg->setpoint_amps = setpoint_amps;
     pkg->mah_charged  = mah_charged;

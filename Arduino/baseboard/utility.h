@@ -4,7 +4,7 @@
 
 #define MAX_PACKAGE_READ_SIZE 16
 
-#define FIRMWARE_VERSION 8
+#define FIRMWARE_VERSION 9
 #define BASEBOARD_PACKAGE_PRE_HEADER '@'
 enum baseboard_package_headers {
     header_SerialBaseboard2NUCPackage = 'P',
@@ -34,6 +34,7 @@ struct __attribute__((packed)) SerialBaseboard2NUCPackage {
     uint8_t charging_state;
     float battery_volts;
     float charging_volts;
+    float ground_volts;
     float charging_amps;
     float setpoint_amps;
     float mah_charged;

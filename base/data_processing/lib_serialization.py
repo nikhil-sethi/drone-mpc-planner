@@ -1,7 +1,7 @@
 from enum import Enum
 import struct
 
-BASEBOARD_FIRMWARE_VERSION = 8
+BASEBOARD_FIRMWARE_VERSION = 9
 BASEBOARD_PACKAGE_PRE_HEADER = '@'
 EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
@@ -86,7 +86,7 @@ class rgb_led_1_states(Enum):
 
 
 class SerialBaseboard2NUCPackage:
-    format = '=cHcHHHLBBBfffffffBLHc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
+    format = '=cHcHHHLBBBffffffffBLHc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
     pre_header = BASEBOARD_PACKAGE_PRE_HEADER
     firmware_version = BASEBOARD_FIRMWARE_VERSION,
     header = baseboard_package_headers.header_SerialBaseboard2NUCPackage
@@ -99,6 +99,7 @@ class SerialBaseboard2NUCPackage:
     charging_state = 0
     battery_volts = 0
     charging_volts = 0
+    ground_volts = 0
     charging_amps = 0
     setpoint_amps = 0
     mah_charged = 0
@@ -126,6 +127,7 @@ class SerialBaseboard2NUCPackage:
          self.charging_state,
          self.battery_volts,
          self.charging_volts,
+         self.ground_volts,
          self.charging_amps,
          self.setpoint_amps,
          self.mah_charged,
