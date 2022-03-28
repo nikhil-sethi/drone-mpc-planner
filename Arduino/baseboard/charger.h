@@ -34,7 +34,7 @@ private:
     const unsigned long min_volt_measuring_duration = 300L;
     const unsigned long periodic_volt_measuring_duration = 30000L;
     const unsigned long charge_amp_measurement_valid_timeout = 450L;
-    const float amps_measurement_resistance = 1.f;
+    const float amps_measurement_resistance = 0.333f;
     const float battery_size_mah = 300.f;
 
     const float min_volts_detection = 0.8f;
