@@ -65,8 +65,8 @@ def strip_folders_until(min_date, logger):
             if os.path.exists(dir_name + '/junk'):
                 logger.info('removing: ' + dir_name)
                 shutil.rmtree(dir_name)
-
-            strip_dir(dir_name, logger)
+            else:
+                strip_dir(dir_name, logger)
         elif os.path.exists(dir_name + '/STRIPPED'):
             check_free_space = False
         else:
