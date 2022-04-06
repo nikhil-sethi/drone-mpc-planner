@@ -70,6 +70,7 @@ private:
     float charging_volts = 0;
     float d_charging_volts = 0.f;
     float charging_amps = 0.f;
+    float last_charging_amps = 0.f;
     float charge_resistance = 1.f;
     const float drone_amps_burn_initial_guess = 0.15f;
     float drone_amps_burn = drone_amps_burn_initial_guess;

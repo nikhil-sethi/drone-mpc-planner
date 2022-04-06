@@ -151,8 +151,8 @@ void Charger::run() {
                             volt_mode_pv_initialised = true;
                         } else {
                             if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f) {
-                                drone_amps_burn = moving_average(0.05f, charging_amps, drone_amps_burn);
-                                drone_amps_burn = constrain(drone_amps_burn, 0, 0.3f);
+                                drone_amps_burn = moving_average(0.05f, last_charging_amps, drone_amps_burn);
+                                drone_amps_burn = constrain(drone_amps_burn, 0, 0.3f); // expected is 0.15A, constrain to 0.3 for safety
                             }
                             volt_control();
                             _charging_state = state_trickle_charging;
