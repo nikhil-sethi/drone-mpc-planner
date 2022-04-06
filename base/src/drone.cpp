@@ -249,7 +249,7 @@ void Drone::pre_flight(double time) {
                 }
                 break;
         } case pre_wait_charging: {
-                if (_baseboard_link->charging())
+                if (_baseboard_link->charging() || _baseboard_link->disabled())
                     _state = ds_charging;
                 break;
         } case pre_locate_time_out: {
