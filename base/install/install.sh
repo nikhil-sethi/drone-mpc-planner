@@ -393,7 +393,7 @@ if [[ $1 -eq 1 ]] ; then
 		mkdir -p ~/Arduino
 		[ -d ~/Arduino/libraries ] && {
 			cp -r ~/Arduino/libraries{,.bak} --backup=numbered
-			rm ~/Arduino/libraries
+			rm -r ~/Arduino/libraries
 		}
 		ln -s ~/code/pats/Arduino/libraries ~/Arduino/libraries
 
