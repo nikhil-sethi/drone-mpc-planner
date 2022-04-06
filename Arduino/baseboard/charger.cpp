@@ -257,7 +257,7 @@ void Charger::update_batt_volts() {
 void Charger::update_amps() {
     float volts = analogRead(CHARGING_AMPS_PIN) / 1024.0f * 5.0f * 2.2f;
     charging_amps = volts / amps_measurement_resistance;
-    charging_amps = moving_average(0.05, charging_amps, charging_amps);
+    last_charging_amps = charging_amps;
 }
 
 void Charger::update_pwm(uint8_t pwm_) {
@@ -327,9 +327,9 @@ void Charger::amp_control() {
         } else {
             ff_term = ff_error * ff_amps_gain;
         }
-        if (charging_amps > 1.0f && charging_volts > battery_volts)  // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
+        if (charging_amps > charge_max + drone_amps_burn + 0.2f && charging_volts > battery_volts) // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
             pv = min_charge_pwm;
-        else if (charging_amps > 0.7f && charging_volts > battery_volts)  // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
+        else if (charging_amps > charge_max + drone_amps_burn + 0.1f && charging_volts > battery_volts) // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
             pv = 2 * min_charge_pwm;
         else
             pv = constrain(pv + constrain(ff_term + fb_term, -255, 60), 0, max_charge_pwm); // constrained because some serious non-lineairy of the charger
@@ -342,7 +342,7 @@ void Charger::volt_control() {
     float dt = (millis() - last_control_time) ;
     last_control_time = millis();
     float error = (max_battery_volts - battery_volts);
-    pv = constrain(pv + error * p_volts_gain * dt, 0, 255);
+    pv = constrain(pv + error * p_volts_gain * dt, 0, max_charge_pwm);
     update_pwm(roundf(pv));
     analogWrite(CHARGING_PWM_PIN, pwm);
     setpoint_amps = drone_amps_burn;

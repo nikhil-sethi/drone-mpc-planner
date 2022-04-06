@@ -47,9 +47,9 @@ private:
     const float dangerous_battery_volts = 4.25f;
     const float min_charge_amps = 0.01f;
     const float min_charge_volts_offset = 0.6f; // the voltage over vbat at which current actually starts to flow. Probably related to the diode. And probably its not really const... https://github.com/pats-drones/pats/issues/1047
-    const uint8_t min_charge_pwm = 30; // the minimum pwm at which a measurable current starts to flow. I define 0.03A - 0.07A as measurable
-    const uint8_t max_charge_pwm = 80; // safety  limit, at the moment limited by the p-channel mosfet to 0.5A
-    const float charge_max = battery_size_mah * 0.001f * 1.2f; // 1.2C. Because more seems to overload the charger...
+    const uint8_t min_charge_pwm = 14; // the minimum pwm at which a measurable current starts to flow. I define 0.03A - 0.07A as measurable
+    const uint8_t max_charge_pwm = 60; // safety  limit, at the moment limited by the p-channel mosfet to 0.5A
+    const float charge_max = battery_size_mah * 0.001f * 2.f; // 2C. Because more seems to overload the charger...
     const float charge_1C = battery_size_mah * 0.001f * 1.f;
     const float charge_half_C = battery_size_mah * 0.001f * 0.5f;
 
