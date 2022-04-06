@@ -69,7 +69,7 @@ void BaseboardLink::worker_receive() {
                     }
 
                     _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
-                    _charging_state = static_cast<ChargingState>(pkg->charging_state);
+                    _charging_state = static_cast<charging_states>(pkg->charging_state);
                     _bat_voltage = pkg->battery_volts;
                     baseboard_logger << _time <<
                                      ";" << pkg->firmware_version <<
@@ -79,7 +79,7 @@ void BaseboardLink::worker_receive() {
                                      ";" << pkg->battery_volts <<
                                      ";" << pkg->charging_volts <<
                                      ";" << pkg->charging_amps <<
-                                     ";" << pkg->setpoint_amp <<
+                                     ";" << pkg->setpoint_amps <<
                                      ";" << pkg->mah_charged <<
                                      ";" << pkg->charge_resistance <<
                                      ";" << pkg->drone_amps_burn <<

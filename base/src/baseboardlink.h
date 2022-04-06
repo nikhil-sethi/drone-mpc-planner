@@ -24,7 +24,7 @@ static const char *charging_state_names[] = {
     "bat_calibrating"
 };
 //copy from charging.h Arduino code
-enum ChargingState {
+enum charging_states {
     state_disabled,
     state_init,
     state_drone_not_on_pad,
@@ -63,8 +63,9 @@ private:
         uint8_t charging_state;
         float battery_volts;
         float charging_volts;
+        float ground_volts;
         float charging_amps;
-        float setpoint_amp;
+        float setpoint_amps;
         float mah_charged;
         float charge_resistance;
         float drone_amps_burn;
@@ -111,7 +112,7 @@ private:
     bool update_executor_state_pkg_to_baseboard = false;
     SocketExecutorStatePackage executor_state_pkg_to_baseboard;
 
-    ChargingState _charging_state = state_drone_not_on_pad;
+    charging_states _charging_state = state_drone_not_on_pad;
     float _bat_voltage = -1;
     bool _charging = false;
     float _uptime = 0;
@@ -134,7 +135,7 @@ public:
         _bat_voltage = 4.2;
         _charging = true;
     }
-    void inject_log(int s) {_charging_state  = static_cast<ChargingState>(s);}
+    void inject_log(int s) {_charging_state  = static_cast<charging_states>(s);}
 
     bool disabled() {return _disabled;}
     bool exit_now() { return _exit_now;}
@@ -144,7 +145,7 @@ public:
     bool contact_problem() {return _charging_state == state_contact_problem;}
     bool drone_on_pad() {return _charging_state != state_drone_not_on_pad;}
     bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge || _charging_state == state_calibrating;};
-    ChargingState charging_state() {return _charging_state;};
+    charging_states charging_state() {return _charging_state;};
     std::string charging_state_str() {
         if (!_disabled)
             return charging_state_names[_charging_state];
