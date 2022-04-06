@@ -125,7 +125,10 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
 	pip3 install torch torchvision umap bioinfokit # deep learning
 
 	#vscode linting and formatting:
-	pip3 install pylint flake8 bandit mypy autopep8
+	pip3 install pylint flake8 mypy autopep8
+	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		pip3 install bandit
+	fi
 
 	pip3 install types-python-dateutil
 	pip3 install types-requests
