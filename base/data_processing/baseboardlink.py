@@ -119,6 +119,7 @@ def deamon_receiver(msg):
             daemon_pkg.parse(msg)
 
 
+rgb_led_pkg = ls.SerialNUC2BaseboardRGBLEDPackage()  # must be initialized before starting the socket comm
 executor_state_pkg = ls.SocketExecutorStatePackage()
 daemon_pkg = ls.SocketDaemon2BaseboardLinkPackage()
 daemon = socket_communication('Daemon', lb.socket_baseboard2daemon, True, deamon_receiver)
