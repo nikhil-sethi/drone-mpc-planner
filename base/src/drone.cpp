@@ -95,9 +95,12 @@ void Drone::update(double time) {
                 control.control(state, nav.setpoint(), _interceptor->target_last_trackdata(), time, true);
                 _interceptor->target_is_hunted(_n_take_offs);
                 flight_logger << std::endl;
-                if (nav.drone_problem())
+                if (nav.drone_problem()) {
+                    _trackers->stop_drone_tracking(&tracker);
+                    flight_logger.flush();
+                    flight_logger.close();
                     _state = ds_crashed;
-                else if (nav.flight_done()) {
+                } else if (nav.flight_done()) {
                     _state = ds_post_flight;
                     _n_landings++;
                     flight_logger.flush();

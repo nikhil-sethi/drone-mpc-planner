@@ -102,6 +102,7 @@ void DroneTracker::update(double time) {
                 }
                 break;
         } case dts_detecting_takeoff_failure: {
+                ItemTracker::update(time);
                 break;
         } case dts_detecting: {
                 ItemTracker::update(time);
