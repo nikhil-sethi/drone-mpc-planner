@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import logging
+import logging.handlers
 import sys
 from typing import Dict, List
 sys.path.append('patsc/lib')  # noqa
@@ -16,7 +18,17 @@ from tqdm import tqdm
 from time import sleep
 from json.decoder import JSONDecodeError
 
+name = 'jsons_to_lg'
 lg_bin_width = 5
+
+file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh = logging.handlers.RotatingFileHandler(filename=pc.patsc_log_path + name + '.log', maxBytes=1024 * 1024 * 100, backupCount=1)
+fh.setFormatter(file_format)
+fh.level = logging.DEBUG
+logger = logging.getLogger(name)
+logger.addHandler(fh)
+logger.setLevel(logging.DEBUG)
+logger.info(name + ' reporting in!')
 
 
 def read_cred_lg_db():
@@ -27,8 +39,7 @@ def read_cred_lg_db():
             passw = creds_file.readline().strip()
             return user, passw
     else:
-        print('Error: ~/patsc/.lg_auth authorization not found')
-        exit(1)
+        raise Exception('Error: ~/patsc/.lg_auth authorization not found')
 
 
 def retrieve_token():
@@ -86,10 +97,10 @@ def write_values(token, module_id, col_id, name, json):
             headers = {'Authorization': 'Bearer ' + token}
             resp = requests.put('https://api.letsgrow.com/api/ModuleDefinitions/' + str(module_id) + '/Items/' + str(col_id) + '/Values', headers=headers, json=json)
             if resp.status_code != 200:
-                print(name + ':')
+                logger.info(name + ':')
                 raise Exception('POST /tasks/ {}'.format(resp.status_code))
         except requests.exceptions.ConnectionError:
-            print('LG throttling... Retrying in 1s\n\n')
+            logger.info('LG throttling... Retrying in 1s\n\n')
             sleep(5)
             write_values(token, module_id, col_id, name, json)
 
@@ -240,7 +251,7 @@ def process_status_in_json(data, sys_info):
                     bins[i] = 5
                 else:
                     bins[i] = 66  # this should not be possible.
-                    print("Error, some weird mode detected...?")  # until #1202
+                    logger.error("Error, some weird mode detected...?")  # until #1202
 
     LG_data = []
     times = [(t0 + datetime.timedelta(minutes=lg_bin_width) * x).strftime('%Y-%m-%dT%H:%M:%S') for x in range(bin_cnt)]
@@ -258,7 +269,7 @@ def upload_json_to_LG(token, json_data, sys_info, dry_run):
             if detection_type in sys_info:
                 write_values(token, sys_info['lg_module_id'], sys_info[detection_type], sys_info['name'], binned_detection_data[detection_type])
             else:
-                print(sys_info['name'] + ' does not know ' + detection_type)
+                logger.info(sys_info['name'] + ' does not know ' + detection_type)
         write_values(token, sys_info['lg_module_id'], sys_info['PATSONOF'], sys_info['name'], binned_status_data)
         return 'OK'
     elif dry_run:
@@ -276,7 +287,8 @@ def load_system_info():
     return systems
 
 
-def jsons_to_LG(input_folder, dry_run=False):
+def jsons_to_LG(input_folder, error_file_handler, dry_run=False):
+    logger.addHandler(error_file_handler)
     token = retrieve_token()
     LG_lookup = sys_info_table(token)
     systems_df = load_system_info()
@@ -307,9 +319,7 @@ def jsons_to_LG(input_folder, dry_run=False):
                                                 if '404' in e.args[0]:
                                                     LG_404_err = True
                                                 else:
-                                                    print(e)
-                                                    exit(1)  # until we have developped proper logging #871 --> we have, so #1202
-
+                                                    raise Exception(e)
                                             else:
                                                 flag_f.write(res + '\n')
                                         else:
@@ -322,13 +332,14 @@ def jsons_to_LG(input_folder, dry_run=False):
                                 flag_f.write('SYSTEM UNKOWN: ' + sys_name + '\n')
                         except JSONDecodeError:
                             flag_f.write('JSONDecodeError\n')
+                            logger.error('JSONDecodeError for: ' + filename)
                     else:
                         flag_f.write('File size too big\n')
         if LG_404_err:
             if os.path.exists(flag_fn):
                 os.remove(flag_fn)
-            print('LG server seems to be down... aborting')
-            break
+            logger.error('LG server seems to be down... aborting')
+            return
 
 
 if __name__ == "__main__":

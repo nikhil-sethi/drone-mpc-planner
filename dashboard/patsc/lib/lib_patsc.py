@@ -11,6 +11,7 @@ from flask_login import current_user
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
 db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
 db_meta_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+patsc_log_path = os.path.expanduser('~/patsc/logs/')
 daemon_error_log = os.path.expanduser('~/patsc/logs/daemon_error.log')
 patsc_error_log = os.path.expanduser('~/patsc/logs/patsc_error.log')
 

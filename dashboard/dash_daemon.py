@@ -36,16 +36,18 @@ def error_count():
 
 
 while True:
+    if args.dry_run:
+        logger.addHandler(logging.StreamHandler())
     try:
-        jsons_to_db(args.input_folder, args.dry_run)
+        jsons_to_db(args.input_folder, error_file_handler, args.dry_run)
     except Exception as e:
         logger.error('JSONs to db error: ' + str(e))
     try:
-        jsons_to_LG(args.input_folder, args.dry_run)
+        jsons_to_LG(args.input_folder, error_file_handler, args.dry_run)
     except Exception as e:
         logger.error('JSONs to LG error: ' + str(e))
 
-    if args.period:
+    if args.period and not args.dry_run:
         print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))
         time.sleep(int(args.period))
     else:

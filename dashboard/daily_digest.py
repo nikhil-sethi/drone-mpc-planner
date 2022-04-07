@@ -186,11 +186,10 @@ def n_errors_from_file(file, now: datetime):
             n_error = 0
             log_date = next_date(err_file)
             if log_date:
-                while log_date > yesterday:
-                    n_error += 1
+                while log_date:
+                    if log_date > yesterday:
+                        n_error += 1
                     log_date = next_date(err_file)
-                    if not log_date:
-                        break
     return n_error
 
 

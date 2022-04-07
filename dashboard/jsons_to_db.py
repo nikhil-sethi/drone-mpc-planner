@@ -6,8 +6,21 @@ import json
 import glob
 import os
 import datetime
+import logging
+import logging.handlers
 from tqdm import tqdm
 from json.decoder import JSONDecodeError
+
+name = 'jsons_to_db'
+
+file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh = logging.handlers.RotatingFileHandler(filename=pc.patsc_log_path + name + '.log', maxBytes=1024 * 1024 * 100, backupCount=1)
+fh.setFormatter(file_format)
+fh.level = logging.DEBUG
+logger = logging.getLogger(name)
+logger.addHandler(fh)
+logger.setLevel(logging.DEBUG)
+logger.info(name + ' reporting in!')
 
 
 def create_detections_table(con):
@@ -54,7 +67,7 @@ def store_detections(data, dry_run):
             if not dry_run:
                 cur.execute(sql_insert, (data["system"], start_datetime, *list(detection.values())[1:]))
             else:
-                print(sql_insert + ' ' + ' ,'.join([data["system"], start_datetime, *list(detection.values())[1:]]))
+                print(sql_insert + ' ' + ' ,'.join([data["system"], start_datetime, *[str(item) for item in list(detection.values())[1:]]]))
         con.commit()
     return len(detections)
 
@@ -212,6 +225,7 @@ def remove_double_data(table_name, start_date):
             pbar_entries.close()
         con.commit()
         print("Found and deleted " + str(tot_doubles) + " doubles in " + table_name + " records.")
+        logger.info("Found and deleted " + str(tot_doubles) + " doubles in " + table_name + " records.")
 
 
 def create_flights_table(con):
@@ -249,7 +263,7 @@ def store_flights(data, dry_run):
             if not dry_run:
                 cur.execute(sql_insert, (data["system"], start_datetime, duration, *list(flight.values())[2:]))
             else:
-                print(sql_insert + ' ' + ' ,'.join([data["system"], start_datetime, duration, *list(flight.values())[2:]]))
+                print(sql_insert + ' ' + ' ,'.join([data["system"], start_datetime, str(duration), *[str(item) for item in list(flight.values())[1:]]]))
         con.commit()
     return len(flights)
 
@@ -278,7 +292,8 @@ def process_json(data, dry_run):
     return n_detections, n_statuses, n_flights, n_errors, system_at_office
 
 
-def jsons_to_db(input_folder, dry_run):
+def jsons_to_db(input_folder, error_file_handler, dry_run):
+    logger.addHandler(error_file_handler)
     files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
     pbar = tqdm(files)
     first_date = datetime.datetime.now()
@@ -296,7 +311,8 @@ def jsons_to_db(input_folder, dry_run):
                                     data_start = to_datetime(data['start_datetime'])
                                 else:  # legacy v1
                                     data_start = to_datetime(data['from'])
-                            except Exception:  # issue #1002
+                            except Exception as e:  # issue #1002
+                                logger.error(f'Could not decode start_datetime for {filename}: ' + str(e))
                                 data_start = datetime.datetime.now() - datetime.timedelta(days=365)
                             if data_start < first_date:
                                 first_date = data_start
@@ -321,8 +337,9 @@ def jsons_to_db(input_folder, dry_run):
                                 flag_f.write('NO VERSION DETECTED')
                         except JSONDecodeError:
                             flag_f.write('JSONDecodeError \n')
-                        except Exception as error:
-                            flag_f.write('ERROR: ' + str(error))
+                        except Exception as e:
+                            flag_f.write('ERROR: ' + str(e))
+                            logger.error(f'Error in {filename}: ' + str(e))
                     else:
                         flag_f.write('File size too big \n')
     if not dry_run:
@@ -332,4 +349,5 @@ def jsons_to_db(input_folder, dry_run):
 
 
 if __name__ == "__main__":
-    jsons_to_db('~/patsc/jsons/', False)
+    stderr = logging.StreamHandler()
+    jsons_to_db('~/patsc/jsons/', stderr, False)
