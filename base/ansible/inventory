@@ -4,32 +4,9 @@ pats6
 pats77
 
 [tree]
-
-pats36 #NUC78
-pats37 #NUC11
-pats38 #NUC78
-pats39 #NUC11
-
-#NUC10
-pats30
-pats33
-pats35
-pats141
-
-pats149
-pats150
-pats151
-pats152
-pats153
-pats154
-pats155
-pats156
-
-pats157
-pats158
-pats159
-pats160
-pats161
+pats208
+pats209
+pats210
 
 [missing]
 pats16
@@ -44,16 +21,16 @@ pats136
 pats137
 
 [holstein]
-; pats30
+pats30
 pats33
 pats35
-; pats36
-; pats37
+pats36
+pats37
 pats38
 pats39
-; pats81
+pats81
 pats134
-; pats140
+; pats140 # bastille
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

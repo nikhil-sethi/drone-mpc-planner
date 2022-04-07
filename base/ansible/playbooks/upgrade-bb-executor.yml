@@ -34,6 +34,11 @@
       ansible.builtin.file:
         path: ~/pats/flags/disable
         state: absent
+    - name: Build executor
+      make:
+        chdir: /home/pats/code/pats/base/build
+        params:
+          NUM_THREADS: 4
     - name: Remove disable baseboard flag
       ansible.builtin.file:
         path: ~/pats/flags/disable_baseboard
