@@ -149,7 +149,7 @@ void Drone::pre_flight(double time) {
                     std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
                     pre_flight_state = pre_locate_time_out;
                 } else if (control.takeoff_calib_valid() && !force_pad_redetect)
-                    pre_flight_state = pre_calibrating_pad;
+                    pre_flight_state = pre_check_telemetry;
                 else {
                     control.invalidize_blink();
                     pre_flight_state = pre_locate_drone_wait_led;
@@ -179,7 +179,7 @@ void Drone::pre_flight(double time) {
                     n_locate_drone_attempts = 0;
                     control.LED(true);
                     _visdat->disable_fading = false;
-                    pre_flight_state = pre_calibrating_pad;
+                    pre_flight_state = pre_check_telemetry;
                     _n_drone_detects++;
                 }
                 if (time - time_last_led_doubler > 3) {  // if the blink detect takes too long, it may be that the led is not bright enough to be detected
@@ -191,12 +191,12 @@ void Drone::pre_flight(double time) {
                 if (time - time_start_locating_drone > 300)
                     pre_flight_state = pre_locate_time_out;
                 break;
-        } case pre_calibrating_pad: {
-                if (control.pad_calibration_done())
-                    pre_flight_state = pre_check_telemetry;
-                break;
         } case pre_check_telemetry: {
                 if (control.telemetry_OK() || ! dparams.Telemetry())
+                    pre_flight_state = pre_calibrating_pad;
+                break;
+        } case pre_calibrating_pad: {
+                if (control.pad_calibration_done())
                     pre_flight_state = pre_check_pad_att;
                 break;
         } case pre_check_pad_att: {
