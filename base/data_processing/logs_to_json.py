@@ -18,7 +18,15 @@ import pandas as pd
 import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 sys.path.append('ai')  # noqa
-import use_model as ai
+try:
+    __import__('torch')
+except ImportError:
+    torch_exists = False
+else:
+    torch_exists = True
+
+if torch_exists:
+    import use_model as ai
 from cut_moths import cut_all
 
 
@@ -320,7 +328,10 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
     v_mean = v.mean()
     v_std = v.std()
 
-    insect_chances = ai.use_the_model("cnn", log, amount_classes=n_insects, restrict_var=0)  # hardcoded which model to use
+    if torch_exists:
+        insect_chances = ai.use_the_model("cnn", log, amount_classes=n_insects, restrict_var=0)  # hardcoded which model to use
+    else:
+        insect_chances = None
 
     if insect_chances:
         average_insect_chance = np.mean(np.array(insect_chances), axis=0,).flatten()
