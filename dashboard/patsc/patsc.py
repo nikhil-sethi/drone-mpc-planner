@@ -195,12 +195,12 @@ def load_detections_df(systems, start_datetime, end_datetime, detection_class_in
                 detection_sys_df = detection_sys_df[(detection_sys_df['start_datetime'] > real_start_date) & (detection_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
                 detection_sys_df = pc.window_filter_monster(detection_sys_df, monster_sys_df)
                 monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
-                detection_df = detection_df.append(detection_sys_df)
+                detection_df = pd.concat([detection_df, detection_sys_df])
             else:
                 monster_sys_df = monster_sys_df[(monster_sys_df['start_datetime'] > real_start_date) & (monster_sys_df['start_datetime'] < end_datetime)]  # remove the added monster window added to detect monster just outside the user selected window
-                detection_df = detection_df.append(monster_sys_df)
+                detection_df = pd.concat([detection_df, monster_sys_df])
 
-            monster_df = monster_df.append(monster_sys_df)
+            monster_df = pd.concat([monster_df, monster_sys_df])
 
     if use_proto(start_datetime):
         detection_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -240,10 +240,10 @@ def load_detections_of_hour(systems, start_date, end_date, hour, detection_class
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['monster'] != 1]
                 detection_sys_df = pc.window_filter_monster(detection_sys_df, monster_sys_df)
                 detection_sys_df = detection_sys_df.loc[detection_sys_df['start_datetime'].dt.hour == hour]
-                detections_df = detections_df.append(detection_sys_df)
+                detections_df = pd.concat([detections_df, detection_sys_df])
             else:
                 monster_sys_df = monster_sys_df.loc[monster_sys_df['start_datetime'].dt.hour == hour]
-                detections_df = detections_df.append(monster_sys_df)
+                detections_df = pd.concat([detections_df, monster_sys_df])
 
     if use_proto(start_date):
         detections_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -672,8 +672,7 @@ def create_scatter(detections, system_labels, scatter_x_value, scatter_y_value, 
                     marker=dict(
                         cmin=0,
                         cmax=9,
-                        color=df['system_color'],
-                        colorscale=px.colors.qualitative.Vivid,
+                        color=px.colors.qualitative.Vivid[df['system_color'].values[0] % (len(px.colors.qualitative.Vivid))],
                         symbol=df_scatter['symbol'],
                         size=10,
                         line=dict(width=2, color="rgba(0,0, 0, 255)")
@@ -702,7 +701,11 @@ def download_log(selected_detection, detection_columns):
     if not os.path.isfile(target_log_fn):
         rsync_src = sys_name + ':pats/data/processed/' + log_folder + '/logging/' + log_fn
         cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
-        pc.execute(cmd)
+        cmd_result = pc.execute(cmd)
+        if cmd_result == 23:  # Error 23 means that the file doesn't exist on the system so try again without logging
+            rsync_src = sys_name + ':pats/data/processed/' + log_folder + '/' + log_fn
+            cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
+            cmd_result = pc.execute(cmd)
     return target_log_fn
 
 
@@ -720,7 +723,7 @@ def create_path_plot(target_log_fn, selected_detection, detection_columns):
         x=-df_ilog['sposX_insect'],
         y=-df_ilog['sposZ_insect'],
         z=df_ilog['sposY_insect'],
-        text=df_ilog['time'],
+        text=df_ilog['time' if 'time' in df_ilog else 'elapsed'],
         mode='markers',
         name='Flight path',
         hovertemplate='<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}'
@@ -758,7 +761,11 @@ def download_video(selected_detection, detection_columns):
         if not os.path.isfile(target_video_mkv_fn) and not os.path.isfile(target_video_mp4_fn):
             rsync_src = sys_name + ':pats/data/processed/' + selected_detection[detection_columns.index('folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
-            pc.execute(cmd)
+            cmd_result = pc.execute(cmd)
+            if cmd_result == 23:  # Error 23 means that the file doesn't exist on the system so try again without logging
+                rsync_src = sys_name + ':pats/data/processed/' + selected_detection[detection_columns.index('folder')] + '/render_' + video_fn
+                cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
+                pc.execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):
             mp4_to_mkv_cmd = ['ffmpeg -y -i ' + target_video_mkv_fn + ' -c:v copy -an ' + target_video_mkv_fn[0:-3] + 'mp4']
             pc.execute(mp4_to_mkv_cmd)
@@ -834,7 +841,7 @@ def dash_application():
                 if cel['z'] <= Heatmap_Cell.selected_cell.value:
                     for index_heat, heat in selected_heat.iterrows():
                         if int(cel['x'].replace('h', '')) == heat['hour'] and cel['y'] == heat['start_date']:
-                            unselected_heat = unselected_heat.append(heat.to_frame().T)
+                            unselected_heat = pd.concat([unselected_heat, heat.to_frame().T])
                             selected_heat = selected_heat.drop(index=index_heat)
                             unclicked = True
                             break
@@ -844,7 +851,7 @@ def dash_application():
                     if selected_heat.empty:
                         selected_heat = df_row
                     else:
-                        selected_heat = selected_heat.append(df_row, ignore_index=True)
+                        selected_heat = pd.concat([selected_heat, df_row], ignore_index=True)
 
             selected_heat = selected_heat.to_json(date_format='iso', orient='split')
             unselected_heat = unselected_heat.to_json(date_format='iso', orient='split')
@@ -991,13 +998,13 @@ def dash_application():
                         hour += 24
                     start_datetime = datetime.datetime.strptime(hm_cell['start_date'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
                     detections_hour, _ = load_detections_df(selected_systems, start_datetime, start_datetime + datetime.timedelta(hours=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
-                    detections = detections.append(detections_hour)
+                    detections = pd.concat([detections, detections_hour])
             elif hist_selected_bars and (prop_id == 'staaf_kaart.selectedData' or axis_change):
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_datetime = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
                     detections_day, _ = load_detections_df([sys], start_datetime, start_datetime + datetime.timedelta(days=1), selected_detection_class, selected_filter, ['uid', 'video_filename', 'folder', 'filename', 'human_classification', scatter_x_value, scatter_y_value, *chance_columns])
-                    detections = detections.append(detections_day)
+                    detections = pd.concat([detections, detections_day])
             elif hist24h_selected_bars and (prop_id == 'staaf24h_kaart.selectedData' or axis_change):
                 start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d')
                 end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d')
@@ -1005,7 +1012,7 @@ def dash_application():
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
                     detections_hour = load_detections_of_hour([sys], start_date, end_date, hour, selected_detection_class)
-                    detections = detections.append(detections_hour)
+                    detections = pd.concat([detections, detections_hour])
 
             if not detections.empty:
                 scat_fig = create_scatter(detections, system_labels, scatter_x_value, scatter_y_value, selected_filter, chance_columns)
