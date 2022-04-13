@@ -83,6 +83,7 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
 
 
 def render(detection, render_process_dir, render_mode):
+    logger = logging.getLogger('render')
 
     cmd = './executor_render --log ' + detection['folder'] + ' --' + render_mode + ' ' + detection['video_src_path'] + ' --render' + ' 2>&1 | /usr/bin/tee ' + detection['log_target_path']
     render_ok = False
