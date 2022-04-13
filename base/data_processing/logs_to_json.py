@@ -556,8 +556,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
 
 
 def process_all_logs_to_jsons():
-    now = datetime.today()
-    local_json_file = lb.json_dir + datetime_to_str(now) + '.json'
+    now = datetime.now()
+    local_json_file = lb.json_dir + lb.datetime_to_str_with_timezone(now) + '.json'
     logs_to_json(local_json_file, lb.data_dir, socket.gethostname())
 
 

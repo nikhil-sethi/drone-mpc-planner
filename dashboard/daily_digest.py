@@ -71,9 +71,34 @@ def check_operational_status(systems):
     return systems
 
 
+def select_files_of_yesterday(now, folder):
+    yesterday = now - timedelta(days=1)
+    all_files = glob.glob(folder)
+    yesterday_files = []
+    for file in all_files:
+        splitted_file = os.path.basename(file).split('_')
+        if len(splitted_file) == 3:
+            date_str = splitted_file[1] + '_' + splitted_file[2].split('.')[0]
+            try:
+                date = datetime.strptime(date_str, '%Y%m%d_%H%M%S')
+                date = date.replace(tzinfo=cet)
+            except ValueError:
+                print(f'Error: could not find date in {file}')
+                continue
+        elif len(splitted_file) == 4:
+            date_str = splitted_file[1] + '_' + splitted_file[2] + '_' + splitted_file[3].split('.')[0]
+            try:
+                date = datetime.strptime(date_str, '%Y%m%d_%H%M%S_%z')
+            except ValueError:
+                print(f'Error: could not find date in {file}')
+                continue
+        if date > yesterday:
+            yesterday_files.append(file)
+    return yesterday_files
+
+
 def read_processed_jsons(now):
-    today_str = now.strftime('%Y%m%d')
-    files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
+    files = pc.natural_sort(select_files_of_yesterday(now, os.path.expanduser(args.input_folder + '*.processed')))
     systems = load_systems()
     systems['msg'] = ''
     systems['activation_msg'] = ''
@@ -102,8 +127,7 @@ def read_processed_jsons(now):
 
 
 def daily_errors(now):
-    today_str = now.strftime('%Y%m%d')
-    err_files = pc.natural_sort([fp for fp in glob.glob(os.path.expanduser('~/daily_basestation_errors/*' + today_str + '*'))])
+    err_files = pc.natural_sort(select_files_of_yesterday(now, os.path.expanduser('~/daily_basestation_errors/*')))
     systems = load_systems()
     systems['err'] = 0
     systems['overheat_temp'] = 0

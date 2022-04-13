@@ -181,7 +181,7 @@ class errors_to_vps_task(pats_task):
             os.mkdir(lb.log_dir)
         yesterday_file = lb.daily_errs_log + '.' + (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
         if os.path.exists(yesterday_file):
-            remote_err_file = 'daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
+            remote_err_file = 'daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str_with_timezone(datetime.today()) + '.log'
             cmd = 'rsync -az ' + yesterday_file + ' dash:' + remote_err_file
             tries = 0
             retry = True

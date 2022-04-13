@@ -51,8 +51,12 @@ def str_to_datetime(string):
     return datetime.strptime(string, "%Y%m%d_%H%M%S")
 
 
-def datetime_to_str(d):
+def datetime_to_str(d: datetime):
     return d.strftime('%Y%m%d_%H%M%S')
+
+
+def datetime_to_str_with_timezone(d: datetime):
+    return d.astimezone().strftime('%Y%m%d_%H%M%S_%z')
 
 
 def natural_sort(line):
