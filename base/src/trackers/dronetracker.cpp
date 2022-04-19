@@ -217,16 +217,16 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
 
 void DroneTracker::delete_takeoff_fake_motion() {
     if (enable_takeoff_motion_delete) {
-        _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, _pad_im_size, 1);
+        _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, _pad_im_size, 1); // radius = 2 x the pad radius = _pad_size, for some margin
 
         //to end the deletion of this area, we check if there are no blobs in this area anymore because
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
-        //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
+        //2. other blobs must not be inside the area. (slightly more relaxed, because crop leaf movements otherwise are holding this enabled indefinetely)
         if (_world_item.valid && liftoff_detected && normf(_world_item.image_item.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.image_item.size) {
             enable_takeoff_motion_delete = false;
             for (auto blob : _all_blobs) {
-                if (normf(blob.pt_unscaled() - _pad_im_location) < 2.f * _pad_im_size) {
+                if (normf(blob.pt_unscaled() - _pad_im_location) < (_pad_im_size + blob.size_unscaled()) / 2.f) {
                     enable_takeoff_motion_delete = true;
                     break;
                 }
