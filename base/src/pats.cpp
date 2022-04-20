@@ -66,6 +66,9 @@ void Patser::update(double time) {
         } case pats_x: {
                 if (!drone.in_flight())
                     maintain_motion_map(time);
+                else if (! _visdat->no_recent_brightness_events(time))
+                    _visdat->reset_spot_on_motion_map(drone.tracker.image_item().pt(), drone.tracker.image_item().disparity, drone.tracker.image_item().size, 30);
+
                 trackers.update(time);
                 interceptor.update(drone.control.at_base(), time);
                 drone.update(time);

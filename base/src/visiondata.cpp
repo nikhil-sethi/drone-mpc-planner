@@ -56,6 +56,11 @@ void VisionData::update(StereoPair *data) {
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
 
+
+    if (brightness_change_event(_current_frame_time)) {
+        diffL16 = cv::Mat::zeros(cv::Size(frameL.cols, frameL.rows), CV_16SC1);
+        diffR16 = cv::Mat::zeros(cv::Size(frameR.cols, frameR.rows), CV_16SC1);
+    }
     static bool reset_motion_integration_prev = false; // used to zero diffL16 and R only once
     if (_reset_motion_integration) {
         frameL_prev16 = frameL16;

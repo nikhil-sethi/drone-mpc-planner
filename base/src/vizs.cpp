@@ -368,7 +368,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
     warning_color_cnt++;
     warning_color_cnt = warning_color_cnt % 255;
 
-    if (not _visdat->no_recent_large_brightness_events(time))
+    if (not _visdat->no_recent_brightness_events(time))
         warnings += "BRIGHTNESS ";
     if (_patser->trackers.monster_alert())
         warnings += "MONSTER ALERT ";

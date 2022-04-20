@@ -488,7 +488,7 @@ void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
 }
 void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     //see if there are still blobs left untracked, create new trackers for them
-    if (_visdat->no_recent_large_brightness_events(time)) {
+    if (_visdat->no_recent_brightness_events(time)) {
         for (auto &blob : *pbs) {
             auto props = blob.props;
             if (!blob.tracked() && (!props->in_overexposed_area || _mode == t_locate_drone) && (!props->false_positive || _mode == t_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!

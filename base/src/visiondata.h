@@ -62,6 +62,7 @@ private:
     float brightness_prev = -1;
     bool _reset_motion_integration = false;
     const float large_brightness_change_timeout = 0.3;
+    const float small_brightness_change_timeout = 0.1;
     double large_brightness_event_time = -large_brightness_change_timeout; // minus to not trigger a brightness warning at startup
     double small_brightness_event_time = 0;
     DeleteSpot motion_spot_to_be_deleted;
@@ -111,8 +112,11 @@ public:
     int max_noise(cv::Point blob_pt);
     bool overexposed(cv::Point blob_pt);
 
-    bool no_recent_large_brightness_events(double time) {
-        return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout;
+    bool no_recent_brightness_events(double time) {
+        return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout && static_cast<float>(time - small_brightness_event_time) > small_brightness_change_timeout;
+    }
+    bool brightness_change_event(double time) {
+        return static_cast<float>(time - large_brightness_event_time) <= 1.f / pparams.fps || static_cast<float>(time - small_brightness_event_time) <= 1.f / pparams.fps;
     }
     float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}
