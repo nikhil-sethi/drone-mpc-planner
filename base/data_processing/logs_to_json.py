@@ -359,13 +359,13 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
 
     monster = False
     if 'fp' in log:
-        fps = np.delete(log['fp'].values, remove_ids)
+        fps = log['fp'].dropna().values
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = True
 
     hunt_id = int(0)
     if 'hunt_id' in log:
-        hunt_id = int(np.delete(log['hunt_id'].values, remove_ids)[-1])
+        hunt_id = int(log['hunt_id'].dropna().values[-1])
 
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
@@ -457,7 +457,7 @@ def check_if_system_at_office():
     cmd = 'sudo nmcli dev wifi | grep PATS'
     popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     p_result = popen.stdout.readline().decode('utf-8')
-    return not p_result
+    return bool(p_result)
 
 
 def logs_to_json(json_fn, data_folder, sys_str):
