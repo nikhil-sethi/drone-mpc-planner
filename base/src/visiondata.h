@@ -61,9 +61,9 @@ private:
     float brightness_event_tresh;
     float brightness_prev = -1;
     bool _reset_motion_integration = false;
-    bool large_brightness_event = false;
     const float large_brightness_change_timeout = 0.3;
     double large_brightness_event_time = -large_brightness_change_timeout; // minus to not trigger a brightness warning at startup
+    double small_brightness_event_time = 0;
     DeleteSpot motion_spot_to_be_deleted;
     DeleteSpot motion_spot_to_be_reset;
 

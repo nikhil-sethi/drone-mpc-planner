@@ -226,11 +226,9 @@ void VisionData::track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, d
     cv::Mat frame_top = frameL_new(cv::Rect(frameL_new.cols / 3, 0, frameL_new.cols / 3 * 2, frameL_new.rows / 3)); // only check the middle & top third of the image, to save CPU
     float brightness_new = static_cast<float>(mean(frame_top)[0]);
     float brightness_diff = fabs(brightness_new - brightness_prev);
-    large_brightness_event = false;
     if (time > 1.5) {
         if (brightness_diff > brightness_event_tresh) {
             std::cout << "Warning, large brightness change: " << brightness_prev << " -> " << brightness_new  << std::endl;
-            large_brightness_event = true;
             large_brightness_event_time = time;
         } else if (brightness_diff > 0.3f)  { // capture subtle autoexposure changes
             float brightness_ff_new = static_cast<float>(mean(frameL_new)[0]);
@@ -238,9 +236,8 @@ void VisionData::track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, d
             float brightness_ff_diff = fabs(brightness_ff_new - brightness_ff_prev);
 
             if (brightness_ff_diff > 0.1f) {
+                small_brightness_event_time = time;
                 std::cout << "Warning, small brightness change: " << brightness_prev << " -> " << brightness_new << "=" <<  brightness_diff << ". And ff brightness " << brightness_ff_prev << " -> " << brightness_ff_new << " = " << brightness_ff_diff << std::endl;
-                large_brightness_event = true;
-                large_brightness_event_time = time;
             }
         }
     }
