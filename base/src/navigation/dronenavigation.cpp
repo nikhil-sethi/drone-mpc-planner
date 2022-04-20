@@ -125,7 +125,7 @@ void DroneNavigation::update(double time) {
                 break;
         } case ns_goto_thrust_calib_waypoint: {
                 _control->flight_mode(DroneController::fm_headed);
-                if (!_control->thrust_calib_valid() || force_thrust_calib) {
+                if (exec_thrust_calib()) {
                     next_waypoint(Waypoint_Thrust_Calibration(), time);
                     _navigation_status = ns_approach_waypoint;
                 } else
@@ -363,6 +363,9 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
             setpoint_pos_world.y = -0.5f;
+
+        setpoint_pos_world.x += calibration_offset(wp); // don't calibrate in between camera and pad if drone is not calibrated
+
         setpoint_pos_world_landing = setpoint_pos_world;
     } else {
         setpoint_pos_world =  wp.xyz;
@@ -428,5 +431,24 @@ void DroneNavigation::flightplan(std::string flightplan_fn) {
         force_thrust_calib = true;
     else
         force_thrust_calib = false;
+}
+
+
+float DroneNavigation::calibration_offset(Waypoint wp) {
+    if ((wp.mode == wfm_thrust_calib || wp.mode == wfm_yaw_reset) && exec_thrust_calib()) {
+
+        // search the side which is closer to the drone to prevent the drone passing the pad if thrust calibration isn't done yet (potential crash).
+        float candidate_sign = 1.f;
+        if (normf(setpoint_pos_world + cv::Point3f(0.5, 0, 0) - _tracker->last_track_data().state.pos)
+                > normf(setpoint_pos_world + cv::Point3f(-0.5, 0, 0) - _tracker->last_track_data().state.pos))
+            candidate_sign = -1.f;
+
+        if (_flight_area->inside(setpoint_pos_world + candidate_sign * cv::Point3f(0.5, 0, 0), relaxed))
+            return candidate_sign * 0.5f;
+        else if (_flight_area->inside(setpoint_pos_world + candidate_sign * cv::Point3f(-0.5, 0, 0), relaxed))
+            return candidate_sign * -0.5f;
+    }
+
+    return 0;
 }
 }

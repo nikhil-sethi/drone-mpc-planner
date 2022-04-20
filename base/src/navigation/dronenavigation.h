@@ -66,6 +66,8 @@ private:
     bool drone_at_wp();
     bool drone_close_to_wp();
     void check_abort_autonomus_flight_conditions();
+    float calibration_offset(Waypoint wp);
+    bool exec_thrust_calib() {return !_control->thrust_calib_valid() || force_thrust_calib;}
 
 public:
     void close(void);
