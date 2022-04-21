@@ -5,7 +5,6 @@
 | Off                   | solid        | Charging disabled               |
 | Red                   | solid        | Not charging                    |
 | Blue                  | solid        | Charging (charge amps > thresh) |
-| Green                 | solid        | Ready / charged                 |
 | Yellow                | solid        | Calibration                     |
 
 | Bonus blinks                  | State                         |
