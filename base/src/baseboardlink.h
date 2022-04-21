@@ -46,7 +46,6 @@ private:
     enum baseboard_package_headers {
         header_SerialBaseboard2NUCPackage = 'P',
         header_SerialExecutor2BaseboardAllowChargingPackage = 'A',
-        header_SerialExecutor2BaseboardStatePackage = 'S',
     };
 
     //copy from utility.h Arduino code
@@ -72,13 +71,6 @@ private:
         unsigned char charging_pwm;
         uint32_t charging_duration;
         uint16_t measured_fan_speed;
-        const char ender = '\n';
-    };
-    struct __attribute__((packed)) SerialExecutor2BaseboardStatePackage {
-        const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
-        const uint16_t firmware_version = required_firmware_version_baseboard;
-        const char header = header_SerialExecutor2BaseboardStatePackage;
-        uint8_t executor_state;
         const char ender = '\n';
     };
     struct __attribute__((packed)) SerialExecutor2BaseboardAllowChargingPackage {
@@ -155,9 +147,12 @@ public:
     float uptime() { return _uptime;}
     float drone_battery_voltage() { return _bat_voltage;}
     void allow_charging(bool b) {
-        allow_charging_pkg_to_baseboard.allow_charging = b;
-        update_allow_charging_pkg_to_baseboard = true;
-        cv_to_baseboard.notify_all();
+        if (allow_charging_pkg_to_baseboard.allow_charging != b) {
+            allow_charging_pkg_to_baseboard.allow_charging = b;
+            update_allow_charging_pkg_to_baseboard = true;
+            std::cout << "update_allow_charging_pkg_to_baseboard" << std::endl;
+            cv_to_baseboard.notify_all();
+        }
     }
     void executor_state(executor_states s, float light_level) {
         executor_state_pkg_to_baseboard.executor_state = s;

@@ -234,6 +234,9 @@ class SerialExecutor2BaseboardAllowChargingPackage:
          self.allow_charging,
          self.ender,
          ) = fields
+        self.pre_header = self.pre_header.decode('utf-8')
+        self.header = self.header.decode('utf-8')
+        self.ender = self.ender.decode('utf-8')
 
     def pack(self):
         return struct.pack(self.format,

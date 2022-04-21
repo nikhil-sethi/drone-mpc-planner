@@ -16,8 +16,6 @@ enum baseboard_package_headers {
     header_SerialNUC2BaseboardEEPROMPackage = 'E',
     header_SerialNUC2BaseboardRGBLEDPackage = 'R',
     header_SerialExecutor2BaseboardAllowChargingPackage = 'A',
-    header_SerialExecutor2BaseboardStatePackage = 'S'
-
 };
 
 //copy from utility.h Arduino code
@@ -75,13 +73,6 @@ struct __attribute__((packed)) SerialExecutor2BaseboardAllowChargingPackage {
     const char ender = '\n';
 };
 
-struct __attribute__((packed)) SerialExecutor2BaseboardStatePackage {
-    const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
-    const uint16_t firmware_version = FIRMWARE_VERSION;
-    const char header = header_SerialExecutor2BaseboardStatePackage;
-    uint8_t executor_state;
-    const char ender = '\n';
-};
 
 struct __attribute__((packed)) SerialNUC2BaseboardLedPowerPackage {
     const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
@@ -134,4 +125,4 @@ struct __attribute__((packed)) SerialNUC2BaseboardRGBLEDPackage {
 
 
 float moving_average(float alpha, float value, float smoothed_value);
-uint16_t serial_read_to_buf(unsigned char buf[MAX_PACKAGE_READ_SIZE]);
+bool serial_read_pkg(unsigned char buf[MAX_PACKAGE_READ_SIZE]);

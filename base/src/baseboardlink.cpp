@@ -121,12 +121,11 @@ void BaseboardLink::send_over_socket(unsigned char *data, ssize_t len) {
 void BaseboardLink::worker_send() {
     std::unique_lock<std::mutex> lk(cv_m_to_baseboard);
     while (!exit_thread) {
-        auto timeout = cv_to_baseboard.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
         if (!exit_thread) {
+            auto timeout = cv_to_baseboard.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
             if (update_allow_charging_pkg_to_baseboard || timeout ==  std::cv_status::timeout) {
                 send_over_socket(reinterpret_cast<unsigned char *>(&allow_charging_pkg_to_baseboard), sizeof(SerialExecutor2BaseboardAllowChargingPackage));
                 update_allow_charging_pkg_to_baseboard = false;
-
             }
             if (update_executor_state_pkg_to_baseboard) {
                 send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_baseboard), sizeof(SocketExecutorStatePackage));

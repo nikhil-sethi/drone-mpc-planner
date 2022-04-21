@@ -70,6 +70,9 @@ def executor_receiver(msg):
     while len(msg) > 3:
         if msg[0] == ord(ls.EXECUTOR_PACKAGE_PRE_HEADER):
             if msg[3] == ord(ls.baseboard_package_headers.header_SerialExecutor2BaseboardAllowChargingPackage.value[0]):
+                # allow_charging_pkg = ls.SerialExecutor2BaseboardAllowChargingPackage()
+                # allow_charging_pkg.parse(msg[:struct.calcsize(allow_charging_pkg.format)])
+                # comm.write(allow_charging_pkg.pack())
                 comm.write(msg[:struct.calcsize(ls.SerialExecutor2BaseboardAllowChargingPackage().format)])
                 msg = msg[struct.calcsize(ls.SerialExecutor2BaseboardAllowChargingPackage().format):]
             elif msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
@@ -213,7 +216,7 @@ while True:
                             if first_pkg:
                                 first_pkg = False
                                 logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
-                            logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:' + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1)) + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1)) + 'v. \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's' + '\tfan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(new_pkg.watchdog_state))
+                            logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:' + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1)) + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1)) + 'v. \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's' + '\tfan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(bool(new_pkg.watchdog_state)))
                             executor_pkg = serial_data[pkg_start:]
                             executor.send(executor_pkg)
                             prev_pkg = new_pkg
