@@ -118,6 +118,7 @@ struct __attribute__((packed)) SerialNUC2BaseboardRGBLEDPackage {
     const uint16_t firmware_version = FIRMWARE_VERSION;
     const char header = header_SerialNUC2BaseboardRGBLEDPackage;
     unsigned char led1_state;
+    unsigned char light_level;
     bool internet_OK;
     bool daemon_OK;
     bool postprocessing;

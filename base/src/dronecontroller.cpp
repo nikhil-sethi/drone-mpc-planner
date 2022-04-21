@@ -17,7 +17,7 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure) {
+void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area) {
     _rc = rc;
     _dtrk = dtrk;
     _flight_area = flight_area;
@@ -27,8 +27,6 @@ void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *fli
 
     load_calibration();
     calibration.serialize(data_output_dir + "/initial_drone_calibration.xml");
-
-    set_led_strength(exposure);
 
     pad_att_calibration_roll.init(required_pad_att_calibration_cnt);
     pad_att_calibration_pitch.init(required_pad_att_calibration_cnt);
@@ -96,29 +94,18 @@ void DroneController::init_flight_replay(std::string replay_dir, int flight_id) 
     calibration.serialize(data_output_dir + "/initial_drone_calibration.xml");
 }
 
-void DroneController::set_led_strength(float exposure) {
+void DroneController::led_strength(float light_level) {
     if (dparams.led_type == led_fiber_uv || dparams.led_type == led_top_uv)
         dparams.drone_led_strength = 100;
     else {
-        float max_ae = 20000;
-        if (pparams.fps == 90)
-            max_ae = 10000;
-        else if (pparams.fps == 60)
-            max_ae = 15000;
-        else
-            std::cout << "Warning, led strength not properly implemented for this fps!" << std::endl;
-
-        float thresh_dark = (0.1333f * max_ae);
-        float thresh_bright = (0.0333f * max_ae);
-
-        if (exposure < thresh_bright)
+        if (light_level < 0.05f)
             dparams.drone_led_strength = 100;
-        else if (exposure < thresh_dark)
-            dparams.drone_led_strength = 100 - (exposure / thresh_dark * 50.f);
+        else if (light_level < 0.1f)
+            dparams.drone_led_strength = 100 - (light_level / 0.1f * 50.f);
         else
-            dparams.drone_led_strength = 50 - ((std::clamp(exposure, thresh_bright, max_ae) - thresh_bright) / (max_ae - thresh_bright) * 35.f);
+            dparams.drone_led_strength = 50 + (light_level - 0.1f) / 0.9f * 50.f;
     }
-    std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
+    std::cout << "Led strength set to: " << dparams.drone_led_strength << " with light level: " << light_level << std::endl;
 }
 
 void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time, bool enable_logging) {

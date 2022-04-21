@@ -200,7 +200,6 @@ private:
         else
             return 0;
     }
-    void set_led_strength(float exposure);
 
     uint16_t initial_hover_throttle_guess_non3d;
     uint16_t initial_hover_throttle_guess() {
@@ -251,6 +250,7 @@ public:
     LandingController land_ctrl;
     KeepInViewController kiv_ctrl;
 
+    void led_strength(float light_level);
     void calibrate_pad_attitude();
 
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
@@ -397,7 +397,7 @@ public:
     float dist_to_setpoint() { return _dist_to_setpoint; }
 
     void close(void);
-    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure);
+    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area);
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);

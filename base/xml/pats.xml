@@ -1,8 +1,6 @@
-<SerializableClass Type="PatsParameters" Version="1.16">
+<SerializableClass Type="PatsParameters" Version="1.17">
     <Member Name="wdt_timeout_us">500000</Member>
-    <Member Name="exposure_threshold">5000</Member>
-    <Member Name="gain_threshold">16</Member>
-    <Member Name="brightness_threshold">90</Member>
+    <Member Name="light_level_threshold">0.5</Member>
     <Member Name="has_screen">false</Member>
     <Member Name="close_after_n_images">324000</Member>
     <Member Name="plukker_start">disabled</Member>

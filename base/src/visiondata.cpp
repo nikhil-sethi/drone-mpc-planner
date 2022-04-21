@@ -14,11 +14,6 @@ void VisionData::init(Cam *cam) {
 
     enable_viz_motion = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
-    camera_pitch = _cam->camera_pitch();
-    camera_roll = _cam->camera_roll();
-    camera_gain = _cam->measured_gain();
-    camera_exposure = _cam->measured_exposure();
-
     deserialize_settings();
 
     smallsize = cv::Size(frameL.cols / pparams.imscalef, frameL.rows / pparams.imscalef);

@@ -159,8 +159,9 @@ public:
         update_allow_charging_pkg_to_baseboard = true;
         cv_to_baseboard.notify_all();
     }
-    void executor_state(executor_states s) {
+    void executor_state(executor_states s, float light_level) {
         executor_state_pkg_to_baseboard.executor_state = s;
+        executor_state_pkg_to_baseboard.light_level = light_level * 255;
         update_executor_state_pkg_to_baseboard  = true;
         cv_to_baseboard.notify_one();
     }

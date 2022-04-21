@@ -83,8 +83,11 @@ public:
     unsigned long long  frame_id;
     cv::Size smallsize;
     cv::Mat Qf, Qfi;
-    float camera_roll, camera_pitch;
-    float camera_gain, camera_exposure;
+    float camera_roll() {return _cam->camera_roll();}
+    float camera_pitch() {return _cam->camera_pitch();}
+    float camera_gain() {return _cam->measured_gain();}
+    float camera_exposure() {return _cam->measured_exposure();}
+    float light_level() {return calc_light_level(_cam->measured_exposure(), _cam->measured_gain(), average_brightness());}
     bool disable_fading = false;
     cv::Mat frameL, frameR;
     cv::Mat depth_background;

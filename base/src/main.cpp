@@ -58,6 +58,7 @@ int encoded_img_count = 0;
 int n_fps_warnings = 0;
 GStream video_render, video_raw;
 time_t start_datetime;
+float light_level = 0;
 
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
@@ -270,6 +271,7 @@ void process_video() {
             exit_now = true;
         }
 
+        light_level = visdat.light_level();
         std::cout <<
                   //   "\r\e[K" <<
                   imgcount <<
@@ -279,7 +281,8 @@ void process_video() {
                   " " << patser.state_str() <<
                   ", exp: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
-                  ", bright: " << to_string_with_precision(visdat.average_brightness(), 1);
+                  ", bright: " << to_string_with_precision(visdat.average_brightness(), 1) <<
+                  ", light: " << to_string_with_precision(light_level, 2);
 
         if (pparams.op_mode == op_mode_c) {
             if (patser.trackers.detections_count())
@@ -318,16 +321,8 @@ void process_video() {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
-            } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
-                std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than threshold (" << pparams.exposure_threshold << ")" << std::endl;
-                communicate_state(es_brightness_restart);
-                exit_now = true;
-            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
-                std::cout << "Initiating restart because gain (" << cam->measured_gain() << ") is lower than threshold (" << pparams.gain_threshold << ")" << std::endl;
-                communicate_state(es_brightness_restart);
-                exit_now = true;
-            } else if (visdat.average_brightness() > pparams.brightness_threshold + 10 && pparams.exposure_threshold > 0 && frame->time > 3) {
-                std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold + 10 << ")" << std::endl;
+            } else if ((light_level <= pparams.light_level_threshold && pparams.light_level_threshold > 0 && frame->time > 3)) {
+                std::cout << "Initiating restart because light level (" << light_level << ") is lower than threshold (" << pparams.light_level_threshold << ")" << std::endl;
                 communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
@@ -404,7 +399,7 @@ void process_frame(StereoPair *frame) {
 
 void communicate_state(executor_states s) {
     daemon_link.executor_state(s);
-    baseboard_link.executor_state(s);
+    baseboard_link.executor_state(s, light_level);
 }
 
 void init_insect_log(int n) {
@@ -1012,14 +1007,15 @@ void wait_for_plukker() {
 }
 
 void wait_for_dark() {
-    if (pparams.exposure_threshold > 0 && !log_replay_mode) {
+    if (pparams.light_level_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark..." << std::endl;
         int last_save_bgr_hour = -1;
         while (true) {
-            auto [expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
+            auto [light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_light_level();
+            light_level = light_level_;
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ">" << pparams.exposure_threshold << ", gain: " << gain << "<" << pparams.gain_threshold << ", brightness: " <<  to_string_with_precision(avg_brightness, 0) << "<" << pparams.brightness_threshold << std::endl;
-            if (expo >= pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold) {
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain  << ", brightness: " <<  to_string_with_precision(avg_brightness, 0)  << std::endl;
+            if (light_level >= pparams.light_level_threshold) {
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);

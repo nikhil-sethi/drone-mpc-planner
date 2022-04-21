@@ -43,6 +43,8 @@ cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void reset_external_wdt_flag();
 std::string execute(const char *cmd);
+float max_rs_auto_exposure();
+float calc_light_level(int exposure, int gain, int brightness);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
@@ -325,13 +327,13 @@ public:
 
 class PatsParameters: public Serializable {
 private:
+    xInt _light_level_threshold;
     xBool _watchdog, _has_screen;
     xVideo_mode _video_raw, _video_result;
     xRC_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
     xInt _wdt_timeout_us, _fps, _close_after_n_images;
-    xInt _exposure_threshold, _gain_threshold, _brightness_threshold;
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
     xInt _imscalef;
@@ -344,7 +346,7 @@ private:
     xBool _long_range_mode;
 
 public:
-    int exposure_threshold, gain_threshold, brightness_threshold;
+    float light_level_threshold;
     int wdt_timeout_us, close_after_n_images;
     uint fps;
     bool watchdog, has_screen;
@@ -369,13 +371,11 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.16");
+        setVersion("1.17");
 
         // Register members. Like the class name, member names can differ from their xml depandants
+        Register("light_level_threshold", &_light_level_threshold);
         Register("wdt_timeout_us", &_wdt_timeout_us);
-        Register("exposure_threshold", &_exposure_threshold);
-        Register("gain_threshold", &_gain_threshold);
-        Register("brightness_threshold", &_brightness_threshold);
         Register("close_after_n_images", &_close_after_n_images);
         Register("plukker_start", &_plukker_start);
         Register("min_hunt_size", &_min_hunt_size);
@@ -419,10 +419,8 @@ public:
             throw std::runtime_error("File not found: " + settings_file);
         }
 
+        light_level_threshold = _light_level_threshold.value();
         wdt_timeout_us = _wdt_timeout_us.value();
-        exposure_threshold = _exposure_threshold.value();
-        gain_threshold = _gain_threshold.value();
-        brightness_threshold = _brightness_threshold.value();
         close_after_n_images = _close_after_n_images.value();
         plukker_start = _plukker_start.value();
         min_hunt_size = _min_hunt_size.value();
@@ -446,10 +444,8 @@ public:
     }
 
     void serialize(std::string settings_file) {
+        _light_level_threshold = light_level_threshold;
         _wdt_timeout_us = wdt_timeout_us;
-        _exposure_threshold = exposure_threshold;
-        _gain_threshold = gain_threshold;
-        _brightness_threshold = brightness_threshold;
         _close_after_n_images = close_after_n_images;
         _plukker_start = plukker_start;
         _max_hunt_size = max_hunt_size;
@@ -923,6 +919,7 @@ struct __attribute__((packed)) SocketExecutorStatePackage {
     const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;
     const char header = header_SocketExecutorStatePackage;
     uint8_t executor_state;
+    uint8_t light_level;
     double time;
     const char ender = '\n';
 };

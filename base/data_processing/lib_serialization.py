@@ -363,11 +363,12 @@ class SerialNUC2BaseboardNUCResetPackage:
 
 
 class SerialNUC2BaseboardRGBLEDPackage:
-    format = '=cHcBBBBc'
+    format = '=cHcBBBBBc'
     pre_header = BASEBOARD_PACKAGE_PRE_HEADER
     firmware_version = BASEBOARD_FIRMWARE_VERSION,
     header = baseboard_package_headers.header_SerialNUC2BaseboardRGBLEDPackage.value[0]
     led1state = 0
+    light_level = 0
     internet_OK = 0
     daemon_OK = 0
     post_processing = 0
@@ -382,6 +383,7 @@ class SerialNUC2BaseboardRGBLEDPackage:
          self.firmware_version,
          self.header,
          self.led1state,
+         self.light_level,
          self.internet_OK,
          self.daemon_OK,
          self.post_processing,
@@ -394,6 +396,7 @@ class SerialNUC2BaseboardRGBLEDPackage:
                            int(self.firmware_version),
                            bytes(self.header, 'utf-8'),
                            self.led1state,
+                           self.light_level,
                            self.internet_OK,
                            self.daemon_OK,
                            self.post_processing,
@@ -402,10 +405,11 @@ class SerialNUC2BaseboardRGBLEDPackage:
 
 
 class SocketExecutorStatePackage:
-    format = '=ccBdc'
+    format = '=ccBBdc'
     pre_header = EXECUTOR_PACKAGE_PRE_HEADER
     header = executor_package_headers.header_SocketExecutorStatePackage.value[0]
     executor_state = 0
+    light_level = 0
     time = 0
     ender = '\n'
 
@@ -417,6 +421,7 @@ class SocketExecutorStatePackage:
         (self.pre_header,
             self.header,
             self.executor_state,
+            self.light_level,
             self.time,
             self.ender
          ) = fields
@@ -427,6 +432,7 @@ class SocketExecutorStatePackage:
                            int(self.firmware_version),
                            bytes(self.header, 'utf-8'),
                            self.executor_state,
+                           self.light_level,
                            self.time,
                            bytes(self.ender, 'utf-8')
                            )

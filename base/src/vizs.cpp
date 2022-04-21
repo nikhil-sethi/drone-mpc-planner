@@ -510,7 +510,7 @@ void Visualizer::draw_tracker_viz() {
         cv::line(frameL_color, p_ins_im, p_ins_im, itrkr_color, 2);
         cv::Point3f p_ins_ground_wrld = wti.pt;
         p_ins_ground_wrld.y = ground_y;
-        cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
         cv::line(frameL_color, p_ins_im, p_ins_ground_im, itrkr_color, 1);
 
 
@@ -520,8 +520,8 @@ void Visualizer::draw_tracker_viz() {
 
     if (_patser->drone.control.ff_interception()) {
         //burn:
-        cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_drone_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
-        cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_target_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_drone_pos_after_burn, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+        cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_target_pos_after_burn, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
 
 
         if (!_patser->drone.control.viz_trajectory.empty() && ! drn_path.empty()) {
@@ -534,12 +534,12 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color, to_string_with_precision(_patser->drone.control.viz_time_after_burn, 2), viz_drone_pos_after_burn_im, cv::FONT_HERSHEY_SIMPLEX, 0.5, pink);
 
         for (size_t i = 0; i < _patser->drone.control.viz_trajectory.size(); i++) {
-            cv::Point2f p = world2im_2d(_patser->drone.control.viz_trajectory.at(i).pos, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+            cv::Point2f p = world2im_2d(_patser->drone.control.viz_trajectory.at(i).pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
             cv::circle(frameL_color, p, 1, pink);
         }
 
         for (size_t i = 0; i < drn_path.size(); i++) {
-            cv::Point2f p = world2im_2d(drn_path.at(i).world_item.pt, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+            cv::Point2f p = world2im_2d(drn_path.at(i).world_item.pt, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
             cv::circle(frameL_color, p, 1, blue);
         }
     }

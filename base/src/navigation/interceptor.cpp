@@ -290,7 +290,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
             if (!insect_state.pos_valid) {
                 auto prediction = trkr->image_predict_item();
                 if (prediction.valid)
-                    current_insect_pos = im2world(prediction.pt_unbound, prediction.disparity, _visdat->Qf, _visdat->camera_roll, _visdat->camera_pitch);
+                    current_insect_pos = im2world(prediction.pt_unbound, prediction.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
                 else
                     current_insect_pos = {0};
             }

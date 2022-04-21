@@ -29,7 +29,7 @@ public:
     void close();
     void reset();
     StereoPair *update();
-    std::tuple<float, float, cv::Mat, cv::Mat, cv::Mat, float> measure_auto_exposure();
+    std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> measure_light_level();
     std::tuple<float, float, double, cv::Mat> measure_angle();
     bool master() {return !_id;}
 

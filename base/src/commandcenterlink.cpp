@@ -118,7 +118,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_file << "arming: " << _patser->rc()->telemetry.arming_state << std::endl;
         status_file << "rssi: " << static_cast<int>(_patser->rc()->telemetry.rssi) << std::endl;
         status_file << "drone att: " << to_string_with_precision(_patser->rc()->telemetry.roll, 1) << ", " << to_string_with_precision(_patser->rc()->telemetry.pitch, 1) << std::endl;
-        status_file << "cam angles: " << to_string_with_precision(_visdat->camera_roll, 1) << ", " << to_string_with_precision(_visdat->camera_pitch, 1) << std::endl;
+        status_file << "cam angles: " << to_string_with_precision(_visdat->camera_roll(), 1) << ", " << to_string_with_precision(_visdat->camera_pitch(), 1) << std::endl;
         status_file.close();
     }
 }

@@ -274,7 +274,7 @@ void Realsense::init_real() {
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
     if (!exposure_initialized && master()) {
-        measure_auto_exposure();
+        measure_light_level();
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << camparams.measured_brightness << std::endl;
     }
     if (!angle_initialized && master()) {
@@ -282,7 +282,7 @@ void Realsense::init_real() {
         std::cout << "Camera roll: " << to_string_with_precision(camparams.camera_angle_x, 2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(camparams.camera_angle_y, 2) << "°" << std::endl;
     }
 
-    calib_depth_background(); // this function may be merged into measure_angle or measure_auto_exposure to speed up things slightly, but it requires the laser which disturbs other systems, so I like to keep it seperate like this because then it will only be excuted once
+    calib_depth_background(); // this function may be merged into measure_angle or measure_light_level to speed up things slightly, but it requires the laser which disturbs other systems, so I like to keep it seperate like this because then it will only be excuted once
 
     rs_depth_sensor = dev.first<rs2::depth_sensor>();
     rs_depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
@@ -332,7 +332,7 @@ void Realsense::init_real() {
     initialized = true;
 }
 
-std::tuple<float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_auto_exposure() {
+std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_light_level() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
@@ -413,7 +413,8 @@ std::tuple<float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_au
     camparams.measured_gain = new_gain;
     camparams.measured_brightness = brightness;
     exposure_initialized = true;
-    return std::make_tuple(new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
+    float light_level = calc_light_level(new_expos, new_gain, brightness);
+    return std::make_tuple(light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
 
 }
 

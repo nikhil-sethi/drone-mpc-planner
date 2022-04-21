@@ -295,3 +295,16 @@ std::string execute(const char *cmd) {
     }
     return result;
 }
+
+float max_rs_auto_exposure() {
+    if (pparams.fps == 90)
+        return 10000;
+    else if (pparams.fps == 60)
+        return 15000;
+    else
+        return 20000;
+}
+
+float calc_light_level(int exposure, int gain, int brightness) {
+    return (brightness / 255.f) * ((255.f - gain) / 255.f) * (((1e6f / pparams.fps) - exposure) / (1e6f / pparams.fps));
+}
