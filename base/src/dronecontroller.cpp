@@ -98,12 +98,12 @@ void DroneController::led_strength(float light_level) {
     if (dparams.led_type == led_fiber_uv || dparams.led_type == led_top_uv)
         dparams.drone_led_strength = 100;
     else {
-        if (light_level < 0.05f)
+        if (light_level > 0.15f)
             dparams.drone_led_strength = 100;
-        else if (light_level < 0.1f)
-            dparams.drone_led_strength = 100 - (light_level / 0.1f * 50.f);
+        else if (light_level > 0.05f)
+            dparams.drone_led_strength = 50 + (light_level - 0.05f) / 0.1f * 50.f;
         else
-            dparams.drone_led_strength = 50 + (light_level - 0.1f) / 0.9f * 50.f;
+            dparams.drone_led_strength =  std::clamp(static_cast<int>(roundf(light_level  / 0.05f * 50.f)), 5, 50);
     }
     std::cout << "Led strength set to: " << dparams.drone_led_strength << " with light level: " << light_level << std::endl;
 }
