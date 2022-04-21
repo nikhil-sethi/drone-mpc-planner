@@ -149,6 +149,16 @@ class cut_moths_task(pats_task):
         cut_all()
 
 
+class wp_demo_task(pats_task):
+    def __init__(self, error_file_handler):
+        super(wp_demo_task, self).__init__('wp_demo', timedelta(hours=1), timedelta(minutes=15), False, error_file_handler)
+
+    def task_func(self):
+        if os.path.exists(lb.enable_wp_demo_flag):
+            shutil.copyfile(os.path.expanduser('~/code/pats/base/xml/flightplans/simple-demo-floriade.xml'), os.path.expanduser('~/pats/flags/pats_demo.xml'))
+        pass
+
+
 class logs_to_json_task(pats_task):
     def __init__(self, error_file_handler):
         super(logs_to_json_task, self).__init__('logs_to_json', timedelta(hours=8, minutes=30), timedelta(hours=24), False, error_file_handler)
@@ -370,6 +380,7 @@ tasks.append(render_task(error_file_handler))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
+tasks.append(wp_demo_task(error_file_handler))
 
 start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
 start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
