@@ -121,6 +121,8 @@ private:
     double time_shake_start = 0;
     int n_shakes_sessions_after_landing = 0;
 
+    const float max_safe_charging_telemetry_voltage = 4.35f; // safety overcharge flip happens at 4.4v
+
     std::ofstream *main_logger;
     std::ofstream flight_logger;
     time_t take_off_datetime;

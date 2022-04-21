@@ -41,7 +41,7 @@ void Drone::update(double time) {
                 else if (_baseboard_link->charging_problem() || !_baseboard_link->drone_on_pad())
                     _state = ds_charging_failure;
 
-                if (_rc->telemetry.batt_cell_v > 4.7f) {
+                if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
                     _state = ds_charging_failure;
                     break;
@@ -49,7 +49,7 @@ void Drone::update(double time) {
                 break;
         } case ds_ready: {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
-                if (_rc->telemetry.batt_cell_v > 4.7f) {
+                if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
                     _state = ds_charging_failure;
                     break;
