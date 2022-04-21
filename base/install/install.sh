@@ -292,7 +292,7 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
 
-	SYMLINK_FLAG=symlinks-v1.5.done
+	SYMLINK_FLAG=symlinks-v1.6.done
 	# Create nice symlinks
 	[ -f $SYMLINK_FLAG ] || {
 		[ -f ~/.screenrc ] && {
