@@ -34,6 +34,8 @@ void VisionData::init(Cam *cam) {
     cv::Mat element_mat = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
     element_mat.copyTo(dilate_element);
 
+    track_avg_brightness(frameL, frameL, _current_frame_time);
+
     initialized = true;
 }
 
