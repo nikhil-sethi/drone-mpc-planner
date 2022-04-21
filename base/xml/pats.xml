@@ -7,6 +7,7 @@
     <Member Name="min_hunt_size">0.01</Member>
     <Member Name="max_hunt_size">0.05</Member>
     <Member Name="op_mode">op_mode_c</Member>
+    <Member Name="disable_real_hunts">false</Member>
     <Member Name="watchdog">true</Member>
     <Member Name="fps">90</Member>
     <Member Name="video_raw">video_file</Member>

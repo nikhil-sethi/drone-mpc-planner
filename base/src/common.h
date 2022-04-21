@@ -333,7 +333,9 @@ private:
     xRC_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
+    xBool _disable_real_hunts;
     xInt _wdt_timeout_us, _fps, _close_after_n_images;
+
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
     xInt _imscalef;
@@ -354,6 +356,7 @@ public:
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
+    bool disable_real_hunts;
     std::string plukker_start;
     float min_hunt_size, max_hunt_size;
     int imscalef;
@@ -364,6 +367,7 @@ public:
     float max_cam_roll;
     int n_cams;
     bool long_range_mode;
+
 
     PatsParameters() {
         // Set the XML class name.
@@ -382,6 +386,7 @@ public:
         Register("max_hunt_size", &_max_hunt_size);
         Register("has_screen", &_has_screen);
         Register("op_mode", &_op_mode);
+        Register("disable_real_hunts", &_disable_real_hunts);
         Register("watchdog", &_watchdog);
         Register("fps", &_fps);
         Register("video_raw", &_video_raw);
@@ -396,6 +401,7 @@ public:
         Register("max_cam_roll", &_max_cam_roll);
         Register("n_cams", &_n_cams);
         Register("long_range_mode", &_long_range_mode);
+
     }
     void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -427,6 +433,7 @@ public:
         max_hunt_size = _max_hunt_size.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
+        disable_real_hunts = _disable_real_hunts.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_raw = _video_raw.value();
@@ -452,6 +459,7 @@ public:
         _min_hunt_size = min_hunt_size;
         _has_screen = has_screen;
         _op_mode = op_mode;
+        _disable_real_hunts = disable_real_hunts;
         _watchdog = watchdog;
         _fps = fps;
         _video_raw = video_raw;

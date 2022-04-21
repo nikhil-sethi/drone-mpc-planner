@@ -74,6 +74,8 @@ public:
     bool target_detected(double time) {
         if (!_target_insecttracker)
             return false;
+        if (_target_insecttracker->type() == tracking::tt_insect && pparams.disable_real_hunts)
+            return false;
         return !_n_frames_aim_not_in_range
                && _visdat->no_recent_brightness_events(time)
                && !_trackers->monster_alert()
