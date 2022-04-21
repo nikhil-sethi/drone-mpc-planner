@@ -39,7 +39,7 @@ void RGBLeds::run() {
         update_FastLED = true;
         switch (_led0_state) {
             case LED0_init: { // solid white
-                    rgb_setpoint_leds[0] = CRGB(5, 5, 5);
+                    rgb_setpoint_leds[0] = CRGB(40 * light_multiplier, 40 * light_multiplier, 40 * light_multiplier);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
             } case LED0_disabled: { // off
@@ -47,15 +47,15 @@ void RGBLeds::run() {
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
             } case LED0_calibrating: { // solid yellow
-                    rgb_setpoint_leds[0] = CRGB(200, 200, 0);
+                    rgb_setpoint_leds[0] = CRGB(40 * light_multiplier, 40 * light_multiplier, 0);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
             } case LED0_not_charging: { // solid red
-                    rgb_setpoint_leds[0] = CRGB(50, 0, 0);
+                    rgb_setpoint_leds[0] = CRGB(40 * light_multiplier, 0, 0);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
             } case LED0_charging: { // solid blue
-                    rgb_setpoint_leds[0] = CRGB(0, 0, 50);
+                    rgb_setpoint_leds[0] = CRGB(0, 0, 40 * light_multiplier);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
                 }
@@ -71,41 +71,41 @@ void RGBLeds::run() {
 
         switch (_led1_state) {
             case LED1_init: { // solid red
-                    rgb_setpoint_leds[1] = CRGB(50, 0, 0);
+                    rgb_setpoint_leds[1] = CRGB(40 * light_multiplier, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_inresponsive_NUC: { // 1s symmetric blink
-                    rgb_setpoint_leds[1] = CRGB(200, 0, 0);
+                    rgb_setpoint_leds[1] = CRGB(40 * light_multiplier, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     blink_leds[1] = blink_500ms;
                     break;
             } case LED1_executor_problem: { // red 1 short blink every second
-                    rgb_setpoint_leds[1] = CRGB(200, 0, 0);
+                    rgb_setpoint_leds[1] = CRGB(40 * light_multiplier, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     blink_leds[1] = blink_1_short_blink;
                     break;
             } case LED1_realsense_reset: { // solid pink
-                    rgb_setpoint_leds[1] = CRGB(255, 5, 80);
+                    rgb_setpoint_leds[1] = CRGB(51 * light_multiplier, light_multiplier, 16 * light_multiplier);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_executor_start: { // solid White
-                    rgb_setpoint_leds[1] = CRGB(50, 50, 50);
+                    rgb_setpoint_leds[1] = CRGB(40 * light_multiplier, 40 * light_multiplier, 40 * light_multiplier);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_wait_for_plukkers: { // solid blue
-                    rgb_setpoint_leds[1] = CRGB(0, 0, 100);
+                    rgb_setpoint_leds[1] = CRGB(0, 0, 40 * light_multiplier);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_wait_for_darkness: { // solid yellow
-                    rgb_setpoint_leds[1] = CRGB(200, 200, 0);
+                    rgb_setpoint_leds[1] = CRGB(40 * light_multiplier, 40 * light_multiplier, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_c_OK: { // solid green
-                    rgb_setpoint_leds[1] = CRGB(0, 25, 0);
+                    rgb_setpoint_leds[1] = CRGB(0, 40 * light_multiplier, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_x_OK: { // solid cyan
-                    rgb_setpoint_leds[1] = CRGB(0, 25, 25);
+                    rgb_setpoint_leds[1] = CRGB(0, 40 * light_multiplier, 40 * light_multiplier);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             }  default: { // off

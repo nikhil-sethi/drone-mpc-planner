@@ -84,6 +84,9 @@ public:
         _watchdog_trigger_imminent = b;
         update_state[1] = true;
     }
+    void light_level(unsigned char light_level) {
+        light_multiplier = constrain(round(light_level / 8), 1, 5); // --> light level of 0.15 should result in max led strength which is a multiplier of 5 --> 0.15*255/8 = 4.8
+    }
 
 private:
     rgb_led_0_states _led0_state = LED0_init;
@@ -92,6 +95,7 @@ private:
     bool _daemon_OK = true;
     bool _post_processing = false;
     bool _watchdog_trigger_imminent = false;
+    unsigned char light_multiplier = 3; // number between 1-5 that scales the led strength
 
     bool update_state[NUM_RGB_LEDS] = {true};
     CRGB rgb_leds[NUM_RGB_LEDS];
