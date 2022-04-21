@@ -53,10 +53,10 @@ fi
 pushd ~/dependencies
 
 # Install pats dependency packages
-DEPENDENCIES_FLAG=dependencies-packages-v1.19.done
+DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 [ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle
 	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
@@ -149,7 +149,7 @@ if [[ $1 -eq 0 ]] ; then
 		#sudo snap install sublime-text --classic
 		sudo snap install code --classic
 		sudo apt update
-		sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
+		sudo apt install -y libqt5opengl5 libqt5opengl5-dev meld gitk git-gui terminator jstest-gtk
 		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
 		touch dev-dependencies-packages-v1.1.done
 	}
