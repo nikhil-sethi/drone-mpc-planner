@@ -33,10 +33,24 @@ from cut_moths import cut_all
 version_c = "2.1"
 version_x = "1.1"
 lia_model = "cnn5_size_v1"
-n_insects = 5
+lia_n_insect_classes = 5
 
 
-def measured_exposure(terminal_log_path):
+def process_wait_for_lightlevels(wait_for_dark_log_path):
+    log = pd.read_csv(wait_for_dark_log_path, sep=";")
+    if len(log) < 5:
+        return False, '', ''
+
+    datetimes = log['Datetime']
+    daylight_start = datetimes.values[0]
+    daylight_end = datetimes.values[-1]
+
+    daylight_start = daylight_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    daylight_end = daylight_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    return True, daylight_start, daylight_end
+
+
+def measured_exposure_old(terminal_log_path):
     daylight_start = ''
     daylight_end = ''
     prev_line = ''
@@ -46,12 +60,16 @@ def measured_exposure(terminal_log_path):
         while not daylight_end:
             line = terminal_log.readline()
             if 'Measured exposure' in line:
-                daylight_start = line.split('Measured')[0]
+                daylight_start = line.split('Measured')[0].strip()
+                if 'Light' in daylight_start:
+                    daylight_start = daylight_start.split('Light')[0].strip()
                 prev_line = line
                 while True:
                     line = terminal_log.readline()
                     if 'Measured exposure' not in line:
-                        daylight_end = prev_line.split('Measured')[0]
+                        daylight_end = prev_line.split('Measured')[0].strip()
+                        if 'Light' in daylight_end:
+                            daylight_end = daylight_end.split('Light')[0].strip()
                         break
                     prev_line = line
                     cnt += 1
@@ -70,16 +88,19 @@ def measured_exposure(terminal_log_path):
 
 
 def process_wait_for_dark_status(folder):
+    valid = False
+    wait_for_dark_log_path = Path(folder, 'wait_for_dark.csv')
     terminal_log_path = Path(folder, 'terminal.log')
-    if os.path.exists(terminal_log_path):
-        exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
-        if exposure_valid:
-            data_wait_for_dark = {"start_datetime": daylight_start,
-                                  "end_datetime": daylight_end,
-                                  "mode": 'wait_for_dark'
-                                  }
-            return (exposure_valid, data_wait_for_dark, daylight_start, daylight_end)
-        return (False, [], daylight_start, daylight_end)
+    if os.path.exists(wait_for_dark_log_path):
+        valid, daylight_start, daylight_end = process_wait_for_lightlevels(wait_for_dark_log_path)
+    elif os.path.exists(terminal_log_path):
+        valid, daylight_start, daylight_end = measured_exposure_old(terminal_log_path)
+    if valid:
+        data_wait_for_dark = {"start_datetime": daylight_start,
+                              "end_datetime": daylight_end,
+                              "mode": 'wait_for_dark'
+                              }
+        return (valid, data_wait_for_dark, daylight_start, daylight_end)
     return (False, [], '', '')
 
 
@@ -329,7 +350,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
     v_std = v.std()
 
     if torch_exists:
-        insect_chances = ai.use_the_model("cnn", log, amount_classes=n_insects, restrict_var=0)  # hardcoded which model to use
+        insect_chances = ai.use_the_model("cnn", log, amount_classes=lia_n_insect_classes, restrict_var=0)  # hardcoded which model to use
     else:
         insect_chances = None
 
@@ -489,8 +510,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
         if t_folder > t_end:
             t_end = t_folder
 
-        exposure_valid, data_wait_for_dark, daylight_start, _ = process_wait_for_dark_status(folder)
-        if exposure_valid:
+        light_level_valid, data_wait_for_dark, daylight_start, _ = process_wait_for_dark_status(folder)
+        if light_level_valid:
             statuss.append(data_wait_for_dark)
             if lb.str_to_datetime(daylight_start) < t_start:
                 t_start = lb.str_to_datetime(daylight_start)

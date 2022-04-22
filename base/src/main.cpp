@@ -1010,12 +1010,18 @@ void wait_for_dark() {
     if (pparams.light_level_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark..." << std::endl;
         int last_save_bgr_hour = -1;
+        std::ofstream wait_for_dark_logger;
+        wait_for_dark_logger.open(data_output_dir  + "wait_for_dark.csv", std::ofstream::out);
+        wait_for_dark_logger << "Datetime;Light level;Exposure;Gain;Brightness\n";
         while (true) {
             auto [light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_light_level();
             light_level = light_level_;
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain  << ", brightness: " <<  to_string_with_precision(avg_brightness, 0)  << std::endl;
+            auto datetime = std::put_time(std::localtime(&t), "%Y/%m/%d %T");
+            std::cout << datetime << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain  << ", brightness: " <<  to_string_with_precision(avg_brightness, 0)  << std::endl;
+            wait_for_dark_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << "\n";
             if (light_level >= pparams.light_level_threshold) {
+                wait_for_dark_logger.close();
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
@@ -1034,6 +1040,7 @@ void wait_for_dark() {
             }
             usleep(1e7); // measure every 10 seconds
         }
+        wait_for_dark_logger.close();
     }
 }
 
