@@ -327,7 +327,7 @@ public:
 
 class PatsParameters: public Serializable {
 private:
-    xInt _light_level_threshold;
+    xFloat _light_level_threshold;
     xBool _watchdog, _has_screen;
     xVideo_mode _video_raw, _video_result;
     xRC_type _joystick;

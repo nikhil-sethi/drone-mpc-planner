@@ -321,8 +321,8 @@ void process_video() {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
-            } else if ((light_level <= pparams.light_level_threshold && pparams.light_level_threshold > 0 && frame->time > 3)) {
-                std::cout << "Initiating restart because light level (" << light_level << ") is lower than threshold (" << pparams.light_level_threshold << ")" << std::endl;
+            } else if ((light_level > pparams.light_level_threshold && pparams.light_level_threshold > 0 && frame->time > 3)) {
+                std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold << ")" << std::endl;
                 communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
@@ -1012,15 +1012,15 @@ void wait_for_dark() {
         int last_save_bgr_hour = -1;
         std::ofstream wait_for_dark_logger;
         wait_for_dark_logger.open(data_output_dir  + "wait_for_dark.csv", std::ofstream::out);
-        wait_for_dark_logger << "Datetime;Light level;Exposure;Gain;Brightness\n";
+        wait_for_dark_logger << "Datetime;Light level;Exposure;Gain;Brightness" << std::endl;
         while (true) {
             auto [light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_light_level();
             light_level = light_level_;
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             auto datetime = std::put_time(std::localtime(&t), "%Y/%m/%d %T");
             std::cout << datetime << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain  << ", brightness: " <<  to_string_with_precision(avg_brightness, 0)  << std::endl;
-            wait_for_dark_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << "\n";
-            if (light_level >= pparams.light_level_threshold) {
+            wait_for_dark_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << std::endl;
+            if (light_level  <= pparams.light_level_threshold) {
                 wait_for_dark_logger.close();
                 break;
             }
