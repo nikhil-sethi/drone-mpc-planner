@@ -150,8 +150,8 @@ void Charger::run() {
                             _charging_state = state_normal_charging;
                             volt_mode_pv_initialised = true;
                         } else {
-                            if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f) {
-                                drone_amps_burn = moving_average(0.05f, last_charging_amps, drone_amps_burn);
+                            if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f && last_charging_amps > min_charge_amps)  {
+                                drone_amps_burn = moving_average(0.03f, average_charging_amps, drone_amps_burn);
                                 drone_amps_burn = constrain(drone_amps_burn, 0, 0.3f); // expected is 0.15A, constrain to 0.3 for safety
                             }
                             volt_control();
@@ -258,6 +258,7 @@ void Charger::update_amps() {
     float volts = analogRead(CHARGING_AMPS_PIN) / 1024.0f * 5.0f * 2.2f;
     charging_amps = volts / amps_measurement_resistance;
     last_charging_amps = charging_amps;
+    average_charging_amps = moving_average(2.f / (periodic_volt_measuring_duration / LOOP_TIME_MS), charging_amps, average_charging_amps);
 }
 
 void Charger::update_pwm(uint8_t pwm_) {
@@ -327,11 +328,11 @@ void Charger::amp_control() {
         } else {
             ff_term = ff_error * ff_amps_gain;
         }
-        if (charging_amps > charge_max + drone_amps_burn + 0.2f && charging_volts > battery_volts) // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
+        if (charging_amps > charge_max + drone_amps_burn + 0.2f && charging_volts > battery_volts + min_charge_volts_offset) // fuse saver: this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
             pv = min_charge_pwm;
-        else if (charging_amps > charge_max + drone_amps_burn + 0.1f && charging_volts > battery_volts) // this may happen where there was a bad / resistive contact for a while (driving up the pwm), and someone suddenly pushes on the drone
+        else if (charging_amps > charge_max + drone_amps_burn + 0.1f && charging_volts > battery_volts + min_charge_volts_offset) // idem
             pv = 2 * min_charge_pwm;
-        else
+        else // normal operation:
             pv = constrain(pv + constrain(ff_term + fb_term, -255, 60), 0, max_charge_pwm); // constrained because some serious non-lineairy of the charger
         update_pwm(roundf(pv));
     } else
@@ -344,7 +345,6 @@ void Charger::volt_control() {
     float error = (max_battery_volts - battery_volts);
     pv = constrain(pv + error * p_volts_gain * dt, 0, max_charge_pwm);
     update_pwm(roundf(pv));
-    analogWrite(CHARGING_PWM_PIN, pwm);
     setpoint_amps = drone_amps_burn;
 }
 

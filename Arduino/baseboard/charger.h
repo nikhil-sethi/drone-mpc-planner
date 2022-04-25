@@ -45,7 +45,7 @@ private:
     const float min_battery_volts_trickle_charge = 4.15f;
     const float max_battery_volts = 4.20f;
     const float dangerous_battery_volts = 4.25f;
-    const float min_charge_amps = 0.01f;
+    const float min_charge_amps = 0.05f;
     const float min_charge_volts_offset = 0.6f; // the voltage over vbat at which current actually starts to flow. Probably related to the diode. And probably its not really const... https://github.com/pats-drones/pats/issues/1047
     const uint8_t min_charge_pwm = 14; // the minimum pwm at which a measurable current starts to flow. I define 0.03A - 0.07A as measurable
     const uint8_t max_charge_pwm = 60; // safety  limit, at the moment limited by the p-channel mosfet to 0.5A
@@ -55,7 +55,7 @@ private:
 
     const float p_amps_gain =  0.2f;
     const float ff_amps_gain = 50.f;
-    const float p_volts_gain = 0.01f;
+    const float p_volts_gain = 0.0005f;
 
     charging_states _charging_state = state_disabled;
     float setpoint_amps = 0.f;
@@ -71,6 +71,7 @@ private:
     float d_charging_volts = 0.f;
     float charging_amps = 0.f;
     float last_charging_amps = 0.f;
+    float average_charging_amps = 0.f;
     float charge_resistance = 1.f;
     const float drone_amps_burn_initial_guess = 0.15f;
     float drone_amps_burn = drone_amps_burn_initial_guess;
