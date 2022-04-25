@@ -119,7 +119,7 @@ public:
         return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout && static_cast<float>(time - small_brightness_event_time) > small_brightness_change_timeout;
     }
     bool brightness_change_event(double time) {
-        return static_cast<float>(time - large_brightness_event_time) <= 1.f / pparams.fps || static_cast<float>(time - small_brightness_event_time) <= 1.f / pparams.fps;
+        return static_cast<float>(time - large_brightness_event_time) < 3.f / pparams.fps || static_cast<float>(time - small_brightness_event_time) < 3.f / pparams.fps;
     }
     float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}
