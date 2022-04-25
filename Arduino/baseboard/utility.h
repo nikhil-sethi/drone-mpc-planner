@@ -4,7 +4,7 @@
 
 #define MAX_PACKAGE_READ_SIZE 16
 
-#define FIRMWARE_VERSION 11
+#define FIRMWARE_VERSION 12
 #define BASEBOARD_PACKAGE_PRE_HEADER '@'
 enum baseboard_package_headers {
     header_SerialBaseboard2NUCPackage = 'P',
