@@ -305,6 +305,14 @@ float max_rs_auto_exposure() {
         return 20000;
 }
 
-float calc_light_level(int exposure, int gain, int brightness) {
-    return (brightness / 255.f) * ((255.f - gain) / 255.f) * (((1e6f / pparams.fps) - exposure) / (1e6f / pparams.fps));
+float calc_light_level(int exposure, int gain, float brightness) {
+    const float max_rs_gain = 248.f;
+    const float ultimate_max_rs_exposure = 20e3f;
+    const float min_rs_gain = 16.f;
+    const float min_rs_exposure = 1.f;
+
+    const float light_level_scale = 20 * log10((255 / (min_rs_exposure * min_rs_gain)) * (ultimate_max_rs_exposure * max_rs_gain));
+
+    float light_level_db = 20 * log10((brightness / (exposure * gain)) * (ultimate_max_rs_exposure * max_rs_gain));
+    return light_level_db / light_level_scale; // scale between 0-1
 }

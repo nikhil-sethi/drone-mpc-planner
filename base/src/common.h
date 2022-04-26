@@ -44,7 +44,7 @@ cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void reset_external_wdt_flag();
 std::string execute(const char *cmd);
 float max_rs_auto_exposure();
-float calc_light_level(int exposure, int gain, int brightness);
+float calc_light_level(int exposure, int gain, float brightness);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
