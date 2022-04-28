@@ -68,6 +68,7 @@ private:
     bool battery_volt_measurement_stable = false;
     float ground_volts = 0;
     float charging_volts = 0;
+    float last_charging_volts = 0;
     float d_charging_volts = 0.f;
     float charging_amps = 0.f;
     float last_charging_amps = 0.f;

@@ -139,7 +139,7 @@ void Charger::run() {
                     if (battery_volts > dangerous_battery_volts) {
                         _charging_state = state_discharge;
                         volt_mode_pv_initialised = false;
-                    } else if (charging_duration >= periodic_volt_measuring_duration && last_charging_amps < min_charge_amps && setpoint_amp_prev > min_charge_amps && charging_volts > battery_volts + min_charge_volts_offset && battery_volts >= min_volts_detection) {
+                    } else if (last_charging_amps < min_charge_amps && setpoint_amp_prev > min_charge_amps && last_charging_volts > battery_volts + min_charge_volts_offset && battery_volts >= min_volts_detection) {
                         _charging_state = state_contact_problem;
                         volt_mode_pv_initialised = false;
                     } else if (battery_volts >= min_battery_volts_trickle_charge) {
@@ -242,6 +242,7 @@ void Charger::update_charging_volts() {
     float v = (vdd - v_gnd) * 4.f; // + voltage_calibration_value;
     d_charging_volts = charging_volts - v;
     charging_volts = v;
+    last_charging_volts = v;
     ground_volts = v_gnd * 4;
 }
 void Charger::update_batt_volts() {
