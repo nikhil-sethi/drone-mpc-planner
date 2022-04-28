@@ -388,12 +388,13 @@ start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
 
 while True:
     os.system('clear')  # nosec
+    print(datetime.today().strftime("%d-%m-%Y %H:%M:%S"))
     print('PATS daemon ' + start_sha + '. Started: ' + start_time)
     print('CC status sender: ' + status_cc_status_str)
     if os.path.exists(lb.disable_baseboard_flag):
         print('Baseboard: disabled')
     elif not baseboard_comm.connection_ok:
-        print('Baseboard LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+        print('Baseboardlink LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
     else:
         baseboard_comm.send(daemon2baseboard_pkg.pack())
         print('Baseboard communication OK')
@@ -410,6 +411,11 @@ while True:
 
     current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
     if start_sha != current_sha:
+        print("SHA change detected. Restarting!")
+        print("Closing baseboard socket...")
+        baseboard_comm.close()
+        print("Closing daemon socket...")
+        executor_comm.close()
         exit(0)
 
     time.sleep(1)

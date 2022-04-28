@@ -20,7 +20,9 @@ class socket_communication:
     receiver_callback = None
 
     def __init__(self, name, socket_path, server, receiver=None) -> None:
+        logging.basicConfig()
         self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.DEBUG)
         self.target_name = name
         self.socket_path = socket_path
         self.server = server
@@ -45,8 +47,9 @@ class socket_communication:
                     sock.connect(self.socket_path)
                     self.conn = sock
                 except Exception as e:  # pylint: disable=broad-except
-                    self.logger.warning('Cannot connect ' + self.target_name + ': ' + str(e))
+                    self.logger.warning('Cannot connect ' + self.target_name + ': ' + str(e) + ' --- Retry in 10s')
                     time.sleep(10)
+                    self.logger.warning('Retry connect ' + self.target_name)
                     continue
             self.logger.info(self.target_name + ' connected.')
             self.connection_ok = True
@@ -58,6 +61,9 @@ class socket_communication:
 
             receiver_thread.join()
             sender_thread.join()
+            time.sleep(1)
+            self.logger.info('Retrying connecting ' + self.target_name)
+        self.logger.info('Connector thread exit for ' + self.target_name)
 
     def send(self, data):
         with self.send_trigger:
@@ -65,23 +71,30 @@ class socket_communication:
             self.send_trigger.notify()
 
     def close(self):
+        self.logger.info('Closing socket ' + self.target_name)
         self.exit_now = True
         if self.connection_ok:
-            self.conn.shutdown(socket.SHUT_WR)
+            res = self.conn.shutdown(socket.SHUT_WR)
+            self.logger.info('Socket shutdown result: ' + str(res))
             self.conn.close()
+            self.logger.info('Socket closed:' + self.target_name)
             self.connection_lost_datetime = datetime.now()
             self.connection_ok = False
         with self.send_trigger:
             self.send_trigger.notify()
         self.connecter_thread.join()
+        self.logger.info('Closed socket ' + self.target_name)
 
     def __sender(self):
+        self.logger.info('Sender ' + self.target_name + ' starting')
         try:
             while self.connection_ok and not self.exit_now:
                 with self.send_trigger:
                     self.send_trigger.wait()
                     if self.connection_ok and self.send_data:
                         self.conn.send(self.send_data)
+                    elif not self.connection_ok:
+                        self.logger.info('No connection_ok in socket sender thread of: ' + self.target_name)
         except Exception as e:  # pylint: disable=broad-except
             self.logger.error('Sending to ' + self.target_name + '  failed: ' + str(e))
             if self.connection_ok:
@@ -91,6 +104,7 @@ class socket_communication:
         self.conn.close()
 
     def __receiver(self):
+        self.logger.info('Receiver ' + self.target_name + ' starting')
         try:
             while self.connection_ok and not self.exit_now:
                 data = self.conn.recv(1024)

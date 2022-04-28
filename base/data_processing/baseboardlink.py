@@ -183,12 +183,12 @@ while True:
                 prev_sha_check_time = datetime.now()
                 current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
                 if start_sha != current_sha:
-                    print("SHA change detected. Restarting!")
-                    print("Closing serial...")
+                    logger.info("SHA change detected. Restarting!")
+                    logger.info("Closing serial...")
                     comm.close()
-                    print("Closing executor socket...")
+                    logger.info("Closing executor socket...")
                     executor.close()
-                    print("Closing daemon socket...")
+                    logger.info("Closing daemon socket...")
                     daemon.close()
                     exit(0)
 

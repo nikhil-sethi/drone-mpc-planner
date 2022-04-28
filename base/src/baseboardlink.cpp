@@ -17,8 +17,11 @@ void BaseboardLink::init(bool replay_mode) {
         if ((sock = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)) == 0) {
             throw std::runtime_error("Could not connect to baseboard link: socket failed.");
             exit(1);
-        } else  if (connect(sock, reinterpret_cast< sockaddr *>(&deamon_address), sizeof(deamon_address)) < 0) {
-            throw std::runtime_error("Could not connect to baseboard link");
+        }
+        auto res = connect(sock, reinterpret_cast< sockaddr *>(&deamon_address), sizeof(deamon_address));
+        if (res < 0) {
+            std::cout << "Socket connect error code: " << res <<  std::endl;
+            throw std::runtime_error("Could not connect to baseboard link.");
             exit(1);
         }
 
