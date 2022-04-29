@@ -65,11 +65,11 @@ bool serial_read_pkg(unsigned char buf[MAX_PACKAGE_READ_SIZE]) {
                     }
                     break;
             } case 4: {
-                    if (i - 1 == len && buf[i ] == '\n') {
+                    if (i + 1 == len && buf[i] == '\n') {
                         read_state = 0;
-                        i = -1;
+                        i = 0;
                         return true;
-                    } else if (i - 1 >= len) {
+                    } else if (i + 1 >= len) {
                         read_state = 0;
                         i = -1;
                     }
