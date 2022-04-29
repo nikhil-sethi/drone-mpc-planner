@@ -1,17 +1,13 @@
 # Led 0 (drone)
 
-| Color                 | Blink        | State                           |
-| --------------------- | ------------ | --------------------------------|
-| Off                   | solid        | Charging disabled               |
-| Red                   | solid        | Not charging                    |
-| Blue                  | solid        | Charging (charge amps > thresh) |
-| Yellow                | solid        | Calibration                     |
-
-| Bonus blinks                  | State                         |
-| ----------------------------- | ----------------------------- |
-| blink_1_short_blink           | rc problem                    |
-| blink_2_short_blinks          | att calibration problem       |
-| blink_3_short_blinks          | arm problem                   |
+| Color                 | Blink                       | State                           |
+| --------------------- | --------------------------- | --------------------------------|
+| Off                   | solid                       | Charging disabled               |
+| Red                   | solid                       | Not charging                    |
+| Blue                  | solid                       | Charging (charge amps > thresh) |
+| Cyan                  | solid                       | Trickle charging                |
+| Blue                  | blink_3_short_blinks        | Discharging                     |
+| Yellow                | blink_3_short_blinks        | Battery problem                 |
 
 
 Additional work planned in https://github.com/pats-drones/pats/issues/1177

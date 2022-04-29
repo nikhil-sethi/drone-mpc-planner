@@ -927,7 +927,7 @@ struct __attribute__((packed)) SocketExecutorStatePackage {
     const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;
     const char header = header_SocketExecutorStatePackage;
     uint8_t executor_state;
-    uint8_t light_level;
+    float light_level;
     double time;
     const char ender = '\n';
 };

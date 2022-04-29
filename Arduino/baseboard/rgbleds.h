@@ -9,8 +9,10 @@ public:
         LED0_init = 0,
         LED0_disabled,
         LED0_charging,
+        LED0_trickle_charging,
         LED0_not_charging,
-        LED0_calibrating,
+        LED0_discharging,
+        LED0_battery_problem,
         LED0_unkown
     };
 
@@ -26,7 +28,6 @@ public:
         LED1_x_OK,
         LED1_unkown
     };
-
 
     enum blink_modes {
         blink_solid = 0,
@@ -84,8 +85,8 @@ public:
         _watchdog_trigger_imminent = b;
         update_state[1] = true;
     }
-    void light_level(unsigned char light_level) {
-        light_multiplier = constrain(round(light_level / 8), 1, 5); // --> light level of 0.15 should result in max led strength which is a multiplier of 5 --> 0.15*255/8 = 4.8
+    void light_level(float light_level) {
+        light_level_ = constrain(light_level * 2.f, 0.02f, 1.f);
     }
 
 private:
@@ -95,7 +96,7 @@ private:
     bool _daemon_OK = true;
     bool _post_processing = false;
     bool _watchdog_trigger_imminent = false;
-    unsigned char light_multiplier = 3; // number between 1-5 that scales the led strength
+    float light_level_ = 1;
 
     bool update_state[NUM_RGB_LEDS] = {true};
     CRGB rgb_leds[NUM_RGB_LEDS];
@@ -106,6 +107,8 @@ private:
     bool update_FastLED = false;
     unsigned long t_switch = 0;
 
+
     void blink(int[], int, unsigned long, int);
+    void blink(int led_id);
 
 };

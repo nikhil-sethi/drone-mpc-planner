@@ -366,7 +366,7 @@ class SerialNUC2BaseboardNUCResetPackage:
 
 
 class SerialNUC2BaseboardRGBLEDPackage:
-    format = '=cHcBBBBBc'
+    format = '=cHcBfBBBc'
     pre_header = BASEBOARD_PACKAGE_PRE_HEADER
     firmware_version = BASEBOARD_FIRMWARE_VERSION,
     header = baseboard_package_headers.header_SerialNUC2BaseboardRGBLEDPackage.value[0]
@@ -408,7 +408,7 @@ class SerialNUC2BaseboardRGBLEDPackage:
 
 
 class SocketExecutorStatePackage:
-    format = '=ccBBdc'
+    format = '=ccBfdc'
     pre_header = EXECUTOR_PACKAGE_PRE_HEADER
     header = executor_package_headers.header_SocketExecutorStatePackage.value[0]
     executor_state = 0

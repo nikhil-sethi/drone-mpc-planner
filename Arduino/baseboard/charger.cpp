@@ -78,13 +78,13 @@ void Charger::run() {
                 no_charging();
                 if (battery_volts > min_volts_detection)
                     _charging_state = state_drone_not_on_pad;
-                rgbleds->led0_state(RGBLeds::LED0_not_charging);
+                rgbleds->led0_state(RGBLeds::LED0_battery_problem);
                 break;
         } case state_bat_does_not_charge: {
                 no_charging();
                 if (battery_volts < min_volts_detection)
                     _charging_state = state_drone_not_on_pad;
-                rgbleds->led0_state(RGBLeds::LED0_not_charging);
+                rgbleds->led0_state(RGBLeds::LED0_battery_problem);
                 break;
         } case state_revive_charging: {
                 if (measuring_time()) {
@@ -119,10 +119,7 @@ void Charger::run() {
                     break;
                 }
                 charge(charging_mode_trickle);
-                if (charging_amps < min_charge_amps)
-                    rgbleds->led0_state(RGBLeds::LED0_not_charging);
-                else
-                    rgbleds->led0_state(RGBLeds::LED0_charging);
+                rgbleds->led0_state(RGBLeds::LED0_trickle_charging);
                 break;
         } case state_discharge: {
                 no_charging();
@@ -130,7 +127,7 @@ void Charger::run() {
                     measure_during_charge_start_time = millis();
                     _charging_state = state_measure;
                 }
-                rgbleds->led0_state(RGBLeds::LED0_not_charging);
+                rgbleds->led0_state(RGBLeds::LED0_discharging);
                 break;
         } case state_measure: {
                 no_charging();
@@ -182,11 +179,11 @@ void Charger::run() {
                 break;
         } case state_wait_until_drone_ready: {
                 no_charging();
-                rgbleds->led0_state(RGBLeds::LED0_not_charging);
+                rgbleds->led0_state(RGBLeds::LED0_disabled);
                 break;
         } case state_calibrating: {
                 no_charging();
-                rgbleds->led0_state(RGBLeds::LED0_calibrating);
+                rgbleds->led0_state(RGBLeds::LED0_disabled);
                 break;
         } default:
             break;
