@@ -93,7 +93,7 @@ private:
 
     void update_pwm(uint8_t pwm_);
     void update_amps();
-    void update_readings_while_charging();
+    void update_readings_while_charging(charging_modes mode);
     void update_readings_while_not_charging();
     void update_charging_volts();
     void update_batt_volts();

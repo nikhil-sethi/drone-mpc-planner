@@ -219,12 +219,13 @@ void Charger::update_readings_while_not_charging() {
     mah_charged -=  drone_amps_burn  * dt / 3600.f;
 }
 
-void Charger::update_readings_while_charging() {
+void Charger::update_readings_while_charging(charging_modes mode) {
     update_amps();
     update_charging_volts();
     float dt = (millis() - last_mah_adjust_time);
     last_mah_adjust_time = millis();
-    mah_charged += (charging_amps - drone_amps_burn)  * dt / 3600.f ;
+    if (mode != charging_mode_trickle)
+        mah_charged += (charging_amps - drone_amps_burn)  * dt / 3600.f ;
     charging_duration += dt;
 }
 
@@ -288,7 +289,7 @@ void Charger::no_charging() {
     update_pwm(0);
 }
 void Charger::charge(charging_modes mode) {
-    update_readings_while_charging();
+    update_readings_while_charging(mode);
     estimate_resistance();
     if (mode == charging_mode_contact_problem) {
         update_pwm(min_charge_pwm);
