@@ -148,7 +148,6 @@ void Charger::run() {
                             // current base charging is faster because it has a ff term
                             setpoint_amps = drone_amps_burn;
                             _charging_state = state_normal_charging;
-                            volt_mode_pv_initialised = true;
                         } else {
                             if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f && last_charging_amps > min_charge_amps)  {
                                 drone_amps_burn = moving_average(0.03f, average_charging_amps, drone_amps_burn);
@@ -195,17 +194,19 @@ void Charger::run() {
 }
 
 bool Charger::measuring_time() {
-    if (stop_charging_interrupt) {
+    if (stop_charging_interrupt) {  //react(ed) to someone picking up the drone
         stop_charging_interrupt = false;
         debugln("stop_charging_interrupt!")
         return true;
     }
-    if (millis() - measure_during_charge_end_time > periodic_volt_measuring_duration)
+    if (millis() - measure_during_charge_end_time > periodic_volt_measuring_duration) { // normal charging / measure cycle
+        volt_mode_pv_initialised = true;
         return true;
-    else if (millis() - measure_during_charge_end_time > charge_amp_measurement_valid_timeout &&
-             charging_amps < min_charge_amps &&
-             setpoint_amps > min_charge_amps &&
-             charging_volts > battery_volts + min_charge_volts_offset) {
+    } else if (millis() - measure_during_charge_end_time > charge_amp_measurement_valid_timeout && //react to bad contact (event)
+               charging_amps < min_charge_amps &&
+               millis() - last_pwm_change_time <= charge_amp_measurement_valid_timeout && // make sure no glitch can happen because of last second pwm changes which have not yet caused change in measured amps)
+               setpoint_amps > min_charge_amps &&
+               charging_volts > battery_volts + min_charge_volts_offset) {
         update_pwm(0); // because slightly faster response
         return true;
     } else
@@ -263,6 +264,9 @@ void Charger::update_amps() {
 }
 
 void Charger::update_pwm(uint8_t pwm_) {
+
+    if (pwm != pwm_)
+        last_pwm_change_time = millis();
     pwm = pwm_;
 
     noInterrupts();

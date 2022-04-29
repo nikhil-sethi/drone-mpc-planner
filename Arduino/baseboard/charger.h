@@ -83,6 +83,7 @@ private:
     unsigned long charging_duration = 0L;
     unsigned long last_mah_adjust_time = 0L;
     unsigned long last_control_time = 0L;
+    unsigned long last_pwm_change_time = 0L;
 
     RGBLeds *rgbleds;
 
