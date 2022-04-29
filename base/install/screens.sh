@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 
 # Configuration
-tunnels=( dash dinstech  )
-tunnels_port=( 22 16666)
+tunnels=( dash )
+tunnels_port=( 22 )
 
 # Start tunnels
 for i in ${!tunnels[@]}
