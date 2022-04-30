@@ -30,7 +30,7 @@ if torch_exists:
 from cut_moths import cut_all
 
 
-version_c = "2.1"
+version_c = "2.2"
 version_x = "1.1"
 lia_model = "cnn5_size_v1"
 lia_n_insect_classes = 5
