@@ -13,7 +13,6 @@ from lib_socket import socket_communication
 import lib_base as lb
 import lib_serialization as ls
 
-
 start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
 logging.basicConfig()
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -43,13 +42,13 @@ logger.info('Starting baseboard!')
 
 
 def led():
-    dt_last_executor_msg = (datetime.now() - executor.last_msg_time).total_seconds()
+    dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
     if dt_last_executor_msg > 20 and not os.path.exists(lb.disable_executor_flag):
         rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_problem.value[0]
     rgb_led_pkg.internet_OK = daemon_pkg.internet_OK
     if os.path.exists(lb.disable_tunnel_flag):
         rgb_led_pkg.internet_OK = 1
-    dt_last_deamon_msg = (datetime.now() - daemon.last_msg_time).total_seconds()
+    dt_last_deamon_msg = (datetime.now() - daemon_comm.last_msg_time).total_seconds()
     if new_pkg.up_duration > prev_pkg.up_duration and dt_last_deamon_msg < 60:
         wdt_pkg = ls.SerialNUC2BaseboardWatchdogPackage()
         if not os.path.exists(lb.disable_watchdog_flag):
@@ -125,8 +124,8 @@ def deamon_receiver(msg):
 rgb_led_pkg = ls.SerialNUC2BaseboardRGBLEDPackage()  # must be initialized before starting the socket comm
 executor_state_pkg = ls.SocketExecutorStatePackage()
 daemon_pkg = ls.SocketDaemon2BaseboardLinkPackage()
-daemon = socket_communication('Daemon', lb.socket_baseboard2daemon, True, deamon_receiver)
-executor = socket_communication('Executor', lb.socket_baseboard2executor, True, executor_receiver)
+daemon_comm = socket_communication('Daemon', lb.socket_baseboard2daemon, True, deamon_receiver)
+executor_comm = socket_communication('Executor', lb.socket_baseboard2executor, True, executor_receiver)
 
 while True:
     try:
@@ -187,9 +186,9 @@ while True:
                     logger.info("Closing serial...")
                     comm.close()
                     logger.info("Closing executor socket...")
-                    executor.close()
+                    executor_comm.close()
                     logger.info("Closing daemon socket...")
-                    daemon.close()
+                    daemon_comm.close()
                     exit(0)
 
             c = comm.read(1)
@@ -218,7 +217,9 @@ while True:
                                 logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
                             logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:' + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1)) + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1)) + 'v. \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's' + '\tfan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(bool(new_pkg.watchdog_state)))
                             executor_pkg = serial_data[pkg_start:]
-                            executor.send(executor_pkg)
+                            if not executor_comm.connection_ok:
+                                print('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+                            executor_comm.send(executor_pkg) # force send thread to find out connection is lost
                             prev_pkg = new_pkg
                             serial_data.clear()
                         else:
