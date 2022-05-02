@@ -42,7 +42,7 @@ def status_cc_worker():
 
     disabled_flag_detected = os.path.exists(lb.disable_flag)
     if disabled_flag_detected:
-        logger.info('Warning: disable flag active...')
+        logger.info('Warning: disable flag active: ' + lb.disable_flag)
 
     # force an update at startup, otherwise it takes very long to pop up in the cc:
     if not disabled_flag_detected and not status_file_missing:
@@ -156,7 +156,6 @@ class wp_demo_task(pats_task):
     def task_func(self):
         if os.path.exists(lb.enable_wp_demo_flag):
             shutil.copyfile(os.path.expanduser('~/code/pats/base/xml/flightplans/simple-demo-floriade.xml'), os.path.expanduser('~/pats/flags/pats_demo.xml'))
-        pass
 
 
 class logs_to_json_task(pats_task):
@@ -400,7 +399,7 @@ while True:
         print('Baseboard communication OK')
 
     if os.path.exists(lb.disable_daemonlink_flag):
-        print('Executor daemon link: disabled')
+        print('Executor daemon link: disabled by flag: ' + lb.disable_daemonlink_flag)
     elif not executor_comm.connection_ok:
         print('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
     else:
