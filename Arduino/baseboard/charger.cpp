@@ -197,7 +197,8 @@ bool Charger::measuring_time() {
         return true;
     }
     if (millis() - measure_during_charge_end_time > periodic_volt_measuring_duration) { // normal charging / measure cycle
-        volt_mode_pv_initialised = true;
+        if (battery_volts > min_battery_volts_trickle_charge)
+            volt_mode_pv_initialised = true;
         return true;
     } else if (millis() - measure_during_charge_end_time > charge_amp_measurement_valid_timeout && //react to bad contact (event)
                charging_amps < min_charge_amps &&
