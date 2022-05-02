@@ -99,6 +99,7 @@ void Drone::update(double time) {
                     _trackers->stop_drone_tracking(&tracker);
                     flight_logger.flush();
                     flight_logger.close();
+                    _baseboard_link->allow_charging(true);
                     _state = ds_crashed;
                 } else if (nav.flight_done()) {
                     _state = ds_post_flight;
@@ -113,7 +114,7 @@ void Drone::update(double time) {
                 break;
         } case ds_charging_failure: {
                 // #1177
-                if (!_baseboard_link->charging_problem() &&  _baseboard_link->drone_on_pad() && _rc->telemetry.batt_cell_v < 4.3f) {
+                if (!_baseboard_link->charging_problem() &&  _baseboard_link->drone_on_pad()) {
                     _baseboard_link->allow_charging(true);
                     _state = ds_charging;
                 }
@@ -122,6 +123,8 @@ void Drone::update(double time) {
                 // #1177
                 break;
         } case ds_crashed: {
+                if (_baseboard_link->drone_on_pad())
+                    _state = ds_charging;
                 // #1177
                 break;
         } case ds_beep: {

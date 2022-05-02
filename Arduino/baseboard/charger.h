@@ -36,6 +36,7 @@ private:
     const unsigned long charge_amp_measurement_valid_timeout = 450L;
     const float amps_measurement_resistance = 0.333f;
     const float battery_size_mah = 300.f;
+    const unsigned long executor_disallow_charging_timeout = 5 * 60000L; // a flight shouldn't really take much longer than 5 minutes, so if the executor did not reset the flag before something else probably went wrong
 
     const float min_volts_detection = 0.8f;
     const float min_battery_volts_revive_charge = 0.9f;
@@ -62,6 +63,7 @@ private:
     float setpoint_amp_prev = 0.f;
     float pv = 0.f; // control process variable
 
+    unsigned long executor_disallow_charging_time = 0;
     bool volt_mode_pv_initialised = false;
     float battery_volts = 0.f;
     float d_battery_volts = 0.f;

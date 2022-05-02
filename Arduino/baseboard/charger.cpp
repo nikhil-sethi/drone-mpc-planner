@@ -59,8 +59,12 @@ void Charger::run() {
                 charging_duration = 0;
                 mah_charged = 0;
                 if (battery_volts > min_volts_detection) {
-                    measure_during_charge_start_time = millis();
-                    _charging_state = state_measure;
+                    if (executor_disallow_charging_time) {
+                        _charging_state = state_wait_until_drone_ready;
+                    } else {
+                        measure_during_charge_start_time = millis();
+                        _charging_state = state_measure;
+                    }
                 }
                 rgbleds->led0_state(RGBLeds::LED0_not_charging);
                 break;
@@ -180,6 +184,10 @@ void Charger::run() {
         } case state_wait_until_drone_ready: {
                 no_charging();
                 rgbleds->led0_state(RGBLeds::LED0_disabled);
+                if (!executor_disallow_charging_time)
+                    _charging_state = state_measure;
+                else if (millis() - executor_disallow_charging_time > executor_disallow_charging_timeout)
+                    executor_disallow_charging_time = 0;
                 break;
         } case state_calibrating: {
                 no_charging();
@@ -368,12 +376,16 @@ void Charger::fill_serial_output_package(SerialBaseboard2NUCPackage *pkg) {
 }
 
 void Charger::handle_serial_input_package(SerialExecutor2BaseboardAllowChargingPackage *pkg) {
+    if (pkg->allow_charging)
+        executor_disallow_charging_time = 0;
+    else if (!executor_disallow_charging_time)
+        executor_disallow_charging_time = millis();
+
     if (_charging_state == state_disabled)
         return;
-    else if (!pkg->allow_charging)
+    else if (executor_disallow_charging_time && _charging_state != state_drone_not_on_pad) {
         _charging_state = state_wait_until_drone_ready;
-    else if (_charging_state == state_wait_until_drone_ready)
-        _charging_state = state_measure;
+    }
 }
 
 void Charger::handle_serial_input_package(SerialNUC2BaseboardChargingPackage *pkg) {
