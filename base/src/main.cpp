@@ -710,7 +710,10 @@ void process_arg(int argc, char **argv) {
                 //usage example: ./executor --log logging --flight logging/flight1.mkv or ./executor --log logging --flight flight1.mkv
                 arg_recognized = true;
                 i++;
-                replay_video_fn = argv[i];
+                if (is_number(argv[i]))
+                    replay_video_fn = "flight" + string(argv[i]) + ".mkv";
+                else
+                    replay_video_fn = argv[i];
                 flight_replay_mode = true;
             } else if (s.compare("--insect") == 0) {
                 //monitor_render accepts a (concatinated) videorawLR.mkv of monitored insects, but also needs an original logging folder for camera calibraton files.

@@ -316,3 +316,9 @@ float calc_light_level(int exposure, int gain, float brightness) {
     float light_level_db = 20 * log10((brightness / (exposure * gain)) * (ultimate_max_rs_exposure * max_rs_gain));
     return light_level_db / light_level_scale; // scale between 0-1
 }
+
+bool is_number(const std::string &s)
+{
+    return !s.empty() && std::find_if(s.begin(),
+    s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}
