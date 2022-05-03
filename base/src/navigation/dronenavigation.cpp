@@ -221,7 +221,6 @@ void DroneNavigation::update(double time) {
                     setpoint_pos_world = _tracker->pad_location(true);
                     setpoint_pos_world += current_waypoint->xyz;
                 }
-                setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
                 check_abort_autonomus_flight_conditions();
                 break;
         } case ns_correcting_yaw: {
