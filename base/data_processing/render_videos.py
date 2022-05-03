@@ -91,8 +91,9 @@ def render(detection, render_process_dir, render_mode):
     video_target_path = detection['video_target_path']
     for i in range(1, 5):
         if lb.execute(cmd, render_process_dir=render_process_dir) == 0:
-            render_ok = True
-            break
+            if os.stat((detection['video_src_path'])).st_size > 30000:  # another work around for #833
+                render_ok = True
+                break
         logger.warning('Render attempt ' + str(i) + f' failed for {video_src_path}')
 
     video_render_path = render_process_dir + '/logging/replay/videoRender.mkv'
