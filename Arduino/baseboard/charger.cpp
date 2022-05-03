@@ -80,7 +80,7 @@ void Charger::run() {
                 break;
         } case state_bat_dead: {
                 no_charging();
-                if (battery_volts > min_volts_detection)
+                if (battery_volts < min_volts_detection)
                     _charging_state = state_drone_not_on_pad;
                 rgbleds->led0_state(RGBLeds::LED0_battery_problem);
                 break;
