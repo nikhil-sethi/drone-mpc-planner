@@ -20,6 +20,7 @@ void BaseboardLink::init(bool replay_mode) {
         }
         auto res = connect(sock, reinterpret_cast< sockaddr *>(&deamon_address), sizeof(deamon_address));
         if (res < 0) {
+            close(sock);
             std::cout << "Socket connect error code: " << res <<  std::endl;
             throw std::runtime_error("Could not connect to baseboard link.");
             exit(1);
@@ -67,8 +68,9 @@ void BaseboardLink::worker_receive() {
                     SerialBaseboard2NUCPackage *pkg = reinterpret_cast<SerialBaseboard2NUCPackage * >(&buffer);
                     if (pkg->firmware_version != required_firmware_version_baseboard) {
                         std::cout << "BaseboardLink firmware version problem. Detected: " << pkg->firmware_version << ", required: " << ori_pkg.firmware_version << std::endl;
+                        close(sock);
                         throw std::runtime_error("BaseboardLink error");
-                        abort();
+                        exit(1);
                     }
 
                     _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
@@ -106,7 +108,8 @@ void BaseboardLink::worker_receive() {
                 exit_thread = true;
                 std::cout << "BaseboardLink comm receive failed" << std::endl;
                 _exit_now = true;
-                abort();
+                close(sock);
+                exit(1);
             }
         }
     }
@@ -117,38 +120,38 @@ void BaseboardLink::send_over_socket(unsigned char *data, ssize_t len) {
     if (ret != len) {
         std::cout << "Error: BaseboardLink comm send failed " << ret << "   " <<  len << std::endl;
         _exit_now = true;
-        abort();
+        close(sock);
+        exit(1);
     }
 }
 
 void BaseboardLink::worker_send() {
     std::unique_lock<std::mutex> lk(cv_m_to_baseboard);
     while (!exit_thread) {
-        if (!exit_thread) {
-            auto timeout = cv_to_baseboard.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
-            if (update_allow_charging_pkg_to_baseboard || timeout ==  std::cv_status::timeout) {
-                send_over_socket(reinterpret_cast<unsigned char *>(&allow_charging_pkg_to_baseboard), sizeof(SerialExecutor2BaseboardAllowChargingPackage));
-                update_allow_charging_pkg_to_baseboard = false;
-            }
-            if (update_executor_state_pkg_to_baseboard) {
-                send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_baseboard), sizeof(SocketExecutorStatePackage));
-                update_executor_state_pkg_to_baseboard  = false;
-            }
+        auto timeout = cv_to_baseboard.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
+        if (update_allow_charging_pkg_to_baseboard || timeout ==  std::cv_status::timeout) {
+            send_over_socket(reinterpret_cast<unsigned char *>(&allow_charging_pkg_to_baseboard), sizeof(SerialExecutor2BaseboardAllowChargingPackage));
+            update_allow_charging_pkg_to_baseboard = false;
+        }
+        if (update_executor_state_pkg_to_baseboard) {
+            send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_baseboard), sizeof(SocketExecutorStatePackage));
+            update_executor_state_pkg_to_baseboard  = false;
         }
     }
 }
 
-void BaseboardLink::close() {
+void BaseboardLink::close_link() {
 
     exit_thread = true;
     if (initialized) {
         std::cout << "Closing baseboard socket" << std::endl;
         thread_receive.join();
         thread_send.join();
-
+        close(sock);
         if (logger_initialized) {
             baseboard_logger.flush();
             baseboard_logger.close();
         }
+
     }
 }

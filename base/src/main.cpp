@@ -888,7 +888,7 @@ void close(bool sig_kill) {
     if (pparams.has_screen || render_mode)
         visualizer.close();
     visdat.close();
-    baseboard_link.close();
+    baseboard_link.close_link();
     patser.close();
     if (cam)
         cam->close(); //cam needs to be closed after dnav, because of the camview class!
@@ -905,7 +905,7 @@ void close(bool sig_kill) {
         video_render.close();
 
     cmdcenter.close();
-    daemon_link.close();
+    daemon_link.close_link();
 
     print_warnings();
     std::cout << "Releasing cam..." << std::endl;

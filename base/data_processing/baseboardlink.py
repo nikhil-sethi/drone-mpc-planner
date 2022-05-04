@@ -25,7 +25,9 @@ error_file_handler.level = logging.ERROR
 logger.addHandler(fh)
 logger.addHandler(error_file_handler)
 logger.setLevel(logging.DEBUG)
+start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
 logger.info('Baseboard reporting in!')
+print(start_time)
 logger.info('sha: ' + start_sha)
 
 if os.path.exists(lb.disable_baseboard_flag):
@@ -124,8 +126,8 @@ def deamon_receiver(msg):
 rgb_led_pkg = ls.SerialNUC2BaseboardRGBLEDPackage()  # must be initialized before starting the socket comm
 executor_state_pkg = ls.SocketExecutorStatePackage()
 daemon_pkg = ls.SocketDaemon2BaseboardLinkPackage()
-daemon_comm = socket_communication('Daemon', lb.socket_baseboard2daemon, True, deamon_receiver)
-executor_comm = socket_communication('Executor', lb.socket_baseboard2executor, True, executor_receiver)
+daemon_comm = socket_communication('Daemon', 'baseboard', lb.socket_baseboard2daemon, True, deamon_receiver)
+executor_comm = socket_communication('Executor', 'baseboard', lb.socket_baseboard2executor, True, executor_receiver)
 
 while True:
     try:

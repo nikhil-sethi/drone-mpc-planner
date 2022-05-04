@@ -118,7 +118,7 @@ public:
     void init(bool replay_mode);
     void init_logger();
     void time(double time) {_time = time;}
-    void close();
+    void close_link();
 
     void inject_log() {
         // #1178

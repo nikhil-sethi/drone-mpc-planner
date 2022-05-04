@@ -1,5 +1,5 @@
 #include "daemonlink.h"
-#include <unistd.h> //usleep
+#include <unistd.h>
 #include<iostream>
 
 void DaemonLink::init(bool replay_mode) {
@@ -17,7 +17,12 @@ void DaemonLink::init(bool replay_mode) {
         if ((sock = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0)) == 0) {
             throw std::runtime_error("Could not connect daemon link: socket failed.");
             exit(1);
-        } else  if (connect(sock, reinterpret_cast< sockaddr *>(&deamon_address), sizeof(deamon_address)) < 0) {
+        }
+
+        auto res = connect(sock, reinterpret_cast< sockaddr *>(&deamon_address), sizeof(deamon_address));
+        if (res < 0) {
+            close(sock);
+            std::cout << "Socket connect error code: " << res <<  std::endl;
             throw std::runtime_error("Could not connect daemon link");
             exit(1);
         }
@@ -29,16 +34,15 @@ void DaemonLink::init(bool replay_mode) {
     }
 }
 
-void DaemonLink::worker_receive() {
-
-}
+void DaemonLink::worker_receive() {}
 
 void DaemonLink::send_over_socket(unsigned char *data, ssize_t len) {
     auto ret = send(sock, data, len, MSG_NOSIGNAL);
     if (ret != len) {
         std::cout << "Error: Daemon comm send failed " << ret << "   " <<  len << std::endl;
         _exit_now = true;
-        abort();
+        close(sock);
+        exit(1);
     }
 }
 
@@ -56,11 +60,12 @@ void DaemonLink::worker_send() {
     }
 }
 
-void DaemonLink::close() {
+void DaemonLink::close_link() {
     exit_thread = true;
     if (initialized) {
         std::cout << "Closing daemon socket" << std::endl;
         thread_receive.join();
         thread_send.join();
+        close(sock);
     }
 }

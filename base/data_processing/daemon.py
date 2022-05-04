@@ -366,8 +366,20 @@ error_file_handler.level = logging.ERROR
 error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
 error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
 
-baseboard_comm = socket_communication('baseboard', lb.socket_baseboard2daemon, False)
-executor_comm = socket_communication('executor', lb.socket_executor2daemon, True, executor_receive)
+logger = logging.getLogger('daemon')
+fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + 'daemon.log', maxBytes=1024 * 1024 * 100, backupCount=1)
+fh.setFormatter(file_format)
+logger.addHandler(fh)
+logger.addHandler(error_file_handler)
+logger.setLevel(logging.DEBUG)
+start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
+logger.info('Daemon reporting in!')
+print(start_time)
+start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+logger.info('sha: ' + start_sha)
+
+baseboard_comm = socket_communication('baseboard', 'daemon', lb.socket_baseboard2daemon, False)
+executor_comm = socket_communication('executor', 'daemon', lb.socket_executor2daemon, True, executor_receive)
 
 tasks: List[pats_task] = []
 tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
@@ -381,10 +393,6 @@ tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
 tasks.append(wp_demo_task(error_file_handler))
 
-start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
-start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
-
-
 while True:
     os.system('clear')  # nosec
     print(datetime.today().strftime("%d-%m-%Y %H:%M:%S"))
@@ -392,11 +400,12 @@ while True:
     print('CC status sender: ' + status_cc_status_str)
     if os.path.exists(lb.disable_baseboard_flag):
         print('Baseboard: disabled')
-    elif not baseboard_comm.connection_ok:
-        print('Baseboardlink LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
     else:
         baseboard_comm.send(daemon2baseboard_pkg.pack())
-        print('Baseboard communication OK')
+        if not baseboard_comm.connection_ok:
+            print('Baseboardlink LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+        else:
+            print('Baseboard communication OK')
 
     if os.path.exists(lb.disable_daemonlink_flag):
         print('Executor daemon link: disabled by flag: ' + lb.disable_daemonlink_flag)

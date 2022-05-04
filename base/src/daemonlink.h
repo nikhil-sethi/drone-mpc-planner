@@ -38,7 +38,7 @@ public:
 
     void init(bool replay_mode);
     void init_logger();
-    void close();
+    void close_link();
 
     void time(double time) {executor_state_pkg_to_daemon.time = time;}
     void executor_state(executor_states s) {

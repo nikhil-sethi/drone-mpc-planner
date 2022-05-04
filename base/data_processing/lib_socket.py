@@ -19,9 +19,9 @@ class socket_communication:
     exit_now = False
     receiver_callback = None
 
-    def __init__(self, name, socket_path, server, receiver=None) -> None:
+    def __init__(self, name, logger_name, socket_path, server, receiver=None) -> None:
         logging.basicConfig()
-        self.logger = logging.getLogger(name)
+        self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(logging.DEBUG)
         self.target_name = name
         self.socket_path = socket_path
@@ -38,24 +38,25 @@ class socket_communication:
                 if os.path.exists(self.socket_path):
                     os.remove(self.socket_path)
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                to = sock.gettimeout()
-                sock.settimeout(10)
+                sock.settimeout(3)
                 try:
                     sock.bind(self.socket_path)
                     sock.listen()
                     self.conn, _ = sock.accept()
-                    sock.settimeout(to)
                 except socket.timeout:
                     self.logger.debug('Time out for connection ' + self.target_name)
                     continue
             else:
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 try:
+                    to = sock.gettimeout()
+                    sock.settimeout(3)
                     sock.connect(self.socket_path)
+                    sock.settimeout(to)
                     self.conn = sock
                 except Exception as e:  # pylint: disable=broad-except
-                    self.logger.warning('Cannot connect ' + self.target_name + ': ' + str(e) + ' --- Retry in 10s')
-                    time.sleep(10)
+                    self.logger.warning('Cannot connect ' + self.target_name + ': ' + str(e) + ' --- Retry in 3s')
+                    time.sleep(3)
                     self.logger.debug('Retry connect ' + self.target_name)
                     continue
             self.logger.info(self.target_name + ' connected.')
@@ -68,8 +69,9 @@ class socket_communication:
 
             self.logger.debug('Waiting for receiver thread join: ' + self.target_name)
             receiver_thread.join()
-            sender_thread.join()
 
+            self.logger.debug('Waiting for send thread join: ' + self.target_name)
+            time.sleep(1)
             with self.send_trigger:
                 self.send_trigger.notify()
                 sender_thread.join()
