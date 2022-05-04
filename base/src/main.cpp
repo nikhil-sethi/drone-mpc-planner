@@ -321,8 +321,8 @@ void process_video() {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
-            } else if ((light_level > pparams.light_level_threshold && pparams.light_level_threshold > 0 && frame->time > 3)) {
-                std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold << ")" << std::endl;
+            } else if ((light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && frame->time > 3)) {
+                std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
                 communicate_state(es_brightness_restart);
                 exit_now = true;
             } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
