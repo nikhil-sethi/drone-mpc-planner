@@ -109,12 +109,18 @@ def render(detection, render_process_dir, render_mode):
         with open(results_txt_path, "r", encoding="utf-8") as results_txt:
             results_lines = results_txt.readlines()
             n_insects = -1
+            n_monsters = -1
+            n_takeoffs = -1
             for line in results_lines:
                 if line.find('n_insects') != -1:
                     n_insects = int(line.split(':')[1])
-                    break
+                if line.find('n_monsters') != -1:
+                    n_monsters = int(line.split(':')[1])
+                if line.find('n_takeoffs') != -1:
+                    n_monsters = int(line.split(':')[1])
+
             shutil.move(video_render_path, video_target_path)
-            if n_insects == 0:
+            if n_insects == 0 and n_monsters == 0 and n_takeoffs == 0:
                 logger.warning('Rendered empty video...? ' + video_src_path)
 
 
