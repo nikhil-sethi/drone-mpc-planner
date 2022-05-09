@@ -220,7 +220,7 @@ while True:
                             logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:' + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1)) + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1)) + 'v. \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's' + '\tfan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(bool(new_pkg.watchdog_state)))
                             executor_pkg = serial_data[pkg_start:]
                             if not executor_comm.connection_ok:
-                                logger.info('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+                                logger.info('Executor link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
                             executor_comm.send(executor_pkg)  # force send thread to find out connection is lost
                             prev_pkg = new_pkg
                             serial_data.clear()
