@@ -154,13 +154,14 @@ void Drone::pre_flight(double time) {
                 if (dparams.led_type == led_none && (! control.takeoff_calib_valid() || force_pad_redetect)) {
                     std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
                     pre_flight_state = pre_locate_time_out;
-                } else if (control.takeoff_calib_valid() && !force_pad_redetect)
+                } else if (control.takeoff_calib_valid() && !force_pad_redetect && !confirm_drone_on_pad)
                     pre_flight_state = pre_check_telemetry;
-                else {
-                    control.invalidize_blink();
+                else if (force_pad_redetect) {
                     pre_flight_state = pre_locate_drone_wait_led;
-                }
-                force_pad_redetect = false;
+                    control.invalidize_blink();
+                    force_pad_redetect = false;
+                } else
+                    pre_flight_state = pre_locate_drone_wait_led;
                 break;
         } case pre_locate_drone_wait_led: {
                 _visdat->reset_motion_integration();
@@ -169,28 +170,38 @@ void Drone::pre_flight(double time) {
                     _trackers->mode(tracking::TrackerManager::t_locate_drone);
                     control.flight_mode(DroneController::fm_disarmed);
                     pre_flight_state = pre_locate_drone;
-                    time_last_led_doubler = time;
                 }
                 break;
         } case pre_locate_drone: {
                 blink(time);
-
                 auto detected_pad_locations = _trackers->detected_pad_locations();
                 if (detected_pad_locations.size() > n_detected_pad_locations) {
                     n_detected_pad_locations = detected_pad_locations.size();
-                    tracker.set_pad_location_from_blink(detected_pad_locations.back());
-                    _trackers->mode(tracking::TrackerManager::t_x);
-
-                    time_located_drone = time;
-                    n_locate_drone_attempts = 0;
                     control.LED(true);
                     _visdat->disable_fading = false;
-                    pre_flight_state = pre_check_telemetry;
-                    _n_drone_detects++;
-                }
-                if (time - time_last_led_doubler > 3) {  // if the blink detect takes too long, it may be that the led is not bright enough to be detected
-                    time_last_led_doubler = time;
-                    // control.double_led_strength();
+                    if (confirm_drone_on_pad) {
+                        confirm_drone_on_pad = false;
+                        float dist = normf(tracker.pad_location(false) - detected_pad_locations.back());
+                        if (dist < confirm_drone_on_pad_delta_distance && _baseboard_link->charging()) {
+                            _state = ds_charging;
+                        } else if (dist < confirm_drone_on_pad_delta_distance) {
+                            _state = ds_post_flight;
+                            post_flight_state = post_start_shaking;
+                            std::cout << "Not charging, but blink confirms drone is on pad. Shake it." << std::endl;
+                        } else {
+                            _state = ds_post_flight;
+                            post_flight_state = post_lost;
+                        }
+                    } else {
+                        tracker.set_pad_location_from_blink(detected_pad_locations.back());
+                        _trackers->mode(tracking::TrackerManager::t_x);
+
+                        time_located_drone = time;
+                        n_locate_drone_attempts = 0;
+
+                        pre_flight_state = pre_check_telemetry;
+                        _n_drone_detects++;
+                    }
                 }
                 if (time - time_start_locating_drone_attempt > 15)
                     pre_flight_state = pre_locate_drone_init;
@@ -250,13 +261,20 @@ void Drone::pre_flight(double time) {
                     pre_flight_state = pre_init;
                     if (_baseboard_link->charging())
                         _state = ds_charging;
-                    else
+                    else {
                         pre_flight_state = pre_wait_charging;
+                        time_waiting_for_charge = time;
+                    }
                 }
                 break;
         } case pre_wait_charging: {
                 if (_baseboard_link->charging() || _baseboard_link->disabled())
                     _state = ds_charging;
+                else if (static_cast<float>(time - time_waiting_for_charge) > wait_charging_response_duration) {
+                    confirm_drone_on_pad = true;
+                    pre_flight_state = pre_locate_drone_init;
+                    std::cout << "Not charging, but drone att is within pad bounds. Confirming with blink...." << std::endl;
+                }
                 break;
         } case pre_locate_time_out: {
                 // #1177
@@ -313,6 +331,7 @@ void Drone::post_flight(double time) {
                         _state = ds_charging;
                     } else if (n_shakes_sessions_after_landing <= 10 && control.drone_pad_state()) {
                         post_flight_state = post_start_shaking;
+                        std::cout << "Shake unsucessfull. Attempt " << n_shakes_sessions_after_landing << " of 10" << std::endl;
                         _baseboard_link->allow_charging(false);
                     }
                     else {

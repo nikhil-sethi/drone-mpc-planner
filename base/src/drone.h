@@ -93,11 +93,13 @@ private:
     //pre flight
     int n_locate_drone_attempts = 0;
     bool force_pad_redetect = false;
+    bool confirm_drone_on_pad = false;
     double time_start_locating_drone = 0;
     double time_start_locating_drone_attempt = 0;
-    double time_last_led_doubler = 0;
     double time_located_drone = 0;
+    double time_waiting_for_charge = 0;
     double time_led_init = 0;
+
     uint n_detected_pad_locations = 0;
 
     // flight
@@ -115,6 +117,8 @@ private:
     const float duration_reset_yaw_on_pad = 1.5f;
     const float duration_wait_before_shake = 1;
     const float led_response_duration = 1;
+    const float wait_charging_response_duration = 10;
+    const float confirm_drone_on_pad_delta_distance = 0.03f;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
     double time_post_shake = 0;
