@@ -721,7 +721,10 @@ void process_arg(int argc, char **argv) {
                 arg_recognized = true;
                 i++;
                 insect_replay_mode = true;
-                replay_video_fn = argv[i];
+                if (is_number(argv[i]))
+                    replay_video_fn = "insect" + string(argv[i]) + ".mkv";
+                else
+                    replay_video_fn = argv[i];
             } else if (s.compare("--render") == 0) {
                 arg_recognized = true;
                 render_mode = true;
@@ -1118,11 +1121,9 @@ int main(int argc, char **argv)
 
         daemon_link.init(log_replay_mode || generator_mode || airsim_mode);
         baseboard_link.init(log_replay_mode || generator_mode || airsim_mode);
-        cmdcenter.reset_commandcenter_status_file("Starting", false);
         communicate_state(es_starting);
         if (realsense_reset) {
             communicate_state(es_realsense_reset);
-            cmdcenter.reset_commandcenter_status_file("Reseting realsense", false);
             Realsense rs;
             rs.reset();
             return 0;
