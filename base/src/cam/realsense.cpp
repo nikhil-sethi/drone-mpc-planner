@@ -28,8 +28,10 @@ StereoPair *Realsense::update(void) {
             last_iter--;
         }
         _current = last_iter->second;
+        _frame_lagging = false;
     } else if (new_current->second->rs_id == _current->rs_id + 1) { // next frame on top of the buffer and ready to go. Camera won :|
         _current = new_current->second;
+        _frame_lagging = false;
     } else { // we are lagging behind or the rs_id has skipped one. :(
         auto current_original = _current;
         unsigned long long new_rs_id = -1;
@@ -50,8 +52,11 @@ StereoPair *Realsense::update(void) {
             new_rs_id = new_current->second->rs_id;
         }
         skipping_frames = true;
-        if (_current->rs_id > pparams.fps * 2)
+        if (_current->rs_id > pparams.fps * 2) {
             std::cout << "Frame lag warning" << std::endl;
+            _frame_lagging = true;
+        } else
+            _frame_lagging = false;
     }
     _current->processing = true;
     delete_old_frames(skipping_frames);

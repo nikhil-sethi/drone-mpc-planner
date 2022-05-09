@@ -232,7 +232,7 @@ void process_video() {
             cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
         }
 
-        if (pparams.video_raw) {
+        if (pparams.video_raw && ! cam->frame_lagging()) {
             // auto tmpf = frame->left.clone();
             // putText(tmpf, to_string(frame->rs_id), cv::Point(3, 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255));
 

@@ -99,8 +99,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
         g_object_set(G_OBJECT(_appsrc),
                      "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                      "format", GST_FORMAT_TIME,
-                     "is-live", TRUE,
-                     "max-bytes", 500000000, // buffer size before enough-data fires. Default 200000
+                     "is-live", true,
+                     "max-bytes", 50000000, // buffer size before enough-data fires. Default 200000
                      NULL);
         g_signal_connect(_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
         g_signal_connect(_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
@@ -216,7 +216,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
             if (gst_element_factory_find("vaapih264enc")) {
                 std::cout << "Using h264 vaapi encoding" << std::endl;
                 encoder = gst_element_factory_make("vaapih264enc", "encoder");  // hardware encoding
-                g_object_set(G_OBJECT(encoder),  "rate-control", 2, "bitrate", 30000, NULL);
+                g_object_set(G_OBJECT(encoder),  "rate-control", 2, "bitrate", 3000, NULL);
                 auto parser = gst_element_factory_make("h264parse", "parser");
                 gst_bin_add_many(GST_BIN(_pipeline), _appsrc, videoconvert, encoder, parser, mux, videosink, NULL);
                 gst_element_link_many(_appsrc, videoconvert, encoder, parser, mux, videosink, NULL);

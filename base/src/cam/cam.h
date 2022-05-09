@@ -28,6 +28,7 @@ protected:
     bool initialized = false;
     bool _stop = false;
     int _frame_loss_cnt = 0;
+    bool _frame_lagging = false;
     std::map<unsigned long long, StereoPair *> buf;
     StereoPair *_current;
     StereoPair *_last;
@@ -59,6 +60,7 @@ protected:
 public:
     bool frame_by_frame = false;
     bool turbo = false;
+    bool frame_lagging() {return _frame_lagging;}
     cv::Mat Qf;
     cv::Mat depth_background;
     cv::Mat depth_background_3mm;
