@@ -69,24 +69,37 @@ def natural_sort(line):
     return sorted(line, key=alphanum_key)
 
 
-def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True):
+def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True, raw_log_file=''):
     if logger_name != '':
         logger = logging.getLogger(logger_name)
+
+    if len(raw_log_file):
+        log = open(raw_log_file, "w", encoding="utf-8")
 
     p_result = None
     n = 0
     while p_result != 0 and n < retry:
-        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=render_process_dir, shell=True)
-        for stdout_line in iter(popen.stdout.readline, ""):
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True, cwd=render_process_dir, shell=True)
+        p_result = None
+        while p_result is None:
             p_result = popen.poll()
-            if p_result is not None:
-                n = n + 1
-                break
-            if verbose and logger_name == '':
-                print(stdout_line.decode('utf-8'), end='')
-            elif logger_name != '' and stdout_line.decode('utf-8'):
-                logger.info(stdout_line.decode('utf-8'))
+            for stdout_line in iter(popen.stdout.readline, ""):
+                if not len(stdout_line):
+                    break
+                line = stdout_line.decode('utf-8')
+                if verbose:
+                    print(line, end='')
+                if logger_name != '':
+                    logger.info(line)
+                if raw_log_file != '':
+                    log.write(line)
+
+        n = n + 1
         popen.stdout.close()
+
+    if len(raw_log_file):
+        log.close()
+
     return p_result
 
 

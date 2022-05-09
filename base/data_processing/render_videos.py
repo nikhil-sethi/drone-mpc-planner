@@ -85,12 +85,12 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
 def render(detection, render_process_dir, render_mode):
     logger = logging.getLogger('render')
 
-    cmd = './executor_render --log ' + detection['folder'] + ' --' + render_mode + ' ' + detection['video_src_path'] + ' --render' + ' 2>&1 | /usr/bin/tee ' + detection['log_target_path']
+    cmd = './executor_render --log ' + detection['folder'] + ' --' + render_mode + ' ' + detection['video_src_path'] + ' --render' + ' 2>&1'
     render_ok = False
     video_src_path = detection['video_src_path']
     video_target_path = detection['video_target_path']
     for i in range(1, 5):
-        if lb.execute(cmd, render_process_dir=render_process_dir) == 0:
+        if lb.execute(cmd, render_process_dir=render_process_dir, raw_log_file=detection['log_target_path']) == 0:
             if os.stat((detection['video_src_path'])).st_size > 30000:  # another work around for #833
                 render_ok = True
                 break
