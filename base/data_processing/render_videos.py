@@ -6,6 +6,7 @@ import glob
 import argparse
 import shutil
 import logging
+import logging.handlers
 from datetime import datetime, timedelta
 from pathlib import Path
 import lib_base as lb
@@ -171,6 +172,14 @@ if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger('render')
     logger.setLevel(logging.DEBUG)
+
+    file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + '/render.log', maxBytes=1024 * 1024 * 100, backupCount=1)
+    fh.setFormatter(file_format)
+    fh.level = logging.DEBUG
+    logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
+    logger.info(' reporting in!')
 
     if not args.s and not args.e:
         render_last_day(args.i, abort_deadline=datetime.now() + timedelta(hours=3))
