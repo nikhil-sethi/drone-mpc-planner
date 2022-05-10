@@ -234,7 +234,7 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
     flight_id = int(os.path.basename(log_fn)[10:-4])  # assuming the name is log_flight**.csv. Maybe replace this with  https://stackoverflow.com/questions/14008440/how-to-extract-numbers-from-filename-in-python
     flight_time, crashed, best_interception_distance, _, _ = process_flight_results(folder + '/flight_results' + str(flight_id) + '.txt')
 
-    if flight_time < 0:
+    if flight_time <= 0:
         logger.info('Flight time invalid')
         return {}
     try:
