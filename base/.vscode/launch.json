@@ -7,8 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build-vscode/executor",
             "args": [
-                "--pats-xml",
-                "../xml/pats_debug.xml"
+                "--log", "logging" , "--flight","1"
             ],
             "stopAtEntry": false,
             "preLaunchTask": "make",
