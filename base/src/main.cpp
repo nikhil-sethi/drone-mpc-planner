@@ -1123,6 +1123,8 @@ int main(int argc, char **argv)
             pparams.video_raw = video_disabled;
         if (render_mode)
             pparams.video_render = video_file;
+        if (insect_replay_mode)
+            pparams.op_mode = op_mode_c;
 
         daemon_link.init(log_replay_mode || generator_mode || airsim_mode);
         baseboard_link.init(log_replay_mode || generator_mode || airsim_mode);

@@ -18,19 +18,6 @@ def render_last_day(data_dir=lb.data_dir, abort_deadline=datetime.strptime('3000
     render_all(yesterday, now, data_dir, abort_deadline)
 
 
-def check_for_hunt_render(pats_xml_path, results_txt_path, target_path):
-    if not os.path.exists(target_path):
-        hunt_mode = False
-        n_hunts = 0
-        n_takeoffs = 0
-        hunt_mode = lb.check_if_hunt_mode(pats_xml_path)
-        n_hunts, n_takeoffs = lb.read_results_txt(results_txt_path)
-        if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
-            return True
-    else:
-        return False
-
-
 def create_render_lists(data_folder, start_datetime, end_datetime):
     logger = logging.getLogger('render')
 
@@ -45,11 +32,6 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
         results_txt_path = Path(folder, 'results.txt')
 
         if os.path.exists(pats_xml_path) and os.path.exists(results_txt_path):
-
-            # check hunting render:
-            target_path = Path(Path(lb.renders_dir), os.path.basename(folder) + '_' + socket.gethostname() + '.mkv')
-            if check_for_hunt_render(pats_xml_path, results_txt_path, target_path):
-                flights.append({'folder': folder, 'target_path': target_path})
 
             files = os.listdir(folder)
             for file in files:

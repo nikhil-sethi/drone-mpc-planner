@@ -150,7 +150,6 @@ public:
         if (allow_charging_pkg_to_baseboard.allow_charging != b) {
             allow_charging_pkg_to_baseboard.allow_charging = b;
             update_allow_charging_pkg_to_baseboard = true;
-            std::cout << "update_allow_charging_pkg_to_baseboard" << std::endl;
             cv_to_baseboard.notify_all();
         }
     }
