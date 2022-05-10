@@ -157,7 +157,7 @@ def render_all(start_datetime, end_datetime, data_folder, abort_deadline=datetim
             return
         render_cnt += 1
         logger.info(str(render_cnt) + ' / ' + str(tot_render_cnt) + '. Rendering ' + flight['video_src_path'] + '.')
-        render(flight, render_process_dir, 'insect')
+        render(flight, render_process_dir, 'flight')
 
 
 if __name__ == "__main__":
