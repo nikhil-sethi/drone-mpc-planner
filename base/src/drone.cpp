@@ -35,6 +35,7 @@ void Drone::update(double time) {
                 pre_flight(time);
                 break;
         } case ds_charging: {
+                control.flight_mode(DroneController::fm_inactive);
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
                 if (_baseboard_link->battery_ready_for_flight() || _baseboard_link->disabled())
                     _state = ds_ready;
