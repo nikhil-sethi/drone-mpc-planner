@@ -114,7 +114,7 @@ def render_all(start_datetime, end_datetime, data_folder, abort_deadline=datetim
 
     if not len(monitor_detections) + len(flights):
         return
-    logger.info("Number of hunt renders: " + str(len(flights)))
+    logger.info("Number of flight renders: " + str(len(flights)))
     logger.info("Number of monitor renders: " + str(len(monitor_detections)))
 
     original_process_dir = os.path.expanduser('~/code/pats/base/build/')
