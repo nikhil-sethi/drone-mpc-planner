@@ -1,5 +1,4 @@
 <SerializableClass Type="PatsParameters" Version="1.17">
-    <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="light_level_threshold">0</Member>
     <Member Name="close_after_n_images">-1</Member>
     <Member Name="plukker_start">disabled</Member>

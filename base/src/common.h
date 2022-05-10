@@ -45,7 +45,7 @@ void reset_external_wdt_flag();
 std::string execute(const char *cmd);
 float max_rs_auto_exposure();
 float calc_light_level(int exposure, int gain, float brightness);
-bool is_number(const std::string& s);
+bool is_number(const std::string &s);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
@@ -335,7 +335,7 @@ private:
     xDrone_type _drone;
     xOp_mode _op_mode;
     xBool _disable_real_hunts;
-    xInt _wdt_timeout_us, _fps, _close_after_n_images;
+    xInt _fps, _close_after_n_images;
 
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
@@ -350,7 +350,7 @@ private:
 
 public:
     float light_level_threshold;
-    int wdt_timeout_us, close_after_n_images;
+    int close_after_n_images;
     uint fps;
     bool watchdog, has_screen;
     video_modes video_raw, video_render;
@@ -380,7 +380,6 @@ public:
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("light_level_threshold", &_light_level_threshold);
-        Register("wdt_timeout_us", &_wdt_timeout_us);
         Register("close_after_n_images", &_close_after_n_images);
         Register("plukker_start", &_plukker_start);
         Register("min_hunt_size", &_min_hunt_size);
@@ -427,7 +426,6 @@ public:
         }
 
         light_level_threshold = _light_level_threshold.value();
-        wdt_timeout_us = _wdt_timeout_us.value();
         close_after_n_images = _close_after_n_images.value();
         plukker_start = _plukker_start.value();
         min_hunt_size = _min_hunt_size.value();
@@ -453,7 +451,6 @@ public:
 
     void serialize(std::string settings_file) {
         _light_level_threshold = light_level_threshold;
-        _wdt_timeout_us = wdt_timeout_us;
         _close_after_n_images = close_after_n_images;
         _plukker_start = plukker_start;
         _max_hunt_size = max_hunt_size;

@@ -108,6 +108,8 @@ struct Processer {
     StereoPair *frame;
 };
 Processer tp[NUM_OF_THREADS];
+std::condition_variable cv_watchdog;
+std::mutex cv_m_watchdog;
 std::thread thread_watchdog;
 StereoPair *prev_frame;
 
@@ -918,8 +920,10 @@ void close(bool sig_kill) {
     if (rc)
         rc.release();
     std::cout << "Watchdog thread join..." << std::endl;
-    if (!pparams.has_screen)
+    if (!pparams.has_screen) {
+        cv_watchdog.notify_one();
         thread_watchdog.join();
+    }
     std::cout << "Closed" << std::endl;
 }
 
@@ -1052,10 +1056,11 @@ void wait_for_dark() {
 
 void watchdog_worker(void) {
     std::cout << "Watchdog thread started" << std::endl;
-    usleep(10000000); //wait until camera is running for sure
+    std::unique_lock<std::mutex> lk(cv_m_watchdog);
+    cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + 10s); //wait until camera is running for sure
     while (!exit_now) {
-        usleep(pparams.wdt_timeout_us);
-        if (watchdog_skip_video_delay_override) {
+        cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + 500ms);
+        if (watchdog_skip_video_delay_override && !exit_now) {
             for (int i = 0; i < 20; i++) {
                 if (exit_now)
                     break;
