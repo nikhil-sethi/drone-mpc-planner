@@ -96,16 +96,12 @@ void Drone::update(double time) {
                 _interceptor->target_is_hunted(_n_take_offs);
                 flight_logger << std::endl;
                 if (nav.drone_problem()) {
-                    _trackers->stop_drone_tracking(&tracker);
-                    flight_logger.flush();
-                    flight_logger.close();
-                    _baseboard_link->allow_charging(true);
-                    _state = ds_crashed;
+                    post_flight_state = post_init_crashed;
+                    _state = ds_post_flight;
                 } else if (nav.flight_done()) {
+                    post_flight_state = post_init;
                     _state = ds_post_flight;
                     _n_landings++;
-                    flight_logger.flush();
-                    flight_logger.close();
                 }
                 break;
         } case ds_post_flight: {
@@ -120,11 +116,6 @@ void Drone::update(double time) {
                 }
                 break;
         } case ds_rc_loss: {
-                // #1177
-                break;
-        } case ds_crashed: {
-                if (_baseboard_link->drone_on_pad())
-                    _state = ds_charging;
                 // #1177
                 break;
         } case ds_beep: {
@@ -285,6 +276,8 @@ void Drone::pre_flight(double time) {
 void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
+                flight_logger.flush();
+                flight_logger.close();
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
                 save_flight_results();
@@ -338,6 +331,16 @@ void Drone::post_flight(double time) {
                         post_flight_state = post_lost;
                     }
                 }
+                break;
+        } case post_init_crashed: {
+                _trackers->stop_drone_tracking(&tracker);
+                _baseboard_link->allow_charging(true);
+                save_flight_results();
+                post_flight_state = post_crashed;
+                break;
+        } case post_crashed: {
+                if (_baseboard_link->drone_on_pad())
+                    _state = ds_charging;
                 break;
         } case post_lost: {
                 // #1177

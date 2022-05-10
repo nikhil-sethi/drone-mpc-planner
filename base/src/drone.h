@@ -39,6 +39,8 @@ static const char *post_flight_state_names[] = {
     "shaking",
     "wait_init",
     "shaked...",
+    "init_crash",
+    "crashed",
     "lost"
 };
 class Drone {
@@ -51,7 +53,6 @@ public:
         ds_post_flight,
         ds_charging_failure,
         ds_rc_loss,
-        ds_crashed,
         ds_beep
     };
     enum pre_flight_states {
@@ -75,7 +76,9 @@ public:
         post_shaking_drone,
         post_wait_after_shake_init,
         post_wait_after_shake,
-        post_lost
+        post_lost,
+        post_init_crashed,
+        post_crashed,
     };
 private:
     Interceptor *_interceptor;
