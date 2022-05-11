@@ -65,6 +65,8 @@ xmls::DroneParameters dparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
 std::time_t plukker_time;
+std::time_t start_time;
+std::time_t periodic_stop_time;
 bool draw_plots = false;
 bool realsense_reset = false;
 bool log_replay_mode = false;
@@ -316,10 +318,9 @@ void process_video() {
             fps_smoothed.reset();
 
         if (patser.drone.program_restart_allowed()) {
-
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-
-            if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
+            auto seconds_to_periodic_stop_time = std::difftime(periodic_stop_time, time_now);
+            if (!log_replay_mode  && (pparams.periodic_restart_minutes > 0 && seconds_to_periodic_stop_time <= 0)) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
@@ -862,6 +863,12 @@ void init() {
     init_thread_pool();
     if (!pparams.has_screen)
         thread_watchdog = std::thread(&watchdog_worker);
+
+    start_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    auto start_minute = (*std::localtime(std::addressof(start_time))).tm_min;
+    int minutes_to_periodic_restart = roundf((start_minute + pparams.periodic_restart_minutes - 5.f) / pparams.periodic_restart_minutes) * pparams.periodic_restart_minutes + 5 - start_minute;
+    periodic_stop_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::minutes(minutes_to_periodic_restart));
+    std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T")  << std::endl;
 
     logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;

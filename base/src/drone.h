@@ -39,9 +39,9 @@ static const char *post_flight_state_names[] = {
     "shaking",
     "wait_init",
     "shaked...",
-    "init_crash",
-    "crashed",
-    "lost"
+    "lost",
+    "crash",
+    "crashed"
 };
 class Drone {
 public:

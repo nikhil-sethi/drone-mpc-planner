@@ -335,7 +335,7 @@ private:
     xDrone_type _drone;
     xOp_mode _op_mode;
     xBool _disable_real_hunts;
-    xInt _fps, _close_after_n_images;
+    xInt _fps, _periodic_restart_minutes;
 
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
@@ -350,7 +350,7 @@ private:
 
 public:
     float light_level_threshold;
-    int close_after_n_images;
+    int periodic_restart_minutes;
     uint fps;
     bool watchdog, has_screen;
     video_modes video_raw, video_render;
@@ -376,11 +376,11 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.17");
+        setVersion("1.18");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("light_level_threshold", &_light_level_threshold);
-        Register("close_after_n_images", &_close_after_n_images);
+        Register("periodic_restart_minutes", &_periodic_restart_minutes);
         Register("plukker_start", &_plukker_start);
         Register("min_hunt_size", &_min_hunt_size);
         Register("max_hunt_size", &_max_hunt_size);
@@ -426,7 +426,7 @@ public:
         }
 
         light_level_threshold = _light_level_threshold.value();
-        close_after_n_images = _close_after_n_images.value();
+        periodic_restart_minutes = _periodic_restart_minutes.value();
         plukker_start = _plukker_start.value();
         min_hunt_size = _min_hunt_size.value();
         max_hunt_size = _max_hunt_size.value();
@@ -451,7 +451,7 @@ public:
 
     void serialize(std::string settings_file) {
         _light_level_threshold = light_level_threshold;
-        _close_after_n_images = close_after_n_images;
+        _periodic_restart_minutes = periodic_restart_minutes;
         _plukker_start = plukker_start;
         _max_hunt_size = max_hunt_size;
         _min_hunt_size = min_hunt_size;
