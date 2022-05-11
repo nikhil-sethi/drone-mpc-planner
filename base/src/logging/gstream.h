@@ -19,11 +19,12 @@ private:
         unknown
     };
     GstElement *_pipeline, *_appsrc;
+    vp9_modes vp9_mode;
 
     int _cols, _rows;
     int prepare_buffer(GstAppSrc *appsrc, cv::Mat image);
     int prepare_buffer(GstAppSrc *appsrc, cv::Mat frameL, cv::Mat frameR);
-    vp9_modes vp9_mode();
+    void init_vp9_mode();
     int stream_resize_f = 1;
     int gstream_fps;
     bool initialised = false;

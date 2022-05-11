@@ -38,19 +38,20 @@ void GStream::manual_unblock() {
     wait_for_want.unlock();
 }
 
-GStream::vp9_modes GStream::vp9_mode() {
+void GStream::init_vp9_mode() {
     auto res = execute("lscpu | grep -i 'model name' | uniq");
     if (res.find("i3-7100U") != string::npos)
-        return vp9_modes::nuc7_8;
+        vp9_mode = vp9_modes::nuc7_8;
     else if (res.find("i3-8109U") != string::npos)
-        return vp9_modes::nuc7_8;
+        vp9_mode =  vp9_modes::nuc7_8;
     else if (res.find("AMD") != string::npos)
-        return vp9_modes::amd_ryzen;
+        vp9_mode =  vp9_modes::amd_ryzen;
     else if (res.find("i3-1115G4") != string::npos)
-        return vp9_modes::nuc11;
+        vp9_mode =  vp9_modes::nuc11;
     else if (res.find("tegra") != string::npos)
-        return vp9_modes::jetson;
-    return vp9_modes::unknown;
+        vp9_mode =  vp9_modes::jetson;
+    else
+        vp9_mode =  vp9_modes::unknown;
 }
 
 int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color) {
@@ -65,7 +66,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
         }
     }
 
-    auto vp9 = vp9_mode();
+    init_vp9_mode();
     bgr_mode = color;
     _cols = sizeX;
     _rows = sizeY;
@@ -108,8 +109,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
 
         if (bgr_mode) {
 
-            if (gst_element_factory_find("vaapivp9enc") && vp9 != nuc11) {
-                if (vp9 == nuc11) {
+            if (gst_element_factory_find("vaapivp9enc") && vp9_mode != nuc11) {
+                if (vp9_mode == nuc11) {
                     // For the NUC11 with gstreamer 1.18 .4 the vp9 encoder cannot accept direct BGR, and for some reason
                     // I don't understand the videoconvert element does not want to do that either (weird),
                     // so in prep buffer we had opencv convert it to I420 instead.
@@ -152,7 +153,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                     gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, mux, videosink, NULL);
                     std::cout << "Initialized gstreamer video render with vaapivp9enc BGR mode..." << std::endl;
                 }
-            } else if (gst_element_factory_find("vaapih264enc") && vp9 != nuc11) {
+            } else if (gst_element_factory_find("vaapih264enc") && vp9_mode != nuc11) {
 
                 auto caps_appsrc = gst_caps_new_simple("video/x-raw",
                                                        "format", G_TYPE_STRING, "BGR",
@@ -176,7 +177,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                 gst_element_link_many(_appsrc, colorbalance, videoconvert, encoder, parser, mux, videosink, NULL);
                 std::cout << "Initialized gstreamer video render with vaapih264enc BGR mode..." << std::endl;
 
-            } else if (gst_element_factory_find("vaapih264enc") && vp9 == nuc11) {
+            } else if (gst_element_factory_find("vaapih264enc") && vp9_mode == nuc11) {
 
                 auto caps_appsrc = gst_caps_new_simple("video/x-raw",
                                                        "format", G_TYPE_STRING, "I420",
@@ -230,14 +231,14 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                 std::cout << "Using vp9 vaapi encoding" << std::endl;
                 encoder = gst_element_factory_make("vaapivp9enc", "encoder");  // hardware encoding
                 g_object_set(G_OBJECT(encoder), "rate-control", 2, "bitrate", 7500, NULL); // quality of vp9 is about 2x of comparible bitrate h264
-                if (vp9 == nuc11) { // For reasons I don't understand, 1.18 needs an extra videoconvert element...
+                if (vp9_mode == nuc11) { // For reasons I don't understand, 1.18 needs an extra videoconvert element...
                     gst_bin_add_many(GST_BIN(_pipeline), _appsrc, videoconvert, encoder, mux, videosink, NULL);
                     gst_element_link_many(_appsrc, videoconvert, encoder, mux, videosink, NULL);
                 } else {
                     gst_bin_add_many(GST_BIN(_pipeline), _appsrc, encoder, mux, videosink, NULL);
                     gst_element_link_many(_appsrc, encoder, mux, videosink, NULL);
                 }
-            } else if (gst_element_factory_find("vaapih265enc") && vp9 != amd_ryzen) { // seems to be problematic on AMD
+            } else if (gst_element_factory_find("vaapih265enc") && vp9_mode != amd_ryzen) { // seems to be problematic on AMD
                 encoder = gst_element_factory_make("vaapih265enc", "encoder");  // hardware encoding
                 //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
                 //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
@@ -385,7 +386,7 @@ int GStream::prepare_buffer(GstAppSrc *appsrc, cv::Mat image) {
 
     float  cmult;
     cv::Mat image_converted;
-    if (vp9_mode() == nuc11 && bgr_mode) {
+    if (vp9_mode == nuc11 && bgr_mode) {
         cv::cvtColor(image, image_converted, cv::COLOR_BGR2YUV_I420);
         cmult = 1.5;
     } else if (bgr_mode) {
