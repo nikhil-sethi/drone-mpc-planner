@@ -273,7 +273,7 @@ void DroneNavigation::update(double time) {
                 }
                 if (_control->landed())
                     _navigation_status = ns_landed;
-                else if (!_control->landing() && _control->land_ctrl.switch_to_ff_landing(_tracker->last_track_data(), new_pos_setpoint, pad_pos))
+                else if (!_control->landing() && _control->land_ctrl.switch_to_ff_landing(_tracker->last_track_data(), pad_pos))
                     _control->flight_mode(DroneController::fm_ff_landing_start);
 
                 setpoint_pos_world = new_pos_setpoint;

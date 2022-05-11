@@ -20,7 +20,7 @@ cv::Point3f LandingController::setpoint_cc_landing(cv::Point3f pad_location, nav
     return new_pos_setpoint;
 }
 
-bool LandingController::switch_to_ff_landing(tracking::TrackData drone_track_data, cv::Point3f pos_setpoint, cv::Point3f pad_pos) {
+bool LandingController::switch_to_ff_landing(tracking::TrackData drone_track_data, cv::Point3f pad_pos) {
     return !drone_track_data.pos_valid || drone_track_data.spos().y < pad_pos.y + height_trigger_ff;
 }
 
