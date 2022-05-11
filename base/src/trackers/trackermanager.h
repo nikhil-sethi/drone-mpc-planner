@@ -45,8 +45,8 @@ private:
             props = blob;
             id = new_id;
         }
-        cv::Point2f pt() {return cv::Point2f(props->x, props->y);} // scaled with pparams.imscalef
-        float size() {return props->size;}  // scaled with pparams.imscalef
+        cv::Point2f pt() {return cv::Point2f(props->x, props->y);} // scaled with im_scaler
+        float size() {return props->size;}  // scaled with im_scaler
         uint8_t pixel_max() {return props->pixel_max;}
         uint8_t motion_noise() {return props->motion_noise;}
         uint16_t id;

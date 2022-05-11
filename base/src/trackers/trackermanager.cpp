@@ -52,7 +52,7 @@ cv::Rect pre_select_roi(ImagePredictItem item, cv::Mat diff) {
     cv::Point max;
     cv::Point min;
 
-    cv::Point2f pt = item.pt / pparams.imscalef;
+    cv::Point2f pt = item.pt / im_scaler;
     int roi_dist = item.size * 2;
     roi_dist = std::clamp(roi_dist, 10, 300);
 
@@ -275,15 +275,15 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
         cv::Rect bounding_box = clamp_rect(cv::Rect(bound_min_floodfill, bound_max_floodfill), diff.cols, diff.rows);
 
         Mat viz;
-        Rect bounding_box_unscaled = clamp_rect(cv::Rect(bound_min_floodfill * pparams.imscalef, bound_max_floodfill * pparams.imscalef), IMG_W, IMG_H);;
+        Rect bounding_box_unscaled = clamp_rect(cv::Rect(bound_min_floodfill * im_scaler, bound_max_floodfill * im_scaler), IMG_W, IMG_H);;
         cv::Mat frameL_roi = _visdat->frameL(bounding_box_unscaled);
         cv::Mat frameL_small_roi;
-        cv::resize(frameL_roi, frameL_small_roi, cv::Size(frameL_roi.cols / pparams.imscalef, frameL_roi.rows / pparams.imscalef));
+        cv::resize(frameL_roi, frameL_small_roi, cv::Size(frameL_roi.cols / im_scaler, frameL_roi.rows / im_scaler));
 
         cv::Mat overexposed_roi;
         if (_visdat->overexposed_mapL.cols) {
             cv::Mat tmp = _visdat->overexposed_mapL(bounding_box_unscaled);
-            cv::resize(tmp, overexposed_roi, cv::Size(frameL_roi.cols / pparams.imscalef, frameL_roi.rows / pparams.imscalef));
+            cv::resize(tmp, overexposed_roi, cv::Size(frameL_roi.cols / im_scaler, frameL_roi.rows / im_scaler));
         } else
             overexposed_roi = cv::Mat::zeros(bounding_box.size(), CV_8UC1);
 
@@ -358,7 +358,7 @@ void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs, double time) {
         pbs->push_back(ProcessedBlob(&blob, id_cnt));
         id_cnt++;
         for (auto &fp : false_positives) {
-            float dist = normf(fp.im_pt - blob.pt() * pparams.imscalef);
+            float dist = normf(fp.im_pt - blob.pt() * im_scaler);
             if (dist < fp.im_size) {
                 blob.false_positive = true;
                 fp.last_seen_time = time;
@@ -560,7 +560,7 @@ void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, 
             bool too_close = false;
             for (auto btrkr : _trackers) {
                 if (btrkr->type() == tt_blink) {
-                    if (normf(btrkr->image_item().pt() - props->pt_unscaled())  < default_roi_radius * pparams.imscalef) {
+                    if (normf(btrkr->image_item().pt() - props->pt_unscaled())  < default_roi_radius * im_scaler) {
                         too_close = true;
                     }
                 }

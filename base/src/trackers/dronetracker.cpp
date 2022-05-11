@@ -30,8 +30,8 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
         //some times there is some motion noise around the drone when it is just sitting on the ground
         //not sure what that is (might be a flickering led?), but the following makes the insect tracker
         //ignore it. Can be better fixed by having a specialized landingspot detector.
-        ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef,
-                                          _pad_im_size / pparams.imscalef,
+        ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler,
+                                          _pad_im_size / im_scaler,
                                           time + takeoff_location_ignore_timeout,
                                           IgnoreBlob::takeoff_spot));
     }
@@ -41,7 +41,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     _tracking = false;
     enable_takeoff_motion_delete = true;
     ignores_for_other_trkrs.clear();
-    ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef, _pad_im_size / pparams.imscalef, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
+    ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler, _pad_im_size / im_scaler, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
     liftoff_detected = false;
     spinup_detected = 0;
     take_off_frame_cnt = 0;
@@ -132,7 +132,7 @@ void DroneTracker::update(double time) {
                 detect_deviation_yaw_angle();
                 break;
         } case dts_landing_init: {
-                ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef, _pad_im_size / pparams.imscalef, time + landing_ignore_timeout, IgnoreBlob::landing_spot));
+                ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler, _pad_im_size / im_scaler, time + landing_ignore_timeout, IgnoreBlob::landing_spot));
                 _drone_tracking_status = dts_landing;
                 [[fallthrough]];
         } case dts_landing: {

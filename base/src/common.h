@@ -50,6 +50,8 @@ bool is_number(const std::string &s);
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
 
+const int im_scaler = 2;
+
 extern std::string data_output_dir;
 
 
@@ -339,7 +341,6 @@ private:
 
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
-    xInt _imscalef;
     xString _location;
     xString _flightplan;
     xString _flightplan_calib_thrust;
@@ -360,7 +361,6 @@ public:
     bool disable_real_hunts;
     std::string plukker_start;
     float min_hunt_size, max_hunt_size;
-    int imscalef;
     std::string location;
     std::string flightplan;
     std::string flightplan_calib_thrust;
@@ -393,7 +393,6 @@ public:
         Register("video_render", &_video_result);
         Register("joystick", &_joystick);
         Register("drone", &_drone);
-        Register("imscalef", &_imscalef);
         Register("location", &_location);
         Register("flightplan", &_flightplan);
         Register("flightplan_calib_thrust", &_flightplan_calib_thrust);
@@ -439,7 +438,6 @@ public:
         video_render = _video_result.value();
         joystick = _joystick.value();
         drone = _drone.value();
-        imscalef = _imscalef.value();
         location = _location.value();
         flightplan = _flightplan.value();
         flightplan_calib_thrust = _flightplan_calib_thrust.value();
@@ -464,7 +462,6 @@ public:
         _video_result = video_render;
         _joystick = joystick;
         _drone = drone;
-        _imscalef = imscalef;
         _location = location;
         _flightplan = flightplan;
         _flightplan_calib_thrust = flightplan_calib_thrust;

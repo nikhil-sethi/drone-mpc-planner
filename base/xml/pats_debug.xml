@@ -13,7 +13,6 @@
     <Member Name="video_render">video_disabled</Member>
     <Member Name="joystick">rc_none</Member>
     <Member Name="drone">drone_anvil_diamond</Member>
-    <Member Name="imscalef">2</Member>
     <Member Name="location">test-room</Member>
     <Member Name="flightplan">../xml/flightplans/simple-demo-darkroom.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>

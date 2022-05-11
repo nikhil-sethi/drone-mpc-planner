@@ -51,9 +51,9 @@ void Visualizer::add_plot_sample(void) {
             posX_drone.push_back(-data.state.pos.x);
             posY_drone.push_back(data.state.pos.y);
             posZ_drone.push_back(-data.state.pos.z);
-            im_posX_drone.push_back(dtrkr->image_item().x / pparams.imscalef);
-            im_posY_drone.push_back(dtrkr->image_item().y / pparams.imscalef);
-            im_size_drone.push_back(dtrkr->image_item().size / pparams.imscalef);
+            im_posX_drone.push_back(dtrkr->image_item().x / im_scaler);
+            im_posY_drone.push_back(dtrkr->image_item().y / im_scaler);
+            im_size_drone.push_back(dtrkr->image_item().size / im_scaler);
             im_disp_drone.push_back(dtrkr->image_item().disparity);
             sposX.push_back(-data.state.spos.x);
             sposY.push_back(data.state.spos.y);
@@ -63,9 +63,9 @@ void Visualizer::add_plot_sample(void) {
                 gen_posX_drone.push_back(-generator_cam->generated_world_pos.x);
                 gen_posY_drone.push_back(generator_cam->generated_world_pos.y);
                 gen_posZ_drone.push_back(-generator_cam->generated_world_pos.z);
-                gen_im_posX_drone.push_back(generator_cam->generated_im_pos.x / pparams.imscalef);
-                gen_im_posY_drone.push_back(generator_cam->generated_im_pos.y / pparams.imscalef);
-                gen_im_size_drone.push_back(generator_cam->generated_im_size / pparams.imscalef);
+                gen_im_posX_drone.push_back(generator_cam->generated_im_pos.x / im_scaler);
+                gen_im_posY_drone.push_back(generator_cam->generated_im_pos.y / im_scaler);
+                gen_im_size_drone.push_back(generator_cam->generated_im_size / im_scaler);
                 gen_im_disp_drone.push_back(generator_cam->generated_im_pos.z);
             }
 
@@ -389,7 +389,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
         std::vector<cv::KeyPoint> keypoints;
         for (size_t i = 0; i < path.size(); i++) {
             if (path.at(i).predicted_image_item.valid) {
-                cv::KeyPoint k(path.at(i).predicted_image_item.pt.x / pparams.imscalef, path.at(i).predicted_image_item.pt.y / pparams.imscalef, 24 / pparams.imscalef);
+                cv::KeyPoint k(path.at(i).predicted_image_item.pt.x / im_scaler, path.at(i).predicted_image_item.pt.y / im_scaler, 24 / im_scaler);
                 keypoints.push_back(k);
             }
         }
@@ -402,7 +402,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
         std::vector<cv::KeyPoint> keypoints;
         for (size_t i = 0; i < path.size(); i++) {
             if (path.at(i).world_item.image_item.valid) {
-                cv::KeyPoint k(path.at(i).world_item.image_item.x / pparams.imscalef, path.at(i).world_item.image_item.y / pparams.imscalef, 12 / pparams.imscalef);
+                cv::KeyPoint k(path.at(i).world_item.image_item.x / im_scaler, path.at(i).world_item.image_item.y / im_scaler, 12 / im_scaler);
                 keypoints.push_back(k);
             }
         }
@@ -572,7 +572,7 @@ void Visualizer::draw_tracker_viz() {
 
     cv::Size vizsizeL(size.width / 4, size.height / 4);
     cv::Mat frameL_small;
-    cv::resize(frameL, frameL_small, cv::Size(frameL.cols / pparams.imscalef, frameL.rows / pparams.imscalef));
+    cv::resize(frameL, frameL_small, cv::Size(frameL.cols / im_scaler, frameL.rows / im_scaler));
     cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small, vizsizeL, setpoint, drn_path);
     cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small, vizsizeL, setpoint, ins_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0, 0, frameL_small_drone.cols, frameL_small_drone.rows)));

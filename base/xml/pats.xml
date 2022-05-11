@@ -13,7 +13,6 @@
     <Member Name="video_render">video_disabled</Member>
     <Member Name="joystick">rc_none</Member>
     <Member Name="drone">drone_anvil_superbee</Member>
-    <Member Name="imscalef">2</Member>
     <Member Name="location">openspace</Member>
     <Member Name="flightplan">../xml/flightplans/simple-demo-koppert.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>

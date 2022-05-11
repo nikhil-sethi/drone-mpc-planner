@@ -16,7 +16,7 @@ void VisionData::init(Cam *cam) {
 
     deserialize_settings();
 
-    smallsize = cv::Size(frameL.cols / pparams.imscalef, frameL.rows / pparams.imscalef);
+    smallsize = cv::Size(frameL.cols / im_scaler, frameL.rows / im_scaler);
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols, frameL.rows), CV_16SC1);
@@ -196,7 +196,7 @@ void VisionData::maintain_noise_maps() {
 int VisionData::max_noise(cv::Point blob_pt) {
     //get the max noise in a small area around the blob point, meant to be used to detect new insects
     const int size = 10;
-    cv::Point2i p(std::clamp(static_cast<int>(roundf(blob_pt.x * pparams.imscalef)) - size / 2, 0, IMG_W - size), std::clamp(static_cast<int>(roundf(blob_pt.y * pparams.imscalef)) - size / 2, 0, IMG_H - size));
+    cv::Point2i p(std::clamp(static_cast<int>(roundf(blob_pt.x * im_scaler)) - size / 2, 0, IMG_W - size), std::clamp(static_cast<int>(roundf(blob_pt.y * im_scaler)) - size / 2, 0, IMG_H - size));
     cv::Rect roi(p, cv::Size(size, size));
     double max;
     cv::minMaxIdx(motion_max_noise_mapL(roi), NULL, &max, NULL, NULL);
@@ -206,7 +206,7 @@ int VisionData::max_noise(cv::Point blob_pt) {
 bool VisionData::overexposed(cv::Point blob_pt) {
     //check in a small area around the blob point if there are any overexposed pixels (which are 0 in the overexposed map)
     const int size = 20;
-    cv::Point2i p(std::clamp(static_cast<int>(roundf(blob_pt.x * pparams.imscalef)) - size / 2, 0, IMG_W - size), std::clamp(static_cast<int>(roundf(blob_pt.y * pparams.imscalef)) - size / 2, 0, IMG_H - size));
+    cv::Point2i p(std::clamp(static_cast<int>(roundf(blob_pt.x * im_scaler)) - size / 2, 0, IMG_W - size), std::clamp(static_cast<int>(roundf(blob_pt.y * im_scaler)) - size / 2, 0, IMG_H - size));
     cv::Rect roi(p, cv::Size(size, size));
     int s = cv::sum(overexposed_mapL(roi))[0];
     return s > 0;

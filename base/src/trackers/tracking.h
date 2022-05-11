@@ -11,7 +11,7 @@ enum tracker_type {
     tt_virtualmoth
 };
 
-struct IgnoreBlob { // scaled with pparams.imscalef
+struct IgnoreBlob { // scaled with im_scaler
     enum IgnoreType {
         takeoff_spot,
         blink_spot,
@@ -25,8 +25,8 @@ struct IgnoreBlob { // scaled with pparams.imscalef
         invalid_after = timeout;
         radius = ignore_radius;
     }
-    cv::Point2f p; // scaled with pparams.imscalef
-    float radius; // scaled with pparams.imscalef
+    cv::Point2f p; // scaled with im_scaler
+    float radius; // scaled with im_scaler
     double invalid_after;
     bool was_used = true;
     IgnoreType ignore_type;
@@ -40,15 +40,15 @@ struct BlobWorldProps {
     cv::Point3f pt() {return cv::Point3f(x, y, z);}
     int trkr_id = -1;
 };
-struct BlobProps { // scaled with pparams.imscalef
+struct BlobProps { // scaled with im_scaler
     float x = 0, y = 0, size = 0; // these values are scaled with pparams.imscaled
     uint32_t n_motion_pixels = 0, motion_sum = 0;
     uint8_t motion_noise = 0, pixel_max = 0;
     std::vector<IgnoreBlob> ignores;
     bool false_positive = false;
     cv::Point2f pt() {return cv::Point2f(x, y);} //scaled with pparams.imscaled
-    cv::Point2f pt_unscaled() {return cv::Point2f(x, y) * pparams.imscalef;}
-    float size_unscaled() {return size * pparams.imscalef;}
+    cv::Point2f pt_unscaled() {return cv::Point2f(x, y) * im_scaler;}
+    float size_unscaled() {return size * im_scaler;}
     bool in_overexposed_area = false;
     BlobProps(cv::Point2f pt, float size_, uint32_t n_motion_pixels_, uint32_t motion_sum_, uint8_t pixel_max_, uint8_t pixel_motion_noise_, bool overexposed_area, int frame_id_) : size(size_), n_motion_pixels(n_motion_pixels_), motion_sum(motion_sum_), motion_noise(pixel_motion_noise_), pixel_max(pixel_max_), in_overexposed_area(overexposed_area) {
         x = pt.x;
@@ -87,8 +87,8 @@ struct ImageItem {
         valid = true;
     }
     ImageItem(BlobProps blob, int frameid, float matching_score, uint blob_id_) {
-        x = blob.x * pparams.imscalef;
-        y = blob.y * pparams.imscalef;
+        x = blob.x * im_scaler;
+        y = blob.y * im_scaler;
         size = blob.size_unscaled();
         pixel_max = blob.pixel_max;
         score = matching_score;

@@ -707,7 +707,7 @@ float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
     } else if (ref->valid) {
         im_size_pred_err_ratio = fabs(ref->size - blob->size_unscaled()) / (blob->size_unscaled() + ref->size);
         float max_im_dist = 25;
-        im_dist_err_ratio = sqrtf(powf(ref->x - blob->x * pparams.imscalef, 2) + powf(ref->y - blob->y * pparams.imscalef, 2)) / max_im_dist;
+        im_dist_err_ratio = sqrtf(powf(ref->x - blob->x * im_scaler, 2) + powf(ref->y - blob->y * im_scaler, 2)) / max_im_dist;
     } else {
         return INFINITY;
     }
