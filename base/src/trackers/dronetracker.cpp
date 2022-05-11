@@ -39,7 +39,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     _drone_tracking_status = dts_detecting_takeoff;
     start_take_off_time = time;
     _tracking = false;
-    enable_takeoff_motion_delete = true;
+    delete_motion_shadow(_pad_im_location, _pad_im_size, _pad_disparity);
     ignores_for_other_trkrs.clear();
     ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler, _pad_im_size / im_scaler, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
     liftoff_detected = false;
@@ -111,12 +111,14 @@ void DroneTracker::update(double time) {
                 data.time = time;
                 _track.push_back(data);
                 update_drone_prediction(time);
+                handle_brightness_change(time);
                 if (_n_frames_lost == 0)
                     _drone_tracking_status = dts_tracking;
                 break;
         } case dts_tracking: {
                 ItemTracker::update(time);
                 update_drone_prediction(time);
+                handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
@@ -138,6 +140,7 @@ void DroneTracker::update(double time) {
         } case dts_landing: {
                 ItemTracker::update(time);
                 update_prediction(time);
+                handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
@@ -158,7 +161,7 @@ void DroneTracker::update(double time) {
 
     }
 
-    delete_takeoff_fake_motion();
+    delete_motion_shadow_run();
     clean_ignore_blobs(time);
     (*_logger) << last_track_data().yaw_deviation << ";" << drone_tracking_state() << ";";
 }
@@ -215,24 +218,41 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
     }
 }
 
-void DroneTracker::delete_takeoff_fake_motion() {
-    if (enable_takeoff_motion_delete) {
+void DroneTracker::handle_brightness_change(double time) {
+    if (_visdat->brightness_change_event(time)) {
+        if (_image_item.valid)
+            delete_motion_shadow(_image_item.pt(), _image_item.size, _image_item.disparity);
+        else if (_image_predict_item.valid)
+            delete_motion_shadow(_image_predict_item.pt, _image_predict_item.size, _image_predict_item.disparity);
+    }
+}
+
+void DroneTracker::delete_motion_shadow(cv::Point2f im_location, float im_size, float disparity) {
+    motion_shadow_im_size = im_size;
+    motion_shadow_im_location = im_location;
+    motion_shadow_disparity = disparity;
+    enable_motion_shadow_delete = true;
+
+}
+
+void DroneTracker::delete_motion_shadow_run() {
+    if (enable_motion_shadow_delete) {
         _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, _pad_im_size, 1); // radius = 2 x the pad radius = _pad_size, for some margin
 
         //to end the deletion of this area, we check if there are no blobs in this area anymore because
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leaf movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid && liftoff_detected && normf(_world_item.image_item.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.image_item.size) {
-            enable_takeoff_motion_delete = false;
+        if (_world_item.valid && normf(_world_item.image_item.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.image_item.size) {
+            enable_motion_shadow_delete = false;
             for (auto blob : _all_blobs) {
                 if (normf(blob.pt_unscaled() - _pad_im_location) < (_pad_im_size + blob.size_unscaled()) / 2.f) {
-                    enable_takeoff_motion_delete = true;
+                    enable_motion_shadow_delete = true;
                     break;
                 }
             }
         }
-        if (!enable_takeoff_motion_delete)
+        if (!enable_motion_shadow_delete)
             std::cout << "takeoff_motion_delete done" << std::endl;
     }
 }

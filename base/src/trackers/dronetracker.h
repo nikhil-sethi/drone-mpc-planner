@@ -77,7 +77,11 @@ private:
     int spinup_detected = 0;
     bool liftoff_detected = false;
     uint16_t take_off_frame_cnt = 0;
-    bool enable_takeoff_motion_delete = false;
+
+    bool enable_motion_shadow_delete = false;
+    float motion_shadow_im_size;
+    cv::Point2f motion_shadow_im_location;
+    float motion_shadow_disparity;
 
     float _pad_im_size;
     cv::Point2f _pad_im_location;
@@ -95,7 +99,9 @@ private:
     bool drone_on_pad = true;
 
     void calc_takeoff_prediction(double time);
-    void delete_takeoff_fake_motion();
+    void handle_brightness_change(double time);
+    void delete_motion_shadow(cv::Point2f im_location, float im_size, float disparity);
+    void delete_motion_shadow_run();
     bool detect_lift_off();
     bool detect_takeoff();
     void detect_deviation_yaw_angle();
