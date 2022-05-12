@@ -197,8 +197,10 @@ void Drone::pre_flight(double time) {
                 }
                 if (time - time_start_locating_drone_attempt > 15)
                     pre_flight_state = pre_locate_drone_init;
-                if (time - time_start_locating_drone > 300)
+                if (time - time_start_locating_drone > 300) {
                     pre_flight_state = pre_locate_time_out;
+                    _trackers->mode(tracking::TrackerManager::t_c);
+                }
                 break;
         } case pre_check_telemetry: {
                 if (control.telemetry_OK() || ! dparams.Telemetry())
@@ -269,8 +271,10 @@ void Drone::pre_flight(double time) {
                 }
                 break;
         } case pre_locate_time_out: {
-                if (_baseboard_link->charging() || _baseboard_link->disabled())
+                if ((_baseboard_link->charging() || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
                     pre_flight_state =  pre_locate_drone_init;
+                    time_start_locating_drone = time;
+                }
                 break;
             }
     }
