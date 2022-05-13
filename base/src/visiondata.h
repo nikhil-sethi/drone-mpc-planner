@@ -99,6 +99,7 @@ public:
     cv::Mat overexposed_mapL;
     cv::Mat overexposed_mapR;
     cv::Mat viz_frame;
+    bool disable_cloud_rejection = true;
 
     void init(Cam *cam);
     void close();

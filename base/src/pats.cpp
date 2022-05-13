@@ -35,6 +35,7 @@ void Patser::update(double time) {
                 trackers.mode(tracking::TrackerManager::t_idle);
                 trackers.update(time);
                 if (time - time_first_frame > 1.5) { // skip first second or so due to auto exposure settling
+                    _visdat->disable_cloud_rejection = false;
                     _visdat->enable_noise_map_calibration(duration_motion_calibration);
                     drone.control.led_strength(_visdat->light_level());
                     time_start_motion_calibration = time;

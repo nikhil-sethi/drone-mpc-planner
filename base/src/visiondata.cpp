@@ -228,7 +228,7 @@ void VisionData::track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, d
     cv::Mat frame_top = frameL_new(cv::Rect(frameL_new.cols / 3, 0, frameL_new.cols / 3 * 2, frameL_new.rows / 3)); // only check the middle & top third of the image, to save CPU
     float brightness_new = static_cast<float>(mean(frame_top)[0]);
     float brightness_diff = fabs(brightness_new - brightness_prev);
-    if (time > 1.5) {
+    if (!disable_cloud_rejection) {
         if (brightness_diff > brightness_event_tresh) {
             std::cout << "Warning, large brightness change: " << brightness_prev << " -> " << brightness_new  << std::endl;
             large_brightness_event_time = time;

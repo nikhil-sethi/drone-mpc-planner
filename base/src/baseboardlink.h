@@ -20,7 +20,7 @@ static const char *charging_state_names[] = {
     "trickle",
     "discharge",
     "bat_measure",
-    "wait_till_drone_ready",
+    "charge pause",
     "bat_calibrating"
 };
 //copy from charging.h Arduino code

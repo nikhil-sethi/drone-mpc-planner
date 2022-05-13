@@ -354,7 +354,7 @@ void Drone::post_flight(double time) {
                 post_flight_state = post_crashed;
                 break;
         } case post_crashed: {
-                if (_baseboard_link->drone_on_pad()) {
+                if (_baseboard_link->charging()) {
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
                 }

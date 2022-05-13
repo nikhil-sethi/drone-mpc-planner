@@ -59,6 +59,7 @@ void DroneTracker::update(double time) {
         case dts_detecting_takeoff: {
                 min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
+                _visdat->disable_cloud_rejection = true;
                 ItemTracker::update(time);
                 if (!_world_item.valid) {
                     calc_takeoff_prediction(time);
@@ -84,6 +85,7 @@ void DroneTracker::update(double time) {
                         if (!liftoff_detected)
                             std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
                         liftoff_detected = true;
+                        _visdat->disable_cloud_rejection = false;
                         _drone_tracking_status = dts_tracking;
                     }
                 } else if (spinup_detected < 3) {
@@ -92,8 +94,10 @@ void DroneTracker::update(double time) {
 
                 if (spinup_detected < 3 && takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.3f) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
                     _drone_tracking_status = dts_detecting_takeoff_failure;
+                    _visdat->disable_cloud_rejection = false;
                     std::cout << "No spin up detected in time!" << std::endl;
                 } else if (takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.35f) {
+                    _visdat->disable_cloud_rejection = false;
                     _drone_tracking_status = dts_detecting_takeoff_failure;
                     if (liftoff_detected)
                         std::cout << "No takeoff detected in time!" << std::endl;
@@ -128,6 +132,7 @@ void DroneTracker::update(double time) {
         } case dts_detect_yaw: {
                 ItemTracker::update(time);
                 update_drone_prediction(time);
+                handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
@@ -187,6 +192,16 @@ float DroneTracker::score(BlobProps *blob) {
         return ItemTracker::score(blob, &_image_item);
 }
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
+    if (enable_motion_shadow_delete) {
+        cv::Point3f vel = last_vel_valid_trackdata_for_prediction.vel();
+        if (!last_vel_valid_trackdata_for_prediction.vel_valid)
+            vel = {0};
+        if (normf(vel) < 0.1f) {
+            _image_predict_item.frame_id = _visdat->frame_id;
+            return;
+        }
+    }
+
     if (_tracking)
         update_prediction(time);
     else if (lost()) {
@@ -232,18 +247,19 @@ void DroneTracker::delete_motion_shadow(cv::Point2f im_location, float im_size, 
     motion_shadow_im_location = im_location;
     motion_shadow_disparity = disparity;
     enable_motion_shadow_delete = true;
-
+    n_frames_lost_threshold = pparams.fps;
 }
 
 void DroneTracker::delete_motion_shadow_run() {
     if (enable_motion_shadow_delete) {
-        _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, _pad_im_size, 1); // radius = 2 x the pad radius = _pad_size, for some margin
+        _visdat->reset_spot_on_motion_map(motion_shadow_im_location, motion_shadow_disparity, motion_shadow_im_size, 1); // radius = 2 x the pad radius = _pad_size, for some margin
+        std::cout << "Motion shadow delete" << std::endl;
 
         //to end the deletion of this area, we check if there are no blobs in this area anymore because
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leaf movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid && normf(_world_item.image_item.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.image_item.size) {
+        if (_world_item.valid && normf(_world_item.image_item.pt() - motion_shadow_im_location) > motion_shadow_im_size + 0.6f * _world_item.image_item.size) {
             enable_motion_shadow_delete = false;
             for (auto blob : _all_blobs) {
                 if (normf(blob.pt_unscaled() - _pad_im_location) < (_pad_im_size + blob.size_unscaled()) / 2.f) {
@@ -252,8 +268,10 @@ void DroneTracker::delete_motion_shadow_run() {
                 }
             }
         }
-        if (!enable_motion_shadow_delete)
-            std::cout << "takeoff_motion_delete done" << std::endl;
+        if (!enable_motion_shadow_delete) {
+            n_frames_lost_threshold = pparams.fps / 5;
+            std::cout << "Motion shadow delete done" << std::endl;
+        }
     }
 }
 void DroneTracker::delete_landing_motion(float duration) {

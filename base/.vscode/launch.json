@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build-vscode/executor",
             "args": [
-                "--log", "logging" , "--flight","1"
+                "--log", "~/Downloads/pats_data/pats34/20220513_091603" , "--flight","1"
             ],
             "stopAtEntry": false,
             "preLaunchTask": "make",
