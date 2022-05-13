@@ -347,8 +347,10 @@ def executor_receive(msg):
                 msg = msg[struct.calcsize(executor2daemon_pkg.format):]
             else:
                 msg = ''
+                logger.warning('Weird package received from executor...')
         else:
-            msg = ''
+            msg = msg[1:]
+            logger.warning('Some weird byte was received from executor...')
 
 
 logging.basicConfig()

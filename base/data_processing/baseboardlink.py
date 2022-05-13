@@ -115,6 +115,9 @@ def executor_receiver(msg):
             else:
                 msg = ''
                 logger.warning('Weird package received from executor...')
+        else:
+            msg = msg[1:]
+            logger.warning('Some weird byte was received from executor...')
 
 
 def deamon_receiver(msg):
