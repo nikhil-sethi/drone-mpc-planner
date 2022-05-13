@@ -121,7 +121,7 @@ private:
     const float duration_wait_before_shake = 1;
     const float led_response_duration = 1;
     const float wait_charging_response_duration = 10;
-    const float confirm_drone_on_pad_delta_distance = 0.03f;
+    float confirm_drone_on_pad_delta_distance;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
     double time_post_shake = 0;

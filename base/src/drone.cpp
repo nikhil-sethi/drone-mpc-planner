@@ -10,6 +10,7 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
     _interceptor = interceptor;
     _visdat = visdat;
     _trackers = trackers;
+    confirm_drone_on_pad_delta_distance = dparams.pad_radius * 2.f;
 
     tracker.init(visdat, _trackers->motion_thresh(), 1);
     nav.init(&tracker, &control, visdat, flight_area, interceptor, baseboard_link);
@@ -174,10 +175,12 @@ void Drone::pre_flight(double time) {
                     if (confirm_drone_on_pad) {
                         confirm_drone_on_pad = false;
                         float dist = normf(tracker.pad_location(false) - detected_pad_locations.back());
+                        std::cout << "Found drone on " << dist << " from the pad..." << std::endl;
                         if (dist < confirm_drone_on_pad_delta_distance && _baseboard_link->charging()) {
                             _state = ds_charging;
                         } else if (dist < confirm_drone_on_pad_delta_distance) {
                             _state = ds_post_flight;
+                            time_start_shaking = time;
                             post_flight_state = post_start_shaking;
                             std::cout << "Not charging, but blink confirms drone is on pad. Shake it." << std::endl;
                         } else {
