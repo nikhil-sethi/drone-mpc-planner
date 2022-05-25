@@ -1077,7 +1077,7 @@ integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_ve
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, bool enable_horizontal_integrators) {
-    float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
+    float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
 
     cv::Point3f scale_pos_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_pos_i = {1.f, 1.f, 1.f};
@@ -1098,12 +1098,6 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
         kd_pos_roll_scaled = scale_pos_d.x * dparams.kd_pos_roll_hover;
         kd_pos_throttle_scaled = scale_pos_d.y * dparams.kd_pos_throttle_hover;
         kd_pos_pitch_scaled = scale_pos_d.z * dparams.kd_pos_pitch_hover;
-        kp_v_roll_scaled = 0;
-        kp_v_throttle_scaled = 0;
-        kp_v_pitch_scaled = 0;
-        kd_v_roll_scaled = 0;
-        kd_v_throttle_scaled = 0;
-        kd_v_pitch_scaled = 0;
     } else {
         if (!data_drone.pos_valid) {
             scale_pos_p *= 0.8;
@@ -1119,20 +1113,12 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
         kd_pos_roll_scaled = scale_pos_d.x * dparams.kd_pos_roll;
         kd_pos_throttle_scaled = scale_pos_d.y * dparams.kd_pos_throttle;
         kd_pos_pitch_scaled = scale_pos_d.z * dparams.kd_pos_pitch;
-        kp_v_roll_scaled =  dparams.kp_v_roll;
-        kp_v_throttle_scaled = dparams.kp_v_throttle;
-        kp_v_pitch_scaled = dparams.kp_v_pitch;
-        kd_v_roll_scaled =  dparams.kd_v_roll;
-        kd_v_throttle_scaled = dparams.kd_v_throttle;
-        kd_v_pitch_scaled = dparams.kd_v_pitch;
     }
 
     // Arrange gains (needed because may be updated from trackbars)
     cv::Point3f kp_pos(kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled);
     cv::Point3f kd_pos(kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled);
     cv::Point3f ki_pos(ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled);
-    cv::Point3f kp_vel(kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled);
-    cv::Point3f kd_vel(kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled);
 
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }

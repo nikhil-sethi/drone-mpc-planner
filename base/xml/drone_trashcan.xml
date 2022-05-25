@@ -38,4 +38,9 @@
     <Member Name="kd_pos_roll_hover">5.25</Member>
     <Member Name="kd_pos_pitch_hover">4.50</Member>
     <Member Name="kd_pos_throttle_hover">4.50</Member>
+
+    <Member Name="kp_pos_kiv">4.0</Member>
+    <Member Name="kd_pos_kiv">0.1</Member>
+    <Member Name="kp_vel_kiv">0.5</Member>
+    <Member Name="kd_vel_kiv">0.01</Member>
 </SerializableClass>

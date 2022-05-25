@@ -505,8 +505,8 @@ private:
     xFloat _kp_pos_roll_hover, _kp_pos_pitch_hover, _kp_pos_throttle_hover;
     xFloat _ki_pos_roll_hover, _ki_pos_pitch_hover, _ki_thrust_hover;
     xFloat _kd_pos_roll_hover, _kd_pos_pitch_hover, _kd_pos_throttle_hover;
-    xFloat _kp_v_roll, _kp_v_pitch, _kp_v_throttle;
-    xFloat _kd_v_roll, _kd_v_pitch, _kd_v_throttle;
+    xFloat _kp_pos_kiv, _kd_pos_kiv;
+    xFloat _kp_vel_kiv, _kd_vel_kiv;
 
 public:
     std::string name;
@@ -532,7 +532,9 @@ public:
 
     float kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
     float kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
-    float kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
+
+    float kp_pos_kiv, kd_pos_kiv;
+    float kp_vel_kiv, kd_vel_kiv;
 
     DroneParameters() {
         // Set the XML class name.
@@ -644,6 +646,10 @@ public:
         kd_pos_roll_hover = _kd_pos_roll_hover.value();
         kd_pos_pitch_hover = _kd_pos_pitch_hover.value();
         kd_pos_throttle_hover = _kd_pos_throttle_hover.value();
+        kp_pos_kiv = _kp_pos_kiv.value();
+        kd_pos_kiv = _kd_pos_kiv.value();
+        kp_vel_kiv = _kp_vel_kiv.value();
+        kd_vel_kiv = _kd_vel_kiv.value();
     }
 
     void serialize(std::string filepath) {
