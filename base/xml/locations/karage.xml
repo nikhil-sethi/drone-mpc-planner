@@ -12,7 +12,7 @@
         </Class>
         <Class Type="Plane" Version="1.0">
             <Member Name="type">unspecified_plane</Member>
-            <Member Name="support_vector_x">-1.6</Member>
+            <Member Name="support_vector_x">-1.0</Member>
             <Member Name="support_vector_y">0.</Member>
             <Member Name="support_vector_z">0.</Member>
             <Member Name="normal_vector_x">1.</Member>
@@ -21,7 +21,7 @@
         </Class>
         <Class Type="Plane" Version="1.0">
             <Member Name="type">unspecified_plane</Member>
-            <Member Name="support_vector_x">1.6.</Member>
+            <Member Name="support_vector_x">1.0</Member>
             <Member Name="support_vector_y">0</Member>
             <Member Name="support_vector_z">0.</Member>
             <Member Name="normal_vector_x">-1</Member>

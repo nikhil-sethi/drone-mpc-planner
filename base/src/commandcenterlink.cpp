@@ -147,9 +147,13 @@ void CommandCenterLink::write_commandcenter_status_image() {
                 if (_frame.cols) {
                     cv::Mat out_rgb;
                     cvtColor(_frame, out_rgb, cv::COLOR_GRAY2BGR);
-                    putText(out_rgb, "State: " + _patser->drone.nav.navigation_status() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode_str() +
-                            " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 14), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
-                    putText(out_rgb, "Time:       " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 28), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
+                    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+                    std::stringstream date_ss;
+                    date_ss << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T");
+                    putText(out_rgb, date_ss.str(), cv::Point(5, 17), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
+                    putText(out_rgb, "State: " +  _patser->state_str() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode_str() + " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 34), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+                    putText(out_rgb, "Runtime: " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+
                     if (pparams.op_mode == op_mode_x)
                         cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
                     cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
