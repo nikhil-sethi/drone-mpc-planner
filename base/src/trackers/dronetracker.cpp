@@ -253,7 +253,6 @@ void DroneTracker::delete_motion_shadow(cv::Point2f im_location, float im_size, 
 void DroneTracker::delete_motion_shadow_run() {
     if (enable_motion_shadow_delete) {
         _visdat->reset_spot_on_motion_map(motion_shadow_im_location, motion_shadow_disparity, motion_shadow_im_size, 1); // radius = 2 x the pad radius = _pad_size, for some margin
-        std::cout << "Motion shadow delete" << std::endl;
 
         //to end the deletion of this area, we check if there are no blobs in this area anymore because
         //they leave a permanent mark if we stop prematurely. Two conditions:
@@ -268,10 +267,9 @@ void DroneTracker::delete_motion_shadow_run() {
                 }
             }
         }
-        if (!enable_motion_shadow_delete) {
+        if (!enable_motion_shadow_delete)
             n_frames_lost_threshold = pparams.fps / 5;
-            std::cout << "Motion shadow delete done" << std::endl;
-        }
+
     }
 }
 void DroneTracker::delete_landing_motion(float duration) {

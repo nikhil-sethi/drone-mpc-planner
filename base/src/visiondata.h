@@ -20,26 +20,6 @@ public:
         int cnt_active;
     };
 private:
-    class VisionParameters: public xmls::Serializable
-    {
-    public:
-        xmls::xInt motion_update_iterator_max;
-        xmls::xFloat brightness_event_tresh, brightness_check_period;
-
-        VisionParameters() {
-            // Set the XML class name.
-            // This name can differ from the C++ class name
-            setClassName("VisionParameters");
-
-            // Set class version
-            setVersion("1.0");
-
-            // Register members. Like the class name, member names can differ from their xml depandants
-            Register("motion_update_iterator_max", &motion_update_iterator_max);
-            Register("brightness_event_tresh", &brightness_event_tresh);
-            Register("brightness_check_period", &brightness_check_period);
-        }
-    };
 
     bool initialized = false;
     bool enable_viz_motion = false;
@@ -50,7 +30,8 @@ private:
     double calibrating_noise_map_end_time = 0;
     const float motion_buf_size_target = 60;
     int save_every_nth_frame_during_motion_calib = 3;
-    int motion_update_iterator_max;
+    const uint default_motion_update_iterator_max = 6;
+    uint motion_update_iterator_max = default_motion_update_iterator_max;
 
     string settings_file = "../xml/vision.xml";
 
@@ -58,13 +39,12 @@ private:
     double _current_frame_time = 0;
     cv::UMat dilate_element;
 
-    float brightness_event_tresh;
+    float brightness_large_event_tresh = 5;
+    float brightness_small_event_tresh = 1;
     float brightness_prev = -1;
     bool _reset_motion_integration = false;
     const float large_brightness_change_timeout = 0.3;
-    const float small_brightness_change_timeout = 0.1;
     double large_brightness_event_time = -large_brightness_change_timeout; // minus to not trigger a brightness warning at startup
-    double small_brightness_event_time = 0;
     DeleteSpot motion_spot_to_be_deleted;
     DeleteSpot motion_spot_to_be_reset;
 
@@ -76,7 +56,7 @@ private:
 
     void deserialize_settings();
     void serialize_settings();
-    void track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, double time);
+    void track_avg_brightness(cv::Mat frameL_new, double time);
     void fade(cv::Mat diff16, cv::Point exclude_drone_spot);
 
 public:
@@ -117,10 +97,10 @@ public:
     bool overexposed(cv::Point blob_pt);
 
     bool no_recent_brightness_events(double time) {
-        return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout && static_cast<float>(time - small_brightness_event_time) > small_brightness_change_timeout;
+        return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout;
     }
     bool brightness_change_event(double time) {
-        return static_cast<float>(time - large_brightness_event_time) < 3.f / pparams.fps || static_cast<float>(time - small_brightness_event_time) < 3.f / pparams.fps;
+        return static_cast<float>(time - large_brightness_event_time) < 3.f / pparams.fps;
     }
     float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}

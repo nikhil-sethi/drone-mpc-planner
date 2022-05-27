@@ -1,4 +1,0 @@
-<SerializableClass Type="VisionParameters" Version="1.0">
-    <Member Name="motion_update_iterator_max">6</Member>
-    <Member Name="brightness_event_tresh">5</Member>
-</SerializableClass>

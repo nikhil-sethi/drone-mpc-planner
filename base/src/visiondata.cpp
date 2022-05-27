@@ -14,8 +14,6 @@ void VisionData::init(Cam *cam) {
 
     enable_viz_motion = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
-    deserialize_settings();
-
     smallsize = cv::Size(frameL.cols / im_scaler, frameL.rows / im_scaler);
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
@@ -34,13 +32,13 @@ void VisionData::init(Cam *cam) {
     cv::Mat element_mat = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
     element_mat.copyTo(dilate_element);
 
-    track_avg_brightness(frameL, frameL, _current_frame_time);
+    track_avg_brightness(frameL, _current_frame_time);
 
     initialized = true;
 }
 
 void VisionData::update(StereoPair *data) {
-    track_avg_brightness(data->left, frameL, _current_frame_time);
+    track_avg_brightness(data->left, _current_frame_time);
     frameL = data->left;
     frameR = data->right;
     frame_id = data->rs_id;
@@ -83,7 +81,12 @@ void VisionData::update(StereoPair *data) {
         cv::Mat dR = frameR16 - frameR_prev16;
         diffR16 += dR;
 
-        if (!(motion_update_iterator++ % (motion_update_iterator_max + 1)) && !disable_fading) { // +1 -> prevent 0
+        motion_update_iterator++;
+        if (!(motion_update_iterator % (motion_update_iterator_max + 1)) && !disable_fading) { // +1 -> prevent 0
+            if (motion_update_iterator_max < default_motion_update_iterator_max) {
+                motion_update_iterator_max++;
+                motion_update_iterator = 0;
+            }
             fade(diffL16, exclude_drone_from_motion_fading_spot_L);
             fade(diffR16, exclude_drone_from_motion_fading_spot_R);
         }
@@ -224,23 +227,18 @@ void VisionData::enable_noise_map_calibration(float duration) {
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
-void VisionData::track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, double time) {
+void VisionData::track_avg_brightness(cv::Mat frameL_new, double time) {
     cv::Mat frame_top = frameL_new(cv::Rect(frameL_new.cols / 3, 0, frameL_new.cols / 3 * 2, frameL_new.rows / 3)); // only check the middle & top third of the image, to save CPU
     float brightness_new = static_cast<float>(mean(frame_top)[0]);
     float brightness_diff = fabs(brightness_new - brightness_prev);
     if (!disable_cloud_rejection) {
-        if (brightness_diff > brightness_event_tresh) {
+        if (brightness_diff > brightness_large_event_tresh) {
             std::cout << "Warning, large brightness change: " << brightness_prev << " -> " << brightness_new  << std::endl;
             large_brightness_event_time = time;
-        } else if (brightness_diff > 0.3f)  { // capture subtle autoexposure changes
-            float brightness_ff_new = static_cast<float>(mean(frameL_new)[0]);
-            float brightness_ff_prev = static_cast<float>(mean(frameL_prev)[0]);
-            float brightness_ff_diff = fabs(brightness_ff_new - brightness_ff_prev);
-
-            if (brightness_ff_diff > 0.1f) {
-                small_brightness_event_time = time;
-                std::cout << "Warning, small brightness change: " << brightness_prev << " -> " << brightness_new << "=" <<  brightness_diff << ". And ff brightness " << brightness_ff_prev << " -> " << brightness_ff_new << " = " << brightness_ff_diff << std::endl;
-            }
+            motion_update_iterator_max = 0;
+        } else if (brightness_diff > brightness_small_event_tresh)  { // capture subtle autoexposure changes
+            motion_update_iterator_max = 0;
+            std::cout << "Warning, small brightness change: " << brightness_prev << " -> " << brightness_new << "=" <<  brightness_diff << std::endl;
         }
     }
     brightness_prev = brightness_new;
@@ -300,44 +298,6 @@ void VisionData::save_maps_before_flight(int id, std::string folder) {
     cv::imwrite(folder + "/motion_filtered_noise_mapR_" + to_string(id) + ".png", motion_filtered_noise_mapR);
     cv::imwrite(folder + "/motion_filtered_noise_mapL_small_" + to_string(id) + ".png", motion_filtered_noise_mapL_small);
     cv::imwrite(folder + "/motion_max_noise_mapL_" + to_string(id) + ".png", motion_max_noise_mapL);
-}
-
-void VisionData::deserialize_settings() {
-    std::cout << "Reading settings from: " << settings_file << std::endl;
-    VisionParameters params;
-    if (file_exist(settings_file)) {
-        std::ifstream infile(settings_file);
-        std::string xmlData((std::istreambuf_iterator<char>(infile)),
-                            std::istreambuf_iterator<char>());
-
-        if (!xmls::Serializable::fromXML(xmlData, &params))
-        {   // Deserialization not successful
-            throw std::runtime_error("Cannot read: " + settings_file);
-        }
-        VisionParameters tmp;
-        auto v1 = params.getVersion();
-        auto v2 = tmp.getVersion();
-        if (v1 != v2) {
-            throw std::runtime_error("XML version difference detected from " + settings_file);
-        }
-        infile.close();
-    } else {
-        throw std::runtime_error("File not found: " + settings_file);
-    }
-
-    motion_update_iterator_max = params.motion_update_iterator_max.value();
-    brightness_event_tresh = params.brightness_event_tresh.value();
-}
-
-void VisionData::serialize_settings() {
-    VisionParameters params;
-    params.motion_update_iterator_max = motion_update_iterator_max;
-    params.brightness_event_tresh = brightness_event_tresh;
-
-    std::string xmlData = params.toXML();
-    std::ofstream outfile = std::ofstream(settings_file);
-    outfile << xmlData ;
-    outfile.close();
 }
 
 void VisionData::close() {
