@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include "logging.h"
 
 namespace logging
@@ -20,6 +21,7 @@ public:
             current_entry = log.at(rs_id);
             return 0;
         } else {
+            std::cout << "Warning: cannot find rs_id in drone flight log..." << std::endl;
             return 2;
         }
     }

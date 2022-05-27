@@ -100,10 +100,8 @@ int LogReader::current_frame_number(unsigned long long rs_id) {
     if (current_entry.rs_id != rs_id)
         return 1;
 
-    if (_log_drone.initialized()) {
-        if (_log_drone.current_frame_number(rs_id) > 0)
-            return 1;
-    }
+    if (_log_drone.initialized())
+        _log_drone.current_frame_number(rs_id);
 
     //Currently log playback based on the insect logs is not used.
     //I'd rather recalculate the insect based on the vision.
