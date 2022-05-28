@@ -40,8 +40,10 @@ void Drone::update(double time) {
                 control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), time, false);
                 if (_baseboard_link->battery_ready_for_flight() || _baseboard_link->disabled())
                     _state = ds_ready;
-                else if (_baseboard_link->charging_problem() || !_baseboard_link->drone_on_pad())
+                else if (_baseboard_link->charging_problem())
                     _state = ds_charging_failure;
+                else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad())
+                    _state = ds_pre_flight;
 
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
@@ -80,7 +82,9 @@ void Drone::update(double time) {
                     control.flight_mode(DroneController::fm_inactive);
                     _baseboard_link->allow_charging(true);
                 }
-                if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad() || _baseboard_link->charging_problem())
+                if (_baseboard_link->charging_problem())
+                    _state = ds_charging_failure;
+                else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad())
                     _state = ds_pre_flight;
                 else if (_baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v - 0.1f && !_baseboard_link->disabled()) {
                     _state = ds_charging;
