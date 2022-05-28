@@ -62,11 +62,7 @@ enum integrator_state {
     running
 };
 
-enum drone_on_pad_state {
-    drone_not_on_pad,
-    drone_on_pad,
-    drone_maybe_on_pad
-};
+
 
 class DroneController {
 
@@ -133,14 +129,13 @@ private:
 
     xmls::DroneCalibration calibration;
 
-    const int required_pad_att_calibration_cnt = 15;
-    const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f, 7.5f);
-    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.f, 1.f); // the max difference between the current att and the att measured during the last blink detect
-    const cv::Point2f somewhere_on_pad_att_range = cv::Point2f(30.f, 30.f);
+    const cv::Point2f att_drone_calibration_range = cv::Point2f(1.f, 1.f); // the max difference between the current att and the att measured during the last blink detect
+    const cv::Point2f att_pad_calibration_range = cv::Point2f(7.5f, 7.5f);
+    const cv::Point2f att_precisely_on_pad_range = cv::Point2f(3.f, 3.f);
+    const cv::Point2f att_somewhere_on_pad_range = cv::Point2f(30.f, 30.f);
     cv::Point2f att_reset_yaw_on_pad;
     bool pat_att_calibration_valid = false;
-    filtering::Smoother pad_att_calibration_roll;
-    filtering::Smoother pad_att_calibration_pitch;
+    int att_somewhere_on_pad_cnt = 0, att_precisely_on_pad_cnt = 0, att_pad_calibration_ok_cnt = 0, att_drone_calibration_ok_cnt = 0;
 
     const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
@@ -164,6 +159,7 @@ private:
     int ff_auto_throttle_start = RC_BOUND_MIN;
     float auto_burn_duration = 0;
     uint n_invalid_or_bad_telemetry_package = 0; // Counts when telemetry holds imposiible (invalid) data or (bad) data which will result in some undesired system state
+    bool landing_att_calibration_msg_printed = false;
 
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
@@ -257,7 +253,6 @@ public:
     AccelerometerTrim accelerometer_trim;
 
     void led_strength(float light_level);
-    void calibrate_pad_attitude();
 
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
     void flight_mode(flight_modes f) { _flight_mode = f; }
@@ -455,14 +450,17 @@ public:
         }
     }
 
+    bool att_somewhere_on_pad() { return att_somewhere_on_pad_cnt > 3;}
+    bool att_precisely_on_pad() { return att_precisely_on_pad_cnt > 3;}
+    bool att_ok_for_pad_calibration() {return att_pad_calibration_ok_cnt > 3;}
+    bool att_ok_for_drone_calibration() { return  att_drone_calibration_ok_cnt > 3;}
+
     void init_thrust_calibration();
     void save_thrust_calibration();
-    bool new_attitude_package_available();
-    bool attitude_on_pad_OK();
-    drone_on_pad_state drone_pad_state();
+    void update_drone_attitude_pad_state();
     void invalidize_blink();
-    bool pad_calibration_done();
-    bool takeoff_calib_valid();
+    void save_pad_pos_and_att_calibration();
+    bool pad_calib_valid();
     bool thrust_calib_valid();
 
 };

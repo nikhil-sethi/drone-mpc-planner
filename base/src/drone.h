@@ -21,14 +21,14 @@ static const char *drone_state_names[] = {
 static const char *pre_flight_state_names[] = {
     "init",
     "locate",
-    "wait led",
+    "wait blink led",
     "locating...",
     "calibrating",
     "check_telem",
     "check_pad",
     "wait to arm",
     "arming",
-    "init_led",
+    "wait x led",
     "wait_charge",
     "locate_fail"
 };
@@ -97,13 +97,14 @@ private:
 
     //pre flight
     int n_locate_drone_attempts = 0;
-    bool force_pad_redetect = false;
+
     bool confirm_drone_on_pad = false;
     double time_start_locating_drone = 0;
     double time_start_locating_drone_attempt = 0;
     double time_located_drone = 0;
     double time_waiting_for_charge = 0;
     double time_led_init = 0;
+    double time_start_att_wait_pad = 0;
 
     uint n_detected_pad_locations = 0;
 
@@ -123,6 +124,7 @@ private:
     const float duration_wait_before_shake = 1;
     const float led_response_duration = 1;
     const float wait_charging_response_duration = 10;
+    const float att_wait_pad_timeout = 10;
     float confirm_drone_on_pad_delta_distance;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
@@ -181,7 +183,7 @@ public:
     bool program_restart_allowed() {return _state != ds_flight && _state != ds_post_flight;}
     void beep_drone() {_state = ds_beep;}
     void redetect_drone_location() {
-        force_pad_redetect = true;
+        control.invalidize_blink();
         _state = ds_pre_flight;
     }
 

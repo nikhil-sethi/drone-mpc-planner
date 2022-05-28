@@ -282,25 +282,23 @@ void process_video() {
                   ", R:" << frame->rs_id <<
                   ", T: " << to_string_with_precision(frame->time, 2)  <<
                   " @ " << to_string_with_precision(fps, 1) <<
-                  " " << patser.state_str() <<
-                  ", exp: " << cam->measured_exposure() <<
-                  ", gain: " << cam->measured_gain() <<
-                  ", bright: " << to_string_with_precision(visdat.average_brightness(), 1) <<
-                  ", light: " << to_string_with_precision(light_level, 2);
+                  " " << patser.state_str();
+
 
         if (pparams.op_mode == op_mode_c) {
             if (patser.trackers.detections_count())
                 std::cout  <<
+                           ", light: " << to_string_with_precision(light_level, 2) <<
                            ", detections: " << patser.trackers.detections_count() <<
                            ", insects: " << patser.trackers.insects_count();
         } else {
             std:: cout <<
                        ", " << patser.drone.drone_state_str() <<
+                       ", light: " << to_string_with_precision(light_level, 2) <<
                        " " << rc->telemetry.batt_cell_v <<
-                       "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
-                       ", thr: " << rc->throttle <<
+                       "v, rssi: " << static_cast<int>(rc->telemetry.rssi) <<
                        ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
-                       ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
+                       ", arm: " << static_cast<int>(rc->telemetry.arming_state) <<
                        ", t_base: " << static_cast<int>(baseboard_link.uptime());
         }
         if (patser.trackers.monster_alert())

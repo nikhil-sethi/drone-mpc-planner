@@ -28,9 +28,6 @@ void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *fli
     load_calibration();
     calibration.serialize(data_output_dir + "/initial_drone_calibration.xml");
 
-    pad_att_calibration_roll.init(required_pad_att_calibration_cnt);
-    pad_att_calibration_pitch.init(required_pad_att_calibration_cnt);
-
     initialized = true;
 }
 
@@ -372,6 +369,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 break;
         } case fm_ff_landing_start: {
                 _flight_mode = fm_ff_landing;
+                landing_att_calibration_msg_printed = false;
                 ff_land_start_time = time;
                 ff_auto_throttle_start = auto_throttle;
                 auto_yaw = RC_MIDDLE;
@@ -759,83 +757,58 @@ bool check_att_bounds(cv::Point2f att, cv::Point2f att_min, cv::Point2f att_max)
                      att.y > att_min.y && att.y < att_max.y;
     return att_check;
 }
-void DroneController::calibrate_pad_attitude() {
-    if (new_attitude_package_available()) {
-        if (check_att_bounds(cv::Point2f(_rc->telemetry.roll, _rc->telemetry.pitch), cv::Point2f(-360, -360), cv::Point2f(360, 360))) {
-            pad_att_calibration_roll.addSample(_rc->telemetry.roll);
-            pad_att_calibration_pitch.addSample(_rc->telemetry.pitch);
-        }
-    }
-}
-bool DroneController::new_attitude_package_available() {
+
+void DroneController::update_drone_attitude_pad_state() {
+
     static uint32_t prev_roll_pitch_package_id = 0;
-    if (_rc->telemetry.roll_pitch_package_id > prev_roll_pitch_package_id) {
-        prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
-        return true;
-    }
-    return false;
-}
+    if (_rc->telemetry.roll_pitch_package_id == prev_roll_pitch_package_id)
+        return;
 
-bool DroneController::attitude_on_pad_OK() {
-    static bool landing_att_calibration_msg_printed = false;
-    if (pad_att_calibration_roll.ready()) {
-        cv::Point2f current_att(pad_att_calibration_roll.latest(), pad_att_calibration_pitch.latest());
-        cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
-        if (!landing_att_calibration_msg_printed)
-            std::cout << "Received enough att telemetry samples from drone. Diff with original blink att: " << current_att - pad_att_calibration << std::endl;
-        landing_att_calibration_msg_printed = true;
-        return check_att_bounds(current_att,
-                                pad_att_calibration - allowed_att_calibration_range,
-                                pad_att_calibration + allowed_att_calibration_range);
-    } else
-        return false;
-}
+    prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
 
-drone_on_pad_state DroneController::drone_pad_state() {
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
-    if (check_att_bounds(current_att,
-                         pad_att_calibration - somewhere_on_pad_att_range,
-                         pad_att_calibration + somewhere_on_pad_att_range))
-        return drone_on_pad;
-    else if (n_invalid_or_bad_telemetry_package < 3) {
-        n_invalid_or_bad_telemetry_package++;
-        return drone_maybe_on_pad;
-    } else {
-        n_invalid_or_bad_telemetry_package = 0;
-        return drone_not_on_pad;
-    }
+
+    if (check_att_bounds(current_att, pad_att_calibration - att_somewhere_on_pad_range, pad_att_calibration + att_somewhere_on_pad_range) && att_somewhere_on_pad_cnt < 6)
+        att_somewhere_on_pad_cnt++;
+    else if (att_somewhere_on_pad_cnt)
+        att_somewhere_on_pad_cnt--;
+
+    if (check_att_bounds(current_att, pad_att_calibration - att_precisely_on_pad_range, pad_att_calibration + att_precisely_on_pad_range) && att_precisely_on_pad_cnt < 6)
+        att_precisely_on_pad_cnt++;
+    else if (att_precisely_on_pad_cnt)
+        att_precisely_on_pad_cnt--;
+
+    if (check_att_bounds(current_att, -att_pad_calibration_range, att_pad_calibration_range) && att_pad_calibration_ok_cnt < 6)
+        att_pad_calibration_ok_cnt++;
+    else if (att_pad_calibration_ok_cnt)
+        att_pad_calibration_ok_cnt--;
+
+    if (check_att_bounds(current_att, -att_drone_calibration_range, att_drone_calibration_range) && att_drone_calibration_ok_cnt < 6)
+        att_drone_calibration_ok_cnt++;
+    else if (att_drone_calibration_ok_cnt)
+        att_drone_calibration_ok_cnt--;
+
 }
+
 
 void DroneController::invalidize_blink() {
     calibration.pad_calib_date = "2000/01/01 00:00:00";
     save_calibration();
 }
-bool DroneController::pad_calibration_done() {
-    if (!dparams.Telemetry()) {
-        std::cout << "Warning: drone has no telemetry capability. Skipping att calibration." << std::endl;
-        return true;
-    } else if (!pad_att_calibration_roll.ready()) {
-        return false;
-    } else if (check_att_bounds(cv::Point2f(pad_att_calibration_roll.latest(), pad_att_calibration_pitch.latest()), -allowed_pad_att_calibration_range, allowed_pad_att_calibration_range)) {
-        calibration.pad_pos_x = _dtrk->pad_location().x;
-        calibration.pad_pos_y = _dtrk->pad_location().y;
-        calibration.pad_pos_z = _dtrk->pad_location().z;
-        calibration.pad_roll = pad_att_calibration_roll.latest();
-        calibration.pad_pitch = pad_att_calibration_pitch.latest();
-        auto date = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
-        calibration.pad_calib_date = ss.str();
-        save_calibration();
-        _dtrk->set_pad_location(calibration.pad_pos());
-        _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
-        kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration); // kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
-        return true;
-    } else {
-        std::cout << "Drone calibration failed: attitude not within accetable bounds: [" << pad_att_calibration_roll.latest() << ", " << pad_att_calibration_pitch.latest() << "]" << std::endl;
-        return false;
-    }
+void DroneController::save_pad_pos_and_att_calibration() {
+    calibration.pad_pos_x = _dtrk->pad_location().x;
+    calibration.pad_pos_y = _dtrk->pad_location().y;
+    calibration.pad_pos_z = _dtrk->pad_location().z;
+    calibration.pad_roll = _rc->telemetry.roll;
+    calibration.pad_pitch = _rc->telemetry.pitch;
+    auto date = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
+    calibration.pad_calib_date = ss.str();
+    save_calibration();
+    _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
+    kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration); // kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
 }
 
 void DroneController::init_thrust_calibration() {
@@ -1352,7 +1325,7 @@ void DroneController::save_calibration_before_flight(int flight_id) {
     calibration.serialize(data_output_dir + "/drone_calibration_flight" + to_string(flight_id) + ".xml");
 }
 
-bool DroneController::takeoff_calib_valid() {
+bool DroneController::pad_calib_valid() {
     if (!calibration.pad_calib_date.length())
         return false;
     if (log_replay_mode)

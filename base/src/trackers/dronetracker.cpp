@@ -21,6 +21,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
         cv::Point3f p = world2im_3d(pad_location(), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
         float size = _drone_on_pad_im_size;
         _image_predict_item = ImagePredictItem(p, size, 255, _visdat->frame_id);
+        std::cout << "Pad location: " << pad_location() << std::endl;
     } else {
         _image_predict_item.valid = false;
         reset_tracker_ouput(time);
@@ -442,7 +443,6 @@ bool DroneTracker::check_yaw(double time) {
 }
 
 void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
-    std::cout << "blink-location: " << blink_world << std::endl;
     _pad_world_location = blink_world + cv::Point3f(0, 0, -dparams.radius);
     _target = _pad_world_location;
     _pad_im_size = world2im_size(_pad_world_location + cv::Point3f(dparams.pad_radius, 0, 0), _pad_world_location - cv::Point3f(dparams.pad_radius, 0, 0), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
