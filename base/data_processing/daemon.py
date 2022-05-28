@@ -421,11 +421,6 @@ while True:
 
     current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
     if start_sha != current_sha:
-        print("SHA change detected. Restarting!")
-        print("Closing baseboard socket...")
-        baseboard_comm.close()
-        print("Closing daemon socket...")
-        executor_comm.close()
-        exit(0)
+        logger.warning("SHA discrepancy detected!")
 
     time.sleep(1)

@@ -187,14 +187,7 @@ while True:
                 prev_sha_check_time = datetime.now()
                 current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
                 if start_sha != current_sha:
-                    logger.info("SHA change detected. Restarting!")
-                    logger.info("Closing serial...")
-                    comm.close()
-                    logger.info("Closing executor socket...")
-                    executor_comm.close()
-                    logger.info("Closing daemon socket...")
-                    daemon_comm.close()
-                    exit(0)
+                    logger.warning("SHA discrepancy detected!")
 
             c = comm.read(1)
             serial_data += c
