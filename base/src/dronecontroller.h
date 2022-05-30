@@ -249,6 +249,7 @@ private:
     void load_calibration();
     void save_calibration();
     void save_calibration_before_flight(int flight_id);
+    void fine_tune_thrust(float integration_error);
 
 public:
     LandingController land_ctrl;
@@ -270,6 +271,7 @@ public:
 
     void update_hover_integrators() {
         accelerometer_trim.intergrator_hovering(pos_err_i.x, pos_err_i.z);
+        fine_tune_thrust(pos_err_i.y);
     }
 
     joy_states Joy_State() {

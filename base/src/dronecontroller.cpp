@@ -1193,6 +1193,12 @@ void DroneController::correct_yaw(float deviation_angle) {
     auto_yaw = RC_MIDDLE + target_theta_velocity;
 }
 
+void DroneController::fine_tune_thrust(float integration_error) {
+    float thrust_error = dparams.ki_thrust_hover * integration_error;
+    calibration.max_thrust -= 0.3f * thrust_error;
+    save_calibration();
+}
+
 bool DroneController::abort_take_off() {
     //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
 
