@@ -247,6 +247,36 @@ fi
 	touch git_aliases_v1.0.done
 }
 
+QPOASES_FLAG=qpOASES-v1.done
+[ -f $QPOASES_FLAG ] || {
+	git clone git@github.com:coin-or/qpOASES.git
+	pushd qpOASES
+	mkdir -p build
+	pushd build
+	cmake -DBUILD_SHARED_LIBS=1 ..
+	make -j4
+	sudo make install
+	sudo ldconfig
+	popd
+	popd
+	touch qpOASES-v1.done
+}
+EIGEN_FLAG=Eigen-v1.done
+[ -f $EIGEN_FLAG ] || {
+	git clone https://gitlab.com/libeigen/eigen.git
+	pushd eigen
+	git checkout 3.4
+	mkdir -p build
+	pushd build
+	cmake -DBUILD_SHARED_LIBS=1 ..
+	make -j4
+	sudo make install
+	sudo ldconfig
+	popd
+	popd
+	touch EIGEN_FLAG
+}
+
 # Install the Pats code
 PATS_CODE_FLAG=pats_code_v1.1.done
 [ -f $PATS_CODE_FLAG ] || {
