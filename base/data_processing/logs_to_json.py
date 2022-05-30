@@ -41,7 +41,7 @@ def process_wait_for_lightlevels(wait_for_dark_log_path):
     if len(log) < 5:
         return False, '', ''
 
-    datetimes = log['Datetime']
+    datetimes = log['Datetime'].dropna()
     daylight_start = datetimes.values[0]
     daylight_end = datetimes.values[-1]
 
