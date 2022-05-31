@@ -6,7 +6,7 @@
 void KeepInViewController::init(FlightAreaConfig *flight_area_config, xmls::DroneCalibration *drone_calib) {
     _flight_area_config = flight_area_config;
     _drone_calib = drone_calib;
-    drone_rotating_time = 6.f / pparams.fps; // Est. time to rotate the drone around 180 deg. see betaflight
+    drone_rotating_time = dparams.drone_rotation_delay;
 
     pos_err_kiv.assign(_flight_area_config->n_planes(), 0);
     vel_err_kiv.assign(_flight_area_config->n_planes(), 0);

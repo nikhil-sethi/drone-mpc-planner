@@ -43,7 +43,6 @@ cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void reset_external_wdt_flag();
 std::string execute(const char *cmd);
-float max_rs_auto_exposure();
 float calc_light_level(int exposure, int gain, float brightness);
 bool is_number(const std::string &s);
 
@@ -532,6 +531,8 @@ public:
     float target_takeoff_velocity;
     led_types led_type;
     bool Telemetry() { return tx == tx_frskyd16; }
+    double betaflight_angle_strength = 130;
+    double drone_rotation_delay;
 
     float kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
     float kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
@@ -653,6 +654,8 @@ public:
         kd_pos_kiv = _kd_pos_kiv.value();
         kp_vel_kiv = _kp_vel_kiv.value();
         kd_vel_kiv = _kd_vel_kiv.value();
+
+        drone_rotation_delay = 10. / betaflight_angle_strength * -log(0.37); //After a new commanded altitude, the time till the drone has made 63% the way to the new altitude
     }
 
     void serialize(std::string filepath) {
