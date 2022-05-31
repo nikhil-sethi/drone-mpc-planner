@@ -634,14 +634,14 @@ void init_terminal_signals() {
 }
 
 void init_loggers() {
-    if (log_replay_mode)
+    if (log_replay_mode){
         data_output_dir = data_output_dir + "replay/";
-    if (path_exist(data_output_dir)) {
-        std::string rmcmd = "rm -r " + data_output_dir;
-        auto res [[maybe_unused]] = std::system(rmcmd.c_str());
+        if (path_exist(data_output_dir)) {
+            std::string rmcmd = "rm -r " + data_output_dir;
+            auto res [[maybe_unused]] = std::system(rmcmd.c_str());
+        }
+        mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     }
-
-    mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
     if (!log_replay_mode) {
         pparams.serialize(data_output_dir + "pats.xml");
