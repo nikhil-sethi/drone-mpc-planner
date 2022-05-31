@@ -5,7 +5,7 @@
 #ifdef VIZ_3D
 #include "TFMessagePublisher.h"
 #include "PathPublisher.h"
-#include "cameraview.h"
+// #include "cameraview.h"
 #endif
 
 class Visualizer3D
@@ -25,7 +25,9 @@ private:
 #ifdef VIZ_3D
     void addDrone();
     void addInsect();
+    void updateFlightarea();
     void addTarget();
+    void addOptmizedTrajectory();
 
     TFMessagePublisher pub_tf;
     PathPublisher pub_path;
@@ -33,6 +35,8 @@ private:
     tracking::InsectTracker *_itrkr;
     int64_t _time;
     DroneController *_dctrl;
+    FlightArea *_flight_area;
+    Interceptor *_interceptor;
     navigation::DroneNavigation *_dnav;
 #endif
 };

@@ -83,6 +83,10 @@ cv::Point3f FlightArea::move_inside(cv::Point3f point, safety_margin_types safet
     return flight_area_config(safety_margin_type)->move_inside(point, drone_pos);
 }
 
+std::vector<Plane> FlightArea::active_planes(safety_margin_types safety_margin_type) {
+    return flight_area_config(safety_margin_type)->active_planes();
+}
+
 bool FlightArea::trajectory_in_view(std::vector<tracking::StateData> traj, safety_margin_types safety_margin_type) {
     FlightAreaConfig *areaconfig = flight_area_config(safety_margin_type);
     for (auto state : traj) {
@@ -90,4 +94,8 @@ bool FlightArea::trajectory_in_view(std::vector<tracking::StateData> traj, safet
             return false;
     }
     return true;
+}
+
+std::vector<CornerPoint> FlightArea::corner_points(safety_margin_types safety_margin_type) {
+    return flight_area_config(safety_margin_type)->corner_points();
 }

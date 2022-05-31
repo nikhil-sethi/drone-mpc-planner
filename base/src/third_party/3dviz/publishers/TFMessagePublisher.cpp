@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*! 
+/*!
  * @file TFMessagePublisher.cpp
  * This file contains the implementation of the publisher functions.
  *
@@ -36,7 +36,7 @@ using namespace eprosima::fastrtps::rtps;
 
 TFMessagePublisher::TFMessagePublisher() : mp_participant(nullptr), mp_publisher(nullptr) {}
 
-TFMessagePublisher::~TFMessagePublisher() {	Domain::removeParticipant(mp_participant);}
+TFMessagePublisher::~TFMessagePublisher() { Domain::removeParticipant(mp_participant);}
 
 bool TFMessagePublisher::init()
 {
@@ -46,24 +46,24 @@ bool TFMessagePublisher::init()
     PParam.rtps.setName("Participant_publisher2");  //You can put here the name you want
     mp_participant = Domain::createParticipant(PParam);
 
-    if(mp_participant == nullptr)
+    if (mp_participant == nullptr)
     {
         return false;
     }
 
-    Domain::registerType(mp_participant, static_cast<TopicDataType*>(&myType));
+    Domain::registerType(mp_participant, static_cast<TopicDataType *>(&myType));
 
     PublisherAttributes Wparam;
     Wparam.topic.topicKind = NO_KEY;
     Wparam.topic.topicDataType = myType.getName();  //This type MUST be registered
 
     Wparam.topic.topicName = "rt/tf";
-    mp_publisher = Domain::createPublisher(mp_participant,Wparam,static_cast<PublisherListener*>(&m_listener));
+    mp_publisher = Domain::createPublisher(mp_participant, Wparam, static_cast<PublisherListener *>(&m_listener));
 
     Wparam.topic.topicName = "rt/tf_static";
-    mp_publisher_static = Domain::createPublisher(mp_participant,Wparam,static_cast<PublisherListener*>(&m_listener));
+    mp_publisher_static = Domain::createPublisher(mp_participant, Wparam, static_cast<PublisherListener *>(&m_listener));
 
-    if(mp_publisher == nullptr)
+    if (mp_publisher == nullptr)
     {
         return false;
     }
@@ -71,7 +71,7 @@ bool TFMessagePublisher::init()
     return true;
 }
 
-void TFMessagePublisher::PubListener::onPublicationMatched(Publisher* pub,MatchingInfo& info)
+void TFMessagePublisher::PubListener::onPublicationMatched(Publisher *pub, MatchingInfo &info)
 {
     (void)pub;
 

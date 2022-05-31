@@ -68,6 +68,7 @@ private:
     safety_margin_types _safety_margin;
     problem_parameters prob_params;
     Eigen::VectorXd opti_var;
+    bool opti_res_valid = false;
     Eigen::VectorXd slack_variables;
     float *_thrust;
     double inf = std::numeric_limits<double>::infinity();

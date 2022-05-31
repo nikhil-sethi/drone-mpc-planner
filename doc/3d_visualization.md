@@ -44,4 +44,4 @@ In the build folder (e.g. `pc/build-vscode`)
 
 ### Run rivz2
 
-    rviz2 -d ~/pats.rviz
+    rviz2 -d ~/code/pats/config/pats.rviz

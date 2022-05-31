@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*! 
+/*!
  * @file PathPublisher.h
  * This header file contains the declaration of the publisher functions.
  *
@@ -25,56 +25,66 @@
 
 #include <fastrtps/fastrtps_fwd.h>
 #include <fastrtps/publisher/PublisherListener.h>
+#include <eigen3/Eigen/Core>
 
 #include "PathPubSubTypes.h"
 
 #include "common.h"
-#include "cameraview.h"
+#include "flightarea.h"
 
-class PathPublisher 
+class PathPublisher
 {
 public:
-	PathPublisher();
-	virtual ~PathPublisher();
-    bool init(CameraView *cam_volume);
+    PathPublisher();
+    virtual ~PathPublisher();
+    bool init();
     void run(int64_t time);
     void add_drone_pos(double x, double y, double z, int64_t time);
     void add_insect_pos(double x, double y, double z, int64_t time);
-    void set_target(double x, double y, double z, int64 time);
+    void update_flightarea(std::vector<Plane> planes, std::vector<CornerPoint> corner_points, int64_t time);
+    void update_optimized_trajectory(std::vector<cv::Point3f> optimized_trajectory, int64_t time);
 
 private:
+    void add_flightarea(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time);
     void add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time);
     void add_point(std::vector<geometry_msgs::msg::PoseStamped> &poses, double x, double y, double z, int64_t time, std::string frame_id);
     void add_hunt_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time);
     void add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, cv::Mat point, int64 time, std::string frame_id);
+    uint add_plane(Plane plane, std::vector<CornerPoint> corner_points, int64_t time);
+    int find_next_plane(Eigen::VectorXi plotted_planes, std::vector<CornerPoint> corner_points, uint corner_point_idx);
+
 
     builtin_interfaces::msg::Time _time;
 
-    CameraView *_cam_volume;
+    //CameraView *_cam_volume;
 
     std::vector<geometry_msgs::msg::PoseStamped> _drone_poses;
     std::vector<geometry_msgs::msg::PoseStamped> _insect_poses;
     std::vector<geometry_msgs::msg::PoseStamped> _proximity_poses;
     std::vector<geometry_msgs::msg::PoseStamped> _target_poses;
+    std::vector<geometry_msgs::msg::PoseStamped> _flightarea_poses;
+    std::vector<geometry_msgs::msg::PoseStamped> _optimized_path_poses;
 
-	eprosima::fastrtps::Participant *mp_participant;
-        eprosima::fastrtps::Publisher *mp_publisher_proximity;
-        eprosima::fastrtps::Publisher *mp_publisher_camera_cone;
-        eprosima::fastrtps::Publisher *mp_publisher_safe_zone;
-        eprosima::fastrtps::Publisher *mp_publisher_target;
-        eprosima::fastrtps::Publisher *mp_publisher_drone_path;
-        eprosima::fastrtps::Publisher *mp_publisher_insect_path;
-        eprosima::fastrtps::Publisher *mp_publisher_hunt_cone;
+    eprosima::fastrtps::Participant *mp_participant;
+    eprosima::fastrtps::Publisher *mp_publisher_proximity;
+    eprosima::fastrtps::Publisher *mp_publisher_camera_cone;
+    eprosima::fastrtps::Publisher *mp_publisher_safe_zone;
+    eprosima::fastrtps::Publisher *mp_publisher_target;
+    eprosima::fastrtps::Publisher *mp_publisher_drone_path;
+    eprosima::fastrtps::Publisher *mp_publisher_insect_path;
+    eprosima::fastrtps::Publisher *mp_publisher_hunt_cone;
+    eprosima::fastrtps::Publisher *mp_publisher_flight_area;
+    eprosima::fastrtps::Publisher *mp_publisher_optimized_path;
 
-	class PubListener : public eprosima::fastrtps::PublisherListener
-	{
-	public:
-		PubListener() : n_matched(0){};
-		~PubListener(){};
-		void onPublicationMatched(eprosima::fastrtps::Publisher* pub,eprosima::fastrtps::rtps::MatchingInfo& info);
-		int n_matched;
-	} m_listener;
-	nav_msgs::msg::PathPubSubType myType;
+    class PubListener : public eprosima::fastrtps::PublisherListener
+    {
+    public:
+        PubListener() : n_matched(0) {};
+        ~PubListener() {};
+        void onPublicationMatched(eprosima::fastrtps::Publisher *pub, eprosima::fastrtps::rtps::MatchingInfo &info);
+        int n_matched;
+    } m_listener;
+    nav_msgs::msg::PathPubSubType myType;
 };
 
 #endif // _NAV_MSGS_MSG_PATH_PUBLISHER_H_

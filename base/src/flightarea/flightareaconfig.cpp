@@ -70,7 +70,7 @@ void FlightAreaConfig::apply_safety_angle(float angle) {
 void FlightAreaConfig::update_config() {
     find_active_planes_and_their_corner_points();
 
-    if (corner_points.max_size() == 0) {
+    if (_corner_points.max_size() == 0) {
         std::cout << "Whoops! Volume is empty! Check FlightAreaConfiguration and safety margins for " << _name << ", " << safety_margin_types_str[_safety_margin_type] << std::endl;
         throw std::runtime_error("FlightAreaConfiguration error: User error!");
     }
@@ -86,7 +86,8 @@ void FlightAreaConfig::update_config() {
 void FlightAreaConfig::find_active_planes_and_their_corner_points() {
     const float eps = 0.001f; // Just a small number to prevent wrong results from rounding errors
 
-    corner_points.clear();
+    _corner_points.clear();
+    _active_planes.clear();
     for (auto &plane : _planes)
         plane.is_active = false;
 
@@ -105,10 +106,8 @@ void FlightAreaConfig::find_active_planes_and_their_corner_points() {
                     }
                     if (in_view == true) {
                         CornerPoint cp = CornerPoint(intrs_pnt, plane1.id, plane2.id, plane3.id);
-                        corner_points.push_back(cp);
-                        plane1.is_active = true;
-                        plane2.is_active = true;
-                        plane3.is_active = true;
+                        _corner_points.push_back(cp);
+                        mark_active_planes(plane1, plane2, plane3);
                     }
 
                 }
@@ -119,7 +118,7 @@ void FlightAreaConfig::find_active_planes_and_their_corner_points() {
 
 std::vector<CornerPoint> FlightAreaConfig::corner_points_of_plane(uint plane_id) {
     std::vector<CornerPoint> plane_corner_points;
-    for (auto pnt : corner_points) {
+    for (auto pnt : _corner_points) {
         for (auto corner_point_plane_id : pnt.intersecting_planes) {
             if (corner_point_plane_id == plane_id)
                 plane_corner_points.push_back(pnt);
@@ -281,6 +280,38 @@ bool FlightAreaConfig::vertices_on_one_edge(CornerPoint cp1, CornerPoint cp2) {
     return false;
 }
 
+
+bool FlightAreaConfig::plane_in_active_planes(Plane plane) {
+    for (auto &active_plane : _active_planes) {
+        if (plane.id == active_plane.id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FlightAreaConfig::mark_active_planes(Plane plane1, Plane plane2, Plane plane3) {
+    _planes.at(plane1.id).is_active = true;
+    _planes.at(plane2.id).is_active = true;
+    _planes.at(plane3.id).is_active = true;
+
+    if (_active_planes.size() == 0) {
+        _active_planes.push_back(plane1);
+        _active_planes.push_back(plane2);
+        _active_planes.push_back(plane3);
+        return;
+    }
+
+    if (!plane_in_active_planes(plane1))
+        _active_planes.push_back(plane1);
+
+    if (!plane_in_active_planes(plane2))
+        _active_planes.push_back(plane2);
+
+    if (!plane_in_active_planes(plane3))
+        _active_planes.push_back(plane3);
+}
+
 void FlightAreaConfig::cout_debug_info() {
     std::cout << *this << std::endl;
     std::cout << "CornerPoints:" << std::endl;
@@ -288,7 +319,7 @@ void FlightAreaConfig::cout_debug_info() {
     for (auto plane : _planes) {
         std::cout << "Plane: " << plane.id << std::endl;
 
-        for (auto pnt : corner_points) {
+        for (auto pnt : _corner_points) {
             for (auto id : pnt.intersecting_planes) {
                 if (id == plane.id)
                     std::cout << pnt;

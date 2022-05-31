@@ -353,8 +353,11 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
     res.position_stopped = cv::Point3f(opti_var[drone_velxF_breaking - 3], opti_var[drone_velxF_breaking - 2], opti_var[drone_velxF_breaking - 1]);
 
     // qpsolver.print_eigenvector("Xopt", opti_var);
-    if (feasible_trajectory(opti_var))
+    opti_res_valid = false;
+    if (feasible_trajectory(opti_var)) {
+        opti_res_valid = true;
         res.valid = true;
+    }
     // else
     //     export_scenario(drone, insect, planes);
     // report_scenario_result(drone, insect, res);
@@ -400,7 +403,7 @@ std::vector<cv::Point3f> InterceptInPlanesOptimizerInterface::interception_traje
     std::vector<cv::Point3f> intercept_trajectory = {};
 
     // if (feasible_trajectory(opti_var)) {
-    if (opti_var.norm() > 0.01) {
+    if (opti_res_valid) {
         for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
             Eigen::VectorXd state_k = opti_var.segment(drone_posx0_intercepting + k * N_DRONE_STATES, 3);
             intercept_trajectory.push_back(cv::Point3f(state_k[0], state_k[1], state_k[2]));
@@ -412,7 +415,6 @@ std::vector<cv::Point3f> InterceptInPlanesOptimizerInterface::interception_traje
         }
     }
     // qpsolver.print_eigenvector("Opti var", opti_var);
-    std::cout << "interception_trajectory: " << intercept_trajectory << std::endl;
 
     return intercept_trajectory;
 }

@@ -26,6 +26,7 @@ inline const char *plane_types_str[] = {
     "camera_protector_plane",
     "" // must be the last entry! (check in serializer)
 };
+
 struct Plane {
     cv::Point3f support;
     cv::Point3f normal;

@@ -34,7 +34,8 @@ private:
     std::string _name;
     safety_margin_types _safety_margin_type;
     std::vector<Plane> _planes = {};
-    std::vector<CornerPoint> corner_points;
+    std::vector<Plane> _active_planes = {};
+    std::vector<CornerPoint> _corner_points;
     ViewLimit view_data;
 
     //Methods
@@ -49,6 +50,8 @@ private:
     bool in_plane_polygon(cv::Point3f point, std::vector<CornerPoint> corner_points);
     std::vector<CornerPoint> corner_points_of_plane(uint plane_id);
     bool vertices_on_one_edge(CornerPoint cp1, CornerPoint cp2);
+    bool plane_in_active_planes(Plane plane);
+    void mark_active_planes(Plane plane1, Plane plane2, Plane plane3);
 
     float safety_margin(safety_margin_types type) {
         switch (type) {
@@ -86,8 +89,12 @@ public:
     safety_margin_types safety_margin_value() const {return _safety_margin_type;};
     std::string safety_margin_str() const {return safety_margin_types_str[_safety_margin_type];};
     std::vector<Plane> planes() const {return _planes;};
+    std::vector<Plane> active_planes() {return _active_planes;};
     Plane plane(uint plane_id) const {return _planes.at(plane_id);};
     void cout_debug_info();
+    std::vector<CornerPoint> corner_points() {
+        return _corner_points;
+    };
 };
 
 

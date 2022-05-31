@@ -23,5 +23,7 @@ public:
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin);
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin, cv::Point3f drone_pos);
     FlightAreaConfig *flight_area_config(safety_margin_types margin);
+    std::vector<Plane> active_planes(safety_margin_types margin);
     bool trajectory_in_view(std::vector<tracking::StateData> traj, safety_margin_types margin);
+    std::vector<CornerPoint> corner_points(safety_margin_types safety_margin_type);
 };
