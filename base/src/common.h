@@ -14,8 +14,7 @@
 #define GRAVITY 9.81f
 
 int sign(float x);
-vector
-<string> split_csv_line(string);
+vector <string> split_csv_line(string);
 vector<string> split_csv_line(string, char);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);
@@ -45,6 +44,7 @@ void reset_external_wdt_flag();
 std::string execute(const char *cmd);
 float calc_light_level(int exposure, int gain, float brightness);
 bool is_number(const std::string &s);
+float optimization_thrust(float thrust);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;
@@ -193,6 +193,10 @@ static const char *op_modes_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 
+enum control_modes {
+    position_control,
+    acceleration_feedforward
+};
 namespace xmls {
 
 class xVideo_mode: public MemberBase
@@ -588,6 +592,11 @@ public:
         Register("kd_pos_roll_hover", &_kd_pos_roll_hover);
         Register("kd_pos_pitch_hover", &_kd_pos_pitch_hover);
         Register("kd_pos_throttle_hover", &_kd_pos_throttle_hover);
+
+        Register("kp_pos_kiv", &_kp_pos_kiv);
+        Register("kd_pos_kiv", &_kd_pos_kiv);
+        Register("kp_vel_kiv", &_kp_vel_kiv);
+        Register("kd_vel_kiv", &_kd_vel_kiv);
     }
 
     void deserialize(std::string filepath) {

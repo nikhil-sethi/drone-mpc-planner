@@ -3,59 +3,84 @@
 #include "common.h"
 
 
-void KeepInViewController::init(FlightAreaConfig *flight_area_config, xmls::DroneCalibration *drone_calib) {
-    _flight_area_config = flight_area_config;
+void KeepInViewController::init(FlightArea *flight_area, xmls::DroneCalibration *drone_calib) {
+    _flight_area = flight_area;
     _drone_calib = drone_calib;
     drone_rotating_time = dparams.drone_rotation_delay;
 
-    pos_err_kiv.assign(_flight_area_config->n_planes(), 0);
-    vel_err_kiv.assign(_flight_area_config->n_planes(), 0);
-
-    for (uint i = 0; i < _flight_area_config->n_planes(); i++) {
-        filtering::Tf_D_f vel_filter;
-        vel_filter.init(1.f / pparams.fps);
-        d_vel_err_kiv.push_back(vel_filter);
-
-        filtering::Tf_D_f pos_filter;
-        pos_filter.init(1.f / pparams.fps);
-        d_pos_err_kiv.push_back(pos_filter);
+    for (uint i = 0; i < number_safety_margin_types; i++) {
+        filters[static_cast<safety_margin_types>(i)] = FlightAreaKIVStates(flight_area->flight_area_config(static_cast<safety_margin_types>(i)));
     }
+
 }
 
-cv::Point3f KeepInViewController::update(tracking::TrackData data_drone, float transmission_delay_duration, bool dctrl_requests_kiv_acc) {
-    if (enabled) {
-        auto [violated_planes_braking_distance, speed_error_normal_to_plane, enough_braking_distance_left] = violated_planes_brake_distance(data_drone, transmission_delay_duration);
-        update_filter(data_drone, speed_error_normal_to_plane);
-        auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
 
-        if (dctrl_requests_kiv_acc && (!drone_in_boundaries || !enough_braking_distance_left)) {
-            active = true;
-            return kiv_acceleration(violated_planes_inview, violated_planes_braking_distance);
+void KeepInViewController::update(tracking::TrackData data_drone, float transmission_delay_duration) {
+    if (enabled) {
+        for (uint i = 0; i < number_safety_margin_types; i++) {
+            safety_margin_types safety_margin_type = static_cast<safety_margin_types>(i);
+            FlightAreaConfig *_flight_area_config = _flight_area->flight_area_config(safety_margin_type);
+            FlightAreaKIVStates *_flight_area_kiv_state = flight_area_kiv_state(safety_margin_type);
+            auto [violated_planes_braking_distance, speed_error_normal_to_plane, enough_braking_distance_left] = violated_planes_brake_distance(_flight_area_config, data_drone, transmission_delay_duration);
+            _flight_area_kiv_state->violated_planes_braking_distance = violated_planes_braking_distance;
+            filters[safety_margin_type].enough_braking_distance_left = enough_braking_distance_left;
+
+            update_filter(safety_margin_type, data_drone, speed_error_normal_to_plane);
+            auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
+            _flight_area_kiv_state->violated_planes_inview = violated_planes_inview;
+            _flight_area_kiv_state->drone_in_boundaries = drone_in_boundaries;
         }
+
     }
     active = false;
-    return {0};
 }
 
-cv::Point3f KeepInViewController::kiv_acceleration(std::vector<bool> violated_planes_inview, std::vector<bool> violated_planes_brake_distance) {
-#if CAMERA_VIEW_DEBUGGING
-    _camview->cout_plane_violation(violated_planes_inview, violated_planes_brake_distance);
-#endif
+
+FlightAreaKIVStates *KeepInViewController::flight_area_kiv_state(safety_margin_types safety_margin_type) {
+    std::map<safety_margin_types, FlightAreaKIVStates>::iterator ret = filters.find(safety_margin_type);
+    if (ret == filters.end())
+        throw std::runtime_error("FlightAreaConfiguration error: configuration missing! Implementation error!");
+
+    return &(ret->second);
+}
+
+
+cv::Point3f KeepInViewController::correction_acceleration(safety_margin_types safety_margin, tracking::TrackData drone, control_modes control_mode) {
+    if (!filters[safety_margin].drone_in_boundaries || !filters[safety_margin].enough_braking_distance_left) {
+        active = true;
+        return kiv_acceleration(safety_margin, drone, control_mode);
+    }
+
+    return {0, 0, 0};
+}
+
+cv::Point3f KeepInViewController::kiv_acceleration(safety_margin_types safety_margin_type, tracking::TrackData drone, control_modes control_mode) {
+    FlightAreaConfig *_flight_area_config = _flight_area->flight_area_config(safety_margin_type);
+    FlightAreaKIVStates *_flightarea_kiv_state = flight_area_kiv_state(safety_margin_type);
+
     cv::Point3f correction_acceleration = {0};
+
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
-        if (violated_planes_inview.at(plane_id)) {
-            int d_against_p_error = (sign(d_pos_err_kiv.at(plane_id).current_output()) != sign(pos_err_kiv.at(plane_id)));
-            correction_acceleration += _flight_area_config->plane(plane_id).normal * (kp_pos_kiv * pos_err_kiv.at(plane_id)
-                                       + d_against_p_error * kd_pos_kiv * d_pos_err_kiv.at(plane_id).current_output());
+        cv::Point3f correction_direction;
+        if (control_mode == position_control)
+            correction_direction = _flight_area_config->planes().at(plane_id).normal;
+        else
+            correction_direction = - drone.vel() / normf(drone.vel());
+
+        if (_flightarea_kiv_state->violated_planes_inview.at(plane_id)) {
+            int d_against_p_error = (sign(_flightarea_kiv_state->d_pos_err_kiv.at(plane_id).current_output()) != sign(_flightarea_kiv_state->pos_err_kiv.at(plane_id)));
+            correction_acceleration += correction_direction * (dparams.kp_pos_kiv * _flightarea_kiv_state->pos_err_kiv.at(plane_id)
+                                       + d_against_p_error * dparams.kd_pos_kiv * _flightarea_kiv_state->d_pos_err_kiv.at(plane_id).current_output());
         }
-        if (violated_planes_brake_distance.at(plane_id))
-            correction_acceleration += _flight_area_config->plane(plane_id).normal * (kp_vel_kiv * vel_err_kiv.at(plane_id)
-                                       + kd_vel_kiv * d_vel_err_kiv.at(plane_id).current_output());
+        if (_flightarea_kiv_state->violated_planes_braking_distance.at(plane_id)) {
+            correction_acceleration += correction_direction * (dparams.kp_vel_kiv * _flightarea_kiv_state->vel_err_kiv.at(plane_id)
+                                       + dparams.kd_vel_kiv * _flightarea_kiv_state->d_vel_err_kiv.at(plane_id).current_output());
+        }
     }
     return correction_acceleration;
 }
 
-std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::violated_planes_brake_distance(tracking::TrackData data_drone, float transmission_delay_duration) {
+std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::violated_planes_brake_distance(FlightAreaConfig *_flight_area_config, tracking::TrackData data_drone, float transmission_delay_duration) {
     bool breaking_distance_ok = true;
     std::vector<float> speed_error_normal_to_plane;
     speed_error_normal_to_plane.assign(_flight_area_config->n_planes(), 0.);
@@ -90,14 +115,16 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::vi
     return std::tuple<std::vector<bool>, std::vector<float>, bool>(violated_planes_braking_distance, speed_error_normal_to_plane, breaking_distance_ok);
 }
 
-void KeepInViewController::update_filter(tracking::TrackData data_drone, std::vector<float> speed_error_normal_to_plane) {
+void KeepInViewController::update_filter(safety_margin_types safety_margin_type, tracking::TrackData data_drone, std::vector<float> speed_error_normal_to_plane) {
+    FlightAreaConfig *_flight_area_config = _flight_area->flight_area_config(safety_margin_type);
+    FlightAreaKIVStates *_flight_area_kiv_state = flight_area_kiv_state(safety_margin_type);
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
         Plane plane = _flight_area_config->plane(plane_id);
-        pos_err_kiv.at(plane_id) = -plane.distance(data_drone.pos());
-        d_pos_err_kiv.at(plane_id).new_sample(pos_err_kiv.at(plane_id));
+        _flight_area_kiv_state->pos_err_kiv.at(plane_id) = -plane.distance(data_drone.pos());
+        filters[safety_margin_type].d_pos_err_kiv.at(plane_id).new_sample(filters[safety_margin_type].pos_err_kiv.at(plane_id));
         if (data_drone.vel_valid) {
-            vel_err_kiv.at(plane_id) = speed_error_normal_to_plane.at(plane_id);
-            d_vel_err_kiv.at(plane_id).new_sample(vel_err_kiv.at(plane_id));
+            _flight_area_kiv_state->vel_err_kiv.at(plane_id) = speed_error_normal_to_plane.at(plane_id);
+            _flight_area_kiv_state->d_vel_err_kiv.at(plane_id).new_sample(filters[safety_margin_type].vel_err_kiv.at(plane_id));
         }
     }
 }

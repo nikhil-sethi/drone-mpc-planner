@@ -1,0 +1,103 @@
+Optimization variable:
+[xopt0, xopt1, xopt2, xopt3, xopt4, xopt5, xopt6, xopt7, xopt8, xopt9, xopt10, xopt11, xopt12, xopt13, xopt14, xopt15, xopt16, xopt17, xopt18, xopt19, xopt20, xopt21, xopt22, xopt23, xopt24, xopt25, xopt26, xopt27, xopt28, xopt29, xopt30, xopt31, xopt32, xopt33]
+Parameters:
+[]
+Lagrange multiplier constraints:
+[lamg0, lamg1, lamg2, lamg3, lamg4, lamg5, lamg6, lamg7, lamg8, lamg9, lamg10, lamg11, lamg12, lamg13, lamg14]
+Objectives jacobian:
+ (0, 0) -> 1
+ (0, 16) -> (1e+13*(xopt16+xopt16))
+ (0, 17) -> (1e+13*(xopt17+xopt17))
+ (0, 18) -> (1e+13*(xopt18+xopt18))
+ (0, 19) -> (1e+13*(xopt19+xopt19))
+ (0, 20) -> (1e+13*(xopt20+xopt20))
+ (0, 21) -> (1e+13*(xopt21+xopt21))
+Objectives hessian:
+ (0, 0) -> @1=0.5, (((lamg0*(@1*(xopt13+xopt13)))+(lamg1*(@1*(xopt14+xopt14))))+(lamg2*(@1*(xopt15+xopt15))))
+ (0, 4) -> lamg0
+ (0, 5) -> lamg1
+ (0, 6) -> lamg2
+ (0, 13) -> ((lamg0*(0.5*(xopt0+xopt0)))+lamg3)
+ (0, 14) -> ((lamg1*(0.5*(xopt0+xopt0)))+lamg4)
+ (0, 15) -> ((lamg2*(0.5*(xopt0+xopt0)))+lamg5)
+ (0, 25) -> lamg6
+ (0, 26) -> lamg7
+ (0, 27) -> lamg8
+ (4, 0) -> lamg0
+ (5, 0) -> lamg1
+ (6, 0) -> lamg2
+ (13, 0) -> ((lamg0*(0.5*(xopt0+xopt0)))+lamg3)
+ (14, 0) -> ((lamg1*(0.5*(xopt0+xopt0)))+lamg4)
+ (15, 0) -> ((lamg2*(0.5*(xopt0+xopt0)))+lamg5)
+ (16, 16) -> 2e+13
+ (17, 17) -> 2e+13
+ (18, 18) -> 2e+13
+ (19, 19) -> 2e+13
+ (20, 20) -> 2e+13
+ (21, 21) -> 2e+13
+ (25, 0) -> lamg6
+ (26, 0) -> lamg7
+ (27, 0) -> lamg8
+Constraints:
+@1=2, [(((xopt1+((xopt0*(xopt4+(xopt4+(xopt0*xopt13))))/@1))-xopt7)+xopt16), (((xopt2+((xopt0*(xopt5+(xopt5+(xopt0*xopt14))))/@1))-xopt8)+xopt17), (((xopt3+((xopt0*(xopt6+(xopt6+(xopt0*xopt15))))/@1))-xopt9)+xopt18), (((xopt4+((xopt0*(xopt13+xopt13))/@1))-xopt10)+xopt19), (((xopt5+((xopt0*(xopt14+xopt14))/@1))-xopt11)+xopt20), (((xopt6+((xopt0*(xopt15+xopt15))/@1))-xopt12)+xopt21), ((xopt22+((xopt0*(xopt25+xopt25))/@1))-xopt28), ((xopt23+((xopt0*(xopt26+xopt26))/@1))-xopt29), ((xopt24+((xopt0*(xopt27+xopt27))/@1))-xopt30), (xopt25-xopt31), (xopt26-xopt32), (xopt27-xopt33), (xopt7-xopt28), (xopt8-xopt29), (xopt9-xopt30)]
+Constraints jacobian:
+ (0, 0) -> (0.5*((xopt4+(xopt4+(xopt0*xopt13)))+(xopt0*xopt13)))
+ (0, 1) -> 1
+ (0, 4) -> xopt0
+ (0, 7) -> -1
+ (0, 13) -> (0.5*sq(xopt0))
+ (0, 16) -> 1
+ (1, 0) -> (0.5*((xopt5+(xopt5+(xopt0*xopt14)))+(xopt0*xopt14)))
+ (1, 2) -> 1
+ (1, 5) -> xopt0
+ (1, 8) -> -1
+ (1, 14) -> (0.5*sq(xopt0))
+ (1, 17) -> 1
+ (2, 0) -> (0.5*((xopt6+(xopt6+(xopt0*xopt15)))+(xopt0*xopt15)))
+ (2, 3) -> 1
+ (2, 6) -> xopt0
+ (2, 9) -> -1
+ (2, 15) -> (0.5*sq(xopt0))
+ (2, 18) -> 1
+ (3, 0) -> (0.5*(xopt13+xopt13))
+ (3, 4) -> 1
+ (3, 10) -> -1
+ (3, 13) -> xopt0
+ (3, 19) -> 1
+ (4, 0) -> (0.5*(xopt14+xopt14))
+ (4, 5) -> 1
+ (4, 11) -> -1
+ (4, 14) -> xopt0
+ (4, 20) -> 1
+ (5, 0) -> (0.5*(xopt15+xopt15))
+ (5, 6) -> 1
+ (5, 12) -> -1
+ (5, 15) -> xopt0
+ (5, 21) -> 1
+ (6, 0) -> (0.5*(xopt25+xopt25))
+ (6, 22) -> 1
+ (6, 25) -> xopt0
+ (6, 28) -> -1
+ (7, 0) -> (0.5*(xopt26+xopt26))
+ (7, 23) -> 1
+ (7, 26) -> xopt0
+ (7, 29) -> -1
+ (8, 0) -> (0.5*(xopt27+xopt27))
+ (8, 24) -> 1
+ (8, 27) -> xopt0
+ (8, 30) -> -1
+ (9, 25) -> 1
+ (9, 31) -> -1
+ (10, 26) -> 1
+ (10, 32) -> -1
+ (11, 27) -> 1
+ (11, 33) -> -1
+ (12, 7) -> 1
+ (12, 28) -> -1
+ (13, 8) -> 1
+ (13, 29) -> -1
+ (14, 9) -> 1
+ (14, 30) -> -1
+CX0-dCX0:
+@1=(xopt4+(xopt4+(xopt0*xopt13))), @2=2, @3=0.5, @4=(xopt5+(xopt5+(xopt0*xopt14))), @5=(xopt6+(xopt6+(xopt0*xopt15))), @6=(xopt13+xopt13), @7=(xopt14+xopt14), @8=(xopt15+xopt15), @9=(xopt25+xopt25), @10=(xopt26+xopt26), @11=(xopt27+xopt27), @12=0, [((((xopt1+((xopt0*@1)/@2))-xopt7)+xopt16)-(((((((@3*(@1+(xopt0*xopt13)))*xopt0)+xopt1)+(xopt0*xopt4))-xopt7)+((@3*sq(xopt0))*xopt13))+xopt16)), ((((xopt2+((xopt0*@4)/@2))-xopt8)+xopt17)-(((((((@3*(@4+(xopt0*xopt14)))*xopt0)+xopt2)+(xopt0*xopt5))-xopt8)+((@3*sq(xopt0))*xopt14))+xopt17)), ((((xopt3+((xopt0*@5)/@2))-xopt9)+xopt18)-(((((((@3*(@5+(xopt0*xopt15)))*xopt0)+xopt3)+(xopt0*xopt6))-xopt9)+((@3*sq(xopt0))*xopt15))+xopt18)), ((((xopt4+((xopt0*@6)/@2))-xopt10)+xopt19)-((((((@3*@6)*xopt0)+xopt4)-xopt10)+(xopt0*xopt13))+xopt19)), ((((xopt5+((xopt0*@7)/@2))-xopt11)+xopt20)-((((((@3*@7)*xopt0)+xopt5)-xopt11)+(xopt0*xopt14))+xopt20)), ((((xopt6+((xopt0*@8)/@2))-xopt12)+xopt21)-((((((@3*@8)*xopt0)+xopt6)-xopt12)+(xopt0*xopt15))+xopt21)), (((xopt22+((xopt0*@9)/@2))-xopt28)-(((((@3*@9)*xopt0)+xopt22)+(xopt0*xopt25))-xopt28)), (((xopt23+((xopt0*@10)/@2))-xopt29)-(((((@3*@10)*xopt0)+xopt23)+(xopt0*xopt26))-xopt29)), (((xopt24+((xopt0*@11)/@2))-xopt30)-(((((@3*@11)*xopt0)+xopt24)+(xopt0*xopt27))-xopt30)), @12, @12, @12, @12, @12, @12]
+

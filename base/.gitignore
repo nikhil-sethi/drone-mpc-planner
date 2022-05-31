@@ -18,5 +18,7 @@ mpc-design/*.csv
 *.p
 *.pyc
 .clangd/*
+.ccls*
+
 launch.json
 compile_commands.json

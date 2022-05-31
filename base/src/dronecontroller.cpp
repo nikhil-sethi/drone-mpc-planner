@@ -108,7 +108,7 @@ void DroneController::led_strength(float light_level) {
     std::cout << "Led strength set to: " << dparams.drone_led_strength << " with light level: " << light_level << std::endl;
 }
 
-void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time, bool enable_logging) {
+void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging) {
     _time = time;
 
     if (!log_replay_mode && pparams.joystick != rc_none)
@@ -332,7 +332,12 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                     if (_time - take_off_start_time < 0.5)
                         data_drone.state.pos = _dtrk->pad_location();
                 }
+                // Control_model_based must always be called! Even in position_control, pid filters must be update to prepare a switch back. Also the kiv-state must be updated.
                 control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+                if (control_mode == acceleration_feedforward) {
+                    target_acceleration += kiv_ctrl.correction_acceleration(strict, data_drone, acceleration_feedforward);
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(target_acceleration);
+                }
                 break;
         } case fm_long_range_forth: {
                 mode += bf_headless_disabled;
@@ -813,7 +818,7 @@ void DroneController::save_pad_pos_and_att_calibration() {
     calibration.pad_calib_date = ss.str();
     save_calibration();
     _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
-    kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration); // kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
+    kiv_ctrl.init(_flight_area, &calibration); //See comment at alternative initialization call
 }
 
 void DroneController::init_thrust_calibration() {
@@ -1048,13 +1053,14 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
 
     bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
 
-    if (data_drone.pos_valid && data_drone.vel_valid && !dry_run)
-        error += kiv_ctrl.update(data_drone, transmission_delay_duration, flight_mode_with_kiv && !_time - start_takeoff_burn_time < 0.45);
+    kiv_ctrl.update(data_drone, transmission_delay_duration);
+    if (data_drone.pos_valid && data_drone.vel_valid && !dry_run && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45))
+        error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
 
     return error;
 }
 
-integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_vel, double time) {
+DroneController::integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_vel, double time) {
     float duration_waypoint_update = duration_since_waypoint_moved(time);
 
     if (thrust_calibration
@@ -1322,7 +1328,7 @@ void DroneController::load_calibration() {
     _dtrk->set_pad_location(calibration.pad_pos());
     _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
     _flight_area->set_vertical_camera_plane(calibration.pad_pos_z);
-    kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
+    kiv_ctrl.init(_flight_area, &calibration);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane) since filter initialization is dependent on the number of planes in the flight area
 }
 
 void DroneController::save_calibration() {

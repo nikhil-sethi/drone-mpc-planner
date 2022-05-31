@@ -4,62 +4,87 @@
 #include "dronetracker.h"
 #include "trackermanager.h"
 #include "visiondata.h"
+#include "tti_optimizer_interface.h"
+#include "intercept_in_planes_optimizer_interface.h"
 #include "drone.h"
-
-#define ENABLE_UNIFIED_DIRECTION_TRANSITION true
-#define ENABLE_MOTH_PREDICTION true
-#define ENABLE_VELOCITY_COMPENSATION true
 
 static const char *interceptor_state_names[] = { "is_init",
                                                  "is_await_target",
                                                  "is_await_reach_zone",
-                                                 "is_move_to_intercept",
-                                                 "is_close_chasing",
-                                                 "is_killing"
+                                                 "is_lurking",
+                                                 "is_intercepting"
                                                };
 class Drone;
 
 class Interceptor {
 
 private:
-    tracking::TrackerManager *_trackers;
-    VisionData *_visdat;
-    Drone *_drone;
-    bool initialized = false;
-
-    cv::Point3f _aim_pos;
-
-    FlightArea *_flight_area;
-    bool target_in_flight_area = false;
-
-    bool aim_in_view = false;
-    uint _n_frames_aim_not_in_range = 0;
-    float n_frames_target_cleared_timeout;
-    tracking::InsectTracker *_target_insecttracker = NULL;
-
-    float _horizontal_separation, _vertical_separation;
-    float hunt_distance;
-    float _best_distance = INFINITY;
-    double _tti = -1;
     enum interceptor_states {
         is_init = 0,
         is_waiting_for_target,
         is_waiting_in_reach_zone,
-        is_move_to_intercept,
-        is_close_chasing,
-        is_killing
+        is_lurking,
+        is_intercepting
     };
-    interceptor_states _interceptor_state = is_init;
 
-    float calc_tti(cv::Point3f target_pos, cv::Point3f target_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
-    cv::Point3f update_far_target(bool drone_at_base);
-    cv::Point3f update_close_target(bool drone_at_base);
-    void update_interceptability(cv::Point3f req_aim_pos);
+    enum intercepting_states {
+        is_approaching,
+        is_intercept_maneuvering
+    };
+
+    tracking::TrackerManager *_trackers;
+    VisionData *_visdat;
+    Drone *_drone;
+    FlightArea *_flight_area;
+
+    bool initialized = false;
+    interceptor_states _interceptor_state = is_init;
+    intercepting_states _intercepting_state = is_approaching;
+
+    cv::Point3f best_interception_position;
+    control_modes _control_mode = position_control;
+    cv::Point3f _aim_pos;
+    cv::Point3f _aim_acc;
+    float interception_max_thrust;
+
+    bool target_in_flightarea = false;
+    bool aim_in_flightarea = false;
+
+    uint _n_frames_aim_not_in_range = 0;
+    float n_frames_target_cleared_timeout;
+    tracking::InsectTracker *_target_insecttracker = NULL;
+
+    float hunt_error;
+    float _best_hunt_error = INFINITY;
+    double _tti = -1;
+    double _tti_iip = -1;
+    const double duration_intercept_maneuver = 0.2;
+    double time_start_intercept_maneuver = -1;
+
+    const double optimization_time = 0.008; // @ 90fps optimization time max is 0.011
+
+    std::ofstream *_logger;
+
     tracking::InsectTracker *update_target_insecttracker();
 
+    void update_aim_in_flightarea(tti_result tti_res);
+    void update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target);
+
+    void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
+    void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos);
+
 public:
+    TTIOptimizerInterface tti_optimizer;
+    InterceptInPlanesOptimizerInterface intercept_in_planes_optimizer;
+
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
+    void init_flight(std::ofstream *logger);
+    void log(std::ostream *logger);
     void update(bool drone_at_base, double time);
+
+
+    tracking::TrackData target_last_trackdata();
+
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
     int insect_id() {
         if (!_target_insecttracker)
@@ -68,9 +93,10 @@ public:
             return _target_insecttracker->insect_trkr_id();
     }
 
-    tracking::TrackData target_last_trackdata();
+    bool target_acquired(double time) { return target_detected(time) && target_in_flightarea; }
 
-    bool target_acquired(double time) { return target_detected(time) && target_in_flight_area; }
+    bool intercepting() {return _interceptor_state == is_intercepting;}
+
     bool target_detected(double time) {
         if (!_target_insecttracker)
             return false;
@@ -82,10 +108,18 @@ public:
                && !_target_insecttracker->false_positive()
                && _target_insecttracker->properly_tracking();
     }
+
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}
+
+    control_modes control_mode() {return _control_mode;}
     cv::Point3f aim_pos() {return _aim_pos;}
+    cv::Point3f aim_acc() {return _aim_acc;}
+
     double time_to_intercept() {return _tti;}
-    float best_distance() {return _best_distance;}
+
+    float best_distance() {return _best_hunt_error;}
+    void reset_hunt_error() {_best_hunt_error = INFINITY;}
+
     double tti() {return _tti;};
     void target_is_hunted(int hunt_id) {
         if (_target_insecttracker)

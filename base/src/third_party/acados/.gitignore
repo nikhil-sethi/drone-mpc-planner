@@ -1,0 +1,11 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+
+*.o
+*.so
+drone_insect_ode_constraints/*.o
+drone_insect_ode_cost/*.o
+drone_insect_ode_model/*.o

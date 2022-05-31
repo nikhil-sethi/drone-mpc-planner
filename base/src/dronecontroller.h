@@ -56,11 +56,6 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_abort"
                                          };
 
-enum integrator_state {
-    reset,
-    hold,
-    running
-};
 
 
 
@@ -115,6 +110,11 @@ public:
         js_disarmed,
         js_checking, // waiting for sticks to be reset
         js_none // in case of no joystick
+    };
+    enum integrator_state {
+        reset,
+        hold,
+        running
     };
 private:
 
@@ -227,7 +227,7 @@ private:
     void draw_viz(tracking::StateData state_drone, tracking::StateData state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<tracking::StateData> traj);
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
-    integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
+    DroneController::integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
 
     std::tuple<float, float> acc_to_deg(cv::Point3f acc);
     std::tuple<float, float> acc_to_quaternion(cv::Point3f acc);
@@ -411,7 +411,7 @@ public:
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
-    void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double, bool enable_logging);
+    void control(tracking::TrackData data_drone, tracking::TrackData data_target_new, tracking::TrackData data_raw_insect, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging);
     bool landed() {return _landed; }
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }
@@ -464,5 +464,8 @@ public:
     void save_pad_pos_and_att_calibration();
     bool pad_calib_valid();
     bool thrust_calib_valid();
+    float *max_thrust() {
+        return &(calibration.max_thrust);
+    }
 
 };
