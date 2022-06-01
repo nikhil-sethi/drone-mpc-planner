@@ -177,7 +177,7 @@ public:
     int n_wp_flights() {return _n_wp_flights;}
     int n_hunt_flights() {return _n_hunt_flights;}
 
-    void shake_drone() {_state = ds_post_flight;}
+    void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
     bool drone_flying() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
     bool program_restart_allowed() {return _state != ds_flight && _state != ds_post_flight;}

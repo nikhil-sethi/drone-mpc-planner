@@ -76,7 +76,7 @@ void Drone::update(double time) {
                     _state = ds_flight;
                     _baseboard_link->allow_charging(false);
                     break;
-                } else if (trigger_waypoint_flight) {
+                } else if (trigger_waypoint_flight && !_trackers->monster_alert() && !_visdat->no_recent_brightness_events(time)) {
                     trigger_waypoint_flight = false;
                     take_off(false, time);
                     _state = ds_flight;
