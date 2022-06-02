@@ -75,6 +75,7 @@ void Charger::run() {
                     _charging_state = state_measure;
                     break;
                 }
+                mah_charged = 0;
                 charge(charging_mode_contact_problem);
                 rgbleds->led0_state(RGBLeds::LED0_not_charging);
                 break;
@@ -185,6 +186,7 @@ void Charger::run() {
                 break;
         } case state_wait_until_drone_ready: {
                 no_charging();
+                mah_charged = 0;
                 rgbleds->led0_state(RGBLeds::LED0_disabled);
                 if (!executor_disallow_charging_time)
                     _charging_state = state_measure;
