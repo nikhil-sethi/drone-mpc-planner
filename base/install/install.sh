@@ -29,12 +29,12 @@ if [ ! -f ~/dependencies/ssh_keys.done ] && [ $1 -eq 1 ] ; then
 		exit 1
 	fi
 
-	[ -f ~/dependencies/pats_ssh_files_v3.1.tar.xz ] || {
+	[ -f ~/dependencies/pats_ssh_files_v4.tar.xz ] || {
 		mkdir -p ~/.ssh
-		cp pats_ssh_files_v3.1.tar.xz ~/.ssh
+		cp pats_ssh_files_v4.tar.xz ~/.ssh
 		pushd ~/.ssh
 
-		tar -xf pats_ssh_files_v3.1.tar.xz
+		tar -xf pats_ssh_files_v4.tar.xz
 		eval `ssh-agent -s`
 
 		# this is not necessary if the ssh keys from the tar package are correct already
@@ -169,7 +169,7 @@ fi
 if [[ $ubuntu_str != *"18.04"* ]] && [[ $1 -eq 1 ]] && [[ ! -f gstreamer-v1.18.5.done ]]; then
 	pushd ~/code/
 	[ -d pats ] || {
-		git clone git@github.com:pats-drones/pats.git # needed for the patch
+		git clone git@github-pats:pats-drones/pats.git # needed for the patch
 		pushd pats
 		popd
 	}
