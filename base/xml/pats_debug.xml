@@ -1,7 +1,8 @@
-<SerializableClass Type="PatsParameters" Version="1.18">
+<SerializableClass Type="PatsParameters" Version="1.19">
     <Member Name="light_level_threshold">0</Member>
     <Member Name="periodic_restart_minutes">0</Member>
-    <Member Name="plukker_start">disabled</Member>
+    <Member Name="enable_start">disabled</Member>
+    <Member Name="enable_end">disabled</Member>
     <Member Name="min_hunt_size">0.01</Member>
     <Member Name="max_hunt_size">0.05</Member>
     <Member Name="has_screen">true</Member>

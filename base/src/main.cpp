@@ -64,7 +64,8 @@ xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
-std::time_t plukker_time;
+std::time_t enable_window_start_time;
+std::time_t enable_window_end_time;
 std::time_t start_time;
 std::time_t periodic_stop_time;
 bool draw_plots = false;
@@ -154,7 +155,7 @@ void process_video() {
 
             }
         }
-        if (render_mode && flight_replay_mode &&  patser.drone.nav.drone_resetting_yaw()) {
+        if (render_mode && flight_replay_mode && patser.drone.nav.drone_resetting_yaw()) {
             std::cout << "Render mode: yaw reset detected. Stopping." << std::endl;
             escape_key_pressed = true;
         }
@@ -280,17 +281,17 @@ void process_video() {
                   //   "\r\e[K" <<
                   imgcount <<
                   ", R:" << frame->rs_id <<
-                  ", T: " << to_string_with_precision(frame->time, 2)  <<
+                  ", T: " << to_string_with_precision(frame->time, 2) <<
                   " @ " << to_string_with_precision(fps, 1) <<
                   " " << patser.state_str();
 
 
         if (pparams.op_mode == op_mode_c) {
             if (patser.trackers.detections_count())
-                std::cout  <<
-                           ", light: " << to_string_with_precision(light_level, 2) <<
-                           ", detections: " << patser.trackers.detections_count() <<
-                           ", insects: " << patser.trackers.insects_count();
+                std::cout <<
+                          ", light: " << to_string_with_precision(light_level, 2) <<
+                          ", detections: " << patser.trackers.detections_count() <<
+                          ", insects: " << patser.trackers.insects_count();
         } else {
             std:: cout <<
                        ", " << patser.drone.drone_state_str() <<
@@ -318,7 +319,7 @@ void process_video() {
         if (patser.drone.program_restart_allowed()) {
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             auto seconds_to_periodic_stop_time = std::difftime(periodic_stop_time, time_now);
-            if (!log_replay_mode  && (pparams.periodic_restart_minutes > 0 && seconds_to_periodic_stop_time <= 0)) {
+            if (!log_replay_mode && (pparams.periodic_restart_minutes > 0 && seconds_to_periodic_stop_time <= 0)) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
@@ -326,9 +327,9 @@ void process_video() {
                 std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
                 communicate_state(es_brightness_restart);
                 exit_now = true;
-            } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
-                communicate_state(es_plukker_restart);
-                std::cout << "Initiating restart because plukker humans are in the way" << std::endl;
+            } else if (enable_window_start_time > 0 && enable_window_end_time > 0 && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0)) {
+                communicate_state(es_enable_window_restart);
+                std::cout << "Initiating restart because not in enable window" << std::endl;
                 exit_now = true;
             }
         }
@@ -394,7 +395,7 @@ void process_frame(StereoPair *frame) {
         cmdcenter.update(frame->left, frame->time);
 
     watchdog = true;
-    logger  << '\n';
+    logger << '\n';
 }
 
 
@@ -632,7 +633,7 @@ void init_terminal_signals() {
 }
 
 void init_loggers() {
-    if (log_replay_mode){
+    if (log_replay_mode) {
         data_output_dir = data_output_dir + "replay/";
         if (path_exist(data_output_dir)) {
             std::string rmcmd = "rm -r " + data_output_dir;
@@ -646,7 +647,7 @@ void init_loggers() {
         dparams.serialize(data_output_dir + "drone.xml");
     } else if (log_replay_mode && pparams.op_mode == op_mode_x) {
         if (flight_replay_mode) {
-            std::experimental::filesystem::path  drone_log_fn = std::experimental::filesystem::path(replay_video_fn).filename().replace_extension(".csv");
+            std::experimental::filesystem::path drone_log_fn = std::experimental::filesystem::path(replay_video_fn).filename().replace_extension(".csv");
             drone_log_fn = replay_dir + "/log_" + drone_log_fn.string();
             logreader.init(replay_dir, drone_log_fn.string());
         } else
@@ -655,11 +656,11 @@ void init_loggers() {
 
     }
 
-    logger.open(data_output_dir  + "log.csv", std::ofstream::out);
+    logger.open(data_output_dir + "log.csv", std::ofstream::out);
     logger << "id;rs_id;time;elapsed;exposure;gain;charging_state_str;charging_state;";
-    logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
+    logger_fn = data_output_dir + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
     if (pparams.video_raw) {
-        logger_video_ids.open(data_output_dir  + "frames.csv", std::ofstream::out);
+        logger_video_ids.open(data_output_dir + "frames.csv", std::ofstream::out);
         logger_video_ids << "encoded_img_count" << ";" << "imgcount" << ";" << "rs_id" << ";" << "time" << '\n';
     }
 
@@ -837,7 +838,7 @@ void init() {
 
     communicate_state(es_init);
     rc->init(rc_id);
-    patser.init(&logger, rc_id, rc.get(), replay_dir, cam.get(), &visdat,  &baseboard_link);
+    patser.init(&logger, rc_id, rc.get(), replay_dir, cam.get(), &visdat, &baseboard_link);
     if (flight_replay_mode) {
         patser.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
         visdat.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
@@ -866,7 +867,7 @@ void init() {
     auto start_minute = (*std::localtime(std::addressof(start_time))).tm_min;
     int minutes_to_periodic_restart = roundf((start_minute + pparams.periodic_restart_minutes - 5.f) / pparams.periodic_restart_minutes) * pparams.periodic_restart_minutes + 5 - start_minute;
     periodic_stop_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::minutes(minutes_to_periodic_restart));
-    std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T")  << std::endl;
+    std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T") << std::endl;
 
     logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
@@ -936,7 +937,7 @@ void save_results_log() {
     auto nav = &patser.drone.nav;
     auto end_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::ofstream results_log;
-    results_log.open(data_output_dir  + "results.txt", std::ofstream::out);
+    results_log.open(data_output_dir + "results.txt", std::ofstream::out);
     results_log << "op_mode:" << pparams.op_mode << '\n';
     results_log << "n_detections:" << patser.trackers.detections_count() << '\n';
     results_log << "n_monsters:" << patser.trackers.fp_monsters_count() << '\n';
@@ -952,7 +953,7 @@ void save_results_log() {
     results_log << "drone_problem:" << nav->drone_problem() << '\n';
     results_log << "run_time:" << visdat.current_time() << '\n';
     results_log << "start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
-    results_log << "end_datetime:" <<  std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "end_datetime:" << std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
     results_log.close();
 }
 
@@ -989,9 +990,9 @@ void wait_for_cam_angle() {
             }
             cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll, 2), false);
 
-            if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
+            if (fabs(roll) < pparams.max_cam_roll && !enable_delay)
                 break;
-            else if (fabs(roll)  > pparams.max_cam_roll) {
+            else if (fabs(roll) > pparams.max_cam_roll) {
                 if (!enable_delay)
                     communicate_state(es_wait_for_angle);
                 enable_delay = 60;
@@ -1004,15 +1005,15 @@ void wait_for_cam_angle() {
     }
 }
 
-void wait_for_plukker() {
-    if (plukker_time > 0) {
-        std::cout << "Checking for plukker time..." << std::endl;
+void wait_for_enable_window() {
+    if (enable_window_start_time > 0 && enable_window_end_time > 0) {
+        std::cout << "Checking enable window time..." << std::endl;
         while (true) {
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            if (std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
-                communicate_state(es_wait_for_plukker);
-                cmdcenter.reset_commandcenter_status_file("Waiting. Plukkers: ", false);
-                std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << " Waiting for plukkers" << std::endl;
+            if (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) {
+                communicate_state(es_wait_for_enable_window);
+                cmdcenter.reset_commandcenter_status_file("Waiting for enable window: ", false);
+                std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << " Waiting for enable window" << std::endl;
                 usleep(1e7);
             } else {
                 break;
@@ -1026,24 +1027,24 @@ void wait_for_dark() {
         std::cout << "Checking if dark..." << std::endl;
         int last_save_bgr_hour = -1;
         std::ofstream wait_for_dark_logger;
-        wait_for_dark_logger.open(data_output_dir  + "wait_for_dark.csv", std::ofstream::out);
+        wait_for_dark_logger.open(data_output_dir + "wait_for_dark.csv", std::ofstream::out);
         wait_for_dark_logger << "Datetime;Light level;Exposure;Gain;Brightness" << std::endl;
         while (true) {
             auto [light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_light_level();
             light_level = light_level_;
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             auto datetime = std::put_time(std::localtime(&t), "%Y/%m/%d %T");
-            std::cout << datetime << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain  << ", brightness: " <<  to_string_with_precision(avg_brightness, 0)  << std::endl;
+            std::cout << datetime << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain << ", brightness: " << to_string_with_precision(avg_brightness, 0) << std::endl;
             wait_for_dark_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << std::endl;
-            if (light_level  <= pparams.light_level_threshold) {
+            if (light_level <= pparams.light_level_threshold) {
                 wait_for_dark_logger.close();
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
             communicate_state(es_wait_for_darkness);
-            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain))  + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())), false);
+            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain)) + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())), false);
 
-            if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour != 13)  ||
+            if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour != 13) ||
                     (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour != 11) ||
                     (std::localtime(&t)->tm_hour == 15 && last_save_bgr_hour != 15)) {
                 std::stringstream date_ss;
@@ -1112,6 +1113,7 @@ void watchdog_worker(void) {
 
 int main(int argc, char **argv)
 {
+
     try {
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -1141,19 +1143,27 @@ int main(int argc, char **argv)
             return 0;
         }
 
-        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        struct std::tm *tm_start = std::localtime(&time_now);;
-        if (pparams.plukker_start.compare("disabled") != 0) {
-            std::istringstream ss(pparams.plukker_start);
-            ss >> std::get_time(tm_start, "%H:%M:%S");
-            plukker_time = mktime(tm_start);
+        if (pparams.enable_start.compare("disabled") != 0) {
+            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            struct std::tm *tm = std::localtime(&time_now);
+            std::istringstream ss(pparams.enable_start);
+            ss >> std::get_time(tm, "%H:%M:%S");
+            enable_window_start_time = mktime(tm);
         } else
-            plukker_time = -1;
+            enable_window_start_time = -1;
+        if (pparams.enable_end.compare("disabled") != 0) {
+            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            struct std::tm *tm = std::localtime(&time_now);
+            std::istringstream ss(pparams.enable_end);
+            ss >> std::get_time(tm, "%H:%M:%S");
+            enable_window_end_time = mktime(tm);
+        } else
+            enable_window_end_time = -1;
 
         check_hardware();
         if (!generator_mode && !log_replay_mode && !airsim_mode) {
-            wait_for_plukker();
             wait_for_cam_angle();
+            wait_for_enable_window();
             wait_for_dark();
         } else if (generator_mode || airsim_wp_mode)
             pparams.joystick = rc_none;

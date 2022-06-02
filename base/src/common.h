@@ -339,7 +339,7 @@ private:
     xBool _disable_real_hunts;
     xInt _fps, _periodic_restart_minutes;
 
-    xString _plukker_start;
+    xString _enable_start, _enable_end;
     xFloat _min_hunt_size, _max_hunt_size;
     xString _location;
     xString _flightplan;
@@ -359,7 +359,7 @@ public:
     drone_types drone;
     op_modes op_mode;
     bool disable_real_hunts;
-    std::string plukker_start;
+    std::string enable_start, enable_end;
     float min_hunt_size, max_hunt_size;
     std::string location;
     std::string flightplan;
@@ -376,12 +376,13 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.18");
+        setVersion("1.19");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("light_level_threshold", &_light_level_threshold);
         Register("periodic_restart_minutes", &_periodic_restart_minutes);
-        Register("plukker_start", &_plukker_start);
+        Register("enable_start", &_enable_start);
+        Register("enable_end", &_enable_end);
         Register("min_hunt_size", &_min_hunt_size);
         Register("max_hunt_size", &_max_hunt_size);
         Register("has_screen", &_has_screen);
@@ -426,7 +427,8 @@ public:
 
         light_level_threshold = _light_level_threshold.value();
         periodic_restart_minutes = _periodic_restart_minutes.value();
-        plukker_start = _plukker_start.value();
+        enable_start = _enable_start.value();
+        enable_end = _enable_end.value();
         min_hunt_size = _min_hunt_size.value();
         max_hunt_size = _max_hunt_size.value();
         has_screen = _has_screen.value();
@@ -450,7 +452,8 @@ public:
     void serialize(std::string settings_file) {
         _light_level_threshold = light_level_threshold;
         _periodic_restart_minutes = periodic_restart_minutes;
-        _plukker_start = plukker_start;
+        _enable_start = enable_start;
+        _enable_end = enable_end;
         _max_hunt_size = max_hunt_size;
         _min_hunt_size = min_hunt_size;
         _has_screen = has_screen;
@@ -944,7 +947,7 @@ enum executor_states {
     es_realsense_not_found,
     es_wait_for_darkness,
     es_wait_for_angle,
-    es_wait_for_plukker,
+    es_wait_for_enable_window,
     es_pats_c,
     es_pats_x,
     es_closing,
@@ -952,7 +955,7 @@ enum executor_states {
     es_watchdog_restart,
     es_user_restart,
     es_brightness_restart,
-    es_plukker_restart,
+    es_enable_window_restart,
     es_drone_version_mismatch,
     es_drone_config_restart,
     es_realsense_fps_problem,
