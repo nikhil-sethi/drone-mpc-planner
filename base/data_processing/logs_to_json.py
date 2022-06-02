@@ -27,7 +27,7 @@ else:
 
 if torch_exists:
     import use_model as ai
-from cut_moths import cut_all
+from cut_moths import cut
 
 
 version_c = "2.2"
@@ -502,8 +502,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
     logger = logging.getLogger('logs_to_json')
     for folder in ordered_dirs:
         logger.info("Processing " + folder)
-        if os.path.exists(folder + '/videoRawLR.avi'):  # this folder was probably not yet processed in cut_moth.
-            cut_all(folder)
+        if os.path.exists(folder + '/videoRawLR.mkv'):  # this folder was probably not yet processed in cut_moth.
+            cut(folder)
 
         top_folder = os.path.basename(folder)
         t_folder = str_to_datetime(top_folder)
