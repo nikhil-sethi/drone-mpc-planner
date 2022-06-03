@@ -949,18 +949,21 @@ std::tuple<int, int, int> DroneController::calc_feedforward_control(cv::Point3f 
 
 
 cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust) {
-    // Calculate safe acceleration (max desired acceleration which cannot the
-    // thrust constraints if it gravity compensated) for case in the further calculation
-    // something goes wrong
+    // des_acc /= normf(des_acc) * thrust;
+
+    // First, determine safe acceleration for the case that something goes wrong in the further calculation.
+    // A basic acceleration which compensates the gravity, maintains the direction of des_acc and which must hold the max_thrust constraint.
     cv::Point3f acc_backup = des_acc / normf(des_acc) * (thrust - GRAVITY) + cv::Point3f(0, GRAVITY, 0);
 
+    // Then, find the acceleration which:
+    //   - compensates gravity
+    //   - maintaints direction of des_acc
+    //   - and allow as much |des_acc| as possible (without violating max_thrust constraint)
+    // See ~code/pats/doc/desired_acceleration_drone.svg
     cv::Point3f req_acc = des_acc + cv::Point3f(0, GRAVITY, 0);
 
     if (normf(req_acc) < thrust)
         return req_acc;
-
-    if (normf(des_acc) > thrust)
-        des_acc = des_acc * thrust / normf(des_acc);
 
     float denominator = des_acc.dot(des_acc);
     float p = 2 * des_acc.y * GRAVITY / denominator;
@@ -981,8 +984,8 @@ cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f de
     if (k2 > 1.f && k2 < 1.05f)
         k2 = 1.;
 
-    bool k1_valid = 0 <= k1 && k1 <= 1;
-    bool k2_valid = 0 <= k2 && k2 <= 1;
+    bool k1_valid = (0 <= k1) && (k1 <= 1);
+    bool k2_valid = (0 <= k2) && (k2 <= 1);
 
     if (k1_valid && !k2_valid) {
         return k1 * des_acc + cv::Point3f(0, GRAVITY, 0);
