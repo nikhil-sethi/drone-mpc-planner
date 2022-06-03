@@ -213,9 +213,12 @@ class render_task(pats_task):
         super(render_task, self).__init__('render', timedelta(hours=9), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
-        daemon2baseboard_pkg.rendering = 1
-        render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
-        daemon2baseboard_pkg.rendering = 0
+        if not os.path.exists(lb.disable_rendering_flag):
+            daemon2baseboard_pkg.rendering = 1
+            render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
+            daemon2baseboard_pkg.rendering = 0
+        else:
+            self.logger.info('Rendering disabled.')
 
 
 class wdt_pats_task(pats_task):
