@@ -404,13 +404,14 @@ void Drone::post_flight(double time) {
                 }
                 break;
         } case post_init_crashed: {
+                time_crashed = time;
                 _trackers->stop_drone_tracking(&tracker);
                 _baseboard_link->allow_charging(true);
                 save_flight_results();
                 post_flight_state = post_crashed;
                 break;
         } case post_crashed: {
-                if (_baseboard_link->charging()) {
+                if (_baseboard_link->charging() && (time - time_crashed > 5)) { // baseboard charging detection can be slower a fast crash, so give it a few seconds
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
                 }

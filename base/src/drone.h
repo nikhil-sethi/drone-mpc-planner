@@ -14,8 +14,7 @@ static const char *drone_state_names[] = {
     "flight",
     "post_flight",
     "charge_fail",
-    "lost",
-    "crashed",
+    "rc loss",
     "beep"
 };
 static const char *pre_flight_state_names[] = {
@@ -130,6 +129,7 @@ private:
     double time_start_shaking = 0;
     double time_post_shake = 0;
     double time_shake_start = 0;
+    double time_crashed = 0;
     int n_shakes_sessions_after_landing = 0;
 
     const float max_safe_charging_telemetry_voltage = 4.35f; // safety overcharge flip happens at 4.4v
