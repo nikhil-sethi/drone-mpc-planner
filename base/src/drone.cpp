@@ -334,6 +334,7 @@ void Drone::pre_flight(double time) {
 void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
+                n_shakes_sessions_after_landing = 0;
                 flight_logger.flush();
                 flight_logger.close();
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
