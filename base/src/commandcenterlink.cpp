@@ -12,8 +12,8 @@ void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *v
     _patser = patser;
 
     if (!_log_replay_mode) {
-        // remove(demo_insect_fn.c_str());
-        // remove(demo_waypoint_fn.c_str());
+        remove(demo_insect_fn.c_str());
+        remove(demo_waypoint_fn.c_str());
         remove(calib_fn.c_str());
         remove(beep_fn.c_str());
         remove(shake_fn.c_str());
