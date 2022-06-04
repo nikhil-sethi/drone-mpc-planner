@@ -117,8 +117,10 @@ void DroneTracker::update(double time) {
                 _track.push_back(data);
                 update_drone_prediction(time);
                 handle_brightness_change(time);
-                if (_n_frames_lost == 0)
-                    _drone_tracking_status = dts_tracking;
+                if (_n_frames_lost > 3  && _drone_tracking_status_before_tracking_loss == dts_landing)
+                    _drone_tracking_status = dts_landed;
+                else if (_n_frames_lost == 0)
+                    _drone_tracking_status = _drone_tracking_status_before_tracking_loss;
                 break;
         } case dts_tracking: {
                 ItemTracker::update(time);
@@ -127,8 +129,10 @@ void DroneTracker::update(double time) {
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
-                if (!_tracking)
+                if (!_tracking) {
                     _drone_tracking_status = dts_detecting;
+                    _drone_tracking_status_before_tracking_loss = dts_tracking;
+                }
                 break;
         } case dts_detect_yaw: {
                 ItemTracker::update(time);
@@ -138,6 +142,10 @@ void DroneTracker::update(double time) {
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
                 detect_deviation_yaw_angle();
+                if (!_tracking) {
+                    _drone_tracking_status = dts_detecting;
+                    _drone_tracking_status_before_tracking_loss = dts_detect_yaw;
+                }
                 break;
         } case dts_landing_init: {
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler, _pad_im_size / im_scaler, time + landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -150,8 +158,10 @@ void DroneTracker::update(double time) {
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
-                if (!_tracking)
-                    _drone_tracking_status = dts_landed; // TODO: check if near expected pad location!
+                if (!_tracking) {
+                    _drone_tracking_status = dts_detecting;
+                    _drone_tracking_status_before_tracking_loss = dts_landing;
+                }
                 break;
         }  case dts_landed: {
                 ItemTracker::update(time);

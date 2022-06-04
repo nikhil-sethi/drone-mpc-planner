@@ -63,6 +63,7 @@ private:
     };
 
     drone_tracking_states _drone_tracking_status = dts_detecting_takeoff;
+    drone_tracking_states _drone_tracking_status_before_tracking_loss = dts_detecting_takeoff;
     cv::Point3f _target = {0};
     bool _manual_flight_mode = false;
     bool _hover_mode = false;

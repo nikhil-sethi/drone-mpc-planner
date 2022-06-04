@@ -261,7 +261,6 @@ void DroneNavigation::update(double time) {
                 break;
         } case ns_land: {
                 time_start_landing = time;
-                _tracker->land();
                 _control->flight_mode(DroneController::fm_prep_to_land);
                 _navigation_status = ns_landing;
                 [[fallthrough]];
@@ -275,8 +274,10 @@ void DroneNavigation::update(double time) {
                 }
                 if (_control->landed())
                     _navigation_status = ns_landed;
-                else if (!_control->landing() && _control->land_ctrl.switch_to_ff_landing(_tracker->last_track_data(), pad_pos))
+                else if (!_control->landing() && _control->land_ctrl.switch_to_ff_landing(_tracker->last_track_data(), pad_pos)) {
                     _control->flight_mode(DroneController::fm_ff_landing_start);
+                    _tracker->land();
+                }
 
                 setpoint_pos_world = new_pos_setpoint;
                 break;
