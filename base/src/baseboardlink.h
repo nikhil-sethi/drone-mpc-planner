@@ -131,7 +131,7 @@ public:
 
     bool disabled() {return _disabled;}
     bool exit_now() { return _exit_now;}
-    bool battery_ready_for_flight() { return _charging_state == state_trickle_charging || (_charging_state == state_normal_charging && _bat_voltage >= dparams.min_hunt_cell_v);}
+    bool battery_ready_for_flight() { return _charging_state == state_trickle_charging || _charging_state == state_discharge || (_charging_state == state_normal_charging && _bat_voltage >= dparams.min_hunt_cell_v);}
     bool charging() {return _charging_state == state_normal_charging || _charging_state == state_trickle_charging || _charging_state == state_revive_charging || _charging_state == state_discharge;};
     bool charging_waits_until_drone_ready() {return _charging_state == state_wait_until_drone_ready;};
     bool contact_problem() {return _charging_state == state_contact_problem;}

@@ -141,25 +141,24 @@ void Charger::run() {
                 if (battery_volt_measurement_stable && millis() - measure_during_charge_start_time > min_volt_measuring_duration) {
                     measure_during_charge_end_time = millis();
                     if (battery_volts > dangerous_battery_volts) {
+                        if (drone_amps_burn > drone_amps_burn_initial_guess)
+                            drone_amps_burn = drone_amps_burn_initial_guess;
                         _charging_state = state_discharge;
                         volt_mode_pv_initialised = false;
                     } else if (last_charging_amps < min_charge_amps && setpoint_amp_prev > min_charge_amps && last_charging_volts > 12 && battery_volts >= min_volts_detection) {
                         _charging_state = state_contact_problem;
                         volt_mode_pv_initialised = false;
-                    } else if (battery_volts >= min_battery_volts_trickle_charge) {
-                        if (!volt_mode_pv_initialised) {
-                            //initialize the pv with some current base charging first, because convergence with volts based charging is tuned to takes very long
-                            // current base charging is faster because it has a ff term
-                            setpoint_amps = drone_amps_burn;
-                            _charging_state = state_normal_charging;
-                        } else {
-                            if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f && last_charging_amps > min_charge_amps)  {
-                                drone_amps_burn = moving_average(0.03f, average_charging_amps, drone_amps_burn);
-                                drone_amps_burn = constrain(drone_amps_burn, 0, 0.3f); // expected is 0.15A, constrain to 0.3 for safety
-                            }
-                            volt_control();
-                            _charging_state = state_trickle_charging;
+                    } else if (!volt_mode_pv_initialised && battery_volts >= min_battery_volts_initialise_trickle_charge) {
+                        //initialize the pv with some current base charging first, because convergence with volts based charging is tuned to take very long
+                        setpoint_amps = drone_amps_burn;
+                        _charging_state = state_normal_charging;
+                    } else if (volt_mode_pv_initialised && battery_volts >= min_battery_volts_trickle_charge) {
+                        if (fabs(battery_volts - max_battery_volts) < 0.005f && fabs(d_battery_volts) < 0.005f && last_charging_amps > min_charge_amps)  {
+                            drone_amps_burn = moving_average(0.03f, average_charging_amps, drone_amps_burn);
+                            drone_amps_burn = constrain(drone_amps_burn, 0, 0.3f); // expected is 0.15A, constrain to 0.3 for safety
                         }
+                        volt_control();
+                        _charging_state = state_trickle_charging;
                     } else if (battery_volts >= battery_volts_almost_full) {
                         setpoint_amps = charge_half_C + drone_amps_burn;
                         _charging_state = state_normal_charging;
@@ -187,6 +186,7 @@ void Charger::run() {
         } case state_wait_until_drone_ready: {
                 no_charging();
                 mah_charged = 0;
+                volt_mode_pv_initialised = false;
                 rgbleds->led0_state(RGBLeds::LED0_disabled);
                 if (!executor_disallow_charging_time)
                     _charging_state = state_measure;
@@ -209,7 +209,7 @@ bool Charger::measuring_time() {
         return true;
     }
     if (millis() - measure_during_charge_end_time > periodic_volt_measuring_duration) { // normal charging / measure cycle
-        if (battery_volts > min_battery_volts_trickle_charge)
+        if (battery_volts > min_battery_volts_trickle_charge && fabs(charging_amps - drone_amps_burn) < 0.05f)
             volt_mode_pv_initialised = true;
         return true;
     } else if (millis() - measure_during_charge_end_time > charge_amp_measurement_valid_timeout && //react to bad contact (event)

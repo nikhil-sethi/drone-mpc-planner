@@ -43,7 +43,8 @@ private:
     const float min_battery_volts_normal_charge = 1.4f; //TMP! Should be 2.5 or something after we solve #258
     const float battery_volts_very_empty = 3.5f;
     const float battery_volts_almost_full = 4.1f;
-    const float min_battery_volts_trickle_charge = 4.15f;
+    const float min_battery_volts_trickle_charge = 4.17f;
+    const float min_battery_volts_initialise_trickle_charge = 4.19f;
     const float max_battery_volts = 4.20f;
     const float dangerous_battery_volts = 4.25f;
     const float min_charge_amps = 0.05f;
