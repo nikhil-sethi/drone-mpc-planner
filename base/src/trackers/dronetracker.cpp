@@ -319,6 +319,8 @@ bool DroneTracker::detect_lift_off() {
 }
 
 bool DroneTracker::check_ignore_blobs(BlobProps *pbs) {
+    if (_drone_tracking_status == dts_detecting_takeoff)
+        return false;
     return this->check_ignore_blobs_generic(pbs);
 }
 //Removes all ignore points which timed out
