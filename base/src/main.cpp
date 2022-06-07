@@ -385,10 +385,13 @@ void process_frame(StereoPair *frame) {
     if (pparams.has_screen || render_mode) {
         visualizer.add_plot_sample();
         visualizer.update_tracker_data(visdat.frameL, patser.drone.nav.setpoint().pos(), frame->time, draw_plots);
+        if (flight_replay_mode)
+            visualizer.draw_drone_from_log(logreader.log_drone()->current_entry);
         if (pparams.video_render && !exit_now) {
             if (log_replay_mode)
                 video_render.block(); // only use this for rendering
             video_render.write(visualizer.trackframe);
+
         }
     }
     if (!log_replay_mode)

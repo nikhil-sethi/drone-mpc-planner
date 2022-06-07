@@ -25,7 +25,7 @@ public:
 
 
     LogEntryMain current_entry;
-    DroneReader *log_drone() {return &_log_drone;};
+    DroneReader * log_drone() {return &_log_drone;};
     std::vector<InsectReader> replay_moths() {
         std::vector<InsectReader> replay_logs;
         for (auto &log : log_insects) {

@@ -568,6 +568,11 @@ void Visualizer::draw_tracker_viz() {
         }
     }
 
+    if (pos_log_drone_valid) {
+        cv::circle(frameL_color, pos_log_drone, 10, blue, 2);
+        pos_log_drone_valid = false;
+    }
+
     cv::resize(frameL_color, roi, size);
 
     cv::Size vizsizeL(size.width / 4, size.height / 4);
@@ -600,6 +605,13 @@ void Visualizer::draw_tracker_viz() {
     } else
         trackframe = resFrame;
 
+}
+
+void Visualizer::draw_drone_from_log(logging::LogEntryDrone entry) {
+    if (entry.foundL) {
+        pos_log_drone = cv::Point(entry.im_x, entry.im_y);
+        pos_log_drone_valid = true;
+    }
 }
 
 void Visualizer::render() {

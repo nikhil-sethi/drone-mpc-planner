@@ -12,6 +12,7 @@
 #include "itemtracker.h"
 #include "pats.h"
 #include "generatorcam.h"
+#include "logging.h"
 
 
 class Visualizer {
@@ -97,6 +98,9 @@ public:
     cv::Mat posY_drone;
     cv::Mat posZ_drone;
 
+    bool pos_log_drone_valid = false;
+    cv::Point pos_log_drone;
+
     cv::Mat posX_target;
     cv::Mat posY_target;
     cv::Mat posZ_target;
@@ -157,5 +161,6 @@ public:
         _viz_exposure_initialized = true;
         cv::namedWindow("exposure map", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
     }
+    void draw_drone_from_log(logging::LogEntryDrone entry);
 
 };
