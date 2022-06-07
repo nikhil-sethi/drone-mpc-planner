@@ -19,9 +19,15 @@ void stop_charging_interrupt_handle() {
     }
 }
 
-void Charger::init(RGBLeds *rgbleds_) {
+void Charger::init(RGBLeds *rgbleds_, uint16_t hardware_version) {
     rgbleds = rgbleds_;
     analogReference(INTERNAL);
+
+
+    if (hardware_version == 2)
+        amps_measurement_resistance = 0.3333f;
+    else if (hardware_version > 2)
+        amps_measurement_resistance = 3.3f;
 
     pinMode(CHARGING_PWM_PIN, OUTPUT);
     pinMode(CHARGING_ENABLE_PIN, OUTPUT);

@@ -36,9 +36,6 @@ void setup() {
     pinMode(USB_ENABLE_PIN, OUTPUT);
     digitalWrite(USB_ENABLE_PIN, 1);
 
-    pinMode(WATCHDOG_STATUS_LED_PIN, OUTPUT);
-    digitalWrite(WATCHDOG_STATUS_LED_PIN, watchdog_enabled);
-
     pinMode(IR_LED_ENABLE_PIN, OUTPUT);
     digitalWrite(IR_LED_ENABLE_PIN, 1);
 
@@ -55,8 +52,9 @@ void setup() {
 
     rgb_leds.init();
 
-    charger.init(&rgb_leds);
     init_hardware_version();
+    charger.init(&rgb_leds, hardware_version);
+
     // restart_usb()
     // read_buttons();
 
@@ -80,7 +78,7 @@ void handle_serial_input() {
         {
             case header_SerialNUC2BaseboardChargingPackage: {
                     SerialNUC2BaseboardChargingPackage *pkg = reinterpret_cast<SerialNUC2BaseboardChargingPackage * >(&serial_input_buffer);
-                    if (hardware_version != 2) {
+                    if (hardware_version != 2 &&  hardware_version != 3) {
                         pkg->enable_charging = 0;
                         debugln("WARNING: HARDWARE REV MISMATCH --> DISABLED CHARGING")
                     }
@@ -105,12 +103,10 @@ void handle_serial_input() {
                     write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
 
                     if (pkg->watchdog_enabled && !watchdog_enabled) {
-                        digitalWrite(WATCHDOG_STATUS_LED_PIN, 1);
                         write_watchdog_state_eeprom(watchdog_enabled);
                         watchdog_enabled = true;
                         debugln("Watchdog enabled");
                     } else if (!pkg->watchdog_enabled && watchdog_enabled) {
-                        digitalWrite(WATCHDOG_STATUS_LED_PIN, 0);
                         write_watchdog_state_eeprom(watchdog_enabled);
                         watchdog_enabled = false;
                         debugln("Watchdog disabled");
@@ -276,6 +272,8 @@ void init_hardware_version() {
     Serial.print("Hardware version ");
     Serial.println(analog_value);
     hardware_version = analog_value;
+    if (hardware_version == 21) //oh oh oh oh oh oh oh oh oh oh oh
+        hardware_version  = 3;
 }
 
 void read_buttons() {
