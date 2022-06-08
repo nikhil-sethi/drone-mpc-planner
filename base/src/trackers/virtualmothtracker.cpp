@@ -5,22 +5,26 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData *visdat, DroneController *dctrl) {
-    if (!dctrl && behavior_type != no_reaction) {
-        std::cout << "VirtualMothTracker: Set moth behavior to 'no_reaction', since dctrl is pointing to null." << std::endl;
-    }
+tracking::VirtualMothTracker::moth_behavior_type VirtualMothTracker::init(int id, moth_behavior_type moth_behavior, VisionData *visdat, DroneController *dctrl) {
+    std::cout << "Virtualmoth: trigger: " << moth_behavior.trigger << " evasion: " << moth_behavior.evasion << std::endl;
     _id = id;
     _visdat = visdat;
     _dctrl = dctrl;
     _n_frames_lost = 0;
     _name = "replay"; //This is also an prefix in the log.csv. For replay-support the log is saved as replay-moth
-    behavior_type = mothbehavior_type;
     track_history_max_size = pparams.fps;
     init_logger();
     initialized = true;
     max_radius = 0.03;
-    insect_pos = {1., -0.7, -1.9};
-    insect_vel = {-1.5, 0, 0};
+    insect_pos = {1.2, -0.7, -1.45};
+    insect_vel = {-0.5, 0, 0};
+    _moth_behavior = moth_behavior;
+    moth_behavior_type new_moth_behavior(moth_behavior.trigger, moth_behavior.evasion);
+    new_moth_behavior.trigger = static_cast<trigger_type>((static_cast<int>(moth_behavior.trigger) + 1) % number_trigger_types);
+    if (new_moth_behavior.trigger < moth_behavior.trigger)
+        new_moth_behavior.evasion = static_cast<evasion_type>((static_cast<int>(moth_behavior.evasion) + 1) % number_evasion_types);
+
+    return new_moth_behavior;
 }
 
 void VirtualMothTracker::init_logger() {
@@ -52,21 +56,60 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     if (start_time <= 0)
         start_time = time;
 
-    if (behavior_type != no_reaction) {
-        if (_dctrl->auto_throttle > 400) {
-            escape_triggered = true;
+    if (!escape_triggered) {
+        switch (_moth_behavior.trigger) {
+            case drone_spinup: {
+                    if (_dctrl->auto_throttle > 400) {
+                        escape_triggered = true;
+                        time_escape_triggered = time;
+                    }
+                    break;
+            } case hunt_error: {
+                    if (normf(insect_pos - _dctrl->dronetracker()->last_track_data().pos()) < 0.25f) {
+                        escape_triggered = true;
+                        time_escape_triggered = time;
+                    }
+                    break;
+                }
+            default: {
+                    break;
+                }
         }
     }
+
     if (escape_triggered) {
-        if (behavior_type == diving)
-            insect_vel += cv::Point3f(0., -2, 0.) / static_cast<float>(pparams.fps);
+        switch (_moth_behavior.evasion) {
+            case diving: {
+                    insect_acc =  cv::Point3f(0., -2, 0.);
+                    break;
+            } case u_turn: {
+                    if ((time - time_escape_triggered) < duration_escape_turn) {
+                        cv::Point3f vertical = {0, 1, 0};
+                        cv::Point3f accel_direction = vertical.cross(insect_vel);
+                        accel_direction /= normf(accel_direction);
+                        insect_acc = accel_direction * 5;
+                    } else {
+                        insect_acc = cv::Point3f(0, 0, 0);
+                    }
+                    break;
+            } default: {
+                    break;
+                }
+        }
     }
 
     _n_frames_lost = 0;
     _n_frames_tracking++;
     _tracking = true;
 
+    if (insect_acc.x != insect_acc.x) {
+        std::cout << "insect_acc: " << insect_acc << " set it to 0!" << std::endl;
+        insect_acc = cv::Point3f(0, 0, 0);
+    }
+
+    insect_vel += 1. / pparams.fps * insect_acc;
     insect_pos += 1. / pparams.fps * insect_vel;
+
     cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
     _image_item = ImageItem(insect_im.x, insect_im.y, insect_im.z, frame_number);
     _image_item.valid = true;
@@ -106,7 +149,7 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     data.world_item = w;
     data.predicted_image_item = _image_predict_item;
 
-    if (time - start_time > 5)
+    if (time - start_time > 5 || normf(insect_pos - _dctrl->dronetracker()->last_track_data().pos()) < 0.05f)
         _delete_me = true;
 
     cleanup_history();

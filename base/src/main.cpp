@@ -378,7 +378,7 @@ bool handle_key(double time [[maybe_unused]]) {
             init_insect_log(62);
             break;
         case 'v':
-            patser.trackers.init_virtual_moth(tracking::VirtualMothTracker::diving, &patser.drone.control);
+            patser.trackers.init_virtual_moth(&patser.drone.control);
             break;
         case 82: // arrow up
             patser.drone.nav.manual_trigger_next_wp();

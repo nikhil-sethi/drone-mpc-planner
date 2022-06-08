@@ -228,6 +228,10 @@ public:
     KeepInViewController kiv_ctrl;
     AccelerometerTrim accelerometer_trim;
 
+    tracking::DroneTracker *dronetracker() {
+        return _dtrk;
+    }
+
     void led_strength(float light_level);
 
     cv::Point3f update_pid_controller(tracking::TrackData data_drone, cv::Point3f setpoint_pos, bool choosing_insect);

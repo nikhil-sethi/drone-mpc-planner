@@ -14,7 +14,7 @@
 #define GRAVITY 9.81f
 
 int sign(float x);
-vector <string> split_csv_line(string);
+vector<string> split_csv_line(string);
 vector<string> split_csv_line(string, char);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);

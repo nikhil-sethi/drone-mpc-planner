@@ -90,7 +90,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
         if (file_exist(virtual_insect_fn)) {
             _n_replay_moth++;
             std::cout << "Virtual insect!" << std::endl;
-            _patser->trackers.init_virtual_moth();
+            _patser->trackers.init_virtual_moth(&(_patser->drone.control));
             remove(virtual_insect_fn.c_str());
         }
     }

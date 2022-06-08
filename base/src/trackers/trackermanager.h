@@ -173,6 +173,7 @@ private:
     int _motion_thresh;
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
+    tracking::VirtualMothTracker::moth_behavior_type mothbehavior;
 
     void update_trackers(double time, long long frame_number);
     void find_blobs();
@@ -235,9 +236,6 @@ public:
         next_insecttrkr_id++;
     }
     void init_replay_moth(std::vector<logging::InsectReader> logs) { replay_logs = logs; }
-    void init_virtual_moth() {
-        init_virtual_moth(tracking::VirtualMothTracker::no_reaction, 0);
-    }
     void process_replay_moth(unsigned long long rs_id) {
         replay_logs.erase(
             std::remove_if(
@@ -258,10 +256,10 @@ public:
         replay_logs.end()
         );
     }
-    void init_virtual_moth(tracking::VirtualMothTracker::mothbehavior behavior_type, DroneController *dctrl) {
+    void init_virtual_moth(DroneController *dctrl) {
         VirtualMothTracker *vt;
         vt = new VirtualMothTracker();
-        vt->init(next_insecttrkr_id, behavior_type, _visdat, dctrl);
+        mothbehavior = vt->init(next_insecttrkr_id, mothbehavior, _visdat, dctrl);
         _trackers.push_back(vt);
         next_insecttrkr_id++;
     }

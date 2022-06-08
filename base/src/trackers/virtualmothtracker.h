@@ -7,10 +7,27 @@ namespace tracking {
 
 class VirtualMothTracker : public InsectTracker {
 public:
-    enum mothbehavior {
+
+    enum trigger_type {
+        drone_spinup,
+        hunt_error,
+        number_trigger_types, //must be last element
+    };
+
+    enum evasion_type {
         diving,
-        escape_turn,
-        no_reaction
+        u_turn,
+        no_reaction,
+        number_evasion_types, //must be last element
+
+    };
+
+    struct moth_behavior_type {
+        trigger_type trigger;
+        evasion_type evasion;
+
+        moth_behavior_type(): trigger(drone_spinup), evasion(diving) {}
+        moth_behavior_type(trigger_type tr, evasion_type ev): trigger(tr), evasion(ev) {};
     };
 
 private:
@@ -19,14 +36,18 @@ private:
     void start_new_log_line(double time, unsigned long long frame_number);
     cv::Point3f insect_pos;
     cv::Point3f insect_vel;
+    cv::Point3f insect_acc;
     DroneController *_dctrl;
     bool _delete_me = false;
     double start_time = 0;
     bool escape_triggered = false;
-    mothbehavior behavior_type;
+    moth_behavior_type _moth_behavior;
+    double time_escape_triggered = -1;
+    double duration_escape_turn = 0.27;
+
 
 public:
-    void init(int id, mothbehavior behavior_type, VisionData *visdat, DroneController *dctrl);
+    moth_behavior_type init(int id, moth_behavior_type mothbehavior, VisionData *visdat, DroneController *dctrl);
     void init_logger();
     bool check_ignore_blobs(BlobProps *pbs [[maybe_unused]]) {return false;}
     void calc_world_item(BlobProps *pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
