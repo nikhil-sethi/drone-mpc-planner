@@ -92,13 +92,11 @@ class pats_task(metaclass=abc.ABCMeta):
 
     def next_trigger(self):
         if self.start_td.total_seconds() > 0:
-            start_trigger_time = datetime.combine(date.today(), datetime.min.time())
-            start_trigger_time = start_trigger_time + self.start_td
+            start_trigger_time = datetime.combine(date.today(), (datetime.min + self.start_td).time())
+            while pd.to_datetime(start_trigger_time).round('1s') <= pd.to_datetime(datetime.today()).round('1s'):
+                start_trigger_time = start_trigger_time + self.periodic_td
         else:
-            start_trigger_time = datetime.combine(date.today(), datetime.min.time()) - self.periodic_td
-
-        while pd.to_datetime(start_trigger_time).round('1s') <= pd.to_datetime(datetime.today()).round('1s'):
-            start_trigger_time = start_trigger_time + self.periodic_td
+            start_trigger_time = datetime.combine(date.today(), datetime.today().time()) + self.periodic_td
 
         return start_trigger_time
 
