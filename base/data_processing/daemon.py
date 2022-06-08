@@ -156,6 +156,15 @@ class wp_demo_task(pats_task):
             shutil.copyfile(os.path.expanduser('~/code/pats/base/xml/flightplans/simple-demo-floriade.xml'), os.path.expanduser('~/pats/flags/pats_demo.xml'))
 
 
+class baseboard_task(pats_task):
+    def __init__(self, error_file_handler):
+        super(baseboard_task, self).__init__('baseboard', timedelta(), timedelta(seconds=3), False, error_file_handler)
+
+    def task_func(self):
+        if not os.path.exists(lb.disable_baseboard_flag):
+            baseboard_comm.send(daemon2baseboard_pkg.pack())
+
+
 class logs_to_json_task(pats_task):
     def __init__(self, error_file_handler):
         super(logs_to_json_task, self).__init__('logs_to_json', timedelta(hours=8, minutes=30), timedelta(hours=24), False, error_file_handler)
@@ -395,6 +404,8 @@ tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
 tasks.append(wp_demo_task(error_file_handler))
+tasks.append(baseboard_task(error_file_handler))
+
 
 while True:
     os.system('clear')  # nosec
@@ -404,7 +415,6 @@ while True:
     if os.path.exists(lb.disable_baseboard_flag):
         print('Baseboard: disabled')
     else:
-        baseboard_comm.send(daemon2baseboard_pkg.pack())
         if not baseboard_comm.connection_ok:
             print('Baseboardlink LOST since: ' + baseboard_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
         else:
