@@ -180,7 +180,7 @@ public:
     void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
     bool drone_flying() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
-    bool program_restart_allowed() {return _state != ds_flight && _state != ds_post_flight;}
+    bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost);}
     void beep_drone() {_state = ds_beep;}
     void redetect_drone_location() {
         control.invalidize_blink();
