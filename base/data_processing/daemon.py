@@ -278,7 +278,7 @@ class wdt_tunnel_task(pats_task):
     # then, and the system is just waiting for darkness.
 
     def __init__(self, error_file_handler):
-        super(wdt_tunnel_task, self).__init__('wdt_tunnel', timedelta(), timedelta(hours=1), False, error_file_handler)
+        super(wdt_tunnel_task, self).__init__('wdt_tunnel', timedelta(), timedelta(hours=1), True, error_file_handler)
 
     tunnel_ok_time = datetime.today()
 
@@ -297,14 +297,16 @@ class wdt_tunnel_task(pats_task):
             output = output.decode(sys.stdout.encoding)
             output = output.splitlines()
         tunnel_ok = False
-        daemon2baseboard_pkg.internet_OK = 0
 
         for line in output:
             if line:
                 if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
                     self.tunnel_ok_time = datetime.today()
                     tunnel_ok = True
-                    daemon2baseboard_pkg.internet_OK = 1
+        if tunnel_ok:
+            daemon2baseboard_pkg.internet_OK = 1
+        else:
+            daemon2baseboard_pkg.internet_OK = 0
 
         if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
             self.error_cnt += 1

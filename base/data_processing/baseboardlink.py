@@ -124,6 +124,8 @@ def deamon_receiver(msg):
     if msg[0] == ord(ls.BASEBOARD_PACKAGE_PRE_HEADER):
         if msg[3] == ord(ls.baseboard_package_headers.header_SocketDaemonLink2BaseboardLinkPackage.value[0]):
             daemon_pkg.parse(msg)
+    if not daemon_pkg.internet_OK:
+        logger.warning('Internet is not OK...')
 
 
 rgb_led_pkg = ls.SerialNUC2BaseboardRGBLEDPackage()  # must be initialized before starting the socket comm
