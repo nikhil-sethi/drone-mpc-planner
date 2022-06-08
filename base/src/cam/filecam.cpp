@@ -142,8 +142,8 @@ StereoPair *FileCam::update() {
     if (frame_cnt >= frame_ids.size())
         frame_number_new = ULONG_MAX;
     else if (frame_ids.size() > 0) {
-        frame_number_new = frame_ids.at(frame_cnt - 1).rs_id;
-        frame_time_new = frame_ids.at(frame_cnt - 1).time;
+        frame_number_new = frame_ids.at(frame_cnt).rs_id;
+        frame_time_new = frame_ids.at(frame_cnt).time;
     } else {
         auto f = current();
         frame_number_new = f->rs_id + 1;

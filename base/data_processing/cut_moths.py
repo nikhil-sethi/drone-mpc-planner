@@ -16,7 +16,7 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
             ffmpeg_cmd = ffmpeg_cmd_init
             arg_cnt = 0
             if os.path.exists(video_in_fn):
-                cut_log.write('Video file size: ' + str(os.path.getsize(video_in_fn) / 1024 / 1024 / 1024) + 'GB')
+                cut_log.write('Video file size: ' + str(os.path.getsize(video_in_fn) / 1024 / 1024 / 1024) + 'GB\n')
 
                 for file in files:
                     logger.info('Processing ' + file)
@@ -39,7 +39,6 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
                                 monitor_log = fp == 'fp_not_a_fp' or fp == 'fp_too_big' or fp == 'fp_too_far'
                             if flight_log or monitor_log:
                                 video_start_rs_id = int(lines[1].split(';')[heads.index('rs_id')])
-                                prev_rs_id = 0
                                 while True:
                                     frame_line = frames_log.readline()
                                     video_start_time = -1
@@ -52,8 +51,7 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
 
                                     if (int(splitted_frame_line[0])) % 30 == 0:  # assuming a keyframe every 30 frames
                                         last_keyframe_id = int(splitted_frame_line[0])
-                                        last_keyframe_rs_id = prev_rs_id
-                                    prev_rs_id = int(splitted_frame_line[2])
+                                        last_keyframe_rs_id = int(splitted_frame_line[2])
 
                                     if int(splitted_frame_line[2]) == video_start_rs_id:
                                         video_start_video_id = last_keyframe_id   # instead of using exactly int(splitted_frame_line[0]), the way the video encoding works is that we can only cut from the last keyframe
@@ -80,6 +78,7 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
                                     video_out_file = log_folder + '/flight' + file_id + '.mkv'
                                     with open(log_folder + '/flight' + file_id + '.txt', 'w', encoding="utf-8") as flight_start_rs_id_file:
                                         flight_start_rs_id_file.write(str(last_keyframe_rs_id))
+                                        flight_start_rs_id_file.write('\nThis file is auto generated from cut_moths.py. It contains the rs_id of the keyframe (video encoding, every 30 frames by default) just before the actual start of this flight/insect log.\n')
                                 video_out_file = video_out_file.replace(os.path.expanduser('~'), '~')
                                 video_out_file = video_out_file.replace('//', '/')
                                 cmd = ' -c:v copy -an -ss ' + str(round(video_start_time, 2)) + ' -t ' + str(round(video_duration, 2)) + ' ' + video_out_file
@@ -105,17 +104,16 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
 def cut(folder, dry_run=False):
     logger = logging.getLogger('cut_moths')
     frames_fn = folder + '/frames.csv'
-    cut_log_fn = folder + '/cut_moth.log'
     if not os.path.exists(frames_fn):
         print("Frames.csv not found")
     else:
         video_in_fn = folder + '/videoRawLR.mkv'
         flights = lb.natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_flight*.csv"))])
         if len(flights):
-            cut_files(folder, flights, logger, video_in_fn, frames_fn, cut_log_fn, dry_run)
+            cut_files(folder, flights, logger, video_in_fn, frames_fn, folder + '/cut_flight.log', dry_run)
         insects = lb.natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_itrk*.csv")) if "itrk0" not in fp])
         if len(insects):
-            cut_files(folder, insects, logger, video_in_fn, frames_fn, cut_log_fn, dry_run)
+            cut_files(folder, insects, logger, video_in_fn, frames_fn, folder + '/cut_detections.log', dry_run)
         if not dry_run:
             os.remove(video_in_fn)
 
