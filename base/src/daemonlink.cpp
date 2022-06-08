@@ -37,12 +37,13 @@ void DaemonLink::init(bool replay_mode) {
 void DaemonLink::worker_receive() {}
 
 void DaemonLink::send_over_socket(unsigned char *data, ssize_t len) {
+    if (_exit_now)
+        return;
     auto ret = send(sock, data, len, MSG_NOSIGNAL);
     if (ret != len) {
         std::cout << "Error: Daemon comm send failed " << ret << "   " <<  len << std::endl;
         _exit_now = true;
         close(sock);
-        exit(1);
     }
 }
 

@@ -109,19 +109,20 @@ void BaseboardLink::worker_receive() {
                 std::cout << "BaseboardLink comm receive failed" << std::endl;
                 _exit_now = true;
                 close(sock);
-                exit(1);
+                return;
             }
         }
     }
 }
 
 void BaseboardLink::send_over_socket(unsigned char *data, ssize_t len) {
+    if (_exit_now)
+        return;
     auto ret = send(sock, data, len, MSG_NOSIGNAL);
     if (ret != len) {
         std::cout << "Error: BaseboardLink comm send failed " << ret << "   " <<  len << std::endl;
         _exit_now = true;
         close(sock);
-        exit(1);
     }
 }
 

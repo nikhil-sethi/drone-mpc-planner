@@ -183,58 +183,60 @@ void process_video() {
             exit_now = true;
         }
 
-        if (rc->init_package_failure()) {
-            exit_now = true;
-            communicate_state(es_rc_problem);
-            cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
-        } else if (rc->bf_version_error() and !patser.drone.drone_flying()) {
-            exit_now = true;
-            communicate_state(es_drone_version_mismatch);
-            cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
-        } else if (rc->bf_uid_error()) {
-            if (rc->bf_uid_str() == "hacr") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_hammer;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "ancr") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_anvil_crazybee;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "ansu") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_anvil_superbee;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "andi") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_anvil_diamond;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "qutt") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_qutt;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "quf4") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_quf4;
-                pparams.serialize(pats_xml_fn);
-            } else if (rc->bf_uid_str() == "quto") {
-                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone = drone_quto;
-                pparams.serialize(pats_xml_fn);
-            }
-            if (!patser.drone.drone_flying()) {
+        if (patser.drone.program_restart_allowed()) {
+            if (rc->init_package_failure()) {
                 exit_now = true;
-                communicate_state(es_drone_config_restart);
-                cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
+                communicate_state(es_rc_problem);
+                cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
+            } else if (rc->bf_version_error()) {
+                exit_now = true;
+                communicate_state(es_drone_version_mismatch);
+                cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
+            } else if (rc->bf_uid_error()) {
+                if (rc->bf_uid_str() == "hacr") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_hammer;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "ancr") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_crazybee;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "ansu") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_superbee;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "andi") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_diamond;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "qutt") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_qutt;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "quf4") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_quf4;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "quto") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_quto;
+                    pparams.serialize(pats_xml_fn);
+                }
+                if (!patser.drone.drone_flying()) {
+                    exit_now = true;
+                    communicate_state(es_drone_config_restart);
+                    cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
+                }
+            } else if (baseboard_link.exit_now()) {
+                exit_now = true;
+                communicate_state(es_baseboard_problem);
+                cmdcenter.reset_commandcenter_status_file("BaseboardLink problem", true);
+                std::cout << " BaseboardLink problem" << std::endl;
+            } else if (daemon_link.exit_now()) {
+                exit_now = true;
+                std::cout << " Daemon link problem" << std::endl;
+                cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
             }
-        } else if (baseboard_link.exit_now()) {
-            exit_now = true;
-            communicate_state(es_baseboard_problem);
-            cmdcenter.reset_commandcenter_status_file("BaseboardLink problem", true);
-            std::cout << " BaseboardLink problem" << std::endl;
-        } else if (daemon_link.exit_now()) {
-            exit_now = true;
-            std::cout << " Daemon link problem" << std::endl;
-            cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
         }
 
         if (pparams.video_raw && ! cam->frame_lagging()) {
