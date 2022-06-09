@@ -421,6 +421,8 @@ void Drone::post_flight(double time) {
                 break;
         } case post_init_crashed: {
                 time_crashed = time;
+                flight_logger.flush();
+                flight_logger.close();
                 _trackers->stop_drone_tracking(&tracker);
                 _baseboard_link->allow_charging(true);
                 save_flight_results();
