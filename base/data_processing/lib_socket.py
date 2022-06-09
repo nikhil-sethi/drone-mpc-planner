@@ -4,7 +4,7 @@ import threading
 import os
 import logging
 import struct
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class socket_communication:
@@ -17,6 +17,8 @@ class socket_communication:
     last_msg_time = datetime.now()
     conn = socket.socket()
     exit_now = False
+    trying_to_join_send_thread = True
+    trying_to_join_send_thread_since = datetime.now()
     receiver_callback = None
 
     def __init__(self, name, logger_name, socket_path, server, receiver=None) -> None:
@@ -71,10 +73,31 @@ class socket_communication:
             receiver_thread.join()
 
             self.logger.debug('Waiting for send thread join: ' + self.target_name)
-            time.sleep(1)
-            with self.send_trigger:
-                self.send_trigger.notify()
-                sender_thread.join()
+            self.trying_to_join_send_thread = True
+            self.trying_to_join_send_thread_since = datetime.now()
+            while sender_thread.is_alive():
+                if (datetime.now() - self.trying_to_join_send_thread_since) > timedelta(seconds=5):
+                    self.logger.warning('Sender thread is still alive for ' + self.target_name + ' after 5')
+                    self.connection_ok = False
+                    break
+                if (datetime.now() - self.trying_to_join_send_thread_since) > timedelta(seconds=10):
+                    self.logger.warning('Sender thread is still alive for ' + self.target_name + ' after 10s')
+                    try:
+                        self.conn.shutdown(socket.SHUT_WR)
+                    except Exception as e:  # pylint: disable=broad-except
+                        self.logger.warning('Cannot shutdown ' + self.target_name + ': ' + str(e))
+
+                    try:
+                        self.conn.close()
+                    except Exception as e:  # pylint: disable=broad-except
+                        self.logger.warning('Cannot close ' + self.target_name + ': ' + str(e))
+                    break
+
+                with self.send_trigger:
+                    self.send_trigger.notify()
+                sender_thread.join(1)
+
+            self.trying_to_join_send_thread = False
             time.sleep(1)
             self.logger.debug('Retrying connecting ' + self.target_name)
         self.logger.info('Connector ' + self.target_name + ' out')
