@@ -135,7 +135,8 @@ private:
     const cv::Point2f att_somewhere_on_pad_range = cv::Point2f(30.f, 30.f);
     cv::Point2f att_reset_yaw_on_pad;
     bool pat_att_calibration_valid = false;
-    int att_somewhere_on_pad_cnt = 0, att_precisely_on_pad_cnt = 0, att_pad_calibration_ok_cnt = 0, att_drone_calibration_ok_cnt = 0;
+    int att_somewhere_on_pad_cnt = 0, att_precisely_on_pad_cnt = 0, att_pad_calibration_ok_cnt = 0;
+    int _att_telemetry_samples_cnt = 0;
 
     const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
@@ -453,11 +454,12 @@ public:
     bool att_somewhere_on_pad() { return att_somewhere_on_pad_cnt > 3;}
     bool att_precisely_on_pad() { return att_precisely_on_pad_cnt > 3;}
     bool att_ok_for_pad_calibration() {return att_pad_calibration_ok_cnt > 3;}
-    bool att_ok_for_drone_calibration() { return  att_drone_calibration_ok_cnt > 3;}
+    bool att_telemetry_valid() {return _att_telemetry_samples_cnt > 3;}
 
     void init_thrust_calibration();
     void save_thrust_calibration();
-    void update_drone_attitude_pad_state();
+    void update_attitude_pad_state();
+    void reset_attitude_pad_state();
     void invalidize_blink();
     void save_pad_pos_and_att_calibration();
     bool pad_calib_valid();

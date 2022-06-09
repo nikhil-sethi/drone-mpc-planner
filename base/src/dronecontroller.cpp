@@ -758,36 +758,41 @@ bool check_att_bounds(cv::Point2f att, cv::Point2f att_min, cv::Point2f att_max)
     return att_check;
 }
 
-void DroneController::update_drone_attitude_pad_state() {
+void DroneController::reset_attitude_pad_state() {
+    att_somewhere_on_pad_cnt = 0;
+    att_precisely_on_pad_cnt = 0;
+    att_pad_calibration_ok_cnt = 0;
+    _att_telemetry_samples_cnt = 0;
+}
+void DroneController::update_attitude_pad_state() {
 
     static uint32_t prev_roll_pitch_package_id = 0;
     if (_rc->telemetry.roll_pitch_package_id == prev_roll_pitch_package_id)
         return;
 
+    _att_telemetry_samples_cnt++;
     prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
 
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
 
-    if (check_att_bounds(current_att, pad_att_calibration - att_somewhere_on_pad_range, pad_att_calibration + att_somewhere_on_pad_range) && att_somewhere_on_pad_cnt < 6)
-        att_somewhere_on_pad_cnt++;
-    else if (att_somewhere_on_pad_cnt)
+    if (check_att_bounds(current_att, pad_att_calibration - att_somewhere_on_pad_range, pad_att_calibration + att_somewhere_on_pad_range)) {
+        if (att_somewhere_on_pad_cnt < 6)
+            att_somewhere_on_pad_cnt++;
+    } else if (att_somewhere_on_pad_cnt)
         att_somewhere_on_pad_cnt--;
 
-    if (check_att_bounds(current_att, pad_att_calibration - att_precisely_on_pad_range, pad_att_calibration + att_precisely_on_pad_range) && att_precisely_on_pad_cnt < 6)
-        att_precisely_on_pad_cnt++;
-    else if (att_precisely_on_pad_cnt)
+    if (check_att_bounds(current_att, pad_att_calibration - att_precisely_on_pad_range, pad_att_calibration + att_precisely_on_pad_range)) {
+        if (att_precisely_on_pad_cnt < 6)
+            att_precisely_on_pad_cnt++;
+    } else if (att_precisely_on_pad_cnt)
         att_precisely_on_pad_cnt--;
 
-    if (check_att_bounds(current_att, -att_pad_calibration_range, att_pad_calibration_range) && att_pad_calibration_ok_cnt < 6)
-        att_pad_calibration_ok_cnt++;
-    else if (att_pad_calibration_ok_cnt)
+    if (check_att_bounds(current_att, -att_pad_calibration_range, att_pad_calibration_range)) {
+        if (att_pad_calibration_ok_cnt < 6)
+            att_pad_calibration_ok_cnt++;
+    } else if (att_pad_calibration_ok_cnt)
         att_pad_calibration_ok_cnt--;
-
-    if (check_att_bounds(current_att, -att_drone_calibration_range, att_drone_calibration_range) && att_drone_calibration_ok_cnt < 6)
-        att_drone_calibration_ok_cnt++;
-    else if (att_drone_calibration_ok_cnt)
-        att_drone_calibration_ok_cnt--;
 
 }
 

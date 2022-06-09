@@ -289,6 +289,7 @@ void DroneNavigation::update(double time) {
                 _tracker->delete_landing_motion(time_out_after_landing);
                 _control->hover_mode(false);
                 _control->kiv_ctrl.enable();
+                _control->reset_attitude_pad_state();
                 _flight_time += static_cast<float>(time - time_take_off);
                 [[fallthrough]];
         } case ns_wait_after_landed: {
@@ -296,7 +297,7 @@ void DroneNavigation::update(double time) {
                     time_start_wait_after_landing = time;
 
                 _control->flight_mode(DroneController::fm_wait);
-                if (static_cast<float>(time - time_start_wait_after_landing) > duration_wait_after_landing) {
+                if (static_cast<float>(time - time_start_wait_after_landing) > duration_wait_after_landing && _control->att_telemetry_valid()) {
                     if (_control->att_somewhere_on_pad()) {
                         _navigation_status = ns_flight_done;
                         time_start_wait_after_landing = -1;

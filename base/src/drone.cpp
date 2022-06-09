@@ -30,7 +30,7 @@ void Drone::init_flight_replay(std::string replay_dir, int flight_id) {
 }
 
 void Drone::update(double time) {
-    control.update_drone_attitude_pad_state();
+    control.update_attitude_pad_state();
 
     switch (_state) {
         case ds_pre_flight: {
@@ -255,16 +255,18 @@ void Drone::pre_flight(double time) {
                 }
                 break;
         } case pre_check_pad_att: {
-                if (_baseboard_link->charging() || _baseboard_link->disabled()) {
-                    if (control.att_precisely_on_pad()) {
-                        tracker.drone_on_landing_pad(true);
-                        pre_flight_state = pre_wait_to_arm;
+                if (control.att_telemetry_valid()) {
+                    if (_baseboard_link->charging() || _baseboard_link->disabled()) {
+                        if (control.att_precisely_on_pad()) {
+                            tracker.drone_on_landing_pad(true);
+                            pre_flight_state = pre_wait_to_arm;
+                        }
+                        if (!control.att_precisely_on_pad() && static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && dparams.Telemetry() && !_baseboard_link->disabled())
+                            pre_flight_state = pre_calibrating_pad;
+                    } else if (static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && control.att_somewhere_on_pad()) {
+                        pre_flight_state = pre_init;
+                        confirm_drone_on_pad = true;
                     }
-                    if (!control.att_precisely_on_pad() && static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && dparams.Telemetry() && !_baseboard_link->disabled())
-                        pre_flight_state = pre_calibrating_pad;
-                } else if (static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && control.att_somewhere_on_pad()) {
-                    pre_flight_state = pre_init;
-                    confirm_drone_on_pad = true;
                 }
                 break;
         } case pre_wait_to_arm: {
@@ -372,10 +374,11 @@ void Drone::post_flight(double time) {
                 n_shakes_sessions_after_landing++;
                 time_post_shake = time;
                 post_flight_state = post_wait_after_shake;
+                control.reset_attitude_pad_state();
                 [[fallthrough]];
         } case post_wait_after_shake: {
                 _baseboard_link->allow_charging(true);
-                if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait) {
+                if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait && control.att_telemetry_valid()) {
                     if (_baseboard_link->charging_waits_until_drone_ready()) { /* wait some more until we receive new data the baseboard */ }
                     else if (control.att_precisely_on_pad() && _baseboard_link->charging()) {
                         post_flight_state = post_init;
