@@ -18,6 +18,7 @@ set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 
 include_directories(./)
 include_directories(../src)
+include_directories(../src/cam)
 include_directories(../src/flightarea)
 include_directories(../src/trackers)
 include_directories(../src/filtering)
@@ -40,9 +41,14 @@ if(IIP_OPTIMIZER_DEBUGGING)
   message("Set -DIIP_OPTIMIZER_DEBUGGING=2")
 endif(IIP_OPTIMIZER_DEBUGGING)
 
+add_definitions(-DUNIT_TESTING)
+
 set(SOURCE_FILES  ../src/quaternion.cpp
                   ../src/common.cpp
                   ../src/linalg.cpp
+                  ../src/flightarea/plane.cpp
+                  ../src/flightarea/flightarea.cpp
+                  ../src/flightarea/flightareaconfig.cpp
                   ../ocp_design/intercept_in_planes/intercept_in_planes_optimizer_interface.cpp
                   ../ocp_design/intercept_in_planes/intercept_in_planes_quadratic_optimizer.cpp
                   ../ocp_design/tti/tti_optimizer_interface.cpp

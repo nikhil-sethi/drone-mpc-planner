@@ -1,6 +1,7 @@
 #pragma once
 #include "tracking.h"
 #include "plane.h"
+#include "flightarea.h"
 #include "tti_optimizer_interface.h"
 #include "intercept_in_planes_optimizer_interface.h"
 

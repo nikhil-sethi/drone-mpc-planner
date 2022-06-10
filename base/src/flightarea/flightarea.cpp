@@ -3,6 +3,7 @@
 #include "linalg.h"
 #include "location.h"
 
+#ifndef UNIT_TESTING
 void FlightArea::init(std::string replay_dir, Cam *cam) {
     FlightAreaConfig bare_area(cam, default_config_name, bare);
     bare_area.add_plane(cv::Point3f(0, 0, -10), cv::Point3f(0, 0, 1), back_plane);
@@ -38,6 +39,26 @@ std::vector<Plane> FlightArea::deserialize_location(std::string replay_dir) {
 
     return location.planes();
 }
+
+#else
+void FlightArea::init(std::vector<Plane> planes) {
+    FlightAreaConfig bare_area(default_config_name, bare);
+
+    for (auto plane : planes) {
+        bare_area.add_plane(plane);
+    }
+    bare_area.reindex_planes();
+    bare_area.update_config();
+
+    flight_area_configs[bare] = bare_area;
+
+    for (uint i = 1; i < number_safety_margin_types; i++) {
+        FlightAreaConfig tmp = bare_area;
+        tmp.apply_safety_margin(static_cast<safety_margin_types>(i));
+        flight_area_configs[static_cast<safety_margin_types>(i)] = tmp;
+    }
+}
+#endif
 
 void FlightArea::update_bottom_plane_based_on_blink(float pad_height) {
     if (pad_height < 0) {

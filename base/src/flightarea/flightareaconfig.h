@@ -3,7 +3,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "plane.h"
+#ifndef UNIT_TESTING
 #include "cam.h"
+#endif
 
 struct CornerPoint {
     cv::Point3f pos = {0};
@@ -30,13 +32,17 @@ private:
     float bottom_plane_above_pad = 0.1f;
 
     // Data;
+#ifndef UNIT_TESTING
     Cam *_cam;
+#endif
     std::string _name;
     safety_margin_types _safety_margin_type;
+#ifndef UNIT_TESTING
+    ViewLimit view_data;
+#endif
     std::vector<Plane> _planes = {};
     std::vector<Plane> _active_planes = {};
     std::vector<CornerPoint> _corner_points;
-    ViewLimit view_data;
 
     //Methods
     void create_camera_planes();
@@ -68,9 +74,13 @@ private:
 
 public:
     FlightAreaConfig() {}
+    FlightAreaConfig(std::string name, safety_margin_types safety_margin_type): _name(name), _safety_margin_type(safety_margin_type) {}
+
+#ifndef UNIT_TESTING
     FlightAreaConfig(Cam *cam, std::string name, safety_margin_types safety_margin_type): _cam(cam), _name(name), _safety_margin_type(safety_margin_type), view_data(cam->view_limits()) {
         create_camera_planes();
     }
+#endif
     void update_config();
 
     void add_plane(Plane plane);

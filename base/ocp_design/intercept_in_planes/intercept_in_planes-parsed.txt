@@ -1,5 +1,5 @@
 Optimization variable:
-[xopt0, xopt1, xopt2, xopt3, xopt4, xopt5, xopt6, xopt7, xopt8, xopt9, xopt10, xopt11, xopt12, xopt13, xopt14, xopt15, xopt16, xopt17, xopt18, xopt19, xopt20, xopt21, xopt22, xopt23, xopt24, xopt25, xopt26, xopt27, xopt28, xopt29, xopt30, xopt31, xopt32, xopt33, xopt34, xopt35, xopt36, xopt37, xopt38, xopt39, xopt40, xopt41, xopt42, xopt43, xopt44, xopt45, xopt46, xopt47, xopt48, xopt49, xopt50, xopt51, xopt52, xopt53, xopt54, xopt55, xopt56, xopt57, xopt58, xopt59, xopt60, xopt61, xopt62, xopt63, xopt64, xopt65, xopt66, xopt67, xopt68, xopt69, xopt70, xopt71, xopt72, xopt73, xopt74, xopt75, xopt76, xopt77, xopt78, xopt79, xopt80, xopt81, xopt82, xopt83, xopt84]
+[xopt0, xopt1, xopt2, xopt3, xopt4, xopt5, xopt6, xopt7, xopt8, xopt9, xopt10, xopt11, xopt12, xopt13, xopt14, xopt15, xopt16, xopt17, xopt18, xopt19, xopt20, xopt21, xopt22, xopt23, xopt24, xopt25, xopt26, xopt27, xopt28, xopt29, xopt30, xopt31, xopt32, xopt33, xopt34, xopt35, xopt36, xopt37, xopt38, xopt39, xopt40, xopt41, xopt42, xopt43, xopt44, xopt45, xopt46, xopt47, xopt48, xopt49, xopt50, xopt51, xopt52, xopt53, xopt54, xopt55, xopt56, xopt57, xopt58, xopt59, xopt60, xopt61, xopt62, xopt63, xopt64]
 Parameters:
 [param0, param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11, param12, param13, param14, param15, param16, param17, param18, param19, param20, param21, param22, param23, param24, param25, param26, param27, param28, param29, param30, param31, param32, param33, param34, param35, param36, param37, param38, param39, param40, param41, param42, param43, param44, param45, param46, param47, param48, param49, param50, param51, param52, param53, param54, param55, param56, param57, param58, param59]
 Lagrange multiplier constraints:
@@ -12,42 +12,22 @@ Objectives jacobian:
  (0, 19) -> (1.66667e+06*(xopt19+xopt19))
  (0, 20) -> (1.66667e+06*(xopt20+xopt20))
  (0, 21) -> (1.66667e+06*(xopt21+xopt21))
- (0, 22) -> (10*(xopt22+xopt22))
- (0, 23) -> (10*(xopt23+xopt23))
- (0, 24) -> (10*(xopt24+xopt24))
- (0, 25) -> (10*(xopt25+xopt25))
- (0, 26) -> (10*(xopt26+xopt26))
- (0, 27) -> (10*(xopt27+xopt27))
- (0, 28) -> (10*(xopt28+xopt28))
- (0, 29) -> (10*(xopt29+xopt29))
- (0, 30) -> (10*(xopt30+xopt30))
- (0, 31) -> (10*(xopt31+xopt31))
- (0, 44) -> 0.001
+ (0, 34) -> 0.001
+ (0, 50) -> (1.66667e+06*(xopt50+xopt50))
+ (0, 51) -> (1.66667e+06*(xopt51+xopt51))
+ (0, 52) -> (1.66667e+06*(xopt52+xopt52))
+ (0, 53) -> (1.66667e+06*(xopt53+xopt53))
+ (0, 54) -> (1.66667e+06*(xopt54+xopt54))
+ (0, 55) -> (1.66667e+06*(xopt55+xopt55))
+ (0, 56) -> (33.3333*(xopt56+xopt56))
+ (0, 57) -> (33.3333*(xopt57+xopt57))
+ (0, 58) -> (33.3333*(xopt58+xopt58))
+ (0, 59) -> (1.66667e+06*(xopt59+xopt59))
  (0, 60) -> (1.66667e+06*(xopt60+xopt60))
  (0, 61) -> (1.66667e+06*(xopt61+xopt61))
  (0, 62) -> (1.66667e+06*(xopt62+xopt62))
  (0, 63) -> (1.66667e+06*(xopt63+xopt63))
  (0, 64) -> (1.66667e+06*(xopt64+xopt64))
- (0, 65) -> (1.66667e+06*(xopt65+xopt65))
- (0, 66) -> (10*(xopt66+xopt66))
- (0, 67) -> (10*(xopt67+xopt67))
- (0, 68) -> (10*(xopt68+xopt68))
- (0, 69) -> (10*(xopt69+xopt69))
- (0, 70) -> (10*(xopt70+xopt70))
- (0, 71) -> (10*(xopt71+xopt71))
- (0, 72) -> (10*(xopt72+xopt72))
- (0, 73) -> (10*(xopt73+xopt73))
- (0, 74) -> (10*(xopt74+xopt74))
- (0, 75) -> (10*(xopt75+xopt75))
- (0, 76) -> (33.3333*(xopt76+xopt76))
- (0, 77) -> (33.3333*(xopt77+xopt77))
- (0, 78) -> (33.3333*(xopt78+xopt78))
- (0, 79) -> (1.66667e+06*(xopt79+xopt79))
- (0, 80) -> (1.66667e+06*(xopt80+xopt80))
- (0, 81) -> (1.66667e+06*(xopt81+xopt81))
- (0, 82) -> (1.66667e+06*(xopt82+xopt82))
- (0, 83) -> (1.66667e+06*(xopt83+xopt83))
- (0, 84) -> (1.66667e+06*(xopt84+xopt84))
 Objectives hessian:
  (0, 0) -> @1=0.5, (((lamg0*(@1*(xopt13+xopt13)))+(lamg1*(@1*(xopt14+xopt14))))+(lamg2*(@1*(xopt15+xopt15))))
  (0, 4) -> lamg0
@@ -56,9 +36,9 @@ Objectives hessian:
  (0, 13) -> ((lamg0*(0.5*(xopt0+xopt0)))+lamg3)
  (0, 14) -> ((lamg1*(0.5*(xopt0+xopt0)))+lamg4)
  (0, 15) -> ((lamg2*(0.5*(xopt0+xopt0)))+lamg5)
- (0, 35) -> lamg6
- (0, 36) -> lamg7
- (0, 37) -> lamg8
+ (0, 25) -> lamg6
+ (0, 26) -> lamg7
+ (0, 27) -> lamg8
  (4, 0) -> lamg0
  (5, 0) -> lamg1
  (6, 0) -> lamg2
@@ -71,59 +51,39 @@ Objectives hessian:
  (19, 19) -> 3.33333e+06
  (20, 20) -> 3.33333e+06
  (21, 21) -> 3.33333e+06
- (22, 22) -> 20
- (23, 23) -> 20
- (24, 24) -> 20
- (25, 25) -> 20
- (26, 26) -> 20
- (27, 27) -> 20
- (28, 28) -> 20
- (29, 29) -> 20
- (30, 30) -> 20
- (31, 31) -> 20
- (35, 0) -> lamg6
- (36, 0) -> lamg7
- (37, 0) -> lamg8
- (44, 44) -> @1=0.5, (((lamg21*(@1*(xopt57+xopt57)))+(lamg22*(@1*(xopt58+xopt58))))+(lamg23*(@1*(xopt59+xopt59))))
- (44, 48) -> lamg21
- (44, 49) -> lamg22
- (44, 50) -> lamg23
- (44, 57) -> ((lamg21*(0.5*(xopt44+xopt44)))+lamg24)
- (44, 58) -> ((lamg22*(0.5*(xopt44+xopt44)))+lamg25)
- (44, 59) -> ((lamg23*(0.5*(xopt44+xopt44)))+lamg26)
- (48, 44) -> lamg21
- (49, 44) -> lamg22
- (50, 44) -> lamg23
- (57, 44) -> ((lamg21*(0.5*(xopt44+xopt44)))+lamg24)
- (58, 44) -> ((lamg22*(0.5*(xopt44+xopt44)))+lamg25)
- (59, 44) -> ((lamg23*(0.5*(xopt44+xopt44)))+lamg26)
+ (25, 0) -> lamg6
+ (26, 0) -> lamg7
+ (27, 0) -> lamg8
+ (34, 34) -> @1=0.5, (((lamg21*(@1*(xopt47+xopt47)))+(lamg22*(@1*(xopt48+xopt48))))+(lamg23*(@1*(xopt49+xopt49))))
+ (34, 38) -> lamg21
+ (34, 39) -> lamg22
+ (34, 40) -> lamg23
+ (34, 47) -> ((lamg21*(0.5*(xopt34+xopt34)))+lamg24)
+ (34, 48) -> ((lamg22*(0.5*(xopt34+xopt34)))+lamg25)
+ (34, 49) -> ((lamg23*(0.5*(xopt34+xopt34)))+lamg26)
+ (38, 34) -> lamg21
+ (39, 34) -> lamg22
+ (40, 34) -> lamg23
+ (47, 34) -> ((lamg21*(0.5*(xopt34+xopt34)))+lamg24)
+ (48, 34) -> ((lamg22*(0.5*(xopt34+xopt34)))+lamg25)
+ (49, 34) -> ((lamg23*(0.5*(xopt34+xopt34)))+lamg26)
+ (50, 50) -> 3.33333e+06
+ (51, 51) -> 3.33333e+06
+ (52, 52) -> 3.33333e+06
+ (53, 53) -> 3.33333e+06
+ (54, 54) -> 3.33333e+06
+ (55, 55) -> 3.33333e+06
+ (56, 56) -> 66.6667
+ (57, 57) -> 66.6667
+ (58, 58) -> 66.6667
+ (59, 59) -> 3.33333e+06
  (60, 60) -> 3.33333e+06
  (61, 61) -> 3.33333e+06
  (62, 62) -> 3.33333e+06
  (63, 63) -> 3.33333e+06
  (64, 64) -> 3.33333e+06
- (65, 65) -> 3.33333e+06
- (66, 66) -> 20
- (67, 67) -> 20
- (68, 68) -> 20
- (69, 69) -> 20
- (70, 70) -> 20
- (71, 71) -> 20
- (72, 72) -> 20
- (73, 73) -> 20
- (74, 74) -> 20
- (75, 75) -> 20
- (76, 76) -> 66.6667
- (77, 77) -> 66.6667
- (78, 78) -> 66.6667
- (79, 79) -> 3.33333e+06
- (80, 80) -> 3.33333e+06
- (81, 81) -> 3.33333e+06
- (82, 82) -> 3.33333e+06
- (83, 83) -> 3.33333e+06
- (84, 84) -> 3.33333e+06
 Constraints:
-@1=2, [(((xopt1+((xopt0*(xopt4+(xopt4+(xopt0*xopt13))))/@1))-xopt7)+xopt16), (((xopt2+((xopt0*(xopt5+(xopt5+(xopt0*xopt14))))/@1))-xopt8)+xopt17), (((xopt3+((xopt0*(xopt6+(xopt6+(xopt0*xopt15))))/@1))-xopt9)+xopt18), (((xopt4+((xopt0*(xopt13+xopt13))/@1))-xopt10)+xopt19), (((xopt5+((xopt0*(xopt14+xopt14))/@1))-xopt11)+xopt20), (((xopt6+((xopt0*(xopt15+xopt15))/@1))-xopt12)+xopt21), ((xopt32+((xopt0*(xopt35+xopt35))/@1))-xopt38), ((xopt33+((xopt0*(xopt36+xopt36))/@1))-xopt39), ((xopt34+((xopt0*(xopt37+xopt37))/@1))-xopt40), (xopt35-xopt41), (xopt36-xopt42), (xopt37-xopt43), ((xopt7-xopt38)+xopt76), ((xopt8-xopt39)+xopt77), ((xopt9-xopt40)+xopt78), ((xopt7-xopt45)+xopt79), ((xopt8-xopt46)+xopt80), ((xopt9-xopt47)+xopt81), ((xopt10-xopt48)+xopt82), ((xopt11-xopt49)+xopt83), ((xopt12-xopt50)+xopt84), (((xopt45+((xopt44*(xopt48+(xopt48+(xopt44*xopt57))))/@1))-xopt51)+xopt60), (((xopt46+((xopt44*(xopt49+(xopt49+(xopt44*xopt58))))/@1))-xopt52)+xopt61), (((xopt47+((xopt44*(xopt50+(xopt50+(xopt44*xopt59))))/@1))-xopt53)+xopt62), (((xopt48+((xopt44*(xopt57+xopt57))/@1))-xopt54)+xopt63), (((xopt49+((xopt44*(xopt58+xopt58))/@1))-xopt55)+xopt64), (((xopt50+((xopt44*(xopt59+xopt59))/@1))-xopt56)+xopt65), (((param3*(xopt7-param0))+(param4*(xopt8-param1)))+(param5*(xopt9-param2))), (((param9*(xopt7-param6))+(param10*(xopt8-param7)))+(param11*(xopt9-param8))), (((param15*(xopt7-param12))+(param16*(xopt8-param13)))+(param17*(xopt9-param14))), (((param21*(xopt7-param18))+(param22*(xopt8-param19)))+(param23*(xopt9-param20))), (((param27*(xopt7-param24))+(param28*(xopt8-param25)))+(param29*(xopt9-param26))), (((param33*(xopt7-param30))+(param34*(xopt8-param31)))+(param35*(xopt9-param32))), (((param39*(xopt7-param36))+(param40*(xopt8-param37)))+(param41*(xopt9-param38))), (((param45*(xopt7-param42))+(param46*(xopt8-param43)))+(param47*(xopt9-param44))), (((param51*(xopt7-param48))+(param52*(xopt8-param49)))+(param53*(xopt9-param50))), (((param57*(xopt7-param54))+(param58*(xopt8-param55)))+(param59*(xopt9-param56))), (((param3*(xopt51-param0))+(param4*(xopt52-param1)))+(param5*(xopt53-param2))), (((param9*(xopt51-param6))+(param10*(xopt52-param7)))+(param11*(xopt53-param8))), (((param15*(xopt51-param12))+(param16*(xopt52-param13)))+(param17*(xopt53-param14))), (((param21*(xopt51-param18))+(param22*(xopt52-param19)))+(param23*(xopt53-param20))), (((param27*(xopt51-param24))+(param28*(xopt52-param25)))+(param29*(xopt53-param26))), (((param33*(xopt51-param30))+(param34*(xopt52-param31)))+(param35*(xopt53-param32))), (((param39*(xopt51-param36))+(param40*(xopt52-param37)))+(param41*(xopt53-param38))), (((param45*(xopt51-param42))+(param46*(xopt52-param43)))+(param47*(xopt53-param44))), (((param51*(xopt51-param48))+(param52*(xopt52-param49)))+(param53*(xopt53-param50))), (((param57*(xopt51-param54))+(param58*(xopt52-param55)))+(param59*(xopt53-param56)))]
+@1=2, [(((xopt1+((xopt0*(xopt4+(xopt4+(xopt0*xopt13))))/@1))-xopt7)+xopt16), (((xopt2+((xopt0*(xopt5+(xopt5+(xopt0*xopt14))))/@1))-xopt8)+xopt17), (((xopt3+((xopt0*(xopt6+(xopt6+(xopt0*xopt15))))/@1))-xopt9)+xopt18), (((xopt4+((xopt0*(xopt13+xopt13))/@1))-xopt10)+xopt19), (((xopt5+((xopt0*(xopt14+xopt14))/@1))-xopt11)+xopt20), (((xopt6+((xopt0*(xopt15+xopt15))/@1))-xopt12)+xopt21), ((xopt22+((xopt0*(xopt25+xopt25))/@1))-xopt28), ((xopt23+((xopt0*(xopt26+xopt26))/@1))-xopt29), ((xopt24+((xopt0*(xopt27+xopt27))/@1))-xopt30), (xopt25-xopt31), (xopt26-xopt32), (xopt27-xopt33), ((xopt7-xopt28)+xopt56), ((xopt8-xopt29)+xopt57), ((xopt9-xopt30)+xopt58), ((xopt7-xopt35)+xopt59), ((xopt8-xopt36)+xopt60), ((xopt9-xopt37)+xopt61), ((xopt10-xopt38)+xopt62), ((xopt11-xopt39)+xopt63), ((xopt12-xopt40)+xopt64), (((xopt35+((xopt34*(xopt38+(xopt38+(xopt34*xopt47))))/@1))-xopt41)+xopt50), (((xopt36+((xopt34*(xopt39+(xopt39+(xopt34*xopt48))))/@1))-xopt42)+xopt51), (((xopt37+((xopt34*(xopt40+(xopt40+(xopt34*xopt49))))/@1))-xopt43)+xopt52), (((xopt38+((xopt34*(xopt47+xopt47))/@1))-xopt44)+xopt53), (((xopt39+((xopt34*(xopt48+xopt48))/@1))-xopt45)+xopt54), (((xopt40+((xopt34*(xopt49+xopt49))/@1))-xopt46)+xopt55), (((param3*(xopt7-param0))+(param4*(xopt8-param1)))+(param5*(xopt9-param2))), (((param9*(xopt7-param6))+(param10*(xopt8-param7)))+(param11*(xopt9-param8))), (((param15*(xopt7-param12))+(param16*(xopt8-param13)))+(param17*(xopt9-param14))), (((param21*(xopt7-param18))+(param22*(xopt8-param19)))+(param23*(xopt9-param20))), (((param27*(xopt7-param24))+(param28*(xopt8-param25)))+(param29*(xopt9-param26))), (((param33*(xopt7-param30))+(param34*(xopt8-param31)))+(param35*(xopt9-param32))), (((param39*(xopt7-param36))+(param40*(xopt8-param37)))+(param41*(xopt9-param38))), (((param45*(xopt7-param42))+(param46*(xopt8-param43)))+(param47*(xopt9-param44))), (((param51*(xopt7-param48))+(param52*(xopt8-param49)))+(param53*(xopt9-param50))), (((param57*(xopt7-param54))+(param58*(xopt8-param55)))+(param59*(xopt9-param56))), (((param3*(xopt41-param0))+(param4*(xopt42-param1)))+(param5*(xopt43-param2))), (((param9*(xopt41-param6))+(param10*(xopt42-param7)))+(param11*(xopt43-param8))), (((param15*(xopt41-param12))+(param16*(xopt42-param13)))+(param17*(xopt43-param14))), (((param21*(xopt41-param18))+(param22*(xopt42-param19)))+(param23*(xopt43-param20))), (((param27*(xopt41-param24))+(param28*(xopt42-param25)))+(param29*(xopt43-param26))), (((param33*(xopt41-param30))+(param34*(xopt42-param31)))+(param35*(xopt43-param32))), (((param39*(xopt41-param36))+(param40*(xopt42-param37)))+(param41*(xopt43-param38))), (((param45*(xopt41-param42))+(param46*(xopt42-param43)))+(param47*(xopt43-param44))), (((param51*(xopt41-param48))+(param52*(xopt42-param49)))+(param53*(xopt43-param50))), (((param57*(xopt41-param54))+(param58*(xopt42-param55)))+(param59*(xopt43-param56)))]
 Constraints jacobian:
  (0, 0) -> (0.5*((xopt4+(xopt4+(xopt0*xopt13)))+(xopt0*xopt13)))
  (0, 1) -> 1
@@ -158,84 +118,84 @@ Constraints jacobian:
  (5, 12) -> -1
  (5, 15) -> xopt0
  (5, 21) -> 1
- (6, 0) -> (0.5*(xopt35+xopt35))
- (6, 32) -> 1
- (6, 35) -> xopt0
- (6, 38) -> -1
- (7, 0) -> (0.5*(xopt36+xopt36))
- (7, 33) -> 1
- (7, 36) -> xopt0
- (7, 39) -> -1
- (8, 0) -> (0.5*(xopt37+xopt37))
- (8, 34) -> 1
- (8, 37) -> xopt0
- (8, 40) -> -1
- (9, 35) -> 1
- (9, 41) -> -1
- (10, 36) -> 1
- (10, 42) -> -1
- (11, 37) -> 1
- (11, 43) -> -1
+ (6, 0) -> (0.5*(xopt25+xopt25))
+ (6, 22) -> 1
+ (6, 25) -> xopt0
+ (6, 28) -> -1
+ (7, 0) -> (0.5*(xopt26+xopt26))
+ (7, 23) -> 1
+ (7, 26) -> xopt0
+ (7, 29) -> -1
+ (8, 0) -> (0.5*(xopt27+xopt27))
+ (8, 24) -> 1
+ (8, 27) -> xopt0
+ (8, 30) -> -1
+ (9, 25) -> 1
+ (9, 31) -> -1
+ (10, 26) -> 1
+ (10, 32) -> -1
+ (11, 27) -> 1
+ (11, 33) -> -1
  (12, 7) -> 1
- (12, 38) -> -1
- (12, 76) -> 1
+ (12, 28) -> -1
+ (12, 56) -> 1
  (13, 8) -> 1
- (13, 39) -> -1
- (13, 77) -> 1
+ (13, 29) -> -1
+ (13, 57) -> 1
  (14, 9) -> 1
- (14, 40) -> -1
- (14, 78) -> 1
+ (14, 30) -> -1
+ (14, 58) -> 1
  (15, 7) -> 1
- (15, 45) -> -1
- (15, 79) -> 1
+ (15, 35) -> -1
+ (15, 59) -> 1
  (16, 8) -> 1
- (16, 46) -> -1
- (16, 80) -> 1
+ (16, 36) -> -1
+ (16, 60) -> 1
  (17, 9) -> 1
- (17, 47) -> -1
- (17, 81) -> 1
+ (17, 37) -> -1
+ (17, 61) -> 1
  (18, 10) -> 1
- (18, 48) -> -1
- (18, 82) -> 1
+ (18, 38) -> -1
+ (18, 62) -> 1
  (19, 11) -> 1
- (19, 49) -> -1
- (19, 83) -> 1
+ (19, 39) -> -1
+ (19, 63) -> 1
  (20, 12) -> 1
- (20, 50) -> -1
- (20, 84) -> 1
- (21, 44) -> (0.5*((xopt48+(xopt48+(xopt44*xopt57)))+(xopt44*xopt57)))
- (21, 45) -> 1
- (21, 48) -> xopt44
- (21, 51) -> -1
- (21, 57) -> (0.5*sq(xopt44))
- (21, 60) -> 1
- (22, 44) -> (0.5*((xopt49+(xopt49+(xopt44*xopt58)))+(xopt44*xopt58)))
- (22, 46) -> 1
- (22, 49) -> xopt44
- (22, 52) -> -1
- (22, 58) -> (0.5*sq(xopt44))
- (22, 61) -> 1
- (23, 44) -> (0.5*((xopt50+(xopt50+(xopt44*xopt59)))+(xopt44*xopt59)))
- (23, 47) -> 1
- (23, 50) -> xopt44
- (23, 53) -> -1
- (23, 59) -> (0.5*sq(xopt44))
- (23, 62) -> 1
- (24, 44) -> (0.5*(xopt57+xopt57))
- (24, 48) -> 1
- (24, 54) -> -1
- (24, 57) -> xopt44
- (24, 63) -> 1
- (25, 44) -> (0.5*(xopt58+xopt58))
- (25, 49) -> 1
- (25, 55) -> -1
- (25, 58) -> xopt44
- (25, 64) -> 1
- (26, 44) -> (0.5*(xopt59+xopt59))
- (26, 50) -> 1
- (26, 56) -> -1
- (26, 59) -> xopt44
- (26, 65) -> 1
+ (20, 40) -> -1
+ (20, 64) -> 1
+ (21, 34) -> (0.5*((xopt38+(xopt38+(xopt34*xopt47)))+(xopt34*xopt47)))
+ (21, 35) -> 1
+ (21, 38) -> xopt34
+ (21, 41) -> -1
+ (21, 47) -> (0.5*sq(xopt34))
+ (21, 50) -> 1
+ (22, 34) -> (0.5*((xopt39+(xopt39+(xopt34*xopt48)))+(xopt34*xopt48)))
+ (22, 36) -> 1
+ (22, 39) -> xopt34
+ (22, 42) -> -1
+ (22, 48) -> (0.5*sq(xopt34))
+ (22, 51) -> 1
+ (23, 34) -> (0.5*((xopt40+(xopt40+(xopt34*xopt49)))+(xopt34*xopt49)))
+ (23, 37) -> 1
+ (23, 40) -> xopt34
+ (23, 43) -> -1
+ (23, 49) -> (0.5*sq(xopt34))
+ (23, 52) -> 1
+ (24, 34) -> (0.5*(xopt47+xopt47))
+ (24, 38) -> 1
+ (24, 44) -> -1
+ (24, 47) -> xopt34
+ (24, 53) -> 1
+ (25, 34) -> (0.5*(xopt48+xopt48))
+ (25, 39) -> 1
+ (25, 45) -> -1
+ (25, 48) -> xopt34
+ (25, 54) -> 1
+ (26, 34) -> (0.5*(xopt49+xopt49))
+ (26, 40) -> 1
+ (26, 46) -> -1
+ (26, 49) -> xopt34
+ (26, 55) -> 1
  (27, 7) -> param3
  (27, 8) -> param4
  (27, 9) -> param5
@@ -266,36 +226,36 @@ Constraints jacobian:
  (36, 7) -> param57
  (36, 8) -> param58
  (36, 9) -> param59
- (37, 51) -> param3
- (37, 52) -> param4
- (37, 53) -> param5
- (38, 51) -> param9
- (38, 52) -> param10
- (38, 53) -> param11
- (39, 51) -> param15
- (39, 52) -> param16
- (39, 53) -> param17
- (40, 51) -> param21
- (40, 52) -> param22
- (40, 53) -> param23
- (41, 51) -> param27
- (41, 52) -> param28
- (41, 53) -> param29
- (42, 51) -> param33
- (42, 52) -> param34
- (42, 53) -> param35
- (43, 51) -> param39
- (43, 52) -> param40
- (43, 53) -> param41
- (44, 51) -> param45
- (44, 52) -> param46
- (44, 53) -> param47
- (45, 51) -> param51
- (45, 52) -> param52
- (45, 53) -> param53
- (46, 51) -> param57
- (46, 52) -> param58
- (46, 53) -> param59
+ (37, 41) -> param3
+ (37, 42) -> param4
+ (37, 43) -> param5
+ (38, 41) -> param9
+ (38, 42) -> param10
+ (38, 43) -> param11
+ (39, 41) -> param15
+ (39, 42) -> param16
+ (39, 43) -> param17
+ (40, 41) -> param21
+ (40, 42) -> param22
+ (40, 43) -> param23
+ (41, 41) -> param27
+ (41, 42) -> param28
+ (41, 43) -> param29
+ (42, 41) -> param33
+ (42, 42) -> param34
+ (42, 43) -> param35
+ (43, 41) -> param39
+ (43, 42) -> param40
+ (43, 43) -> param41
+ (44, 41) -> param45
+ (44, 42) -> param46
+ (44, 43) -> param47
+ (45, 41) -> param51
+ (45, 42) -> param52
+ (45, 43) -> param53
+ (46, 41) -> param57
+ (46, 42) -> param58
+ (46, 43) -> param59
 CX0-dCX0:
-@1=(xopt4+(xopt4+(xopt0*xopt13))), @2=2, @3=0.5, @4=(xopt5+(xopt5+(xopt0*xopt14))), @5=(xopt6+(xopt6+(xopt0*xopt15))), @6=(xopt13+xopt13), @7=(xopt14+xopt14), @8=(xopt15+xopt15), @9=(xopt35+xopt35), @10=(xopt36+xopt36), @11=(xopt37+xopt37), @12=0, @13=(xopt48+(xopt48+(xopt44*xopt57))), @14=(xopt49+(xopt49+(xopt44*xopt58))), @15=(xopt50+(xopt50+(xopt44*xopt59))), @16=(xopt57+xopt57), @17=(xopt58+xopt58), @18=(xopt59+xopt59), [((((xopt1+((xopt0*@1)/@2))-xopt7)+xopt16)-(((((((@3*(@1+(xopt0*xopt13)))*xopt0)+xopt1)+(xopt0*xopt4))-xopt7)+((@3*sq(xopt0))*xopt13))+xopt16)), ((((xopt2+((xopt0*@4)/@2))-xopt8)+xopt17)-(((((((@3*(@4+(xopt0*xopt14)))*xopt0)+xopt2)+(xopt0*xopt5))-xopt8)+((@3*sq(xopt0))*xopt14))+xopt17)), ((((xopt3+((xopt0*@5)/@2))-xopt9)+xopt18)-(((((((@3*(@5+(xopt0*xopt15)))*xopt0)+xopt3)+(xopt0*xopt6))-xopt9)+((@3*sq(xopt0))*xopt15))+xopt18)), ((((xopt4+((xopt0*@6)/@2))-xopt10)+xopt19)-((((((@3*@6)*xopt0)+xopt4)-xopt10)+(xopt0*xopt13))+xopt19)), ((((xopt5+((xopt0*@7)/@2))-xopt11)+xopt20)-((((((@3*@7)*xopt0)+xopt5)-xopt11)+(xopt0*xopt14))+xopt20)), ((((xopt6+((xopt0*@8)/@2))-xopt12)+xopt21)-((((((@3*@8)*xopt0)+xopt6)-xopt12)+(xopt0*xopt15))+xopt21)), (((xopt32+((xopt0*@9)/@2))-xopt38)-(((((@3*@9)*xopt0)+xopt32)+(xopt0*xopt35))-xopt38)), (((xopt33+((xopt0*@10)/@2))-xopt39)-(((((@3*@10)*xopt0)+xopt33)+(xopt0*xopt36))-xopt39)), (((xopt34+((xopt0*@11)/@2))-xopt40)-(((((@3*@11)*xopt0)+xopt34)+(xopt0*xopt37))-xopt40)), @12, @12, @12, (((xopt7-xopt38)+xopt76)-((xopt7-xopt38)+xopt76)), (((xopt8-xopt39)+xopt77)-((xopt8-xopt39)+xopt77)), (((xopt9-xopt40)+xopt78)-((xopt9-xopt40)+xopt78)), (((xopt7-xopt45)+xopt79)-((xopt7-xopt45)+xopt79)), (((xopt8-xopt46)+xopt80)-((xopt8-xopt46)+xopt80)), (((xopt9-xopt47)+xopt81)-((xopt9-xopt47)+xopt81)), (((xopt10-xopt48)+xopt82)-((xopt10-xopt48)+xopt82)), (((xopt11-xopt49)+xopt83)-((xopt11-xopt49)+xopt83)), (((xopt12-xopt50)+xopt84)-((xopt12-xopt50)+xopt84)), ((((xopt45+((xopt44*@13)/@2))-xopt51)+xopt60)-(((((((@3*(@13+(xopt44*xopt57)))*xopt44)+xopt45)+(xopt44*xopt48))-xopt51)+((@3*sq(xopt44))*xopt57))+xopt60)), ((((xopt46+((xopt44*@14)/@2))-xopt52)+xopt61)-(((((((@3*(@14+(xopt44*xopt58)))*xopt44)+xopt46)+(xopt44*xopt49))-xopt52)+((@3*sq(xopt44))*xopt58))+xopt61)), ((((xopt47+((xopt44*@15)/@2))-xopt53)+xopt62)-(((((((@3*(@15+(xopt44*xopt59)))*xopt44)+xopt47)+(xopt44*xopt50))-xopt53)+((@3*sq(xopt44))*xopt59))+xopt62)), ((((xopt48+((xopt44*@16)/@2))-xopt54)+xopt63)-((((((@3*@16)*xopt44)+xopt48)-xopt54)+(xopt44*xopt57))+xopt63)), ((((xopt49+((xopt44*@17)/@2))-xopt55)+xopt64)-((((((@3*@17)*xopt44)+xopt49)-xopt55)+(xopt44*xopt58))+xopt64)), ((((xopt50+((xopt44*@18)/@2))-xopt56)+xopt65)-((((((@3*@18)*xopt44)+xopt50)-xopt56)+(xopt44*xopt59))+xopt65)), ((((param3*(xopt7-param0))+(param4*(xopt8-param1)))+(param5*(xopt9-param2)))-(((param3*xopt7)+(param4*xopt8))+(param5*xopt9))), ((((param9*(xopt7-param6))+(param10*(xopt8-param7)))+(param11*(xopt9-param8)))-(((param9*xopt7)+(param10*xopt8))+(param11*xopt9))), ((((param15*(xopt7-param12))+(param16*(xopt8-param13)))+(param17*(xopt9-param14)))-(((param15*xopt7)+(param16*xopt8))+(param17*xopt9))), ((((param21*(xopt7-param18))+(param22*(xopt8-param19)))+(param23*(xopt9-param20)))-(((param21*xopt7)+(param22*xopt8))+(param23*xopt9))), ((((param27*(xopt7-param24))+(param28*(xopt8-param25)))+(param29*(xopt9-param26)))-(((param27*xopt7)+(param28*xopt8))+(param29*xopt9))), ((((param33*(xopt7-param30))+(param34*(xopt8-param31)))+(param35*(xopt9-param32)))-(((param33*xopt7)+(param34*xopt8))+(param35*xopt9))), ((((param39*(xopt7-param36))+(param40*(xopt8-param37)))+(param41*(xopt9-param38)))-(((param39*xopt7)+(param40*xopt8))+(param41*xopt9))), ((((param45*(xopt7-param42))+(param46*(xopt8-param43)))+(param47*(xopt9-param44)))-(((param45*xopt7)+(param46*xopt8))+(param47*xopt9))), ((((param51*(xopt7-param48))+(param52*(xopt8-param49)))+(param53*(xopt9-param50)))-(((param51*xopt7)+(param52*xopt8))+(param53*xopt9))), ((((param57*(xopt7-param54))+(param58*(xopt8-param55)))+(param59*(xopt9-param56)))-(((param57*xopt7)+(param58*xopt8))+(param59*xopt9))), ((((param3*(xopt51-param0))+(param4*(xopt52-param1)))+(param5*(xopt53-param2)))-(((param3*xopt51)+(param4*xopt52))+(param5*xopt53))), ((((param9*(xopt51-param6))+(param10*(xopt52-param7)))+(param11*(xopt53-param8)))-(((param9*xopt51)+(param10*xopt52))+(param11*xopt53))), ((((param15*(xopt51-param12))+(param16*(xopt52-param13)))+(param17*(xopt53-param14)))-(((param15*xopt51)+(param16*xopt52))+(param17*xopt53))), ((((param21*(xopt51-param18))+(param22*(xopt52-param19)))+(param23*(xopt53-param20)))-(((param21*xopt51)+(param22*xopt52))+(param23*xopt53))), ((((param27*(xopt51-param24))+(param28*(xopt52-param25)))+(param29*(xopt53-param26)))-(((param27*xopt51)+(param28*xopt52))+(param29*xopt53))), ((((param33*(xopt51-param30))+(param34*(xopt52-param31)))+(param35*(xopt53-param32)))-(((param33*xopt51)+(param34*xopt52))+(param35*xopt53))), ((((param39*(xopt51-param36))+(param40*(xopt52-param37)))+(param41*(xopt53-param38)))-(((param39*xopt51)+(param40*xopt52))+(param41*xopt53))), ((((param45*(xopt51-param42))+(param46*(xopt52-param43)))+(param47*(xopt53-param44)))-(((param45*xopt51)+(param46*xopt52))+(param47*xopt53))), ((((param51*(xopt51-param48))+(param52*(xopt52-param49)))+(param53*(xopt53-param50)))-(((param51*xopt51)+(param52*xopt52))+(param53*xopt53))), ((((param57*(xopt51-param54))+(param58*(xopt52-param55)))+(param59*(xopt53-param56)))-(((param57*xopt51)+(param58*xopt52))+(param59*xopt53)))]
+@1=(xopt4+(xopt4+(xopt0*xopt13))), @2=2, @3=0.5, @4=(xopt5+(xopt5+(xopt0*xopt14))), @5=(xopt6+(xopt6+(xopt0*xopt15))), @6=(xopt13+xopt13), @7=(xopt14+xopt14), @8=(xopt15+xopt15), @9=(xopt25+xopt25), @10=(xopt26+xopt26), @11=(xopt27+xopt27), @12=0, @13=(xopt38+(xopt38+(xopt34*xopt47))), @14=(xopt39+(xopt39+(xopt34*xopt48))), @15=(xopt40+(xopt40+(xopt34*xopt49))), @16=(xopt47+xopt47), @17=(xopt48+xopt48), @18=(xopt49+xopt49), [((((xopt1+((xopt0*@1)/@2))-xopt7)+xopt16)-(((((((@3*(@1+(xopt0*xopt13)))*xopt0)+xopt1)+(xopt0*xopt4))-xopt7)+((@3*sq(xopt0))*xopt13))+xopt16)), ((((xopt2+((xopt0*@4)/@2))-xopt8)+xopt17)-(((((((@3*(@4+(xopt0*xopt14)))*xopt0)+xopt2)+(xopt0*xopt5))-xopt8)+((@3*sq(xopt0))*xopt14))+xopt17)), ((((xopt3+((xopt0*@5)/@2))-xopt9)+xopt18)-(((((((@3*(@5+(xopt0*xopt15)))*xopt0)+xopt3)+(xopt0*xopt6))-xopt9)+((@3*sq(xopt0))*xopt15))+xopt18)), ((((xopt4+((xopt0*@6)/@2))-xopt10)+xopt19)-((((((@3*@6)*xopt0)+xopt4)-xopt10)+(xopt0*xopt13))+xopt19)), ((((xopt5+((xopt0*@7)/@2))-xopt11)+xopt20)-((((((@3*@7)*xopt0)+xopt5)-xopt11)+(xopt0*xopt14))+xopt20)), ((((xopt6+((xopt0*@8)/@2))-xopt12)+xopt21)-((((((@3*@8)*xopt0)+xopt6)-xopt12)+(xopt0*xopt15))+xopt21)), (((xopt22+((xopt0*@9)/@2))-xopt28)-(((((@3*@9)*xopt0)+xopt22)+(xopt0*xopt25))-xopt28)), (((xopt23+((xopt0*@10)/@2))-xopt29)-(((((@3*@10)*xopt0)+xopt23)+(xopt0*xopt26))-xopt29)), (((xopt24+((xopt0*@11)/@2))-xopt30)-(((((@3*@11)*xopt0)+xopt24)+(xopt0*xopt27))-xopt30)), @12, @12, @12, (((xopt7-xopt28)+xopt56)-((xopt7-xopt28)+xopt56)), (((xopt8-xopt29)+xopt57)-((xopt8-xopt29)+xopt57)), (((xopt9-xopt30)+xopt58)-((xopt9-xopt30)+xopt58)), (((xopt7-xopt35)+xopt59)-((xopt7-xopt35)+xopt59)), (((xopt8-xopt36)+xopt60)-((xopt8-xopt36)+xopt60)), (((xopt9-xopt37)+xopt61)-((xopt9-xopt37)+xopt61)), (((xopt10-xopt38)+xopt62)-((xopt10-xopt38)+xopt62)), (((xopt11-xopt39)+xopt63)-((xopt11-xopt39)+xopt63)), (((xopt12-xopt40)+xopt64)-((xopt12-xopt40)+xopt64)), ((((xopt35+((xopt34*@13)/@2))-xopt41)+xopt50)-(((((((@3*(@13+(xopt34*xopt47)))*xopt34)+xopt35)+(xopt34*xopt38))-xopt41)+((@3*sq(xopt34))*xopt47))+xopt50)), ((((xopt36+((xopt34*@14)/@2))-xopt42)+xopt51)-(((((((@3*(@14+(xopt34*xopt48)))*xopt34)+xopt36)+(xopt34*xopt39))-xopt42)+((@3*sq(xopt34))*xopt48))+xopt51)), ((((xopt37+((xopt34*@15)/@2))-xopt43)+xopt52)-(((((((@3*(@15+(xopt34*xopt49)))*xopt34)+xopt37)+(xopt34*xopt40))-xopt43)+((@3*sq(xopt34))*xopt49))+xopt52)), ((((xopt38+((xopt34*@16)/@2))-xopt44)+xopt53)-((((((@3*@16)*xopt34)+xopt38)-xopt44)+(xopt34*xopt47))+xopt53)), ((((xopt39+((xopt34*@17)/@2))-xopt45)+xopt54)-((((((@3*@17)*xopt34)+xopt39)-xopt45)+(xopt34*xopt48))+xopt54)), ((((xopt40+((xopt34*@18)/@2))-xopt46)+xopt55)-((((((@3*@18)*xopt34)+xopt40)-xopt46)+(xopt34*xopt49))+xopt55)), ((((param3*(xopt7-param0))+(param4*(xopt8-param1)))+(param5*(xopt9-param2)))-(((param3*xopt7)+(param4*xopt8))+(param5*xopt9))), ((((param9*(xopt7-param6))+(param10*(xopt8-param7)))+(param11*(xopt9-param8)))-(((param9*xopt7)+(param10*xopt8))+(param11*xopt9))), ((((param15*(xopt7-param12))+(param16*(xopt8-param13)))+(param17*(xopt9-param14)))-(((param15*xopt7)+(param16*xopt8))+(param17*xopt9))), ((((param21*(xopt7-param18))+(param22*(xopt8-param19)))+(param23*(xopt9-param20)))-(((param21*xopt7)+(param22*xopt8))+(param23*xopt9))), ((((param27*(xopt7-param24))+(param28*(xopt8-param25)))+(param29*(xopt9-param26)))-(((param27*xopt7)+(param28*xopt8))+(param29*xopt9))), ((((param33*(xopt7-param30))+(param34*(xopt8-param31)))+(param35*(xopt9-param32)))-(((param33*xopt7)+(param34*xopt8))+(param35*xopt9))), ((((param39*(xopt7-param36))+(param40*(xopt8-param37)))+(param41*(xopt9-param38)))-(((param39*xopt7)+(param40*xopt8))+(param41*xopt9))), ((((param45*(xopt7-param42))+(param46*(xopt8-param43)))+(param47*(xopt9-param44)))-(((param45*xopt7)+(param46*xopt8))+(param47*xopt9))), ((((param51*(xopt7-param48))+(param52*(xopt8-param49)))+(param53*(xopt9-param50)))-(((param51*xopt7)+(param52*xopt8))+(param53*xopt9))), ((((param57*(xopt7-param54))+(param58*(xopt8-param55)))+(param59*(xopt9-param56)))-(((param57*xopt7)+(param58*xopt8))+(param59*xopt9))), ((((param3*(xopt41-param0))+(param4*(xopt42-param1)))+(param5*(xopt43-param2)))-(((param3*xopt41)+(param4*xopt42))+(param5*xopt43))), ((((param9*(xopt41-param6))+(param10*(xopt42-param7)))+(param11*(xopt43-param8)))-(((param9*xopt41)+(param10*xopt42))+(param11*xopt43))), ((((param15*(xopt41-param12))+(param16*(xopt42-param13)))+(param17*(xopt43-param14)))-(((param15*xopt41)+(param16*xopt42))+(param17*xopt43))), ((((param21*(xopt41-param18))+(param22*(xopt42-param19)))+(param23*(xopt43-param20)))-(((param21*xopt41)+(param22*xopt42))+(param23*xopt43))), ((((param27*(xopt41-param24))+(param28*(xopt42-param25)))+(param29*(xopt43-param26)))-(((param27*xopt41)+(param28*xopt42))+(param29*xopt43))), ((((param33*(xopt41-param30))+(param34*(xopt42-param31)))+(param35*(xopt43-param32)))-(((param33*xopt41)+(param34*xopt42))+(param35*xopt43))), ((((param39*(xopt41-param36))+(param40*(xopt42-param37)))+(param41*(xopt43-param38)))-(((param39*xopt41)+(param40*xopt42))+(param41*xopt43))), ((((param45*(xopt41-param42))+(param46*(xopt42-param43)))+(param47*(xopt43-param44)))-(((param45*xopt41)+(param46*xopt42))+(param47*xopt43))), ((((param51*(xopt41-param48))+(param52*(xopt42-param49)))+(param53*(xopt43-param50)))-(((param51*xopt41)+(param52*xopt42))+(param53*xopt43))), ((((param57*(xopt41-param54))+(param58*(xopt42-param55)))+(param59*(xopt43-param56)))-(((param57*xopt41)+(param58*xopt42))+(param59*xopt43)))]
 

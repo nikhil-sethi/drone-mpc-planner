@@ -58,7 +58,11 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                 break;
             }
         case intercept_in_planes: {
-                iip.init(&thrust);
+                FlightArea flightarea;
+                std::vector<Plane> planes = cube_planes(3.f, 6);
+                flightarea.init(planes);
+
+                iip.init(&thrust, &flightarea, bare);
                 iip.sqp_setup(sqp_config);
                 if (disable_time_ensurance)
                     iip.max_cpu_time(0);
@@ -85,7 +89,6 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
     double accumulated_optimizing_time = 0;
     double realtime_boundary_ms = 1. / 90 * 1000; //[ms]
 
-    float box_size = 3;
     float summon_box_size = 2;
     int n_samples_per_direction = 2;
     float step_size = summon_box_size / n_samples_per_direction;
@@ -137,7 +140,7 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                                         break;
                                     }
                                 case intercept_in_planes: {
-                                        auto opti_res = iip.find_best_interception(drone, insect, cube_planes(box_size, 6));
+                                        auto opti_res = iip.find_best_interception(drone, insect);
                                         valid = opti_res.valid;
                                         timetointercept = opti_res.time_to_intercept;
                                         positiontointercept = opti_res.position_to_intercept;

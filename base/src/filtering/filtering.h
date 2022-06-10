@@ -211,4 +211,34 @@ public:
         return output;
     }
 };
+
+class hold_filter {
+private:
+    double hold_time;
+    double time_last_non_zero;
+    int hold_value;
+
+public:
+    void init(double holdtime) {
+        hold_time = holdtime;
+    }
+    int update(int new_sample, double time) {
+
+        if (new_sample) {
+            time_last_non_zero = time;
+            hold_value = new_sample;
+        }
+
+        if ((time - time_last_non_zero) > hold_time) {
+            hold_value = 0;
+            return hold_value;
+        }
+        else
+            return hold_value;
+    }
+
+    int output() {
+        return hold_value;
+    }
+};
 }

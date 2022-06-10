@@ -20,11 +20,11 @@ public:
     double costs(Eigen::VectorXd X);
 
 private:
-    real_t H[7225];
-    real_t g[85];
-    real_t A[3995];
-    real_t lb[85];
-    real_t ub[85];
+    real_t H[4225];
+    real_t g[65];
+    real_t A[3055];
+    real_t lb[65];
+    real_t ub[65];
     real_t lbA[47];
     real_t ubA[47];
 
@@ -44,15 +44,15 @@ private:
 
     void print_quadratic_problem(real_t *primal, real_t *dual) {
         std::cout << "***********PATS Optimization step:**************" << std::endl;
-        print_array("H", 7225, H);
-        print_array("g", 85, g);
-        print_array("A", 3995, A);
-        print_array("lb", 85, lb);
-        print_array("ub", 85, ub);
+        print_array("H", 4225, H);
+        print_array("g", 65, g);
+        print_array("A", 3055, A);
+        print_array("lb", 65, lb);
+        print_array("ub", 65, ub);
         print_array("lbA", 47, lbA);
         print_array("ubA", 47, ubA);
-        print_array("prim", 85, primal);
-        print_array("(-1)*dual", 85 + 47, dual); //dual is printed with inverted sign, the lagrange_multiplier for the constraints have the correct sign however.
+        print_array("prim", 65, primal);
+        print_array("(-1)*dual", 65 + 47, dual); //dual is printed with inverted sign, the lagrange_multiplier for the constraints have the correct sign however.
         std::cout << "*******************************************" << std::endl;
     }
 };

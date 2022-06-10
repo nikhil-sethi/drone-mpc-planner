@@ -1,6 +1,7 @@
 #include "flightareaconfig.h"
 #include "linalg.h"
 
+#ifndef UNIT_TESTING
 void FlightAreaConfig::create_camera_planes() {
     _planes.push_back(Plane(1, view_data.point_left_bottom,   view_data.point_right_bottom, lower_plane, _planes.size()));
     _planes.push_back(Plane(-1, view_data.point_left_top,      view_data.point_right_top,    top_plane,   _planes.size()));
@@ -11,6 +12,7 @@ void FlightAreaConfig::create_camera_planes() {
     add_plane(0.85f * camera_normal, camera_normal, camera_protector_plane);
     apply_safety_angle(15.f * deg2rad);
 }
+#endif
 
 void FlightAreaConfig::add_plane(cv::Point3f support_vector, cv::Point3f normal_vector, plane_types type) {
     _planes.push_back(Plane(support_vector, normal_vector, type, _planes.size()));

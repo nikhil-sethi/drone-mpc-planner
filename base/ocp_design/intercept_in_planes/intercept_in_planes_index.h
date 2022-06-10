@@ -1,5 +1,5 @@
 #pragma once
-#define N_OPTVARS 85
+#define N_OPTVARS 65
 #define N_CONSTRAINTS 47
 #define N_SAMPLES_INTERCEPTING 2
 #define N_STEPS_INTERCEPTING 1
@@ -29,29 +29,25 @@ enum optvar_idx {
     drone_acczF_intercepting = 15,
     drone_virt_accx0_intercepting = 16,
     drone_virt_acczF_intercepting = 21,
-    drone_plane_slack0_intercepting = 22,
-    drone_plane_slackF_intercepting = 31,
-    insect_posx0 = 32,
-    insect_posy0 = 33,
-    insect_posz0 = 34,
-    insect_velx0 = 35,
-    insect_vely0 = 36,
-    insect_velz0 = 37,
-    insect_velzF = 43,
-    dt_breaking = 44,
-    drone_posx0_breaking = 45,
-    drone_velxF_breaking = 54,
-    drone_velzF_breaking = 56,
-    drone_accx0_breaking = 57,
-    drone_acczF_breaking = 59,
-    drone_virt_accx0_breaking = 60,
-    drone_virt_acczF_breaking = 65,
-    drone_plane_slack0_breaking = 66,
-    drone_plane_slackF_breaking = 75,
-    interception_slack0 = 76,
-    interception_slackF = 78,
-    state_transition_slack0 = 79,
-    state_transition_slackF = 81,
+    insect_posx0 = 22,
+    insect_posy0 = 23,
+    insect_posz0 = 24,
+    insect_velx0 = 25,
+    insect_vely0 = 26,
+    insect_velz0 = 27,
+    insect_velzF = 33,
+    dt_breaking = 34,
+    drone_posx0_breaking = 35,
+    drone_velxF_breaking = 44,
+    drone_velzF_breaking = 46,
+    drone_accx0_breaking = 47,
+    drone_acczF_breaking = 49,
+    drone_virt_accx0_breaking = 50,
+    drone_virt_acczF_breaking = 55,
+    interception_slack0 = 56,
+    interception_slackF = 58,
+    state_transition_slack0 = 59,
+    state_transition_slackF = 61,
 };
 
 enum inequality_constraint_idx {

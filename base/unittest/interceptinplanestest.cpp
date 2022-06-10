@@ -1,4 +1,5 @@
 #include "intercept_in_planes_optimizer_interface.h"
+#include "flightarea.h"
 #include "plane.h"
 #include "ocptester.h"
 #include <chrono>
@@ -10,6 +11,7 @@ TEST_GROUP(InterceptInPlanes) {
     OcpTester ocptester;
     tracking::TrackData drone;
     tracking::TrackData insect;
+    FlightArea flightarea;
 };
 
 // TEST(InterceptInPlanes, functiontest) {
@@ -131,7 +133,6 @@ TEST_GROUP(InterceptInPlanes) {
 
 
 TEST(InterceptInPlanes, overall_behavior_linesearch) {
-    opti.init(&(ocptester.thrust));
     bool average_timing_ok, max_timing_ok, invalid_results_ok;
     // sqp_solver_configuration sqp_config = sqp_solver_configuration(30, 1e-0, 1e-0, 1e-0);
     // std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(intercept_in_planes, false, sqp_config);

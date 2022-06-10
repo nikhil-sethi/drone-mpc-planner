@@ -194,6 +194,7 @@ private:
 
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
+    filtering::hold_filter control_mode_hold_filter;
 
     float time_spent_spinning_up(double time) {
         if (spin_up_start_time > 0)

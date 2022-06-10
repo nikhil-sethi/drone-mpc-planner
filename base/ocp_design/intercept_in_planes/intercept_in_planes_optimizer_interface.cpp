@@ -47,10 +47,6 @@ void InterceptInPlanesOptimizerInterface::init_box_constraints() {
         prob_params.ubx[i] =  inf;
     }
 
-    for (int i = drone_plane_slack0_intercepting; i <= drone_plane_slackF_intercepting; i++) {
-        prob_params.lbx[i] = -inf;
-        prob_params.ubx[i] =  inf;
-    }
 
     for (int i = drone_posx0_breaking; i <= drone_velzF_breaking; i++) {
         prob_params.lbx[i] = -inf;
@@ -67,10 +63,6 @@ void InterceptInPlanesOptimizerInterface::init_box_constraints() {
         prob_params.ubx[i] = 0;
     }
 
-    for (int i = drone_plane_slack0_breaking; i <= drone_plane_slackF_breaking; i++) {
-        prob_params.lbx[i] = -inf;
-        prob_params.ubx[i] =  inf;
-    }
 
     for (int i = interception_slack0; i <= state_transition_slackF; i++) { // interception_slacks, state_transition_slacks
         prob_params.lbx[i] = -inf;
@@ -263,17 +255,6 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
 
     if (xopt[dt_intercepting] < 0 || xopt[dt_breaking] < 0) {
         // print_warning("INFEASIBLE: violated time constraint!");
-        return false;
-    }
-    double plane_slack_sum = 0;
-    for (uint i = drone_plane_slack0_intercepting; i < drone_plane_slackF_intercepting; i++) {
-        plane_slack_sum += abs(xopt[i]);
-    }
-    for (uint i = drone_plane_slack0_breaking; i < drone_plane_slackF_breaking; i++) {
-        plane_slack_sum += abs(xopt[i]);
-    }
-    if (plane_slack_sum > 0.5) {
-        // print_warning("INFEASIBLE: Plane constraints violated! Sum plane violations: " + to_string(plane_slack_sum));
         return false;
     }
 

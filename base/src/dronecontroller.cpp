@@ -22,6 +22,7 @@ void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *fli
     _dtrk = dtrk;
     _flight_area = flight_area;
     control_history_max_size = pparams.fps;
+    control_mode_hold_filter.init(.25);
 
     std::cout << "Initialising control." << std::endl;
 
@@ -110,6 +111,7 @@ void DroneController::led_strength(float light_level) {
 
 void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging) {
     _time = time;
+    control_mode_hold_filter.update(control_mode, time);
 
     if (!log_replay_mode && pparams.joystick != rc_none)
         read_joystick();
@@ -1054,8 +1056,12 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
 
     kiv_ctrl.update(data_drone, transmission_delay_duration);
-    if (data_drone.pos_valid && data_drone.vel_valid && !dry_run && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45))
-        error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
+    if (data_drone.pos_valid && data_drone.vel_valid && !dry_run && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
+        if (control_mode_hold_filter.output()) //feedforward was active in the close past
+            error += kiv_ctrl.correction_acceleration(strict, data_drone, position_control);
+        else
+            error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
+    }
 
     return error;
 }

@@ -44,9 +44,6 @@ n_optvars, idx_inputs_intercepting = update_optvar_index(n_optvars, inputs_inter
 virtual_inputs_intercepting = SX.sym('virtual_inputs_intercepting', n_states, n_steps_intercepting)
 n_optvars, idx_virtual_inputs_intercepting = update_optvar_index(n_optvars, virtual_inputs_intercepting)
 
-plane_slacks_intercepting = SX.sym('plane_slacks_intercepting', n_steps_intercepting * n_planes)
-n_optvars, idx_plane_slacks_intercepting = update_optvar_index(n_optvars, plane_slacks_intercepting)
-
 insect_states = SX.sym('insect_state', n_insectstates, n_samples_intercepting)
 n_optvars, idx_insect_states = update_optvar_index(n_optvars, insect_states)
 
@@ -61,9 +58,6 @@ n_optvars, idx_inputs_breaking = update_optvar_index(n_optvars, inputs_breaking)
 
 virtual_inputs_breaking = SX.sym('virtual_inputs_breaking', n_states, n_steps_breaking)
 n_optvars, idx_virtual_inputs_breaking = update_optvar_index(n_optvars, virtual_inputs_breaking)
-
-plane_slacks_breaking = SX.sym('plane_slacks_breaking', n_steps_breaking * n_planes)
-n_optvars, idx_plane_slacks_breaking = update_optvar_index(n_optvars, plane_slacks_breaking)
 
 interception_slacks = SX.sym('interception', 3, 1)
 n_optvars, idx_interception_slacks = update_optvar_index(n_optvars, interception_slacks)
@@ -80,21 +74,19 @@ variables_list = [delta_t_intercepting,
                   states_intercepting,
                   inputs_intercepting,
                   virtual_inputs_intercepting,
-                  plane_slacks_intercepting,
                   insect_states,
                   delta_t_breaking,
                   states_breaking,
                   inputs_breaking,
                   virtual_inputs_breaking,
-                  plane_slacks_breaking,
                   interception_slacks,
                   state_transition_slacks
                   ]
 
 variables_flat = casadi.vertcat(*[casadi.reshape(e, -1, 1) for e in variables_list])
-variables_name = ['delta_t_intercepting', 'states_intercepting', 'inputs_intercepting', 'virtual_inputs_intercepting', 'plane_slacks_intercepting',
+variables_name = ['delta_t_intercepting', 'states_intercepting', 'inputs_intercepting', 'virtual_inputs_intercepting',
                   'insect_states',
-                  'delta_t_breaking', 'states_breaking', 'inputs_breaking', 'virtual_inputs_breaking', 'plane_slacks_breaking',
+                  'delta_t_breaking', 'states_breaking', 'inputs_breaking', 'virtual_inputs_breaking',
                   'interception_slacks', 'state_transition_slacks']
 pack_variables_fn = casadi.Function('pack_variables_fn', variables_list, [variables_flat], variables_name, ['flat'])
 unpack_variables_fn = casadi.Function('unpack_variables_fn', [variables_flat], variables_list, ['flat'], variables_name)
@@ -140,8 +132,6 @@ def export_casadi_defines(n_vars, n_ineqs, ineq_idxs):
         f.write("    drone_acczF_intercepting = " + str(idx_inputs_intercepting[-1, -1]) + ",\n")
         f.write("    drone_virt_accx0_intercepting = " + str(idx_virtual_inputs_intercepting[0, 0]) + ",\n")
         f.write("    drone_virt_acczF_intercepting = " + str(idx_virtual_inputs_intercepting[-1, -1]) + ",\n")
-        f.write("    drone_plane_slack0_intercepting = " + str(idx_plane_slacks_intercepting[0, 0]) + ",\n")
-        f.write("    drone_plane_slackF_intercepting = " + str(idx_plane_slacks_intercepting[-1, -1]) + ",\n")
         f.write("    insect_posx0 = " + str(idx_insect_states[0, 0]) + ",\n")
         f.write("    insect_posy0 = " + str(idx_insect_states[1, 0]) + ",\n")
         f.write("    insect_posz0 = " + str(idx_insect_states[2, 0]) + ",\n")
@@ -157,8 +147,6 @@ def export_casadi_defines(n_vars, n_ineqs, ineq_idxs):
         f.write("    drone_acczF_breaking = " + str(idx_inputs_breaking[-1, -1]) + ",\n")
         f.write("    drone_virt_accx0_breaking = " + str(idx_virtual_inputs_breaking[0, 0]) + ",\n")
         f.write("    drone_virt_acczF_breaking = " + str(idx_virtual_inputs_breaking[-1, -1]) + ",\n")
-        f.write("    drone_plane_slack0_breaking = " + str(idx_plane_slacks_breaking[0, 0]) + ",\n")
-        f.write("    drone_plane_slackF_breaking = " + str(idx_plane_slacks_breaking[-1, -1]) + ",\n")
         f.write("    interception_slack0 = " + str(idx_interception_slacks[0, 0]) + ",\n")
         f.write("    interception_slackF = " + str(idx_interception_slacks[2, 0]) + ",\n")
         f.write("    state_transition_slack0 = " + str(idx_state_transition_slacks[0, 0]) + ",\n")
@@ -181,8 +169,6 @@ def def_optimization():
     objective += 0.001 * delta_t_breaking[:, :]
     objective += 1e7*casadi.sum1(casadi.sum2(virtual_inputs_intercepting[:, :]**2)) / virtual_inputs_intercepting.size1() /virtual_inputs_intercepting.size2()
     objective += 1e7*casadi.sum1(casadi.sum2(virtual_inputs_breaking[:, :]**2)) / virtual_inputs_breaking.size1() /virtual_inputs_breaking.size2()
-    objective += 1e2 * casadi.sum1(casadi.sum2(plane_slacks_intercepting[:,:]**2)) / plane_slacks_intercepting.size1() / plane_slacks_intercepting.size2()
-    objective += 1e2 * casadi.sum1(casadi.sum2(plane_slacks_breaking[:,:]**2)) / plane_slacks_breaking.size1() / plane_slacks_breaking.size2()
     objective += 1e2 * casadi.sum1(casadi.sum2(interception_slacks[:, :]**2)) / interception_slacks.size1() / interception_slacks.size2()
     objective += 1e7 * casadi.sum1(casadi.sum2(state_transition_slacks[:, :]**2)) / state_transition_slacks.size1() / state_transition_slacks.size2()
 
@@ -278,7 +264,6 @@ def gen_initguess_linear(x0, xinsect):
     insect_guess[:, idx_vel] = np.linspace(insect_vel0, insect_vel0, n_samples_intercepting, axis=1).T
 
     virtual_inputs_intercepting_guess = np.zeros([n_steps_intercepting, n_states])
-    plane_slacks_intercepting_guess = np.zeros([n_steps_intercepting * n_planes])
 
     t_breaking_guess = 2 * np.linalg.norm(drone_velEnd) / DRONE_MAX_THRUST
     deltat_breaking_guess = t_breaking_guess / n_samples_breaking
@@ -291,19 +276,16 @@ def gen_initguess_linear(x0, xinsect):
     inputs_breaking_guess = np.linspace(u_stopping, u_stopping, n_steps_breaking)
     # inputs_breaking_guess = add_noise(inputs_breaking_guess, 1)
     virtual_inputs_breaking_guess = np.zeros([n_steps_breaking, n_states])
-    plane_slacks_breaking_guess = np.zeros([n_steps_breaking * n_planes])
 
     init_guess = np.concatenate((np.array([[deltat_intercepting_guess]]),
                                  states_intercepting_guess.reshape((n_states*n_samples_intercepting, 1)),
                                  inputs_intercepting_guess.reshape((n_inputs*n_steps_intercepting, 1)),
                                  virtual_inputs_intercepting_guess.reshape((n_states*n_steps_intercepting, 1)),
-                                 plane_slacks_intercepting_guess.reshape((n_planes*n_steps_intercepting, 1)),
                                  insect_guess.reshape((n_insectstates*n_samples_intercepting, 1)),
                                  np.array([[deltat_breaking_guess]]),
                                  states_breaking_guess.reshape((n_states*n_samples_breaking, 1)),
                                  inputs_breaking_guess.reshape((n_inputs*n_steps_breaking, 1)),
                                  virtual_inputs_breaking_guess.reshape((n_states*n_steps_breaking, 1)),
-                                 plane_slacks_breaking_guess.reshape((n_planes*n_steps_breaking, 1)),
                                  np.zeros([3, 1]),
                                  np.zeros([6, 1])
                                  ))
@@ -424,8 +406,6 @@ def eval_results(results, plane_params, unittest = False):
     trajectory_slack = np.sum(np.abs(np.array(results['virtual_inputs_intercepting'][:,:]))) + np.sum(np.abs(np.array(results['virtual_inputs_breaking'][:,:])))
     print_constraint_check('Trajectory slack', trajectory_slack<1, trajectory_slack)
 
-    planes_slack = np.sum(np.abs(np.array(results['plane_slacks_intercepting']))) + np.sum(np.abs(np.array(results['plane_slacks_breaking'])))
-    print_constraint_check('Plane slack', planes_slack<1, planes_slack)
 
     print('Attack attitude:', angle_between_vectors(drone_input_trajectory_intercepting[-1, :], insect_pos_trajectory[-2, :] - drone_pos_trajectory[-2, :]) * 180 / np.pi)
     print('Attack direction:', angle_between_vectors(drone_state_trajectory_intercepting[-1, idx_vel], np.array([0, 1, 0])) * 180 / np.pi)

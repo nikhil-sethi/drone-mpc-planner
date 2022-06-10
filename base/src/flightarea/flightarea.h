@@ -13,10 +13,16 @@ private:
     std::string default_config_name;
     std::map<safety_margin_types, FlightAreaConfig> flight_area_configs;
 
+#ifndef UNIT_TESTING
     std::vector<Plane> deserialize_location(std::string replay_dir);
+#endif
 
 public:
+#ifndef UNIT_TESTING
     void init(std::string replay_dir, Cam *cam);
+#else
+    void init(std::vector<Plane> planes);
+#endif
     void update_bottom_plane_based_on_blink(float pad_height);
     void set_vertical_camera_plane(float z);
     bool inside(cv::Point3f point, safety_margin_types margin);
@@ -26,4 +32,5 @@ public:
     std::vector<Plane> active_planes(safety_margin_types margin);
     bool trajectory_in_view(std::vector<tracking::StateData> traj, safety_margin_types margin);
     std::vector<CornerPoint> corner_points(safety_margin_types safety_margin_type);
+
 };
