@@ -278,12 +278,9 @@ void Realsense::init_real() {
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
-    if (!exposure_initialized && master()) {
-        measure_light_level();
+    if ((!exposure_initialized || !angle_initialized) && master()) {
+        measure_camera_conditions();
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << camparams.measured_brightness << std::endl;
-    }
-    if (!angle_initialized && master()) {
-        measure_angle();
         std::cout << "Camera roll: " << to_string_with_precision(camparams.camera_angle_x, 2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(camparams.camera_angle_y, 2) << "°" << std::endl;
     }
 
@@ -337,7 +334,8 @@ void Realsense::init_real() {
     initialized = true;
 }
 
-std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_light_level() {
+
+std::tuple<float, float, double, float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_camera_conditions() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
@@ -358,6 +356,8 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
         cfg.enable_stream(RS2_STREAM_COLOR, 1280, 800, RS2_FORMAT_BGR8, 30);
     else
         cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
+    cfg.enable_stream(RS2_STREAM_ACCEL);
+    cfg.enable_stream(RS2_STREAM_GYRO);
 
     rs2::pipeline cam(ctx);
     cam.start(cfg);
@@ -379,9 +379,19 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
     float tmp_exposure = 0, tmp_gain = 0;
     int tmp_last_ae_change_frame_id = 0;
     uint actual_exposure_was_measured = 0;
+    uint angle_was_measured = 0;
     uint i = 0;
 
-    for (i = 0; i < 2 * pparams.fps; i++) { // check for large change in exposure
+
+    uint nframes = 2 * pparams.fps;
+    filtering::Smoother smx, smy, smz;
+    smx.init(static_cast<int>(nframes));
+    smy.init(static_cast<int>(nframes));
+    smz.init(static_cast<int>(nframes));
+    float x = 0, y = 0, z = 0, roll = 0, pitch = 0;
+
+
+    for (i = 0; i < nframes; i++) {
         frame = cam.wait_for_frames();
 
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
@@ -394,6 +404,18 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
                 break;
             tmp_exposure = new_expos;
         }
+        auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+        if (frame_acc.is<rs2::motion_frame>()) {
+            rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
+            rs2_vector xyz = mf.get_motion_data();
+            x = smx.addSample(xyz.x);
+            y = smy.addSample(xyz.y);
+            z = smz.addSample(xyz.z);
+            roll = atan2f(-x, sqrtf(y * y + z * z)) * rad2deg;
+            pitch = -(atan2f(y, z) * rad2deg + 90);
+            angle_was_measured++;
+        }
+
     }
     cam.stop();
 
@@ -405,7 +427,11 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
     if (!actual_exposure_was_measured)
         std::cout << "Warning: no exposure data could be found!!!" << std::endl;
     else if (actual_exposure_was_measured != i)
-        std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
+        std::cout << "Not all frames contained exposure info: " << actual_exposure_was_measured << " / " << i << std::endl;
+    if (!angle_was_measured)
+        std::cout << "Warning: no anlge data could be found!!!" << std::endl;
+    else if (angle_was_measured != i)
+        std::cout << "Not all frames contained angle info: " << angle_was_measured << " / " << i << std::endl;
 
     auto framergb = frame.get_color_frame();
     cv::Mat frame_bgr;
@@ -419,66 +445,13 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
     camparams.measured_brightness = brightness;
     exposure_initialized = true;
     float light_level = calc_light_level(new_expos, new_gain, brightness);
-    return std::make_tuple(light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
 
-}
 
-std::tuple<float, float, double, cv::Mat> Realsense::measure_angle() {
-    if (!dev_initialized) {
-        rs2::device_list devices = ctx.query_devices();
-        if (devices.size() == 0) {
-            throw NoRealsenseConnected();
-        } else if (devices.size() > 1) {
-            throw std::runtime_error("more than one RealSense connected....");
-        } else {
-            dev = devices[0];
-            dev_initialized = true;
-        }
-    }
-
-    rs2::config cfg;
-    cfg.enable_device(serial_nr);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
-    cfg.enable_stream(RS2_STREAM_ACCEL);
-    cfg.enable_stream(RS2_STREAM_GYRO);
-    rs2::pipeline cam(ctx);
-    cam.start(cfg);
-    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
-    rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
-    cv::Size im_size(IMG_W, IMG_H);
-    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
-
-    uint nframes = 30;
-    filtering::Smoother smx, smy, smz;
-    smx.init(static_cast<int>(nframes));
-    smy.init(static_cast<int>(nframes));
-    smz.init(static_cast<int>(nframes));
-    float x = 0, y = 0, z = 0, roll = 0, pitch = 0;
-    rs2::frameset frame;
-    cv::Mat frameLt;
-
-    for (uint i = 0; i < nframes; i++) {
-        frame = cam.wait_for_frames();
-        frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
-        auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-        if (frame_acc.is<rs2::motion_frame>()) {
-            rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
-            rs2_vector xyz = mf.get_motion_data();
-            x = smx.addSample(xyz.x);
-            y = smy.addSample(xyz.y);
-            z = smz.addSample(xyz.z);
-            roll = atan2f(-x, sqrtf(y * y + z * z)) * rad2deg;
-            pitch = -(atan2f(y, z) * rad2deg + 90);
-        }
-    }
-
-    cam.stop();
     camparams.camera_angle_x = roll;
     camparams.camera_angle_y = pitch;
     angle_initialized = true;
-    return std::make_tuple(roll, pitch, frame.get_timestamp(), frameLt);
 
+    return std::make_tuple(roll, pitch, frame.get_timestamp(), light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
 }
 
 void Realsense::calib_depth_background() {

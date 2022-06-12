@@ -53,21 +53,31 @@ using namespace std;
 bool exit_now = false;
 bool watchdog = true;
 volatile std::sig_atomic_t term_sig_fired;
-int imgcount; // to measure fps
+int received_img_count;
 int encoded_img_count = 0;
 int n_fps_warnings = 0;
+filtering::Smoother fps_smoothed;
 GStream video_render, video_raw;
 time_t start_datetime;
 float light_level = 0;
+
+enum enable_window_modes {
+    enable_window_disabled,
+    enable_window_start_only,
+    enable_window_end_only,
+    enable_window_not_passes_midnight,
+    enable_window_passes_midnight
+};
 
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
-std::time_t enable_window_start_time;
-std::time_t enable_window_end_time;
-std::time_t start_time;
-std::time_t periodic_stop_time;
+std::time_t enable_window_start_time = 0;
+std::time_t enable_window_end_time = 0;
+enable_window_modes enable_window_mode = enable_window_disabled;
+std::time_t start_time = 0;
+std::time_t periodic_stop_time = 0;
 bool draw_plots = false;
 bool realsense_reset = false;
 bool log_replay_mode = false;
@@ -123,15 +133,16 @@ int main(int argc, char **argv);
 bool handle_key(double time);
 void save_results_log();
 void print_warnings();
+void print_terminal(StereoPair *frame);
+void encode_video(StereoPair *frame);
+void update_enable_window();
+void check_exit_conditions(double time, bool escape_key_pressed);
 void close(bool sig_kill);
 void watchdog_worker(void);
 void communicate_state(executor_states s);
 
 /************ code ***********/
 void process_video() {
-
-    filtering::Smoother fps_smoothed;
-    fps_smoothed.init(100);
     stopWatch.Start();
     start_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
     //main while loop:
@@ -155,10 +166,6 @@ void process_video() {
 
             }
         }
-        if (render_mode && flight_replay_mode && patser.drone.nav.drone_resetting_yaw()) {
-            std::cout << "Render mode: yaw reset detected. Stopping." << std::endl;
-            escape_key_pressed = true;
-        }
 
         tp[0].m1.lock();
         tp[0].frame = frame;
@@ -166,175 +173,12 @@ void process_video() {
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
 
-        if (term_sig_fired == 2) {
-            std::cout << "\nCaught ctrl-c: " << term_sig_fired << std::endl;
-            communicate_state(es_user_restart);
-            exit_now = true;
-        } else if (term_sig_fired == 15) {
-            std::cout << "\nCaught TERM signal: " << term_sig_fired << std::endl;
-            communicate_state(es_user_restart);
-            exit_now = true;
-        } else if (term_sig_fired) {
-            std::cout << "\nCaught unknown signal: " << term_sig_fired << std::endl;
-            communicate_state(es_user_restart);
-            exit_now = true;
-        } else if (escape_key_pressed) {
-            communicate_state(es_user_restart);
-            exit_now = true;
-        }
-
-        if (patser.drone.program_restart_allowed()) {
-            if (rc->init_package_failure()) {
-                exit_now = true;
-                communicate_state(es_rc_problem);
-                cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
-            } else if (rc->bf_version_error()) {
-                exit_now = true;
-                communicate_state(es_drone_version_mismatch);
-                cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
-            } else if (rc->bf_uid_error()) {
-                if (rc->bf_uid_str() == "hacr") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_hammer;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "ancr") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_anvil_crazybee;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "ansu") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_anvil_superbee;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "andi") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_anvil_diamond;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "qutt") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_qutt;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "quf4") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_quf4;
-                    pparams.serialize(pats_xml_fn);
-                } else if (rc->bf_uid_str() == "quto") {
-                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
-                    pparams.drone = drone_quto;
-                    pparams.serialize(pats_xml_fn);
-                }
-                if (!patser.drone.drone_flying()) {
-                    exit_now = true;
-                    communicate_state(es_drone_config_restart);
-                    cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
-                }
-            } else if (baseboard_link.exit_now()) {
-                exit_now = true;
-                communicate_state(es_baseboard_problem);
-                cmdcenter.reset_commandcenter_status_file("BaseboardLink problem", true);
-                std::cout << " BaseboardLink problem" << std::endl;
-            } else if (daemon_link.exit_now()) {
-                exit_now = true;
-                std::cout << " Daemon link problem" << std::endl;
-                cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
-            }
-        }
-
-        if (pparams.video_raw && ! cam->frame_lagging()) {
-            // auto tmpf = frame->left.clone();
-            // putText(tmpf, to_string(frame->rs_id), cv::Point(3, 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255));
-
-            int frame_written = video_raw.write(frame->left, frame->right);
-            logger_video_ids << encoded_img_count << ";" << imgcount << ";" << frame->rs_id << ";" << frame->time << '\n';
-            if (!frame_written)
-                encoded_img_count++;
-            else {
-                std::cout << "Video frame write PROBLEM: " << frame_written << std::endl;
-            }
-        }
-
-        //keep track of time and fps
-        float t_pc = stopWatch.Read() / 1000.f;
-        float t_cam = static_cast<float>(frame->time);
-        float t;
-        if (log_replay_mode || generator_mode)
-            t = t_pc;
-        else
-            t = t_cam;
-        static float prev_time = -1.f / pparams.fps;
-        float current_fps = 1.f / (t - prev_time);
-        float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode && !airsim_mode) {
-            n_fps_warnings++;
-            std::cout << "FPS WARNING: " << n_fps_warnings << std::endl;
-            if (t_cam < 2) {
-                std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
-                communicate_state(es_realsense_fps_problem);
-                exit_now = true;
-            }
-        }
-        if (cam->frame_loss_cnt() > 500) {
-            std::cout << "Error: Too many frames lost, assuming there's some camera problem. Cowardly exiting." << std::endl;
-            communicate_state(es_realsense_frame_loss_problem);
-            exit_now = true;
-        }
-
         light_level = visdat.light_level();
-        std::cout <<
-                  //   "\r\e[K" <<
-                  imgcount <<
-                  ", R:" << frame->rs_id <<
-                  ", T: " << to_string_with_precision(frame->time, 2) <<
-                  " @ " << to_string_with_precision(fps, 1) <<
-                  " " << patser.state_str();
+        check_exit_conditions(frame->time, escape_key_pressed);
+        encode_video(frame);
+        print_terminal(frame);
+        received_img_count++;
 
-
-        if (pparams.op_mode == op_mode_c) {
-            if (patser.trackers.detections_count())
-                std::cout <<
-                          ", light: " << to_string_with_precision(light_level, 2) <<
-                          ", detections: " << patser.trackers.detections_count() <<
-                          ", insects: " << patser.trackers.insects_count();
-        } else {
-            std:: cout <<
-                       ", " << patser.drone.drone_state_str() <<
-                       ", light: " << to_string_with_precision(light_level, 2) <<
-                       " " << rc->telemetry.batt_cell_v <<
-                       "v, rssi: " << static_cast<int>(rc->telemetry.rssi) <<
-                       ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
-                       ", arm: " << static_cast<int>(rc->telemetry.arming_state) <<
-                       ", t_base: " << static_cast<int>(baseboard_link.uptime());
-        }
-        if (patser.trackers.monster_alert())
-            std:: cout << ", monsters: " << patser.trackers.fp_monsters_count();
-        std:: cout << std::endl;
-        //   std::flush;
-
-        if (rc->telemetry.arming_state && !patser.drone.drone_ready_and_waiting() && rc->arm_command())
-            std::cout << rc->arming_state_str() << std::endl;
-
-        imgcount++;
-        prev_time = t;
-
-        if (fps != fps || isinf(fps))
-            fps_smoothed.reset();
-
-        if (patser.drone.program_restart_allowed()) {
-            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            auto seconds_to_periodic_stop_time = std::difftime(periodic_stop_time, time_now);
-            if (!log_replay_mode && (pparams.periodic_restart_minutes > 0 && seconds_to_periodic_stop_time <= 0)) {
-                std::cout << "Initiating periodic restart" << std::endl;
-                communicate_state(es_periodic_restart);
-                exit_now = true;
-            } else if ((light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && frame->time > 3)) {
-                std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
-                communicate_state(es_brightness_restart);
-                exit_now = true;
-            } else if (enable_window_start_time > 0 && enable_window_end_time > 0 && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0)) {
-                communicate_state(es_enable_window_restart);
-                std::cout << "Initiating restart because not in enable window" << std::endl;
-                exit_now = true;
-            }
-        }
         while (cam->frame_by_frame) {
             unsigned char k = cv::waitKey(0);
             if (k == 'f')
@@ -344,7 +188,6 @@ void process_video() {
                 break;
             }
         }
-
     } // main while loop
     std::cout << "Exiting main loop" << std::endl;
 }
@@ -372,7 +215,7 @@ void process_frame(StereoPair *frame) {
     prev_frame = frame;
 
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    logger << imgcount << ";"
+    logger << received_img_count << ";"
            << frame->rs_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
            << frame->time << ";"
@@ -564,6 +407,184 @@ bool handle_key(double time [[maybe_unused]]) {
     } // end switch key
 
     return false;
+}
+
+void encode_video(StereoPair *frame) {
+    if (pparams.video_raw && ! cam->frame_lagging()) {
+        // auto tmpf = frame->left.clone();
+        // putText(tmpf, to_string(frame->rs_id), cv::Point(3, 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255));
+
+        int frame_written = video_raw.write(frame->left, frame->right);
+        logger_video_ids << encoded_img_count << ";" << received_img_count << ";" << frame->rs_id << ";" << frame->time << '\n';
+        if (!frame_written)
+            encoded_img_count++;
+        else {
+            std::cout << "Video frame write PROBLEM: " << frame_written << std::endl;
+        }
+    }
+}
+
+void check_exit_conditions(double time, bool escape_key_pressed) {
+
+    if (render_mode && flight_replay_mode && patser.drone.nav.drone_resetting_yaw()) {
+        std::cout << "Render mode: yaw reset detected. Stopping." << std::endl;
+        communicate_state(es_user_restart);
+        exit_now = true;
+    }
+    if (escape_key_pressed) {
+        communicate_state(es_user_restart);
+        exit_now = true;
+    }
+
+    if (!(received_img_count % pparams.fps)) {
+        if (term_sig_fired == 2) {
+            std::cout << "\nCaught ctrl-c: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
+            exit_now = true;
+        } else if (term_sig_fired == 15) {
+            std::cout << "\nCaught TERM signal: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
+            exit_now = true;
+        } else if (term_sig_fired) {
+            std::cout << "\nCaught unknown signal: " << term_sig_fired << std::endl;
+            communicate_state(es_user_restart);
+            exit_now = true;
+        }
+        update_enable_window();
+        if (patser.drone.program_restart_allowed()) {
+            if (!log_replay_mode && !generator_mode && !airsim_mode) {
+                if (fps_smoothed.latest() < pparams.fps / 6 * 5 && fps_smoothed.ready() && time < 5) {
+                    std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
+                    communicate_state(es_realsense_fps_problem);
+                    exit_now = true;
+                }
+            }
+            if (rc->init_package_failure()) {
+                exit_now = true;
+                communicate_state(es_rc_problem);
+                cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
+            } else if (rc->bf_version_error()) {
+                exit_now = true;
+                communicate_state(es_drone_version_mismatch);
+                cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
+            } else if (rc->bf_uid_error()) {
+                if (rc->bf_uid_str() == "hacr") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_hammer;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "ancr") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_crazybee;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "ansu") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_superbee;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "andi") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_anvil_diamond;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "qutt") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_qutt;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "quf4") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_quf4;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "quto") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_quto;
+                    pparams.serialize(pats_xml_fn);
+                }
+                if (!patser.drone.drone_flying()) {
+                    exit_now = true;
+                    communicate_state(es_drone_config_restart);
+                    cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
+                }
+            } else if (baseboard_link.exit_now()) {
+                exit_now = true;
+                communicate_state(es_baseboard_problem);
+                cmdcenter.reset_commandcenter_status_file("BaseboardLink problem", true);
+                std::cout << " BaseboardLink problem" << std::endl;
+            } else if (daemon_link.exit_now()) {
+                exit_now = true;
+                std::cout << " Daemon link problem" << std::endl;
+                cmdcenter.reset_commandcenter_status_file("Daemon link problem", true);
+            }
+
+            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            auto seconds_to_periodic_stop_time = std::difftime(periodic_stop_time, time_now);
+            if (!log_replay_mode && (pparams.periodic_restart_minutes > 0 && seconds_to_periodic_stop_time <= 0)) {
+                std::cout << "Initiating periodic restart" << std::endl;
+                communicate_state(es_periodic_restart);
+                exit_now = true;
+            } else if ((light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && time > 10)) {
+                std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
+                communicate_state(es_brightness_restart);
+                exit_now = true;
+            } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && time > 10) {
+                communicate_state(es_enable_window_restart);
+                std::cout << "Initiating restart because not in enable window" << std::endl;
+                exit_now = true;
+            }
+            if (cam->frame_loss_cnt() > 500) {
+                std::cout << "Error: Too many frames lost, assuming there's some camera problem. Cowardly exiting." << std::endl;
+                communicate_state(es_realsense_frame_loss_problem);
+                exit_now = true;
+            }
+        }
+    }
+}
+
+void print_terminal(StereoPair *frame) {
+    //keep track of time and fps
+    float t_pc = stopWatch.Read() / 1000.f;
+    float t_cam = static_cast<float>(frame->time);
+    float t;
+    if (log_replay_mode || generator_mode)
+        t = t_pc;
+    else
+        t = t_cam;
+    static float prev_time = -1.f / pparams.fps;
+    float current_fps = 1.f / (t - prev_time);
+    float fps = fps_smoothed.addSample(current_fps);
+    if (fps != fps || isinf(fps))
+        fps_smoothed.reset();
+    prev_time = t;
+
+    std::cout <<
+              //   "\r\e[K" <<
+              received_img_count <<
+              ", R:" << frame->rs_id <<
+              ", T: " << to_string_with_precision(frame->time, 2) <<
+              " @ " << to_string_with_precision(fps, 1) <<
+              " " << patser.state_str();
+
+
+    if (pparams.op_mode == op_mode_c) {
+        if (patser.trackers.detections_count())
+            std::cout <<
+                      ", light: " << to_string_with_precision(light_level, 2) <<
+                      ", detections: " << patser.trackers.detections_count() <<
+                      ", insects: " << patser.trackers.insects_count();
+    } else {
+        std:: cout <<
+                   ", " << patser.drone.drone_state_str() <<
+                   ", light: " << to_string_with_precision(light_level, 2) <<
+                   " " << rc->telemetry.batt_cell_v <<
+                   "v, rssi: " << static_cast<int>(rc->telemetry.rssi) <<
+                   ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
+                   ", arm: " << static_cast<int>(rc->telemetry.arming_state) <<
+                   ", t_base: " << static_cast<int>(baseboard_link.uptime());
+    }
+    if (patser.trackers.monster_alert())
+        std:: cout << ", monsters: " << patser.trackers.fp_monsters_count();
+    std:: cout << std::endl;
+    //   std::flush;
+
+    if (rc->telemetry.arming_state && !patser.drone.drone_ready_and_waiting() && rc->arm_command())
+        std::cout << rc->arming_state_str() << std::endl;
 }
 
 //This is where frames get processed after it was received from the cam in the main thread
@@ -829,6 +850,7 @@ void init() {
     init_loggers();
     init_video_recorders();
 
+
     communicate_state(es_realsense_init);
     cam->init();
     if (flight_replay_mode)
@@ -874,6 +896,8 @@ void init() {
     periodic_stop_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::minutes(minutes_to_periodic_restart));
     std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T") << std::endl;
 
+    fps_smoothed.init(100);
+
     logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
 
@@ -892,7 +916,7 @@ void close(bool sig_kill) {
     if (pparams.has_screen)
         cv::destroyAllWindows();
 
-    if (imgcount > 0)
+    if (received_img_count > 0)
         save_results_log();
 
     /*****Close everything down*****/
@@ -965,8 +989,8 @@ void save_results_log() {
 void print_warnings() {
     if (pparams.video_raw && !log_replay_mode) {
         std::cout << "Video frames written: " << encoded_img_count - 1 << std::endl;
-        if (encoded_img_count != imgcount)
-            std::cout << "WARNING VIDEO FRAMES MISSING: " << imgcount - encoded_img_count << std::endl;
+        if (encoded_img_count != received_img_count)
+            std::cout << "WARNING VIDEO FRAMES MISSING: " << received_img_count - encoded_img_count << std::endl;
     }
     if (n_fps_warnings)
         std::cout << "WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
@@ -975,93 +999,60 @@ void print_warnings() {
 
 }
 
-void wait_for_cam_angle() {
-    int enable_delay = 0;
-    if (pparams.max_cam_roll > 0 && !log_replay_mode) {
-        std::cout << "Checking cam angle..." << std::endl;
-
-        while (true) {
-            auto [roll, pitch, frame_time, frameL] = static_cast<Realsense *>(cam.get())->measure_angle();
-            static double roll_start_time = frame_time;
-            double elapsed_time = (frame_time - roll_start_time) / 1000.;
-
-            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << ". Camera roll: " << to_string_with_precision(roll, 2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch, 2) << "°" << std::endl;
-
-            static double prev_imwrite_time = -pparams.live_image_frq;
-            if (elapsed_time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
-                prev_imwrite_time = elapsed_time;
-                cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
-            }
-            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll, 2), false);
-
-            if (fabs(roll) < pparams.max_cam_roll && !enable_delay)
-                break;
-            else if (fabs(roll) > pparams.max_cam_roll) {
-                if (!enable_delay)
-                    communicate_state(es_wait_for_angle);
-                enable_delay = 60;
-            } else
-                enable_delay--;
-
-
-            usleep(30000); // measure every third second
-        }
+void save_periodic_images(cv::Mat frame_bgr, cv::Mat frameL, cv::Mat frameR) {
+    static int last_save_bgr_hour = -1;
+    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    auto tm_now = std::localtime(&time_now);
+    if ((tm_now->tm_hour == 13 && last_save_bgr_hour != 13) ||
+            (tm_now->tm_hour == 11 && last_save_bgr_hour != 11) ||
+            (tm_now->tm_hour == 15 && last_save_bgr_hour != 15)) {
+        std::stringstream date_ss;
+        date_ss << std::put_time(tm_now, "%Y%m%d_%H%M%S");
+        cv::imwrite("rgb_" + date_ss.str() + ".png", frame_bgr);
+        cv::imwrite("stereoL_" + date_ss.str() + ".png", frameL);
+        cv::imwrite("stereoR_" + date_ss.str() + ".png", frameR);
+        last_save_bgr_hour = tm_now->tm_hour;
     }
 }
 
-void wait_for_enable_window() {
-    if (enable_window_start_time > 0 && enable_window_end_time > 0) {
-        std::cout << "Checking enable window time..." << std::endl;
-        while (true) {
-            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            if (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) {
-                communicate_state(es_wait_for_enable_window);
-                cmdcenter.reset_commandcenter_status_file("Waiting for enable window: ", false);
-                std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << " Waiting for enable window" << std::endl;
-                usleep(1e7);
-            } else {
-                break;
-            }
-        }
-    }
-}
+void wait_for_start_conditions() {
+    bool enable_window_ok = false;
+    bool light_conditions_ok = false;
+    bool cam_angles_ok = false;
 
-void wait_for_dark() {
-    if (pparams.light_level_threshold > 0 && !log_replay_mode) {
-        std::cout << "Checking if dark..." << std::endl;
-        int last_save_bgr_hour = -1;
-        std::ofstream wait_for_dark_logger;
-        wait_for_dark_logger.open(data_output_dir + "wait_for_dark.csv", std::ofstream::out);
-        wait_for_dark_logger << "Datetime;Light level;Exposure;Gain;Brightness" << std::endl;
-        while (true) {
-            auto [light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_light_level();
-            light_level = light_level_;
-            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            auto datetime = std::put_time(std::localtime(&t), "%Y/%m/%d %T");
-            std::cout << datetime << " Light level: " + to_string_with_precision(light_level_, 2) << ", Measured exposure: " << expo << ", gain: " << gain << ", brightness: " << to_string_with_precision(avg_brightness, 0) << std::endl;
-            wait_for_dark_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << std::endl;
-            if (light_level <= pparams.light_level_threshold) {
-                wait_for_dark_logger.close();
-                break;
-            }
-            cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
-            communicate_state(es_wait_for_darkness);
-            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain)) + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())), false);
+    while (true) {
+        auto [roll, pitch, frame_time, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
+        cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
+        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        update_enable_window();
+        save_periodic_images(frame_bgr, frameL, frameR);
 
-            if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour != 13) ||
-                    (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour != 11) ||
-                    (std::localtime(&t)->tm_hour == 15 && last_save_bgr_hour != 15)) {
-                std::stringstream date_ss;
-                date_ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
-                cv::imwrite("rgb_" + date_ss.str() + ".png", frame_bgr);
-                cv::imwrite("stereoL_" + date_ss.str() + ".png", frameL);
-                cv::imwrite("stereoR_" + date_ss.str() + ".png", frameR);
-                last_save_bgr_hour = std::localtime(&t)->tm_hour;
-            }
-            usleep(1e7); // measure every 10 seconds
+        light_conditions_ok = pparams.light_level_threshold <= 0 || light_level_ < pparams.light_level_threshold;
+        cam_angles_ok = pparams.max_cam_roll <= 0 || std::abs(roll) < pparams.max_cam_roll;
+        enable_window_ok = (!enable_window_mode || !(std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0));
+        if (!enable_window_ok || !light_conditions_ok || !cam_angles_ok) {
+            std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ", waiting for\t";
+            if (!enable_window_ok)
+                std::cout << "enable window [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
+            if (!cam_angles_ok)
+                std::cout << "cam angle [" << roll << ">" << pparams.max_cam_roll << "]\t";
+            if (!light_conditions_ok)
+                std::cout << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
+            std::cout << std::endl;
+            communicate_state(es_wait_for_conditions);
+
+            std::this_thread::sleep_for(10s);
+        } else {
+            break;
         }
-        wait_for_dark_logger.close();
+
+        if (baseboard_link.exit_now() || daemon_link.exit_now()) {
+            throw std::runtime_error("Internal communication error");
+        }
+        if (!baseboard_link.drone_on_pad() && !baseboard_link.contact_problem() && pparams.op_mode == op_mode_x && !baseboard_link.disabled()) {
+            std::cout << "Exiting wait prematurely because of a contact problem of some sort..." << std::endl;
+            break;
+        }
     }
 }
 
@@ -1083,7 +1074,7 @@ void watchdog_worker(void) {
             std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
             communicate_state(es_watchdog_restart);
 
-            if (imgcount > 0)
+            if (received_img_count > 0)
                 save_results_log();
 
             patser.drone.close();
@@ -1115,10 +1106,44 @@ void watchdog_worker(void) {
     }
 }
 
+void update_enable_window() {
+    auto t_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    auto tm_now = *std::localtime(&t_now);
+    if (std::difftime(t_now, enable_window_end_time) > 0) {
+        if (enable_window_mode == enable_window_passes_midnight) {
+            auto tm_start = * std::localtime(&enable_window_start_time);
+            auto tm_end = * std::localtime(&enable_window_end_time);
+            tm_end.tm_mday = tm_now.tm_mday + 1;
+            tm_start.tm_mday = tm_now.tm_mday;
+            enable_window_start_time = mktime(&tm_start);
+            enable_window_end_time = mktime(&tm_end);
+        } else if (enable_window_mode == enable_window_not_passes_midnight) {
+            auto tm_start = * std::localtime(&enable_window_start_time);
+            auto tm_end = * std::localtime(&enable_window_end_time);
+            tm_start.tm_mday = tm_now.tm_mday + 1;
+            tm_end.tm_mday = tm_now.tm_mday + 1;
+            enable_window_start_time = mktime(&tm_start);
+            enable_window_end_time = mktime(&tm_end);
+        } else if (enable_window_mode == enable_window_end_only) {
+            auto tm_start = * std::localtime(&enable_window_start_time);
+            auto tm_end = * std::localtime(&enable_window_end_time);
+            tm_start.tm_mday = tm_now.tm_mday - 999;
+            tm_end.tm_mday = tm_now.tm_mday + 1;
+            enable_window_start_time = mktime(&tm_start);
+            enable_window_end_time = mktime(&tm_end);
+        }
+    }  else if (enable_window_mode == enable_window_start_only) {
+        auto tm_start = * std::localtime(&enable_window_start_time);
+        auto tm_end = * std::localtime(&enable_window_end_time);
+        tm_end.tm_mday = tm_now.tm_mday + 999;
+        tm_start.tm_mday = tm_now.tm_mday;
+        enable_window_start_time = mktime(&tm_start);
+        enable_window_end_time = mktime(&tm_end);
+    }
+}
 
 int main(int argc, char **argv)
 {
-
     try {
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -1154,22 +1179,30 @@ int main(int argc, char **argv)
             std::istringstream ss(pparams.enable_start);
             ss >> std::get_time(tm, "%H:%M:%S");
             enable_window_start_time = mktime(tm);
-        } else
-            enable_window_start_time = -1;
+            enable_window_mode = enable_window_start_only;
+        } else {
+            enable_window_start_time = chrono::system_clock::to_time_t(chrono::system_clock::now() - + std::chrono::seconds(1));
+        }
         if (pparams.enable_end.compare("disabled") != 0) {
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             struct std::tm *tm = std::localtime(&time_now);
             std::istringstream ss(pparams.enable_end);
             ss >> std::get_time(tm, "%H:%M:%S");
             enable_window_end_time = mktime(tm);
-        } else
-            enable_window_end_time = -1;
+            if (enable_window_mode == enable_window_start_only) {
+                if (enable_window_start_time < enable_window_end_time)
+                    enable_window_mode = enable_window_not_passes_midnight;
+                else
+                    enable_window_mode = enable_window_passes_midnight;
+            } else
+                enable_window_mode = enable_window_end_only;
+        } else {
+            enable_window_end_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::hours(999));
+        }
 
         check_hardware();
         if (!generator_mode && !log_replay_mode && !airsim_mode) {
-            wait_for_cam_angle();
-            wait_for_enable_window();
-            wait_for_dark();
+            wait_for_start_conditions();
         } else if (generator_mode || airsim_wp_mode)
             pparams.joystick = rc_none;
     } catch (rs2::error const &err) {
