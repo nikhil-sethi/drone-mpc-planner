@@ -32,12 +32,6 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_max_burn",
                                            "fm_max_burn_spin_down",
                                            "fm_1g",
-                                           "fm_aim_start",
-                                           "fm_aim",
-                                           "fm_burn_start",
-                                           "fm_burn",
-                                           "fm_burn_spin_down",
-                                           "fm_retry_aim_start",
                                            "fm_pid_init",
                                            "fm_pid",
                                            "fm_long_range_forth",
@@ -74,12 +68,6 @@ public:
         fm_max_burn,
         fm_max_burn_spin_down,
         fm_1g,
-        fm_interception_aim_start,
-        fm_interception_aim,
-        fm_interception_burn_start,
-        fm_interception_burn,
-        fm_interception_burn_spin_down,
-        fm_retry_aim_start,
         fm_flying_pid_init,
         fm_flying_pid,
         fm_long_range_forth,
@@ -285,9 +273,7 @@ public:
     }
 
     bool ff_interception() {
-        return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
-               _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn_spin_down  ||
-               _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
+        return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g;
     }
 
     bool at_base() {

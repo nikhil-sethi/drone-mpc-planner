@@ -119,7 +119,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
     if (_joy_state == js_waypoint || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim)
         data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
-    _dtrk->update_target(data_raw_insect.pos());
+
+    if (control_mode == acceleration_feedforward)
+        _dtrk->update_target(data_drone.pos() + target_acceleration);
+    else
+        _dtrk->update_target(data_raw_insect.pos());
 
     if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
         data_raw_insect.state.pos = _dtrk->pad_location() + cv::Point3f(0, 0.5, 0);
@@ -221,85 +225,17 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         } case fm_max_burn: {
                 auto_throttle = RC_BOUND_MAX;
                 if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration)
-                    _flight_mode = fm_max_burn_spin_down;
+                    _flight_mode = fm_1g;
                 break;
         } case fm_max_burn_spin_down: {
-                auto_throttle = initial_hover_throttle_guess();
+                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control({0, 0, 0});
                 if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
                     _flight_mode = fm_1g;
                 break;
         }  case fm_1g: {
-                // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
-                if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps)
+                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control({0, 0, 0});
+                if (data_drone.vel_valid)
                     _flight_mode = fm_flying_pid_init;
-                break;
-        }  case fm_interception_aim_start: {
-                std::cout << "Aiming" << std::endl;
-                interception_start_time = time;
-                approx_effective_thrust(data_drone, _burn_direction_for_thrust_approx, auto_burn_duration, static_cast<float>(time - start_takeoff_burn_time));
-                _burn_direction_for_thrust_approx = {0};
-                _flight_mode =   fm_interception_aim;
-                [[fallthrough]];
-        }   case fm_interception_aim: {
-                cv::Point3f burn_direction;
-                StateData state_drone_better = data_drone.state;
-                state_drone_better.vel = vel_after_takeoff;
-
-                float remaining_aim_duration = aim_duration - static_cast<float>(time - interception_start_time);
-                data_raw_insect.state.vel = {0}; // aim to the current target position
-
-                if (remaining_aim_duration < 0)
-                    remaining_aim_duration = 0;
-                std::vector<StateData> traj;
-                std::tie(auto_roll, auto_pitch, auto_burn_duration, burn_direction, traj) = calc_burn(state_drone_better, data_raw_insect.state, remaining_aim_duration);
-
-                if (log_replay_mode)
-                    draw_viz(state_drone_better, data_raw_insect.state, time, burn_direction, auto_burn_duration, remaining_aim_duration, traj);
-
-                auto_throttle = initial_hover_throttle_guess();
-
-                if (!_flight_area->trajectory_in_view(traj, relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
-                    _flight_mode = fm_flying_pid_init;
-                } else {
-                    std::vector<StateData> traj_back;
-                    cv::Point3f burn_direction_back;
-                    float auto_burn_duration_back;
-                    StateData target_back = traj.front();
-                    target_back.vel = {0};
-                    target_back.acc = {0};
-                    std::tie(std::ignore, std::ignore, auto_burn_duration_back, burn_direction_back, traj_back) = calc_burn(traj.back(), target_back, aim_duration);
-                    if (!_flight_area->trajectory_in_view(traj_back, relaxed)) {
-                        _flight_mode = fm_flying_pid_init;
-                    } else if (remaining_aim_duration < 0.01f)
-                        _flight_mode = fm_interception_burn_start;
-                }
-                break;
-        } case fm_interception_burn_start: {
-                _flight_mode = fm_interception_burn;
-                auto_throttle = RC_BOUND_MAX;
-                std::cout << "Burning: " << auto_burn_duration << std::endl;
-                [[fallthrough]];
-        } case fm_interception_burn: {
-                if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration) {
-                    _flight_mode = fm_interception_burn_spin_down;
-                    std::cout << "Spindown" << std::endl;
-                }
-                break;
-        } case fm_interception_burn_spin_down: {
-                auto_throttle = initial_hover_throttle_guess();
-
-                float spindown_duration = effective_burn_spin_down_duration;
-                if (effective_burn_spin_down_duration > auto_burn_duration * 0.8f)
-                    spindown_duration = auto_burn_duration * 0.8f;
-
-                if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration + spindown_duration)
-                    _flight_mode = fm_retry_aim_start;
-                break;
-        }  case fm_retry_aim_start: {
-                interception_start_time = time;
-                _flight_mode = fm_interception_aim;
-                std::cout << "Re-aiming" << std::endl;
-                _burn_direction_for_thrust_approx = {0};
                 break;
         } case fm_flying_pid_init: {
                 _flight_mode = fm_flying_pid;
