@@ -117,7 +117,10 @@ public:
     void update(double time);
     void calc_world_item(BlobProps *pbs, double time);
     bool check_ignore_blobs(BlobProps *pbs);
-    void update_target(cv::Point3f target) { _target = target; }
+    void update_target(cv::Point3f target) {
+        if (target.x == target.x)
+            _target = target;
+    }
     void land() {_drone_tracking_status = dts_landing_init;}
     void detect_yaw(double time) {
         time_yaw_not_ok = time;
