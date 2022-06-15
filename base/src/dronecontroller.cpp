@@ -1336,8 +1336,6 @@ void DroneController::save_calibration_before_flight(int flight_id) {
 bool DroneController::pad_calib_valid() {
     if (!calibration.pad_calib_date.length())
         return false;
-    if (log_replay_mode)
-        return true;
     std::stringstream ss;
     ss << calibration.pad_calib_date;
     std::tm t = {};

@@ -556,7 +556,7 @@ void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, 
     //see if there are still blobs left untracked, create new trackers for them
     for (auto &blob : *pbs) {
         auto props = blob.props;
-        if (!blob.tracked() && (!props->in_overexposed_area || _mode == t_locate_drone) && (!props->false_positive || _mode == t_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+        if (!blob.tracked() && !blob.ignored && _trackers.size() < 30) {
             bool too_close = false;
             for (auto btrkr : _trackers) {
                 if (btrkr->type() == tt_blink) {
@@ -814,8 +814,9 @@ void TrackerManager::draw_trackers_viz() {
                 }
                 h += roiD.height;
             }
-
         }
+        if (!viz_tracker.rows || !viz_tracker.cols)
+            viz_tracker = cv::Mat::zeros(5, 100, CV_8UC3);
         viz_trkrs_buf = viz_tracker.clone();
     }
 }
@@ -862,9 +863,9 @@ void TrackerManager::draw_blob_viz(std::vector<ProcessedBlob> *pbs) {
             cv::Mat viz = vizs_blobs.at(blob.id);
             if (!wblob.valid && !blob.ignored) {
                 if (blob.props->in_overexposed_area && !blob.tracked()) {
-                    msg_str = msg_str + "exp.";
+                    msg_str = msg_str + " exp.";
                 } else  if (!wblob.im_pos_ok && !blob.tracked())
-                    msg_str = msg_str + "pre.";
+                    msg_str = msg_str + " pre.";
                 else {
                     if (!wblob.disparity_in_range)
                         msg_str = msg_str + " dsp.";

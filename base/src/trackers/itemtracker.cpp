@@ -670,6 +670,10 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps *blob) {
 float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
     float im_dist_err_ratio, im_size_pred_err_ratio;
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
+    float size = blob->size_unscaled();
+    if (size < 1)
+        size = 1;
+
 
     if (_image_item.valid && _world_item.valid) {
         cv::Point3f last_world_pos = im2world(_image_item.pt(), _image_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
@@ -688,9 +692,9 @@ float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
         else if (_image_predict_item.valid)
             prev_size = _image_predict_item.size;
         else
-            prev_size = blob->size_unscaled();
+            prev_size = size;
 
-        im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled() + prev_size);
+        im_size_pred_err_ratio = fabs(prev_size - size) / (size + prev_size);
         if (!smoother_im_size.ready())
             im_size_pred_err_ratio *= 0.5f;
         if (!properly_tracking()) {
@@ -703,9 +707,9 @@ float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
         float max_im_dist = world2im_dist(predicted_world_pos, max_world_dist, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()) + _image_predict_item.size / 2;
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im_dist_err_ratio = world_projected_im_err / max_im_dist;
-        im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled() + _image_predict_item.size);
+        im_size_pred_err_ratio = fabs(_image_predict_item.size - size) / (size + _image_predict_item.size);
     } else if (ref->valid) {
-        im_size_pred_err_ratio = fabs(ref->size - blob->size_unscaled()) / (blob->size_unscaled() + ref->size);
+        im_size_pred_err_ratio = fabs(ref->size - size) / (size + ref->size);
         float max_im_dist = 25;
         im_dist_err_ratio = sqrtf(powf(ref->x - blob->x * im_scaler, 2) + powf(ref->y - blob->y * im_scaler, 2)) / max_im_dist;
     } else {
