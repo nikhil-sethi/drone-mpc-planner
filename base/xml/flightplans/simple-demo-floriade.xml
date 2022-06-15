@@ -6,14 +6,27 @@
         </Class>
         <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_mm">300</Member>
             <Member Name="threshold_v">1.7</Member>
             <Member Name="hover_pause">0</Member>
-            <Member Name="x">1.5</Member>
-            <Member Name="y">-0.75</Member>
+            <Member Name="x">2.5</Member>
+            <Member Name="y">-2.0</Member>
             <Member Name="z">-1.75</Member>
+
             <Member Name="name">WP1</Member>
         </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_flying</Member>
+            <Member Name="threshold_mm">300</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
+            <Member Name="x">-2.0</Member>
+            <Member Name="y">-2.25</Member>
+            <Member Name="z">-1.75</Member>
+
+            <Member Name="name">WP2</Member>
+        </Class>
+
         <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_yaw_reset</Member>
         </Class>
@@ -25,3 +38,4 @@
         </Class>
     </Collection>
 </SerializableClass>
+
