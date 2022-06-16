@@ -34,12 +34,12 @@ void Drone::update(double time) {
 
     switch (_state) {
         case ds_pre_flight: {
-                control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), position_control, cv::Point3f(0, 0, 0), time, false); // TODO need better solution for this
+                control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false); // TODO need better solution for this
                 pre_flight(time);
                 break;
         } case ds_charging: {
                 control.flight_mode(DroneController::fm_inactive);
-                control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), position_control, cv::Point3f(0, 0, 0), time, false);
+                control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_baseboard_link->battery_ready_for_flight() || _baseboard_link->disabled())
                     _state = ds_ready;
                 else if (_baseboard_link->charging_problem())
@@ -56,7 +56,7 @@ void Drone::update(double time) {
                 }
                 break;
         } case ds_ready: {
-                control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), position_control, cv::Point3f(0, 0, 0), time, false);
+                control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
                     _state = ds_charging_failure;
@@ -106,9 +106,9 @@ void Drone::update(double time) {
                 flight_logger << _visdat->frame_id << ";" << time << ";" << state.dt << ";" << drone_state_str() << ";";
                 nav.update(time);
                 if (_interceptor->control_mode() == acceleration_feedforward)
-                    control.control(state, nav.setpoint(), _interceptor->target_last_trackdata(), acceleration_feedforward, _interceptor->aim_acc(), time, true);
+                    control.control(state, nav.setpoint(),  acceleration_feedforward, _interceptor->aim_acc(), time, true);
                 else
-                    control.control(state, nav.setpoint(), _interceptor->target_last_trackdata(), position_control, cv::Point3f(0, 0, 0), time, true);
+                    control.control(state, nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, true);
                 _interceptor->log(&flight_logger);
                 _interceptor->target_is_hunted(_n_take_offs);
                 flight_logger << std::endl;
@@ -125,7 +125,7 @@ void Drone::update(double time) {
                 }
                 break;
         } case ds_post_flight: {
-                control.control(tracker.last_track_data(), nav.setpoint(), _interceptor->target_last_trackdata(), position_control, cv::Point3f(0, 0, 0), time, false);
+                control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 post_flight(time);
                 break;
         } case ds_charging_failure: {

@@ -111,7 +111,6 @@ private:
     FlightArea *_flight_area;
     std::ofstream *_logger;
 
-    std::string control_parameters_rfn;
     const std::string calib_fn = "drone_calibration.xml";
     std::string calib_rfn = "../../../../pats/xml/" + calib_fn;
 
@@ -122,7 +121,6 @@ private:
     const cv::Point2f att_precisely_on_pad_range = cv::Point2f(3.f, 3.f);
     const cv::Point2f att_somewhere_on_pad_range = cv::Point2f(30.f, 30.f);
     cv::Point2f att_reset_yaw_on_pad;
-    bool pat_att_calibration_valid = false;
     int att_somewhere_on_pad_cnt = 0, att_precisely_on_pad_cnt = 0, att_pad_calibration_ok_cnt = 0;
     int _att_telemetry_samples_cnt = 0;
 
@@ -135,7 +133,7 @@ private:
     float burn_thrust = -1;
 
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI);
+    const float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI); //A takeoff angle of ~45 is possible if the ir-led is just above the pad (such that the drone enters the light beam even with a "horizontal" takeoff)
 
     const float min_yaw_deviation = 0.5f;
 
@@ -161,8 +159,6 @@ private:
     double start_takeoff_burn_time = 0;
     bool _shake_finished = false;
 
-    std::vector<cv::Point3f> aim_direction_history;
-
     bool initialized = false;
     bool log_replay_mode = false;
     bool thrust_calibration = false;
@@ -171,8 +167,6 @@ private:
     betaflight_arming _joy_arm_switch = bf_armed;
     bool _joy_takeoff_switch = false;
     joy_states _joy_state = js_none;
-    int joyDial = 0;
-    float scaledjoydial = 0;
 
     bool _hover_mode = false;
     bool _landed = false;
@@ -192,13 +186,6 @@ private:
     }
 
     uint16_t initial_hover_throttle_guess_non3d;
-    uint16_t initial_hover_throttle_guess() {
-        if (dparams.mode3d)
-            return initial_hover_throttle_guess_non3d / 2 + RC_MIDDLE;
-        else {
-            return initial_hover_throttle_guess_non3d;
-        }
-    }
     uint16_t spinup_throttle() {
         if (dparams.mode3d)
             return RC_MIDDLE + 1;
@@ -207,14 +194,7 @@ private:
         }
     }
 
-    void approx_effective_thrust(tracking::TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
     float thrust_to_throttle(float thrust);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(tracking::StateData state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
-    std::tuple<int, int, float, cv::Point3f, std::vector<tracking::StateData> > calc_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
-    std::tuple<int, int, float, cv::Point3f> calc_directional_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
-    std::vector<tracking::StateData> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, tracking::StateData state_drone);
-    void draw_viz(tracking::StateData state_drone, tracking::StateData state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<tracking::StateData> traj);
-    cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
     DroneController::integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
 
@@ -226,6 +206,7 @@ private:
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, bool enable_horizontal_integrators);
     std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
     std::tuple<int, int, int> calc_feedforward_control(cv::Point3f desired_acceleration);
+    cv::Point3f takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
 
@@ -398,7 +379,7 @@ public:
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
-    void control(tracking::TrackData data_drone, tracking::TrackData data_target_new, tracking::TrackData data_raw_insect, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging);
+    void control(tracking::TrackData data_drone, tracking::TrackData data_target, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging);
     bool landed() {return _landed; }
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }
