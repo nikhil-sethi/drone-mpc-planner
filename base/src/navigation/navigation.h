@@ -25,6 +25,7 @@ namespace navigation {
                                                                  "ns_landed",
                                                                  "ns_wait_after_landed",
                                                                  "ns_flight_done",
+                                                                 "ns_flight_aborted",
                                                                  "ns_takeoff_failure",
                                                                  "ns_flight_failure",
                                                                  "ns_landing_failure"
@@ -54,6 +55,7 @@ enum navigation_states {
     ns_landed,
     ns_wait_after_landed,
     ns_flight_done,
+    ns_flight_aborted,
     ns_takeoff_failure,
     ns_flight_failure,
     ns_landing_failure

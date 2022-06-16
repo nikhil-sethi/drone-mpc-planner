@@ -112,6 +112,7 @@ public:
     bool drone_hunting() { return _nav_flight_mode == nfm_hunt && (_navigation_status == ns_chasing_insect || _navigation_status ==  ns_start_the_chase); }
     bool drone_resetting_yaw() {return _navigation_status == ns_correct_yaw || _navigation_status == ns_reset_headless_yaw;}
     bool flight_done() {return _navigation_status == ns_flight_done;}
+    bool flight_aborted() {return _navigation_status == ns_flight_aborted;}
     int distance_threshold_mm() { return current_waypoint->threshold_mm; }
 
     float flight_time() {return _flight_time;}

@@ -113,6 +113,9 @@ void Drone::update(double time) {
                     post_flight_state = post_init;
                     _state = ds_post_flight;
                     _n_landings++;
+                } else if (nav.flight_aborted()) {
+                    post_flight_state = post_aborted;
+                    _state = ds_post_flight;
                 }
                 break;
         } case ds_post_flight: {
@@ -406,6 +409,14 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_init;
                     _state = ds_charging;
                 }
+                break;
+        } case post_aborted: {
+                flight_logger.flush();
+                flight_logger.close();
+                _trackers->stop_drone_tracking(&tracker);
+                _baseboard_link->allow_charging(true);
+                post_flight_state = post_init;
+                _state = ds_ready;
                 break;
         } case post_init_crashed: {
                 time_crashed = time;

@@ -78,7 +78,7 @@ void DroneNavigation::update(double time) {
                     setpoint_acc_world = _iceptor->aim_acc();
                 } else if (!_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt && _tracker->drone_on_landing_pad()) {
                     if (_control->abort_take_off())
-                        _navigation_status = ns_flight_done;
+                        _navigation_status = ns_flight_aborted;
                 }
                 break;
         } case ns_take_off_completed: {
@@ -305,6 +305,7 @@ void DroneNavigation::update(double time) {
                         _navigation_status = ns_landing_failure;
                 }
                 break;
+        } case ns_flight_aborted: {
         } case ns_flight_done: {
                 break;
         } case ns_takeoff_failure:
