@@ -519,11 +519,11 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
-            } else if ((light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && time > 10)) {
+            } else if (light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && time > 10 && !baseboard_link.contact_problem()) {
                 std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
                 communicate_state(es_brightness_restart);
                 exit_now = true;
-            } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && time > 10) {
+            } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && time > 10 && !baseboard_link.contact_problem()) {
                 communicate_state(es_enable_window_restart);
                 std::cout << "Initiating restart because not in enable window" << std::endl;
                 exit_now = true;
@@ -1049,7 +1049,7 @@ void wait_for_start_conditions() {
         if (baseboard_link.exit_now() || daemon_link.exit_now()) {
             throw std::runtime_error("Internal communication error");
         }
-        if (!baseboard_link.drone_on_pad() && !baseboard_link.contact_problem() && pparams.op_mode == op_mode_x && !baseboard_link.disabled()) {
+        if (baseboard_link.contact_problem() && pparams.op_mode == op_mode_x && !baseboard_link.disabled()) {
             std::cout << "Exiting wait prematurely because of a contact problem of some sort..." << std::endl;
             break;
         }
