@@ -9,7 +9,7 @@ class FileCam : public Cam {
 private:
     logging::LogReader *logreader;
     std::string video_fn;
-    uint im_width = 0, im_height = 0, nFrames = 0, frame_cnt = 0;
+    uint im_width = 0, im_height = 0, nFrames = 0, decoded_img_id = 0;
     void read_frame_ids();
     void calibration();
     void init_gstream();
@@ -64,7 +64,7 @@ public:
     void start_cnt(int rs_id) {
         for (auto frame_id  : frame_ids) {
             if (frame_id.rs_id == rs_id) {
-                frame_cnt = frame_id.encoded_img_count;
+                decoded_img_id = frame_id.encoded_img_count;
                 break;
             }
         }

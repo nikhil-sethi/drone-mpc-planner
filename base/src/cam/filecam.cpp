@@ -49,6 +49,8 @@ void FileCam::read_frame_ids() {
     ifstream infile(frames_file);
     string line;
     getline(infile, line); // skip heads
+    Frame_ID_Entry prev_entry;
+    prev_entry.encoded_img_count = -1;
     while (getline(infile, line)) {
         try {
             auto data = split_csv_line(line);
@@ -65,7 +67,9 @@ void FileCam::read_frame_ids() {
             entry.imgcount = stoi(data.at(1));
             entry.rs_id = stol(data.at(2));
             entry.time = stod(data.at(3));
-            frame_ids.push_back(entry);
+            if (prev_entry.encoded_img_count != entry.encoded_img_count)
+                frame_ids.push_back(entry);
+            prev_entry = entry;
         } catch (exception &exp) {
             throw std::runtime_error("Could not read frame log! File: " + frames_file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
@@ -111,7 +115,7 @@ StereoPair *FileCam::update() {
         if (i > 0)
             gst_sample_unref(sample);
         sample = gst_app_sink_pull_sample(GST_APP_SINK(_appsink));
-        frame_cnt++;
+        decoded_img_id++;
     }
     replay_skip_n_frames = 0;
 
@@ -136,28 +140,28 @@ StereoPair *FileCam::update() {
         frameLR(cv::Rect(cv::Point(0, frameLR.rows / 2), cv::Point(frameLR.cols, frameLR.rows))).copyTo(frameR);
     }
 
-    unsigned long long frame_number_new;
-    double frame_time_new;
+    unsigned long long rs_id;
+    double rs_time;
 
-    if (frame_cnt >= frame_ids.size())
-        frame_number_new = ULONG_MAX;
+    if (decoded_img_id >= frame_ids.size())
+        rs_id = ULONG_MAX;
     else if (frame_ids.size() > 0) {
-        frame_number_new = frame_ids.at(frame_cnt).rs_id;
-        frame_time_new = frame_ids.at(frame_cnt).time;
+        rs_id = frame_ids.at(decoded_img_id).rs_id;
+        rs_time = frame_ids.at(decoded_img_id).time;
     } else {
         auto f = current();
-        frame_number_new = f->rs_id + 1;
-        frame_time_new = f->time + 1. / pparams.fps;
+        rs_id = f->rs_id + 1;
+        rs_time = f->time + 1. / pparams.fps;
     }
-    if (frame_number_new == ULONG_MAX) {
+    if (rs_id == ULONG_MAX) {
         std::cout << "Video end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
         throw ReplayVideoEnded();
     }
-    StereoPair *sp = new StereoPair(frameL, frameR, frame_number_new, frame_time_new);
+    StereoPair *sp = new StereoPair(frameL, frameR, rs_id, rs_time);
     _current = sp;
-    buf.insert(std::pair(frame_number_new, sp));
+    buf.insert(std::pair(rs_id, sp));
     delete_old_frames();
     if (!turbo) {
         while (swc.Read() < (1.f / pparams.fps) * 1e3f) {
@@ -229,7 +233,7 @@ void FileCam::init_gstream() {
 
 
     auto sample = gst_app_sink_pull_sample(GST_APP_SINK(_appsink));
-    frame_cnt = 1;
+    decoded_img_id = 1;
     auto caps  = gst_sample_get_caps(sample);
 
     auto structure = gst_caps_get_structure(caps, 0);
