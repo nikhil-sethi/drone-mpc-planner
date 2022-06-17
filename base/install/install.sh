@@ -68,10 +68,13 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 		# gstreamer compile packages:
 		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
 
-		# gstreamer packages:
-		sudo apt remove -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+		
+		if [[ $1 -eq 1 ]] ; then
+			sudo apt remove -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+		else
+			sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+		fi
 	else
-		# gstreamer packages:
 		sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 	fi
 
@@ -220,7 +223,6 @@ fi
 
 if [[ $1 -eq 1 ]] ; then
 	[ -f git.done ] || {
-		# Configure git
 		git config --global push.default simple
 		git config --global user.email "${HOSTNAME}@pats.com"
 		git config --global user.name $HOSTNAME
@@ -229,8 +231,6 @@ if [[ $1 -eq 1 ]] ; then
 fi
 
 [ -f git_aliases_v1.0.done ] || {
-
-	#sudo apt install -y bash-completion
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
@@ -249,6 +249,9 @@ fi
 
 QPOASES_FLAG=qpOASES-v1.done
 [ -f $QPOASES_FLAG ] || {
+	[ -d qpoases ] || {
+		rm -rf qpoases
+	}
 	git clone git@github.com:coin-or/qpOASES.git
 	pushd qpOASES
 	mkdir -p build
@@ -263,6 +266,9 @@ QPOASES_FLAG=qpOASES-v1.done
 }
 EIGEN_FLAG=Eigen-v1.done
 [ -f $EIGEN_FLAG ] || {
+	[ -d eigen ] || {
+		rm -rf eigen
+	}
 	git clone https://gitlab.com/libeigen/eigen.git
 	pushd eigen
 	git checkout 3.4
