@@ -41,7 +41,7 @@ private:
     interceptor_states _interceptor_state = is_init;
     intercepting_states _intercepting_state = is_approaching;
 
-    cv::Point3f best_interception_position;
+    cv::Point3f interception_center;
     control_modes _control_mode = position_control;
     cv::Point3f _aim_pos;
     cv::Point3f _aim_acc;
@@ -72,6 +72,7 @@ private:
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos);
+    bool delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker);
 
 public:
     TTIOptimizerInterface tti_optimizer;

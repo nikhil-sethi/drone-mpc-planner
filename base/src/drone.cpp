@@ -62,7 +62,7 @@ void Drone::update(double time) {
                     _state = ds_charging_failure;
                     break;
                 }
-                if (_interceptor->target_acquired(time)) {
+                if (_interceptor->intercepting()) {
                     take_off(true, time);
                     _state = ds_flight;
                     _interceptor->reset_hunt_error();

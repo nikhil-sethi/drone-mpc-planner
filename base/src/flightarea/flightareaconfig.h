@@ -94,6 +94,7 @@ public:
     cv::Point3f move_inside(cv::Point3f point);
     cv::Point3f move_inside(cv::Point3f point, cv::Point3f drone_pos);
 
+    Plane active_back_plane();
     uint n_planes() {return _planes.size();};
     std::string name() const {return _name;};
     safety_margin_types safety_margin_value() const {return _safety_margin_type;};

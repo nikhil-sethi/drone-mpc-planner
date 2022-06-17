@@ -331,6 +331,17 @@ void FlightAreaConfig::cout_debug_info() {
     std::cout << "-------------------------------------------------" << std::endl;
 }
 
+
+Plane FlightAreaConfig::active_back_plane() {
+    std::vector<Plane> back_planes;
+    for (auto plane : _planes) {
+        if (plane.type == back_plane && plane.is_active)
+            return plane;
+    }
+
+    throw std::runtime_error("No back plane found or back plane is inactive.");
+}
+
 std::ostream &operator<<(std::ostream &os, const FlightAreaConfig &f) {
     os << "-------------------------------------------------" << std::endl;
     os << "FlightAreaConfiguration: " << f.name() << " (safety_margin: " << f.safety_margin_str() << ")" << std::endl;

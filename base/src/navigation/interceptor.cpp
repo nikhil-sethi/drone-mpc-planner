@@ -8,10 +8,12 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     _visdat = visdat;
     _flight_area = flight_area;
     _drone = drone;
+    interception_max_thrust = *drone->control.max_thrust();
 
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
-    tti_optimizer.init(drone->control.max_thrust());
-    intercept_in_planes_optimizer.init(drone->control.max_thrust(), _flight_area, relaxed);
+
+    tti_optimizer.init(&interception_max_thrust);
+    intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
 
     initialized = true;
 }
@@ -30,12 +32,15 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     aim_in_flightarea = false;
     _aim_acc = cv::Point3f(0, 0, 0);
     _control_mode = position_control;
+    interception_max_thrust = *_drone->control.max_thrust();
     auto target_trkr = update_target_insecttracker();
 
     switch (_interceptor_state) {
         case  is_init: {
                 _interceptor_state = is_waiting_for_target;
                 _aim_pos = _flight_area->move_inside(cv::Point3f(0, 0, 0), strict);
+                FlightAreaConfig *relaxed_flightareaconfig = _flight_area->flight_area_config(relaxed);
+                interception_center = cv::Point3f(0, _drone->tracker.pad_location().y / 2, _drone->tracker.pad_location().z + (relaxed_flightareaconfig->active_back_plane().support.z - _drone->tracker.pad_location().z) / 2);
                 _tti = -1;
                 [[fallthrough]];
         } case is_waiting_for_target: {
@@ -60,11 +65,28 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
                 update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
                 if (!_n_frames_aim_not_in_range)
-                    _interceptor_state = is_intercepting;
+                    _interceptor_state = is_lurking;
                 else
                     break;
 
                 [[fallthrough]];
+
+        } case is_lurking: {
+                if (!target_trkr) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                } if (!target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert() || !target_trkr->go_for_terminate()) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+
+                update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
+                if ((!delay_takeoff_for_better_interception(target_trkr)) && !_n_frames_aim_not_in_range)
+                    _interceptor_state = is_intercepting;
+                else
+                    break;
+                [[fallthrough]];
+
         } case is_intercepting: {
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
@@ -108,6 +130,7 @@ void Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracki
     if (drone_at_base || normf(drone.pos()) < 0.01f) {
         drone.state.pos = _drone->tracker.pad_location();
         drone.state.vel = cv::Point3f(0, 0, 0);
+        interception_max_thrust = 2.f * (*_drone->control.max_thrust()); //Try to compensate ground effect
     }
 
     auto tti_res = tti_optimizer.find_best_interception(drone, target);
@@ -162,8 +185,6 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                             _control_mode = acceleration_feedforward;
                             _aim_acc = res.acceleration_to_intercept;
                             _aim_pos = res.position_to_intercept;
-
-                            std::cout << "Breaking point: " << res.position_stopped << " is in flightarea: " << _flight_area->inside(res.position_stopped, bare) << std::endl;
                         }
                     }
                 }
@@ -211,9 +232,10 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     current_insect_pos = {0};
             }
             cv::Point3f current_insect_vel = insect_state.vel();
+
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
-            if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
+            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
                 float req_acceleration = normf(_drone->control.pid_error(tracking_data, current_insect_pos, current_insect_vel, true));
                 if (best_acceleration > req_acceleration) {
                     best_acceleration = req_acceleration;
@@ -224,6 +246,19 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
     }
     _target_insecttracker = best_itrkr;
     return best_itrkr;
+}
+
+
+bool Interceptor::delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker) {
+    tracking::TrackData insect = target_tracker->last_track_data();
+    cv::Point3f lurk_distance = interception_center - insect.pos();
+    bool interceptability_is_improving = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
+
+    cv::Point3f prediceted_insect_position = insect.pos() + 0.3f * insect.vel();
+    lurk_distance = interception_center - prediceted_insect_position;
+    bool interceptability_will_improve = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
+
+    return interceptability_is_improving && interceptability_will_improve;
 }
 
 tracking::TrackData Interceptor::target_last_trackdata() {
