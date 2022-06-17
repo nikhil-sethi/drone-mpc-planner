@@ -8,19 +8,11 @@ pats208
 pats209
 pats210
 
-[missing]
-pats16
-pats63
-pats71
-pats91
-pats92
-pats96
-pats125
-pats126
-pats136
-pats137
+[kevin]
+pats34
 
-[holstein]
+[hunt]
+#Holstein futura:
 pats30
 pats33
 pats35
@@ -30,6 +22,7 @@ pats38
 pats39
 pats81
 pats134
+
 ; pats140 # bastille
 
 [all:vars]
