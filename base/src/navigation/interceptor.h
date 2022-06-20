@@ -39,7 +39,7 @@ private:
 
     float _horizontal_separation, _vertical_separation;
     float total_separation;
-    float _best_distance = -1;
+    float _best_distance = INFINITY;
     double _tti = -1;
     enum interceptor_states {
         is_init = 0,

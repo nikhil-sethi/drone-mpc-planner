@@ -31,7 +31,7 @@ from cut_moths import cut
 
 
 version_c = "2.2"
-version_x = "1.1"
+version_x = "1.2"
 lia_model = "cnn5_size_v1"
 lia_n_insect_classes = 5
 

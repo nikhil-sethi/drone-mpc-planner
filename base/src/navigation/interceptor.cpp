@@ -28,6 +28,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 _aim_vel = {0, 0, 0};
                 _aim_acc = {0, 0, 0};
                 _n_frames_aim_not_in_range++;
+                _best_distance = INFINITY;
 
                 if (!target_trkr)
                     break;
@@ -42,6 +43,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         case is_waiting_in_reach_zone: {
                 _aim_vel = {0, 0, 0};
                 _aim_acc = {0, 0, 0};
+                _best_distance = INFINITY;
 
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
@@ -169,7 +171,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(predicted_pos.x, predicted_pos.z));
     _vertical_separation = predicted_pos.y - drone_pos.y;
     total_separation = normf(predicted_pos - drone_pos);
-    if ((total_separation < _best_distance || _best_distance < 0) && !drone_at_base)
+    if ((total_separation < _best_distance) && !drone_at_base)
         _best_distance = total_separation;
 
     return req_aim_pos;
@@ -205,7 +207,7 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(predicted_pos.x, predicted_pos.z));
     _vertical_separation = predicted_pos.y - drone_pos.y;
     total_separation = normf(predicted_pos - drone_pos);
-    if ((total_separation < _best_distance || _best_distance < 0) && !drone_at_base)
+    if ((total_separation < _best_distance) && !drone_at_base)
         _best_distance = total_separation;
     return req_aim_pos;
 }
