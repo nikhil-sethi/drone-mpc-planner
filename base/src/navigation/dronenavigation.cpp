@@ -37,7 +37,7 @@ void DroneNavigation::init_flight(bool hunt, std::ofstream *logger) {
     low_battery_triggered = false;
     _flight_time = -1;
 
-    setpoint_pos_world = {0};
+    setpoint_pos_world = _tracker->pad_location(false) +  Waypoint_Thrust_Calibration().xyz;
     setpoint_pos_world_landing = {0};
     setpoint_vel_world = {0};
     setpoint_acc_world = {0};
