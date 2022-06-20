@@ -287,6 +287,7 @@ class wdt_tunnel_task(pats_task):
             daemon2baseboard_pkg.internet_OK = 1
             return
 
+        tunnel_ok = False
         cmd = 'lsof -i tcp:22'
         output = ''
         try:
@@ -296,14 +297,32 @@ class wdt_tunnel_task(pats_task):
         if output:
             output = output.decode(sys.stdout.encoding)
             output = output.splitlines()
-        tunnel_ok = False
+            for line in output:
+                if line:
+                    if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
+                        self.tunnel_ok_time = datetime.today()
+                        tunnel_ok = True
 
-        for line in output:
-            if line:
-                if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
-                    self.tunnel_ok_time = datetime.today()
-                    tunnel_ok = True
-        if tunnel_ok:
+        ping_ok = False
+        cmd = 'ping -c3 pats-c.com'
+        output = ''
+        try:
+            output = subprocess.check_output(cmd.split(' '))
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.warning('Error in getting ping info: ' + str(e))
+        if output:
+            output = output.decode(sys.stdout.encoding)
+            output = output.splitlines()
+            for line in output:
+                if line:
+                    if 'packets transmitted, ' in line:
+                        p = int(line.split(',')[2].strip().split('%')[0])
+                        if p < 90:
+                            ping_ok = True
+                            self.logger.info(line)
+                            break
+
+        if tunnel_ok and ping_ok:
             daemon2baseboard_pkg.internet_OK = 1
         else:
             daemon2baseboard_pkg.internet_OK = 0

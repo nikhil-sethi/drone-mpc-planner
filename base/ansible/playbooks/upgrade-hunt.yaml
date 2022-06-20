@@ -13,7 +13,7 @@
         repo: git@github.com:pats-drones/pats.git
         dest: /home/pats/code/pats
         update: yes
-        version: master
+        version: opti-dev
         force: yes
         clone: no
     - name: Build executor
