@@ -50,10 +50,9 @@ private:
     FlightArea *_flight_area;
 
     // Methods:
-    void update_correction_acc(tracking::TrackData data_drone, float transmission_delay_duration, bool dctrl_requests_kiv_acc);
-    std::tuple<std::vector<bool>, std::vector<float>, bool> violated_planes_brake_distance(FlightAreaConfig *_flight_area_config, tracking::TrackData data_drone, float transmission_delay_duration);
+    std::tuple<std::vector<bool>, std::vector<float>, bool> update_breaking_distance_states(FlightAreaConfig *_flight_area_config, tracking::TrackData data_drone, float transmission_delay_duration);
     void update_filter(safety_margin_types safety_margin_type, tracking::TrackData data_drone, std::vector<float> speed_error_normal_to_plane);
-    cv::Point3f kiv_acceleration(safety_margin_types safety_margin_type, tracking::TrackData drone, control_modes control_mode);
+    cv::Point3f calc_correction_acceleration(safety_margin_types safety_margin_type, tracking::TrackData drone, control_modes control_mode);
     FlightAreaKIVStates *flight_area_kiv_state(safety_margin_types safety_margin_type);
 
 public:

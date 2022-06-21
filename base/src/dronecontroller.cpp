@@ -241,7 +241,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 // Control_model_based must always be called! Even in position_control, pid filters must be update to prepare a switch back. Also the kiv-state must be updated.
                 control_model_based(data_drone, data_target.pos(), data_target.vel());
                 if (control_mode == acceleration_feedforward) {
-                    target_acceleration += kiv_ctrl.correction_acceleration(strict, data_drone, acceleration_feedforward);
+                    target_acceleration += kiv_ctrl.correction_acceleration(relaxed, data_drone, acceleration_feedforward);
                     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(target_acceleration);
                 }
                 break;
@@ -761,7 +761,7 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     kiv_ctrl.update(data_drone, transmission_delay_duration);
     if (data_drone.pos_valid && data_drone.vel_valid && !dry_run && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
         if (control_mode_hold_filter.output()) //feedforward was active in the close past
-            error += kiv_ctrl.correction_acceleration(strict, data_drone, position_control);
+            error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
         else
             error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
     }
