@@ -29,6 +29,8 @@ void InsectTracker::close_log_line() {
     (*_logger) << false_positive_names[false_positive()] << ";";
     (*_logger) << _hunt_id << ";";
     (*_logger) << '\n';
+    _hunt_id = -1; // reset hunt_id after logging, in case the interceptor changes target.
+
 }
 void InsectTracker::append_log(double time, unsigned long long frame_number) {
     start_new_log_line(time, frame_number);

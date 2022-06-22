@@ -12,7 +12,7 @@ private:
     uint16_t _fp_too_far_cnt = 0;
     float dist_integrator_fp = 0;
     std::ofstream insectlogger;
-    int _hunt_id = 0;
+    int _hunt_id = -1;
 
     void start_new_log_line(double time, unsigned long long frame_number);
     void close_log_line();
