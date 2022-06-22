@@ -507,7 +507,10 @@ def logs_to_json(json_fn, data_folder, sys_str):
     for folder in ordered_dirs:
         logger.info("Processing " + folder)
         if os.path.exists(folder + '/videoRawLR.mkv'):  # this folder was probably not yet processed in cut_moth.
-            cut(folder)
+            try:
+                cut(folder)
+            except Exception as e:  # pylint: disable=broad-except
+                logger.error('Error in ' + folder + '; ' + str(e))
 
         top_folder = os.path.basename(folder)
         t_folder = str_to_datetime(top_folder)
