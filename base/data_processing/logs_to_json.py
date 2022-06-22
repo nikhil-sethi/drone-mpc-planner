@@ -37,7 +37,11 @@ lia_n_insect_classes = 5
 
 
 def process_wait_for_lightlevels(wait_for_dark_log_path):
-    log = pd.read_csv(wait_for_dark_log_path, sep=";")
+    try:
+        log = pd.read_csv(wait_for_dark_log_path, sep=";")
+    except pd.errors.EmptyDataError:
+        return False, '', ''
+
     if len(log) < 5:
         return False, '', ''
 
