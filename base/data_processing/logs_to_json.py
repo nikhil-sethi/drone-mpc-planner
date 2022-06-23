@@ -286,13 +286,16 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
 
     takeoff_time = datetime_to_str(session_start_datetime + timedelta(seconds=elapsed_time[0]))
 
+    unique_detection_ids = log['insect_id'].dropna().unique()
+    unique_detection_ids = np.delete(unique_detection_ids, np.where(unique_detection_ids <= 0))
+
     flight_data = {"start_datetime": takeoff_time,
                    "duration": duration,
                    "flight_time": flight_time,
                    "best_interception_distance": best_interception_distance,
                    "crashed": crashed,
                    "rs_id": first_rs_id,
-                   "detection_ids": str(log['insect_id'].unique()),
+                   "detection_ids": str(unique_detection_ids).replace('.', ',').replace('[', '').replace(']', ''),
                    "filename": filename,
                    "folder": os.path.basename(folder),
                    "video_filename": video_filename,
