@@ -291,6 +291,7 @@ def process_flight_log(log_fn, folder, session_start_datetime):
 
     flight_data = {"start_datetime": takeoff_time,
                    "duration": duration,
+                   "flight_id": flight_id,
                    "flight_time": flight_time,
                    "best_interception_distance": best_interception_distance,
                    "crashed": crashed,
@@ -304,7 +305,7 @@ def process_flight_log(log_fn, folder, session_start_datetime):
     return flight_data
 
 
-def process_detection_log(log_fn, folder, session_start_datetime):
+def process_detection_log(log_fn, folder, session_start_datetime, flights_in_folder):
     logger = logging.getLogger('logs_to_json')
     try:
         log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
@@ -391,9 +392,12 @@ def process_detection_log(log_fn, folder, session_start_datetime):
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = True
 
-    hunt_id = int(0)
+    hunt_id = -1
     if 'hunt_id' in log:
         hunt_id = int(log['hunt_id'].dropna().values[-1])
+        drone_flight = list(filter(lambda item: item['flight_id'] == hunt_id, flights_in_folder))
+        if not drone_flight:
+            hunt_id = -1
 
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
@@ -466,7 +470,7 @@ def process_flights_in_folder(folder, operational_log_start):
     return session_data
 
 
-def process_detections_in_folder(folder, operational_log_start):
+def process_detections_in_folder(folder, operational_log_start, flights_in_folder):
     logger = logging.getLogger('logs_to_json')
     detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv"))])
     session_start_datetime = str_to_datetime(operational_log_start)
@@ -474,7 +478,7 @@ def process_detections_in_folder(folder, operational_log_start):
     session_data = []
     for detection_fn in detection_fns:
         logger.info("Processing detections in " + detection_fn)
-        data = process_detection_log(detection_fn, folder, session_start_datetime)
+        data = process_detection_log(detection_fn, folder, session_start_datetime, flights_in_folder)
         if data:
             session_data.append(data)
 
@@ -538,9 +542,7 @@ def logs_to_json(json_fn, data_folder, sys_str):
         elif mode.startswith('Resetting cam'):
             cam_resets += 1
         else:
-            detections_in_folder = process_detections_in_folder(folder, operational_log_start)
-            if detections_in_folder != []:
-                detections.extend(detections_in_folder)
+            flights_in_folder = []
             if mode == 'x':
                 flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start, mode)
                 if flight_status_in_folder != []:
@@ -548,6 +550,10 @@ def logs_to_json(json_fn, data_folder, sys_str):
                 flights_in_folder = process_flights_in_folder(folder, operational_log_start)
                 if flights_in_folder != []:
                     flights.extend(flights_in_folder)
+
+            detections_in_folder = process_detections_in_folder(folder, operational_log_start, flights_in_folder)
+            if detections_in_folder != []:
+                detections.extend(detections_in_folder)
 
         if mode == 'c' or mode == 'x':
             Path(folder + '/OK').touch()
