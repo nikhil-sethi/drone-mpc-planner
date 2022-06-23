@@ -232,7 +232,7 @@ def process_flight_results(results_fn):
     return flight_time, crashed, best_interception_distance, take_off_datetime, land_datetime
 
 
-def process_flight_log(log_fn, folder, session_start_datetime, mode):
+def process_flight_log(log_fn, folder, session_start_datetime):
     logger = logging.getLogger('logs_to_json')
 
     flight_id = int(os.path.basename(log_fn)[10:-4])  # assuming the name is log_flight**.csv. Maybe replace this with  https://stackoverflow.com/questions/14008440/how-to-extract-numbers-from-filename-in-python
@@ -304,7 +304,7 @@ def process_flight_log(log_fn, folder, session_start_datetime, mode):
     return flight_data
 
 
-def process_detection_log(log_fn, folder, mode, session_start_datetime):
+def process_detection_log(log_fn, folder, session_start_datetime):
     logger = logging.getLogger('logs_to_json')
     try:
         log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
@@ -450,7 +450,7 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
     return detection_data
 
 
-def process_flights_in_folder(folder, operational_log_start, mode):
+def process_flights_in_folder(folder, operational_log_start):
     logger = logging.getLogger('logs_to_json')
     flight_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_f*.csv"))])
     start_datetime = str_to_datetime(operational_log_start)
@@ -459,14 +459,14 @@ def process_flights_in_folder(folder, operational_log_start, mode):
 
     for flight_fn in flight_fns:
         logger.info("Processing flights in " + flight_fn)
-        data = process_flight_log(flight_fn, folder, start_datetime, mode)
+        data = process_flight_log(flight_fn, folder, start_datetime)
         if data:
             session_data.append(data)
 
     return session_data
 
 
-def process_detections_in_folder(folder, operational_log_start, mode):
+def process_detections_in_folder(folder, operational_log_start):
     logger = logging.getLogger('logs_to_json')
     detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv"))])
     session_start_datetime = str_to_datetime(operational_log_start)
@@ -474,7 +474,7 @@ def process_detections_in_folder(folder, operational_log_start, mode):
     session_data = []
     for detection_fn in detection_fns:
         logger.info("Processing detections in " + detection_fn)
-        data = process_detection_log(detection_fn, folder, mode, session_start_datetime)
+        data = process_detection_log(detection_fn, folder, session_start_datetime)
         if data:
             session_data.append(data)
 
@@ -538,14 +538,14 @@ def logs_to_json(json_fn, data_folder, sys_str):
         elif mode.startswith('Resetting cam'):
             cam_resets += 1
         else:
-            detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
+            detections_in_folder = process_detections_in_folder(folder, operational_log_start)
             if detections_in_folder != []:
                 detections.extend(detections_in_folder)
             if mode == 'x':
                 flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start, mode)
                 if flight_status_in_folder != []:
                     flight_sessions.append(flight_status_in_folder)
-                flights_in_folder = process_flights_in_folder(folder, operational_log_start, mode)
+                flights_in_folder = process_flights_in_folder(folder, operational_log_start)
                 if flights_in_folder != []:
                     flights.extend(flights_in_folder)
 
@@ -586,10 +586,8 @@ def logs_to_json(json_fn, data_folder, sys_str):
     logger.info("Data folders moved")
 
 
-def process_all_logs_to_jsons():
-    now = datetime.now()
-    local_json_file = lb.json_dir + lb.datetime_to_str_with_timezone(now) + '.json'
-    logs_to_json(local_json_file, lb.data_dir, socket.gethostname())
+def process_all_logs_to_jsons(data_dir=lb.data_dir, json_fn=lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json'):
+    logs_to_json(json_fn, data_dir, socket.gethostname())
 
 
 def send_all_jsons():
@@ -609,22 +607,26 @@ def send_all_jsons():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that counts the number of valid detections in a directory, bound by the minimum and maximum date.')
-    parser.add_argument('-i', help="Path to the folder with logs", required=False, default=lb.data_dir)
+    parser.add_argument('-i', help="Path to the folder with logs", required=False)
     parser.add_argument('--dry-run', help="Dry run process system status just this one log", required=False)
-    parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
-    parser.add_argument('--system', help="Override system name", default=socket.gethostname())
+    parser.add_argument('--filename', help="Path and filename to store results in")
     args = parser.parse_args()
 
     logging.basicConfig()
     logger = logging.getLogger('logs_to_json')
     logger.setLevel(logging.DEBUG)
 
-    json_fn = args.filename
-    data_folder = args.i
-    sys_str = args.system
+    if args.filename:
+        json_fn = args.filename
+    else:
+        json_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json'
+    if args.i:
+        data_folder = args.i
+    else:
+        data_dir = lb.data_dir
 
     if args.dry_run:
-        process_all_logs_to_jsons()
+        process_all_logs_to_jsons(data_folder, json_fn)
     else:
         process_all_logs_to_jsons()
         send_all_jsons()
