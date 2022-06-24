@@ -486,10 +486,13 @@ def process_detections_in_folder(folder, operational_log_start, flights_in_folde
 
 
 def check_if_system_at_office():
-    cmd = 'sudo nmcli dev wifi | grep PATS'
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-    p_result = popen.stdout.readline().decode('utf-8')
-    return bool(p_result)
+    if socket.gethostname().lower().startswith('pats'):
+        cmd = 'sudo nmcli dev wifi | grep PATS'
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        p_result = popen.stdout.readline().decode('utf-8')
+        return bool(p_result)
+    else:
+        return False
 
 
 def logs_to_json(json_fn, data_folder, sys_str):
@@ -592,7 +595,9 @@ def logs_to_json(json_fn, data_folder, sys_str):
     logger.info("Data folders moved")
 
 
-def process_all_logs_to_jsons(data_dir=lb.data_dir, json_fn=lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json'):
+def process_all_logs_to_jsons(data_dir=lb.data_dir, json_fn=''):
+    if json_fn == '':
+        json_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json'
     logs_to_json(json_fn, data_dir, socket.gethostname())
 
 
