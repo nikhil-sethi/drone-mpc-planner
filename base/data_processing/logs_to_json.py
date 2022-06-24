@@ -166,6 +166,7 @@ def process_flight_status_in_folder(folder, operational_log_start, mode):
         return []
     drone_flights = 0
     n_drone_detects = 0
+    drone_has_been_ready = False
     n_detections = 0
     n_takeoffs = 0
     n_landings = 0
@@ -174,6 +175,8 @@ def process_flight_status_in_folder(folder, operational_log_start, mode):
     with open(results_path, "r", encoding="utf-8") as results_txt:
         result_lines = results_txt.readlines()
         for line in result_lines:
+            if line.find('drone_has_been_ready') != -1:
+                drone_has_been_ready = bool(line.strip().split(':')[1])
             if line.find('n_drone_detects') != -1:
                 n_drone_detects = int(line.strip().split(':')[1])
             if line.find('n_insects') != -1:
@@ -189,6 +192,7 @@ def process_flight_status_in_folder(folder, operational_log_start, mode):
 
     data = {"start_datetime": operational_log_start,
             "end_datetime": os.path.basename(folder),
+            "drone_has_been_ready": drone_has_been_ready,
             "drone_flights": drone_flights,
             "n_drone_detects": n_drone_detects,
             "n_insects": n_detections,
