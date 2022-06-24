@@ -21,7 +21,7 @@ cv::Point3f LandingController::setpoint_cc_landing(cv::Point3f pad_location, nav
 }
 
 bool LandingController::switch_to_ff_landing(tracking::TrackData drone_track_data, cv::Point3f pad_pos) {
-    return !drone_track_data.pos_valid || drone_track_data.spos().y < pad_pos.y + height_trigger_ff;
+    return !drone_track_data.pos_valid || drone_track_data.spos().y < pad_pos.y + _trusted_tracking_height_above_pad;
 }
 
 int LandingController::ff_auto_throttle(int ff_auto_throttle_start, float dt) {

@@ -67,13 +67,20 @@ float angle_to_horizontal(cv::Point3f direction) {
     float A = 0;
     float B = 1;
     float C = 0;
+    float sign_direction_y = direction.y/abs(direction.y);
+    if(sign_direction_y!=sign_direction_y)
+        sign_direction_y = 1;
 
-    return asinf(fabs(A * direction.x + B * direction.y + C * direction.z) / normf({A, B, C}) / normf(direction));
+    return sign_direction_y * (fabs(A * direction.x + B * direction.y + C * direction.z) / normf({A, B, C}) / normf(direction));
 }
 
 cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle) {
-    if (angle_to_horizontal(direction) < min_angle) {
-        direction.y = tan(min_angle) / normf({direction.x, direction.z});
+    float ath = angle_to_horizontal(direction);
+    if (ath < min_angle) {
+        if(normf({direction.x, direction.z})>0)
+            direction.y = tan(min_angle) / normf({direction.x, direction.z});
+        else
+            direction = {0, 1, 0};
     }
     direction /= norm(direction);
     return direction;
