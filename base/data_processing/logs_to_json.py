@@ -394,10 +394,13 @@ def process_detection_log(log_fn, folder, session_start_datetime, flights_in_fol
 
     hunt_id = -1
     if 'hunt_id' in log:
-        hunt_id = int(log['hunt_id'].dropna().values[-1])
-        drone_flight = list(filter(lambda item: item['flight_id'] == hunt_id, flights_in_folder))
-        if not drone_flight:
-            hunt_id = -1
+        hunt_id_df = log['hunt_id'].dropna()
+        hunt_id_df = hunt_id_df.drop(hunt_id_df[hunt_id_df <= 0].index)
+        if not hunt_id_df.empty:
+            hunt_id = hunt_id_df.groupby(hunt_id_df).size().agg(['idxmax', 'max'])[0]
+            drone_flight = list(filter(lambda item: item['flight_id'] == hunt_id, flights_in_folder))
+            if not drone_flight:
+                hunt_id = -1
 
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
