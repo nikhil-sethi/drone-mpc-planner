@@ -98,6 +98,7 @@ void Drone::update(double time) {
                     _state = ds_rc_loss;
                     _baseboard_link->allow_charging(true);
                 }
+                _has_been_ready = true;
                 break;
         } case ds_flight: {
                 auto state = tracker.last_track_data();
@@ -444,10 +445,13 @@ void Drone::post_flight(double time) {
 void Drone::take_off(bool hunt, double time) {
     _n_take_offs++;
     take_off_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    if (hunt)
+    if (hunt) {
         _n_hunt_flights++;
-    else
+        std::cout << "Taking off to hunt #" << _n_hunt_flights << std::endl;
+    } else {
         _n_wp_flights++;
+        std::cout << "Taking off for waypoint flight #" << _n_wp_flights << std::endl;
+    }
     _visdat->save_maps_before_flight(_n_take_offs, data_output_dir);
 
     flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);

@@ -110,6 +110,7 @@ private:
     uint n_detected_pad_locations = 0;
 
     // flight
+    bool _has_been_ready = false;
     bool trigger_waypoint_flight = false;
     std::string flightplan_fn = "";
     int _n_take_offs = 0;
@@ -153,6 +154,7 @@ public:
     tracking::DroneTracker tracker;
 
     bool in_flight() {return _state == ds_flight;}
+    bool has_been_ready() {return _has_been_ready;}
 
     std::string drone_state_str() {
         if (_state == ds_pre_flight)

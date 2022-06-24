@@ -973,13 +973,16 @@ void save_results_log() {
     results_log << "n_static_fps:" << patser.trackers.fp_statics_count() << '\n';
     results_log << "n_short_fps:" << patser.trackers.fp_shorts_count() << '\n';
     results_log << "n_insects:" << patser.trackers.insects_count() << '\n';
-    results_log << "n_takeoffs:" << patser.drone.n_take_offs() << '\n';
-    results_log << "n_landings:" << patser.drone.n_landings() << '\n';
-    results_log << "n_hunts:" << patser.drone.n_hunt_flights() << '\n';
-    results_log << "n_replay_hunts:" << cmdcenter.n_replay_moth() << '\n';
-    results_log << "n_wp_flights:" << patser.drone.n_wp_flights() << '\n';
-    results_log << "n_drone_detects:" << patser.drone.n_drone_detects() << '\n';
-    results_log << "drone_problem:" << nav->drone_problem() << '\n';
+    if (pparams.op_mode == op_mode_x) {
+        results_log << "drone_has_been_ready:" << patser.drone.has_been_ready() << '\n';
+        results_log << "n_takeoffs:" << patser.drone.n_take_offs() << '\n';
+        results_log << "n_landings:" << patser.drone.n_landings() << '\n';
+        results_log << "n_hunts:" << patser.drone.n_hunt_flights() << '\n';
+        results_log << "n_replay_hunts:" << cmdcenter.n_replay_moth() << '\n';
+        results_log << "n_wp_flights:" << patser.drone.n_wp_flights() << '\n';
+        results_log << "n_drone_detects:" << patser.drone.n_drone_detects() << '\n';
+        results_log << "drone_problem:" << nav->drone_problem() << '\n';
+    }
     results_log << "run_time:" << visdat.current_time() << '\n';
     results_log << "start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
     results_log << "end_datetime:" << std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
