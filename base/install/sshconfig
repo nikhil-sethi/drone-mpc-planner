@@ -2,10 +2,10 @@ Host *
 ServerAliveInterval 240
 ForwardAgent yes
 
-Host dinstech
-	Hostname dinstech.nl
-	Port 16666
-	User pats
+Host beta
+        Hostname 185.95.13.11
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
 
 Host dash
 	Hostname 37.128.150.141
