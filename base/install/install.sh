@@ -133,11 +133,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 		pip3 install bandit
 	fi
 
-	pip3 install types-python-dateutil
-	pip3 install types-requests
-
-	#automatic timezone updater
-	pip3 install tzupdate
+	pip3 install types-python-dateutil types-requests tzupdate
 
 	touch python-packages-v1.3.done
 }
@@ -283,15 +279,21 @@ EIGEN_FLAG=Eigen-v1.done
 	touch EIGEN_FLAG
 }
 
+
+[ -f pats_code_v1.1.done ] || {
+	echo Warning: manual config change required!
+	exit
+}
+
 # Install the Pats code
-PATS_CODE_FLAG=pats_code_v1.1.done
+PATS_CODE_FLAG=pats_code_v1.2.done
 [ -f $PATS_CODE_FLAG ] || {
 	touch ~/pats/flags/disable
 	touch ~/pats/flags/disable_baseboard
 
 	pushd ../code/
 	[ -d ../code/pats ] || {
-		git clone git@github.com:pats-drones/pats.git
+		git clone git@github-pats:pats-drones/pats.git
 	}
 	pushd pats
 	mkdir -p base/build
@@ -311,9 +313,25 @@ PATS_CODE_FLAG=pats_code_v1.1.done
 
 # Install pats-c dev packages
 if [[ $1 -eq 0 ]] ; then
-	[ -f patsc-dependencies-packages-v1.0.done ] || {
-		pip3 install -r ~/code/pats/dashboard/pats_c/requirements.txt
-		touch patsc-dependencies-packages-v1.0.done
+
+	# Install the Dash code
+	PATSC_CODE_FLAG=patsc_code_v1.0.done
+	[ -f $PATSC_CODE_FLAG ] || {
+		
+
+		pushd ./code/
+		[ -d ../code/dash ] || {
+			git clone git@github-dash:pats-drones/dash.git
+		}
+		popd
+
+		touch $PATSC_CODE_FLAG
+	}
+
+
+	[ -f patsc-dependencies-packages-v1.1.done ] || {
+		pip3 install -r ~/code/dash/patsc/requirements.txt
+		touch patsc-dependencies-packages-v1.1.done
 	}
 fi
 
