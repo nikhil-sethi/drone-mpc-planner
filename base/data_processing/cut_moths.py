@@ -17,7 +17,7 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
             arg_cnt = 0
             if os.path.exists(video_in_fn):
                 cut_log.write('Video file size: ' + str(os.path.getsize(video_in_fn) / 1024 / 1024 / 1024) + 'GB\n')
-
+                key_frame_ids = []
                 for file in files:
                     logger.info('Processing ' + file)
                     cut_log.write(os.path.basename(file) + ': ')
@@ -37,8 +37,13 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
                                 file_id = fn.split('.')[0][8:]
                                 fp = lines[-1].split(';')[heads.index('fp')]
                                 monitor_log = fp == 'fp_not_a_fp' or fp == 'fp_too_big' or fp == 'fp_too_far'
+                            if monitor_log:
+                                video_start_offset = 1
+                            elif flight_log:
+                                video_start_offset = 5
                             if flight_log or monitor_log:
                                 video_start_rs_id = int(lines[1].split(';')[heads.index('rs_id')])
+
                                 while True:
                                     frame_line = frames_log.readline()
                                     video_start_time = -1
@@ -50,11 +55,14 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
                                         break
 
                                     if (int(splitted_frame_line[0])) % 30 == 0:  # assuming a keyframe every 30 frames
-                                        last_keyframe_id = int(splitted_frame_line[0])
-                                        last_keyframe_rs_id = int(splitted_frame_line[2])
+                                        key_frame_ids.append([int(splitted_frame_line[0]), int(splitted_frame_line[2])])
 
                                     if int(splitted_frame_line[2]) == video_start_rs_id:
-                                        video_start_video_id = last_keyframe_id   # instead of using exactly int(splitted_frame_line[0]), the way the video encoding works is that we can only cut from the last keyframe
+                                        ii = (video_start_offset * int(90 / 30))
+                                        if ii >= len(key_frame_ids):
+                                            ii = len(key_frame_ids)
+                                        keyframe_rs_id = key_frame_ids[-ii][1]
+                                        video_start_video_id = key_frame_ids[-ii][0]  # instead of using exactly int(splitted_frame_line[0]), the way the video encoding works is that we can only cut from the last keyframe
                                         video_start_time = float(video_start_video_id - 1) / 90  # for some reason ffmpeg wants a time instead of a frame id. And it needs to be one frame before the actual key frame...
                                         break
                                     if int(splitted_frame_line[2]) > video_start_rs_id:
@@ -64,21 +72,15 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
 
                                 if video_start_time < 0:
                                     continue
-                                if monitor_log:
-                                    video_start_time = video_start_time - 1
-                                if video_start_time < 0:
-                                    video_start_time = 0
-                                video_end_rs_id = int(lines[-2].split(';')[heads.index('rs_id')])
-                                video_end_video_id = video_end_rs_id - (video_start_rs_id - video_start_video_id)
-                                video_end_time = float(video_end_video_id) / 90 + 1
-                                video_duration = video_end_time - video_start_time
+
+                                video_duration = float(lines[-2].split(';')[heads.index('elapsed')]) - float(lines[1].split(';')[heads.index('elapsed')]) + video_start_offset
                                 if monitor_log:
                                     video_out_file = log_folder + '/insect' + file_id + '.mkv'
                                 else:
                                     video_out_file = log_folder + '/flight' + file_id + '.mkv'
                                     with open(log_folder + '/flight' + file_id + '.txt', 'w', encoding="utf-8") as flight_start_rs_id_file:
-                                        flight_start_rs_id_file.write(str(last_keyframe_rs_id))
-                                        flight_start_rs_id_file.write('\nThis file is auto generated from cut_moths.py. It contains the rs_id of the keyframe (video encoding, every 30 frames by default) just before the actual start of this flight/insect log.\n')
+                                        flight_start_rs_id_file.write(str(keyframe_rs_id))
+                                        flight_start_rs_id_file.write('\nThis file is auto generated from cut_moths.py. It contains the rs_id of a few keyframes (video encoding, every 30 frames by default) before the actual start of this flight/insect log.\n')
                                 video_out_file = video_out_file.replace(os.path.expanduser('~'), '~')
                                 video_out_file = video_out_file.replace('//', '/')
                                 cmd = ' -c:v copy -an -ss ' + str(round(video_start_time, 2)) + ' -t ' + str(round(video_duration, 2)) + ' ' + video_out_file
