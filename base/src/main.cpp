@@ -521,7 +521,7 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
                 exit_now = true;
             } else if (light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && time > 10 && !baseboard_link.contact_problem()) {
                 std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
-                communicate_state(es_brightness_restart);
+                communicate_state(es_light_level_restart);
                 exit_now = true;
             } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && time > 10 && !baseboard_link.contact_problem()) {
                 communicate_state(es_enable_window_restart);
@@ -1023,6 +1023,10 @@ void wait_for_start_conditions() {
     bool light_conditions_ok = false;
     bool cam_angles_ok = false;
 
+    std::ofstream wait_logger;
+    wait_logger.open(data_output_dir + "wait_for_start.csv", std::ofstream::out);
+    wait_logger << "Datetime;Light level;Exposure;Gain;Brightness;Light_level_ok;Cam_angle_ok;Enable_window_ok" << std::endl;
+
     while (true) {
         auto [roll, pitch, frame_time, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
         cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
@@ -1033,6 +1037,11 @@ void wait_for_start_conditions() {
         light_conditions_ok = pparams.light_level_threshold <= 0 || light_level_ < pparams.light_level_threshold;
         cam_angles_ok = pparams.max_cam_roll <= 0 || std::abs(roll) < pparams.max_cam_roll;
         enable_window_ok = (!enable_window_mode || !(std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0));
+
+        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        auto datetime = std::put_time(std::localtime(&t), "%Y/%m/%d %T");
+        wait_logger << datetime << ";" << light_level_ << ";" << expo << ";" << gain << ";" << avg_brightness << ";" << enable_window_ok << ";" << cam_angles_ok << ";" << enable_window_ok << std::endl;
+
         if (!enable_window_ok || !light_conditions_ok || !cam_angles_ok) {
             std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ", waiting for\t";
             if (!enable_window_ok)
@@ -1042,7 +1051,12 @@ void wait_for_start_conditions() {
             if (!light_conditions_ok)
                 std::cout << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
             std::cout << std::endl;
-            communicate_state(es_wait_for_conditions);
+            if (!cam_angles_ok)
+                communicate_state(es_wait_for_cam_angle);
+            else if (!enable_window_ok)
+                communicate_state(es_wait_for_enable_window);
+            else if (!light_conditions_ok)
+                communicate_state(es_wait_for_light_level);
 
             std::this_thread::sleep_for(10s);
         } else {
@@ -1057,6 +1071,7 @@ void wait_for_start_conditions() {
             break;
         }
     }
+    wait_logger.close();
 }
 
 void watchdog_worker(void) {

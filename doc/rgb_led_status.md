@@ -22,8 +22,8 @@ Additional work planned in https://github.com/pats-drones/pats/issues/1177
 | Red                   | 1 short blink | LED1_executor_problem         |
 | Pink                  | solid         | LED1_realsense_reset          |
 | White                 | solid         | LED1_executor_start           |
-| Blue                  | solid         | LED1_wait_for_plukkers        |
-| Yellow                | solid         | LED1_wait_for_darkness        |
+| Blue                  | solid         | LED1_wait_for_enable_window   |
+| Yellow                | solid         | LED1_wait_for_lightlevel      |
 | Green                 | solid         | LED1_c_OK                     |
 | Cyan                  | solid         | LED1_x_OK                     |
 | Off                   | solid         | No Power to system?           |

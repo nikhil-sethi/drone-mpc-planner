@@ -79,10 +79,10 @@ def executor_receiver(msg):
             elif msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
                 executor_state_pkg.parse(msg[:struct.calcsize(executor_state_pkg.format)])
                 msg = msg[struct.calcsize(executor_state_pkg.format):]
-                if executor_state_pkg.executor_state == ls.executor_states.es_brightness_restart.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_darkness.value[0]:
-                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_wait_for_darkness.value[0]
-                elif executor_state_pkg.executor_state == ls.executor_states.es_wait_for_plukker.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_plukker_restart.value[0]:
-                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_wait_for_plukkers.value[0]
+                if executor_state_pkg.executor_state == ls.executor_states.es_light_level_restart.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_light_level.value[0]:
+                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_wait_for_light_level.value[0]
+                elif executor_state_pkg.executor_state == ls.executor_states.es_enable_window_restart.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_enable_window.value[0]:
+                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_wait_for_enable_window.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_pats_c.value[0]:
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_c_OK.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_pats_x.value[0]:
@@ -100,7 +100,7 @@ def executor_receiver(msg):
                         or executor_state_pkg.executor_state == ls.executor_states.es_drone_config_restart.value[0]:
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_start.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_watchdog_restart.value[0] \
-                        or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_angle.value[0] \
+                        or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_cam_angle.value[0] \
                         or executor_state_pkg.executor_state == ls.executor_states.es_xml_config_problem.value[0] \
                         or executor_state_pkg.executor_state == ls.executor_states.es_realsense_not_found.value[0] \
                         or executor_state_pkg.executor_state == ls.executor_states.es_drone_version_mismatch.value[0] \

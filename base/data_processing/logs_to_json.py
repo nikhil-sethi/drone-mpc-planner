@@ -36,9 +36,9 @@ lia_model = "cnn5_size_v1"
 lia_n_insect_classes = 5
 
 
-def process_wait_for_lightlevels(wait_for_dark_log_path):
+def process_wait_for_conditions(wait_for_conditions_log_path):
     try:
-        log = pd.read_csv(wait_for_dark_log_path, sep=";")
+        log = pd.read_csv(wait_for_conditions_log_path, sep=";")
     except pd.errors.EmptyDataError:
         return False, '', ''
 
@@ -46,12 +46,12 @@ def process_wait_for_lightlevels(wait_for_dark_log_path):
         return False, '', ''
 
     datetimes = log['Datetime'].dropna()
-    daylight_start = datetimes.values[0]
-    daylight_end = datetimes.values[-1]
+    offline_start = datetimes.values[0]
+    offline_end = datetimes.values[-1]
 
-    daylight_start = daylight_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
-    daylight_end = daylight_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
-    return True, daylight_start, daylight_end
+    offline_start = offline_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    offline_end = offline_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    return True, offline_start, offline_end
 
 
 def measured_exposure_old(terminal_log_path):
@@ -91,20 +91,20 @@ def measured_exposure_old(terminal_log_path):
         return True, daylight_start, daylight_end
 
 
-def process_wait_for_dark_status(folder):
+def process_wait_for_condition_status(folder):
     valid = False
-    wait_for_dark_log_path = Path(folder, 'wait_for_dark.csv')
+    wait_for_conditions_log_path = Path(folder, 'wait_for_conditions.csv')
     terminal_log_path = Path(folder, 'terminal.log')
-    if os.path.exists(wait_for_dark_log_path):
-        valid, daylight_start, daylight_end = process_wait_for_lightlevels(wait_for_dark_log_path)
+    if os.path.exists(wait_for_conditions_log_path):
+        valid, planned_offline_start, planned_offline_end = process_wait_for_conditions(wait_for_conditions_log_path)
     elif os.path.exists(terminal_log_path):
-        valid, daylight_start, daylight_end = measured_exposure_old(terminal_log_path)
+        valid, planned_offline_start, planned_offline_end = measured_exposure_old(terminal_log_path)
     if valid:
-        data_wait_for_dark = {"start_datetime": daylight_start,
-                              "end_datetime": daylight_end,
-                              "mode": 'wait_for_dark'
-                              }
-        return (valid, data_wait_for_dark, daylight_start, daylight_end)
+        data_wait_for_conditions = {"start_datetime": planned_offline_start,
+                                    "end_datetime": planned_offline_end,
+                                    "mode": 'wait_for_conditions'
+                                    }
+        return (valid, data_wait_for_conditions, planned_offline_start, planned_offline_end)
     return (False, [], '', '')
 
 
@@ -534,11 +534,11 @@ def logs_to_json(json_fn, data_folder, sys_str):
         if t_folder > t_end:
             t_end = t_folder
 
-        light_level_valid, data_wait_for_dark, daylight_start, _ = process_wait_for_dark_status(folder)
-        if light_level_valid:
-            statuss.append(data_wait_for_dark)
-            if lb.str_to_datetime(daylight_start) < t_start:
-                t_start = lb.str_to_datetime(daylight_start)
+        wait_for_conditions_valid, data_wait_for_conditions, offline_start, _ = process_wait_for_condition_status(folder)
+        if wait_for_conditions_valid:
+            statuss.append(data_wait_for_conditions)
+            if lb.str_to_datetime(offline_start) < t_start:
+                t_start = lb.str_to_datetime(offline_start)
 
         status_in_folder, mode, operational_log_start = process_system_status_in_folder(folder)
 

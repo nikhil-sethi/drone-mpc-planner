@@ -22,8 +22,8 @@ public:
         LED1_executor_problem, // (angle, realsense, etc)
         LED1_realsense_reset,
         LED1_executor_start, // start / restart / closing
-        LED1_wait_for_plukkers,
-        LED1_wait_for_darkness,
+        LED1_wait_for_enable_window,
+        LED1_wait_for_lightlevel,
         LED1_c_OK,
         LED1_x_OK,
         LED1_unkown

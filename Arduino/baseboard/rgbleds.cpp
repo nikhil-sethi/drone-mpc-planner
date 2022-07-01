@@ -142,11 +142,11 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[1] = CRGB(255 * light_level_, 255 * light_level_, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
-            } case LED1_wait_for_plukkers: { // solid blue
+            } case LED1_wait_for_enable_window: { // solid blue
                     rgb_setpoint_leds[1] = CRGB(0, 0, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
-            } case LED1_wait_for_darkness: { // solid yellow
+            } case LED1_wait_for_lightlevel: { // solid yellow
                     rgb_setpoint_leds[1] = CRGB(255 * light_level_, 255 * light_level_, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
