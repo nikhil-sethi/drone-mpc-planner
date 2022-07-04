@@ -160,6 +160,7 @@ void Drone::pre_flight(double time) {
                 control.LED(true);
                 control.led_strength(_visdat->light_level());
                 control.flight_mode(DroneController::fm_disarmed);
+                communicate_state(es_pats_x);
                 time_start_locating_drone_attempt = time;
                 n_locate_drone_attempts++;
                 if (dparams.led_type == led_none && !control.pad_calib_valid()) {
@@ -186,6 +187,10 @@ void Drone::pre_flight(double time) {
                 if (confirm_drone_on_pad && _baseboard_link->charging() && control.pad_calib_valid()) {
                     pre_flight_state = pre_init;
                     _state = ds_charging;
+                }
+                if (_rc->telemetry_time_out()) {
+                    pre_flight_state =  pre_telemetry_time_out;
+                    communicate_state(es_pats_x);
                 }
 
                 auto detected_pad_locations = _trackers->detected_pad_locations();
@@ -246,6 +251,7 @@ void Drone::pre_flight(double time) {
                 if (time - time_start_locating_drone > 300) {
                     pre_flight_state = pre_locate_time_out;
                     _trackers->mode(tracking::TrackerManager::t_c);
+                    communicate_state(es_pats_x);
                 }
                 break;
         } case pre_check_telemetry: {
@@ -255,6 +261,10 @@ void Drone::pre_flight(double time) {
                         pre_flight_state = pre_check_pad_att;
                     else
                         pre_flight_state = pre_calibrating_pad;
+                }
+                if (_rc->telemetry_time_out()) {
+                    pre_flight_state =  pre_telemetry_time_out;
+                    communicate_state(es_pats_x);
                 }
                 break;
         } case pre_calibrating_pad: {
@@ -276,6 +286,10 @@ void Drone::pre_flight(double time) {
                         pre_flight_state = pre_init;
                         confirm_drone_on_pad = true;
                     }
+                }
+                if (_rc->telemetry_time_out()) {
+                    pre_flight_state =  pre_telemetry_time_out;
+                    communicate_state(es_pats_x);
                 }
                 break;
         } case pre_wait_to_arm: {
@@ -334,11 +348,20 @@ void Drone::pre_flight(double time) {
                 }
                 break;
         } case pre_locate_time_out: {
-                if ((_baseboard_link->charging() || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
+                if (((_baseboard_link->charging() && _baseboard_link->charging_duration() < 1) || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
                     pre_flight_state =  pre_locate_drone_init;
                     time_start_locating_drone = time;
                 }
+                if (_rc->telemetry_time_out()) {
+                    pre_flight_state =  pre_telemetry_time_out;
+                    communicate_state(es_pats_x);
+                }
                 break;
+        } case pre_telemetry_time_out: {
+                if (!_rc->telemetry_time_out()) {
+                    pre_flight_state =  pre_locate_drone_init;
+                    time_start_locating_drone = time;
+                }
             }
     }
 }
@@ -432,10 +455,12 @@ void Drone::post_flight(double time) {
                 _baseboard_link->allow_charging(true);
                 save_flight_results();
                 post_flight_state = post_crashed;
+                communicate_state(es_pats_x);
                 break;
         } case post_crashed: {
                 if (_baseboard_link->charging() && (time - time_crashed > 5)) { // baseboard charging detection can be slower a fast crash, so give it a few seconds
                     post_flight_state = post_init;
+                    communicate_state(es_pats_x);
                     _state = ds_pre_flight;
                 }
                 break;

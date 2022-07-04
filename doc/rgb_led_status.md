@@ -8,9 +8,9 @@
 | Cyan                  | solid                       | Trickle charging                |
 | Blue                  | blink_3_short_blinks        | Discharging                     |
 | Yellow                | blink_3_short_blinks        | Battery problem                 |
-
-
-Additional work planned in https://github.com/pats-drones/pats/issues/1177
+| Orange                | 1s symmetric                | RC telemetry time out           |
+| Orange                | blink_1_short_blinks        | Blink locate fail               |
+| White                 | 1s symmetric                | Crashed                         |
 
 
 # Led 1 (system)

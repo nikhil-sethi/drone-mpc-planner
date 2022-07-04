@@ -4,7 +4,7 @@
 
 #define MAX_PACKAGE_READ_SIZE 16
 
-#define FIRMWARE_VERSION 19
+#define FIRMWARE_VERSION 20
 #define BASEBOARD_PACKAGE_PRE_HEADER '@'
 enum baseboard_package_headers {
     header_SerialBaseboard2NUCPackage = 'P',
@@ -18,7 +18,7 @@ enum baseboard_package_headers {
     header_SerialExecutor2BaseboardAllowChargingPackage = 'A',
 };
 
-//copy from utility.h Arduino code
+//copy from baseboardlink.h Executor code
 struct __attribute__((packed)) SerialBaseboard2NUCPackage {
     const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
     const uint16_t firmware_version = FIRMWARE_VERSION;
@@ -41,6 +41,8 @@ struct __attribute__((packed)) SerialBaseboard2NUCPackage {
     unsigned char charging_pwm;
     uint32_t charging_duration;
     uint16_t measured_fan_speed;
+    uint8_t led0;
+    uint8_t led1;
     const char ender = '\n';
 };
 
@@ -104,15 +106,24 @@ struct __attribute__((packed)) SerialNUC2BaseboardNUCResetPackage {
     const char ender = '\n';
 };
 
+enum drone_issues {
+    drone_issues_no_drone,
+    drone_issues_drone_ok,
+    drone_issues_telemetry_problem,
+    drone_issues_locate_fail,
+    drone_issues_crashed,
+};
+
 struct __attribute__((packed)) SerialNUC2BaseboardRGBLEDPackage {
     const char pre_header = BASEBOARD_PACKAGE_PRE_HEADER;
     const uint16_t firmware_version = FIRMWARE_VERSION;
     const char header = header_SerialNUC2BaseboardRGBLEDPackage;
-    unsigned char led1_state;
+    uint8_t led1_state;
     float light_level;
     bool internet_OK;
     bool daemon_OK;
     bool postprocessing;
+    uint8_t led0_drone_issues;
     const char ender = '\n';
 };
 

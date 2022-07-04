@@ -249,7 +249,7 @@ void process_frame(StereoPair *frame) {
 
 void communicate_state(executor_states s) {
     daemon_link.executor_state(s);
-    baseboard_link.executor_state(s, light_level);
+    baseboard_link.executor_state(s, patser.drone.issues(), light_level);
 }
 
 void init_insect_log(int n) {

@@ -29,7 +29,8 @@ static const char *pre_flight_state_names[] = {
     "arming",
     "wait x led",
     "wait_charge",
-    "locate_fail"
+    "locate fail",
+    "telem fail"
 };
 static const char *post_flight_state_names[] = {
     "init",
@@ -68,7 +69,8 @@ public:
         pre_arming,
         pre_wait_init_led,
         pre_wait_charging,
-        pre_locate_time_out
+        pre_locate_time_out,
+        pre_telemetry_time_out
     };
     enum post_flight_states {
         post_init = 0,
@@ -180,11 +182,27 @@ public:
     int n_drone_detects() {return _n_drone_detects;}
     int n_wp_flights() {return _n_wp_flights;}
     int n_hunt_flights() {return _n_hunt_flights;}
+    drone_issues issues() {
+        if (pparams.op_mode == op_mode_x && initialized) {
+            if (crashed())
+                return drone_issues_crashed;
+            else if (_rc->telemetry_time_out())
+                return drone_issues_telemetry_time_out;
+            else if (locate_fail())
+                return drone_issues_locate_time_out;
+            else
+                return drone_issues_ok;
+
+        } else
+            return drone_issues_no_drone;
+    }
 
     void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
     bool drone_flying() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
     bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost);}
+    bool crashed() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost);}
+    bool locate_fail() {return _state == ds_pre_flight && (pre_flight_state == pre_locate_time_out);}
     void beep_drone() {_state = ds_beep;}
     void redetect_drone_location() {
         control.invalidize_blink();

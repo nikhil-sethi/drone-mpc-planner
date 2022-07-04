@@ -154,6 +154,7 @@ public:
     bool bf_version_error() { return _bf_version_error > 10;}
     bool bf_uid_error() { return _bf_uid_error > 10;}
     bool bf_telem_OK() { return _bf_uid_error < 0 && _bf_version_error < 0;}
+    bool telemetry_time_out() {return _time - last_telemetry_time > 10;}
     std::string bf_uid_str() {return telemetry.bf_uid_str;}
     std::string armed_str() { return armed_names[arm_switch > RC_MIDDLE]; }
     bool arm_command() { return arm_switch == bf_armed; }
@@ -269,6 +270,7 @@ public:
 protected:
     double _time = 0;
     double _time_disarmed = -1;
+    double last_telemetry_time = 0;
 
     bool initialized = false;
     bool logger_initialized = false;

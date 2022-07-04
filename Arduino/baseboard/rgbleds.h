@@ -1,5 +1,6 @@
 #pragma once
 #include <FastLED.h>
+#include "utility.h"
 
 #define NUM_RGB_LEDS 2
 
@@ -13,7 +14,11 @@ public:
         LED0_not_charging,
         LED0_discharging,
         LED0_battery_problem,
-        LED0_unkown
+        LED0_telemetry_problem_with_charging,
+        LED0_telemetry_problem_no_charging,
+        LED0_locate_fail,
+        LED0_crashed,
+        LED0_unknown
     };
 
     enum rgb_led_1_states {
@@ -26,7 +31,7 @@ public:
         LED1_wait_for_lightlevel,
         LED1_c_OK,
         LED1_x_OK,
-        LED1_unkown
+        LED1_unknown
     };
 
     enum blink_modes {
@@ -49,8 +54,16 @@ public:
         daemon_OK(false);
     }
     void led0_state(rgb_led_0_states s) {
+        if (_drone_issue == drone_issues_telemetry_problem) {
+            if ((s == LED0_trickle_charging || s == LED0_discharging || s == LED0_charging))
+                s = LED0_telemetry_problem_with_charging;
+            else
+                s = LED0_telemetry_problem_no_charging;
+        }
+
         if (s == _led0_state)
             return;
+
         _led0_state = s;
         update_state[0] = true;
     }
@@ -85,6 +98,42 @@ public:
         _watchdog_trigger_imminent = b;
         update_state[1] = true;
     }
+    void drone_issue(drone_issues v) {
+        if (v == _drone_issue && v != drone_issues_telemetry_problem)
+            return;
+
+        switch (v) {
+            case drone_issues_drone_ok:
+                _led0_state = LED0_init;
+                update_state[0] = true;
+                break;
+            case drone_issues_no_drone:
+                _led0_state = LED0_disabled;
+                update_state[0] = true;
+                break;
+            case drone_issues_telemetry_problem:
+                if (_led0_state != LED0_telemetry_problem_no_charging && _led0_state != LED0_telemetry_problem_with_charging) {
+                    if (_led0_state == LED0_charging || _led0_state == LED0_trickle_charging || _led0_state == LED0_discharging)
+                        _led0_state = LED0_telemetry_problem_with_charging;
+                    else
+                        _led0_state = LED0_telemetry_problem_no_charging;
+                    update_state[0] = true;
+                }
+                break;
+            case drone_issues_locate_fail:
+                _led0_state = LED0_locate_fail;
+                update_state[0] = true;
+                break;
+            case drone_issues_crashed:
+                _led0_state = LED0_crashed;
+                update_state[0] = true;
+                break;
+            default:
+                break;
+        }
+        _drone_issue = v;
+    }
+
     void light_level(float light_level) {
         light_level_ = constrain(light_level * 2.f, 0.02f, 1.f);
     }
@@ -96,6 +145,7 @@ private:
     bool _daemon_OK = true;
     bool _post_processing = false;
     bool _watchdog_trigger_imminent = false;
+    drone_issues _drone_issue;
     float light_level_ = 1;
 
     bool update_state[NUM_RGB_LEDS] = {true};
@@ -111,4 +161,7 @@ private:
     void blink(int[], int, unsigned long, int);
     void blink(int led_id);
 
+public:
+    rgb_led_0_states led0_state() {return _led0_state;};
+    rgb_led_1_states led1_state() {return _led1_state;};
 };

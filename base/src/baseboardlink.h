@@ -71,6 +71,8 @@ private:
         unsigned char charging_pwm;
         uint32_t charging_duration;
         uint16_t measured_fan_speed;
+        uint8_t led0;
+        uint8_t led1;
         const char ender = '\n';
     };
     struct __attribute__((packed)) SerialExecutor2BaseboardAllowChargingPackage {
@@ -91,6 +93,7 @@ private:
     bool logger_initialized = false;
     bool exit_thread = false;
     int read_timeouts = 0;
+    float _charging_duration = 0;
     std::string disable_flag = "/home/pats/pats/flags/disable_baseboard";
 
     int sock;
@@ -117,7 +120,7 @@ public:
 
     void init(bool replay_mode);
     void init_logger();
-    void time(double time) {_time = time;}
+    void time(double time) {_time = time; executor_state_pkg_to_baseboard.time = time;}
     void close_link();
 
     void inject_log() {
@@ -153,10 +156,14 @@ public:
             cv_to_baseboard.notify_all();
         }
     }
-    void executor_state(executor_states s, float light_level) {
-        executor_state_pkg_to_baseboard.executor_state = s;
+    void executor_state(executor_states s, drone_issues d, float light_level) {
+        executor_state_pkg_to_baseboard.executor_state = static_cast<uint8_t>(s);
+        executor_state_pkg_to_baseboard.drone_issue = static_cast<uint8_t>(d);
         executor_state_pkg_to_baseboard.light_level = light_level;
         update_executor_state_pkg_to_baseboard  = true;
         cv_to_baseboard.notify_one();
+    }
+    float charging_duration() {
+        return _charging_duration;
     }
 };

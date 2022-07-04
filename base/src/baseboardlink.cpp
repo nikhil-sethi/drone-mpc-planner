@@ -75,6 +75,7 @@ void BaseboardLink::worker_receive() {
 
                     _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
                     _charging_state = static_cast<charging_states>(pkg->charging_state);
+                    _charging_duration = pkg->charging_duration / 1000.f;
                     _bat_voltage = pkg->battery_volts;
                     baseboard_logger << _time <<
                                      ";" << pkg->firmware_version <<
@@ -134,7 +135,7 @@ void BaseboardLink::worker_send() {
             send_over_socket(reinterpret_cast<unsigned char *>(&allow_charging_pkg_to_baseboard), sizeof(SerialExecutor2BaseboardAllowChargingPackage));
             update_allow_charging_pkg_to_baseboard = false;
         }
-        if (update_executor_state_pkg_to_baseboard) {
+        if (update_executor_state_pkg_to_baseboard || timeout ==  std::cv_status::timeout) {
             send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_baseboard), sizeof(SocketExecutorStatePackage));
             update_executor_state_pkg_to_baseboard  = false;
         }

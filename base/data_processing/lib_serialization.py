@@ -1,7 +1,7 @@
 from enum import Enum
 import struct
 
-BASEBOARD_FIRMWARE_VERSION = 19
+BASEBOARD_FIRMWARE_VERSION = 20
 BASEBOARD_PACKAGE_PRE_HEADER = '@'
 EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
@@ -20,6 +20,34 @@ charging_state_names = [
     'measure           ',
     'wait_drone_ready  ',
     'calibrating       '
+]
+
+led0_state_names = [
+    'init',
+    'disabled',
+    'charging',
+    'trickle_charging',
+    'not_charging',
+    'discharging',
+    'battery_problem',
+    'chrg_telem_problem',
+    'telem_problem',
+    'locate_fail',
+    'crashed',
+    'unknown'
+]
+
+led1_state_names = [
+    'init',
+    'inresponsive_NUC',
+    'executor_problem',
+    'realsense_reset',
+    'executor_start',
+    'wait_for_enable_window',
+    'wait_for_lightlevel',
+    'c_OK',
+    'x_OK',
+    'unknown'
 ]
 
 
@@ -86,7 +114,7 @@ class rgb_led_1_states(Enum):
 
 
 class SerialBaseboard2NUCPackage:
-    format = '=cHcHHHLBBBffffffffBLHc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
+    format = '=cHcHHHLBBBffffffffBLHBBc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
     pre_header = BASEBOARD_PACKAGE_PRE_HEADER
     firmware_version = BASEBOARD_FIRMWARE_VERSION,
     header = baseboard_package_headers.header_SerialBaseboard2NUCPackage
@@ -108,6 +136,8 @@ class SerialBaseboard2NUCPackage:
     charging_pwm = 0
     charging_duration = 0
     measured_fan_speed = 0
+    led0 = 0
+    led1 = 0
     ender = '\n'
 
     def __init__(self):
@@ -136,6 +166,8 @@ class SerialBaseboard2NUCPackage:
          self.charging_pwm,
          self.charging_duration,
          self.measured_fan_speed,
+         self.led0,
+         self.led1,
          self.ender,
          ) = fields
 
@@ -366,7 +398,7 @@ class SerialNUC2BaseboardNUCResetPackage:
 
 
 class SerialNUC2BaseboardRGBLEDPackage:
-    format = '=cHcBfBBBc'
+    format = '=cHcBfBBBBc'
     pre_header = BASEBOARD_PACKAGE_PRE_HEADER
     firmware_version = BASEBOARD_FIRMWARE_VERSION,
     header = baseboard_package_headers.header_SerialNUC2BaseboardRGBLEDPackage.value[0]
@@ -375,6 +407,7 @@ class SerialNUC2BaseboardRGBLEDPackage:
     internet_OK = 0
     daemon_OK = 0
     post_processing = 0
+    drone_issues = 0
     ender = '\n'
 
     def __init__(self):
@@ -390,6 +423,7 @@ class SerialNUC2BaseboardRGBLEDPackage:
          self.internet_OK,
          self.daemon_OK,
          self.post_processing,
+         self.drone_issues,
          self.ender,
          ) = fields
 
@@ -403,15 +437,17 @@ class SerialNUC2BaseboardRGBLEDPackage:
                            self.internet_OK,
                            self.daemon_OK,
                            self.post_processing,
+                           self.drone_issues,
                            bytes(self.ender, 'utf-8')
                            )
 
 
 class SocketExecutorStatePackage:
-    format = '=ccBfdc'
+    format = '=ccBBfdc'
     pre_header = EXECUTOR_PACKAGE_PRE_HEADER
     header = executor_package_headers.header_SocketExecutorStatePackage.value[0]
     executor_state = 0
+    drone_issue = 0
     light_level = 0
     time = 0
     ender = '\n'
@@ -424,6 +460,7 @@ class SocketExecutorStatePackage:
         (self.pre_header,
             self.header,
             self.executor_state,
+            self.drone_issue,
             self.light_level,
             self.time,
             self.ender
@@ -435,6 +472,7 @@ class SocketExecutorStatePackage:
                            int(self.firmware_version),
                            bytes(self.header, 'utf-8'),
                            self.executor_state,
+                           self.drone_issue,
                            self.light_level,
                            self.time,
                            bytes(self.ender, 'utf-8')

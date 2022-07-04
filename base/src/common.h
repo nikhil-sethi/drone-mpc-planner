@@ -939,14 +939,6 @@ enum executor_package_headers {
 };
 
 
-struct __attribute__((packed)) SocketExecutorStatePackage {
-    const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;
-    const char header = header_SocketExecutorStatePackage;
-    uint8_t executor_state;
-    float light_level;
-    double time;
-    const char ender = '\n';
-};
 
 enum executor_states {
     es_daemon_disabled = 0,
@@ -960,6 +952,7 @@ enum executor_states {
     es_wait_for_light_level,
     es_wait_for_cam_angle,
     es_wait_for_enable_window,
+    es_locate_drone,
     es_pats_c,
     es_pats_x,
     es_closing,
@@ -978,5 +971,22 @@ enum executor_states {
     es_realsense_error,
     es_xml_config_problem, // to be implemented
     es_runtime_error
+};
+
+enum drone_issues {
+    drone_issues_no_drone,
+    drone_issues_ok,
+    drone_issues_telemetry_time_out,
+    drone_issues_locate_time_out,
+    drone_issues_crashed,
+};
+struct __attribute__((packed)) SocketExecutorStatePackage {
+    const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;
+    const char header = header_SocketExecutorStatePackage;
+    uint8_t executor_state;
+    uint8_t drone_issue;
+    float light_level;
+    double time;
+    const char ender = '\n';
 };
 extern void communicate_state(executor_states s);

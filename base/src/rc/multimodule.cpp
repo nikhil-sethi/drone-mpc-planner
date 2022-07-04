@@ -378,6 +378,7 @@ bool MultiModule::receive_telemetry(std::string buffer) {
     auto found = buffer.rfind(sensor_str);
     uint str_length = found + sensor_str.length();
     if (found != std::string::npos && str_length < buffer.size()) {
+        last_telemetry_time = _time;
         buffer = buffer.substr(found + sensor_str.length(), buffer.length() - (found + sensor_str.length()));
 
         auto arr = split_csv_line(buffer);

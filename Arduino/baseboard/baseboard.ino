@@ -126,6 +126,7 @@ void handle_serial_input() {
                     rgb_leds.internet_OK(pkg->internet_OK);
                     rgb_leds.post_processing(pkg->postprocessing);
                     rgb_leds.daemon_OK(pkg->daemon_OK);
+                    rgb_leds.drone_issue(static_cast<drone_issues>(pkg->led0_drone_issues));
                     break;
             } case header_SerialNUC2BaseboardNUCResetPackage: {
                     SerialNUC2BaseboardNUCResetPackage *pkg = reinterpret_cast<SerialNUC2BaseboardNUCResetPackage * >(&serial_input_buffer);
@@ -211,6 +212,8 @@ void write_serial() {
     pkg.up_duration = millis();
     pkg.measured_fan_speed = measured_fan_speed;
     charger.fill_serial_output_package(&pkg);
+    pkg.led0 = static_cast<uint8_t>(rgb_leds.led0_state());
+    pkg.led1 = static_cast<uint8_t>(rgb_leds.led1_state());
     Serial.write((char *)&pkg, sizeof(SerialBaseboard2NUCPackage));
 
     if (watchdog_trigger_imminent)

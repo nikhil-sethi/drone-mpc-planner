@@ -79,6 +79,8 @@ def executor_receiver(msg):
             elif msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
                 executor_state_pkg.parse(msg[:struct.calcsize(executor_state_pkg.format)])
                 msg = msg[struct.calcsize(executor_state_pkg.format):]
+                rgb_led_pkg.drone_issues = executor_state_pkg.drone_issue
+                rgb_led_pkg.light_level = executor_state_pkg.light_level
                 if executor_state_pkg.executor_state == ls.executor_states.es_light_level_restart.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_light_level.value[0]:
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_wait_for_light_level.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_enable_window_restart.value[0] or executor_state_pkg.executor_state == ls.executor_states.es_wait_for_enable_window.value[0]:
@@ -215,7 +217,20 @@ while True:
                             if first_pkg:
                                 first_pkg = False
                                 logger.debug('# boots: ' + str(new_pkg.baseboard_boot_count) + ', # wdt boots:' + str(new_pkg.watchdog_boot_count))
-                            logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: ' + ls.charging_state_names[new_pkg.charging_state] + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / ' + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:' + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2)) + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1)) + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1)) + 'v. \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's' + '\tfan: ' + str(new_pkg.measured_fan_speed) + ' wdt: ' + str(bool(new_pkg.watchdog_state)))
+                            logger.debug(str("%.1f" % round(new_pkg.up_duration / 1000, 2)) + 's: '
+                                         + ls.charging_state_names[new_pkg.charging_state]
+                                         + str("%.2f" % round(new_pkg.charging_amps, 2)) + 'A / '
+                                         + str("%.2f" % round(new_pkg.setpoint_amps, 2)) + 'A, PWM:'
+                                         + str("%3d" % new_pkg.charging_pwm) + '\tBat: ' + str("%.2f" % round(new_pkg.battery_volts, 2))
+                                         + 'v Chrg: ' + str("%.2f" % round(new_pkg.charging_volts, 1))
+                                         + 'v Gnd: ' + str("%.2f" % round(new_pkg.ground_volts, 1))
+                                         + 'v ' + ls.led0_state_names[new_pkg.led0]
+                                         + ' ' + ls.led1_state_names[new_pkg.led1]
+                                         + ' \tDrone: ' + str("%.2f" % round(new_pkg.drone_amps_burn, 2)) + ' A, '
+                                         + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.0f" % round(new_pkg.charging_duration / 1000, 2)) + 's'
+                                         + '\tfan: ' + str(new_pkg.measured_fan_speed)
+                                         + ' wdt: ' + str(bool(new_pkg.watchdog_state))
+                                         )
                             executor_pkg = serial_data[pkg_start:]
                             if not executor_comm.connection_ok:
                                 logger.info('Executor link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))

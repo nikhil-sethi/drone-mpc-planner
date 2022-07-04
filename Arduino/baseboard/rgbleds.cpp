@@ -82,11 +82,12 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[0] = CRGB(255 * light_level_, 255 * light_level_, 255 * light_level_);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
+            } case LED0_unknown: { //
             } case LED0_disabled: { // off
                     rgb_setpoint_leds[0] = CRGB(0, 0, 0);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
-            } case LED0_battery_problem: { // yellow blinking
+            } case LED0_battery_problem: { // yellow 3 short blinks
                     rgb_setpoint_leds[0] = CRGB(255 * light_level_, 255 * light_level_, 0);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     blink_leds[0] = blink_3_short_blinks;
@@ -103,10 +104,30 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[0] = CRGB(0, 255 * light_level_, 255 * light_level_);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
-            } case LED0_discharging: { // blue blinking
+            } case LED0_discharging: { // blue 3 short blinks
                     rgb_setpoint_leds[0] = CRGB(0, 0, 255 * light_level_);
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     blink_leds[0] = blink_3_short_blinks;
+                    break;
+            } case LED0_telemetry_problem_with_charging: { // pink 1s symmetric blink
+                    rgb_setpoint_leds[0] = CRGB(255 * light_level_, 0, 128 * light_level_);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    blink_leds[0] = blink_500ms;
+                    break;
+            } case LED0_telemetry_problem_no_charging: { // red 1s symmetric blink
+                    rgb_setpoint_leds[0] = CRGB(255 * light_level_, 0, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    blink_leds[0] = blink_500ms;
+                    break;
+            } case LED0_locate_fail: { // orange 1 short blink every second
+                    rgb_setpoint_leds[0] = CRGB(255 * light_level_, 128 * light_level_, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    blink_leds[0] = blink_1_short_blink;
+                    break;
+            } case LED0_crashed: { // white 1s symmetric blink
+                    rgb_setpoint_leds[0] = CRGB(255 * light_level_, 255 * light_level_, 255 * light_level_);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    blink_leds[0] = blink_500ms;
                     break;
                 }
         }
@@ -124,7 +145,7 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[1] = CRGB(255 * light_level_, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
-            } case LED1_inresponsive_NUC: { // 1s symmetric blink
+            } case LED1_inresponsive_NUC: { // 1s symmetric red blink
                     rgb_setpoint_leds[1] = CRGB(255 * light_level_, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     blink_leds[1] = blink_500ms;
@@ -158,6 +179,7 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[1] = CRGB(0, 255 * light_level_, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
+            } case LED1_unknown: { //
             }  default: { // off
                     rgb_setpoint_leds[1] = CRGB(0, 0, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
