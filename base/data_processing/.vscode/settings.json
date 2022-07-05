@@ -12,7 +12,8 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
-        "--disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,line-too-long,logging-not-lazy,redefined-outer-name"
+        "--disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,line-too-long,logging-not-lazy,redefined-outer-name",
+        "--generated-members=numpy.* ,torch.*"
     ],
     "python.linting.banditEnabled": true,
     "python.linting.banditArgs": [
@@ -21,10 +22,7 @@
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
         "--max-line-length=999",
-        "--ignore=E402"
+        "--ignore=E402,W503"
     ],
     "python.linting.mypyEnabled": true,
-    "python.linting.pylintArgs": [
-        "--generated-members=numpy.* ,torch.*"
-    ]
 }
