@@ -29,7 +29,7 @@ public:
     void close();
     void reset();
     StereoPair *update();
-    std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> measure_camera_conditions();
+    std::tuple<float, float, float, float, float, cv::Mat, cv::Mat, cv::Mat, float> measure_camera_conditions();
     bool master() {return !_id;}
 
 protected:

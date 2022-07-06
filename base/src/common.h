@@ -348,7 +348,7 @@ private:
     xString _flightplan;
     xString _flightplan_calib_thrust;
     xInt _live_image_frq;
-    xFloat _max_cam_roll;
+    xFloat _max_cam_angle;
     xInt _n_cams;
     xBool _long_range_mode;
 
@@ -368,7 +368,7 @@ public:
     std::string flightplan;
     std::string flightplan_calib_thrust;
     int live_image_frq;
-    float max_cam_roll;
+    float max_cam_angle;
     int n_cams;
     bool long_range_mode;
 
@@ -379,7 +379,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.19");
+        setVersion("1.20");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("light_level_threshold", &_light_level_threshold);
@@ -401,7 +401,7 @@ public:
         Register("flightplan", &_flightplan);
         Register("flightplan_calib_thrust", &_flightplan_calib_thrust);
         Register("live_image_frq", &_live_image_frq);
-        Register("max_cam_roll", &_max_cam_roll);
+        Register("max_cam_angle", &_max_cam_angle);
         Register("n_cams", &_n_cams);
         Register("long_range_mode", &_long_range_mode);
 
@@ -447,7 +447,7 @@ public:
         flightplan = _flightplan.value();
         flightplan_calib_thrust = _flightplan_calib_thrust.value();
         live_image_frq = _live_image_frq.value();
-        max_cam_roll = _max_cam_roll.value();
+        max_cam_angle = _max_cam_angle.value();
         n_cams = _n_cams.value();
         long_range_mode = _long_range_mode.value();
     }
@@ -472,7 +472,7 @@ public:
         _flightplan = flightplan;
         _flightplan_calib_thrust = flightplan_calib_thrust;
         _live_image_frq = live_image_frq;
-        _max_cam_roll = max_cam_roll;
+        _max_cam_angle = max_cam_angle;
         _n_cams = n_cams;
         _long_range_mode = long_range_mode;
 

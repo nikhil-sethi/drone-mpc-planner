@@ -1028,14 +1028,14 @@ void wait_for_start_conditions() {
     wait_logger << "Datetime;Light level;Exposure;Gain;Brightness;Light_level_ok;Cam_angle_ok;Enable_window_ok" << std::endl;
 
     while (true) {
-        auto [ light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
+        auto [roll, pitch, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
         cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         update_enable_window();
         save_periodic_images(frame_bgr, frameL, frameR);
 
         light_conditions_ok = pparams.light_level_threshold <= 0 || light_level_ < pparams.light_level_threshold;
-        cam_angles_ok = pparams.max_cam_roll <= 0 || std::abs(roll) < pparams.max_cam_roll;
+        cam_angles_ok = (pparams.max_cam_angle <= 0 || std::abs(roll) < pparams.max_cam_angle) && (pparams.max_cam_angle <= 0 || std::abs(pitch - 35) < pparams.max_cam_angle);
         enable_window_ok = (!enable_window_mode || !(std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0));
 
         auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -1047,7 +1047,7 @@ void wait_for_start_conditions() {
             if (!enable_window_ok)
                 std::cout << "enable window [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
             if (!cam_angles_ok)
-                std::cout << "cam angle [" << roll << ">" << pparams.max_cam_roll << "]\t";
+                std::cout << "cam angle [" << roll << ", " << pitch - 35 << ">" << pparams.max_cam_angle << "]\t";
             if (!light_conditions_ok)
                 std::cout << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
             std::cout << std::endl;

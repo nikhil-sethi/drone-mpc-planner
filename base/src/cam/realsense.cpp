@@ -281,7 +281,7 @@ void Realsense::init_real() {
     if ((!exposure_initialized || !angle_initialized) && master()) {
         measure_camera_conditions();
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << camparams.measured_brightness << std::endl;
-        std::cout << "Camera roll: " << to_string_with_precision(camparams.camera_angle_x, 2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(camparams.camera_angle_y, 2) << "°" << std::endl;
+        std::cout << "Camera roll: " << to_string_with_precision(camparams.camera_angle_x, 2) << "°- max: " << pparams.max_cam_angle << "°. Pitch: " << to_string_with_precision(camparams.camera_angle_y, 2) << "°" << std::endl;
     }
 
     calib_depth_background(); // this function may be merged into measure_angle or measure_light_level to speed up things slightly, but it requires the laser which disturbs other systems, so I like to keep it seperate like this because then it will only be excuted once
@@ -335,7 +335,7 @@ void Realsense::init_real() {
 }
 
 
-std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_camera_conditions() {
+std::tuple<float, float, float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_camera_conditions() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
@@ -451,7 +451,7 @@ std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::mea
     camparams.camera_angle_y = pitch;
     angle_initialized = true;
 
-    return std::make_tuple(light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
+    return std::make_tuple(roll, pitch, light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
 }
 
 void Realsense::calib_depth_background() {

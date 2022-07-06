@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.19">
+<SerializableClass Type="PatsParameters" Version="1.20">
     <Member Name="light_level_threshold">0</Member>
     <Member Name="periodic_restart_minutes">0</Member>
     <Member Name="enable_start">disabled</Member>
@@ -18,7 +18,7 @@
     <Member Name="flightplan">../xml/flightplans/simple-demo-darkroom.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>
     <Member Name="live_image_frq">0</Member>
-    <Member Name="max_cam_roll">50</Member>
+    <Member Name="max_cam_angle">50</Member>
     <Member Name="n_cams">1</Member>
     <Member Name="long_range_mode">false</Member>
 </SerializableClass>
