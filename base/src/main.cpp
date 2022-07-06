@@ -1028,7 +1028,7 @@ void wait_for_start_conditions() {
     wait_logger << "Datetime;Light level;Exposure;Gain;Brightness;Light_level_ok;Cam_angle_ok;Enable_window_ok" << std::endl;
 
     while (true) {
-        auto [roll, pitch, frame_time, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
+        auto [ light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
         cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         update_enable_window();

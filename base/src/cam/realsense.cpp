@@ -335,7 +335,7 @@ void Realsense::init_real() {
 }
 
 
-std::tuple<float, float, double, float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_camera_conditions() {
+std::tuple<float, float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_camera_conditions() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
@@ -451,7 +451,7 @@ std::tuple<float, float, double, float, float, float, cv::Mat, cv::Mat, cv::Mat,
     camparams.camera_angle_y = pitch;
     angle_initialized = true;
 
-    return std::make_tuple(roll, pitch, frame.get_timestamp(), light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
+    return std::make_tuple(light_level, new_expos, new_gain, frameLt, frameRt, frame_bgr, brightness);
 }
 
 void Realsense::calib_depth_background() {
