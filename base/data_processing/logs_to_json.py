@@ -93,7 +93,7 @@ def measured_exposure_old(terminal_log_path):
 
 def process_wait_for_condition_status(folder):
     valid = False
-    wait_for_conditions_log_path = Path(folder, 'wait_for_conditions.csv')
+    wait_for_conditions_log_path = Path(folder, 'wait_for_start.csv')
     terminal_log_path = Path(folder, 'terminal.log')
     if os.path.exists(wait_for_conditions_log_path):
         valid, planned_offline_start, planned_offline_end = process_wait_for_conditions(wait_for_conditions_log_path)
@@ -469,7 +469,7 @@ def process_flights_in_folder(folder, operational_log_start):
     session_data = []
 
     for flight_fn in flight_fns:
-        logger.info("Processing flights in " + flight_fn)
+        logger.info("Processing flight " + flight_fn)
         data = process_flight_log(flight_fn, folder, start_datetime)
         if data:
             session_data.append(data)
@@ -484,7 +484,7 @@ def process_detections_in_folder(folder, operational_log_start, flights_in_folde
 
     session_data = []
     for detection_fn in detection_fns:
-        logger.info("Processing detections in " + detection_fn)
+        logger.info("Processing detection " + detection_fn)
         data = process_detection_log(detection_fn, folder, session_start_datetime, flights_in_folder)
         if data:
             session_data.append(data)
