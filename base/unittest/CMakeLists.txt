@@ -66,6 +66,8 @@ set(SOURCE_FILES  ../src/quaternion.cpp
                   # commontest.cpp
                   # linalgtest.cpp
                   # filtertest.cpp
+                  flightareatest.cpp
+                  # planetest.cpp
 )
 
 include_directories(~/repos/qpOASES/include)

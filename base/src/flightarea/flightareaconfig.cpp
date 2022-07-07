@@ -298,20 +298,20 @@ void FlightAreaConfig::mark_active_planes(Plane plane1, Plane plane2, Plane plan
     _planes.at(plane3.id).is_active = true;
 
     if (_active_planes.size() == 0) {
-        _active_planes.push_back(plane1);
-        _active_planes.push_back(plane2);
-        _active_planes.push_back(plane3);
+        _active_planes.push_back(_planes.at(plane1.id));
+        _active_planes.push_back(_planes.at(plane2.id));
+        _active_planes.push_back(_planes.at(plane3.id));
         return;
     }
 
     if (!plane_in_active_planes(plane1))
-        _active_planes.push_back(plane1);
+        _active_planes.push_back(_planes.at(plane1.id));
 
     if (!plane_in_active_planes(plane2))
-        _active_planes.push_back(plane2);
+        _active_planes.push_back(_planes.at(plane2.id));
 
     if (!plane_in_active_planes(plane3))
-        _active_planes.push_back(plane3);
+        _active_planes.push_back(_planes.at(plane3.id));
 }
 
 void FlightAreaConfig::cout_debug_info() {
