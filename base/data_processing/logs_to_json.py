@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from cmath import isinf
 import os
 import glob
 import json
@@ -226,6 +227,8 @@ def process_flight_results(results_fn):
                     crashed = int(line.strip().split(':')[1])
                 if line.find('best_interception_distance') != -1:
                     best_interception_distance = float(line.strip().split(':')[1])
+                    if isinf(best_interception_distance):
+                        best_interception_distance = -1
                 if line.find('take_off_datetime') != -1:
                     take_off_datetime = line.strip().split(':')[1]
                 if line.find('land_datetime') != -1:
