@@ -36,8 +36,11 @@ def cut_files(log_folder, files, logger, video_in_fn, frames_fn, cut_log_fn, dry
                             elif 'fp' in heads:
                                 file_id = fn.split('.')[0][8:]
                                 fp = lines[-1].split(';')[heads.index('fp')]
-                                monitor_log = fp == 'fp_not_a_fp' or fp == 'fp_too_big' or fp == 'fp_too_far'
+                                hunt_id = int(lines[-1].split(';')[heads.index('hunt_id')])
+                                monitor_log = fp == ('fp_not_a_fp' or fp == 'fp_too_big' or fp == 'fp_too_far') and hunt_id < 0
+
                             if monitor_log:
+
                                 video_start_offset = 1
                             elif flight_log:
                                 video_start_offset = 5
