@@ -166,6 +166,7 @@ void Drone::pre_flight(double time) {
                 if (dparams.led_type == led_none && !control.pad_calib_valid()) {
                     std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
                     pre_flight_state = pre_locate_time_out;
+                    _trackers->mode(tracking::TrackerManager::t_c);
                 } else if (control.pad_calib_valid() && !confirm_drone_on_pad)
                     pre_flight_state = pre_check_telemetry;
                 else
@@ -190,6 +191,7 @@ void Drone::pre_flight(double time) {
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
+                    _trackers->mode(tracking::TrackerManager::t_c);
                     communicate_state(es_pats_x);
                 }
 
@@ -264,6 +266,7 @@ void Drone::pre_flight(double time) {
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
+                    _trackers->mode(tracking::TrackerManager::t_c);
                     communicate_state(es_pats_x);
                 }
                 break;
@@ -289,6 +292,7 @@ void Drone::pre_flight(double time) {
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
+                    _trackers->mode(tracking::TrackerManager::t_c);
                     communicate_state(es_pats_x);
                 }
                 break;
