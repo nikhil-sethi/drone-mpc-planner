@@ -1,5 +1,5 @@
 ---
-- hosts: holstein
+- hosts: kevin
   strategy: free
   tasks:
     - name: Disable all pats daemons

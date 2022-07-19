@@ -258,7 +258,7 @@ QPOASES_FLAG=qpOASES-v1.done
 	sudo ldconfig
 	popd
 	popd
-	touch qpOASES-v1.done
+	touch $QPOASES_FLAG
 }
 EIGEN_FLAG=Eigen-v1.done
 [ -f $EIGEN_FLAG ] || {
@@ -276,7 +276,7 @@ EIGEN_FLAG=Eigen-v1.done
 	sudo ldconfig
 	popd
 	popd
-	touch EIGEN_FLAG
+	touch $EIGEN_FLAG
 }
 
 
