@@ -21,8 +21,7 @@ import lib_base as lb
 from clean_hd import clean_hd
 from status_cc import send_status_update
 from render_videos import render_last_day
-from logs_to_json import process_all_logs_to_jsons, send_all_jsons
-from cut_moths import cut_all
+from aggregate_jsons import aggregate_jsons, send_all_jsons
 import lib_serialization as ls
 sys.path.append('ai')  # noqa
 
@@ -139,14 +138,6 @@ class clean_hd_task(pats_task):
         clean_hd()
 
 
-class cut_moths_task(pats_task):
-    def __init__(self, error_file_handler):
-        super(cut_moths_task, self).__init__('cut_moths', timedelta(), timedelta(minutes=60), False, error_file_handler)
-
-    def task_func(self):
-        cut_all()
-
-
 class wp_demo_task(pats_task):
     def __init__(self, error_file_handler):
         super(wp_demo_task, self).__init__('wp_demo', timedelta(hours=1), timedelta(minutes=15), False, error_file_handler)
@@ -165,13 +156,13 @@ class baseboard_task(pats_task):
             baseboard_comm.send(daemon2baseboard_pkg.pack())
 
 
-class logs_to_json_task(pats_task):
+class aggregate_jsons_task(pats_task):
     def __init__(self, error_file_handler):
-        super(logs_to_json_task, self).__init__('logs_to_json', timedelta(hours=8, minutes=30), timedelta(hours=24), False, error_file_handler)
+        super(aggregate_jsons_task, self).__init__('aggregate_jsons', timedelta(hours=8, minutes=30), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
         daemon2baseboard_pkg.post_processing = 1
-        process_all_logs_to_jsons()
+        aggregate_jsons()
         tries = 0
         retry = True
         while retry and tries < 5:
@@ -418,8 +409,7 @@ tasks: List[pats_task] = []
 tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
 lb.block_if_disabled()  # We need the wdt_pats to write to the baseboard, but the rest can wait until the disable flag is removed.
 tasks.append(clean_hd_task(error_file_handler))
-tasks.append(cut_moths_task(error_file_handler))
-tasks.append(logs_to_json_task(error_file_handler))
+tasks.append(aggregate_jsons_task(error_file_handler))
 tasks.append(render_task(error_file_handler))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))

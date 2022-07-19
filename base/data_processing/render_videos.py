@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import socket
 import glob
 import argparse
 import shutil
@@ -24,7 +23,7 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
     found_dirs = glob.glob(os.path.expanduser(data_folder) + "processed/202*_*")
     filtered_dirs = [d for d in found_dirs if lb.str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and lb.str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime]  # filter the list of dirs to only contain dirs between certain dates
 
-    monitor_detections = []
+    detections = []
     flights = []
     for folder in filtered_dirs:
         logger.info("Preprocessing folder: " + folder)
@@ -35,19 +34,17 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
 
             files = os.listdir(folder)
             for file in files:
-                if file.startswith('insect') and file.endswith(".mkv"):
+                if (file.startswith('insect') or file.startswith('anomoly')) and file.endswith(".mkv"):
                     video_target_path = folder + '/render_' + os.path.splitext(file)[0] + '.mkv'
                     log_target_path = folder + '/render_' + os.path.splitext(file)[0] + '.txt'
                     video_src_path = folder + '/' + file
-                    tag_path = folder + '/' + file.replace('.mkv', '.render_tag')  # the render tag is set in logs_to_json using similar filtering as what PATS-C is supposed to use
-                    if not os.path.isfile(video_target_path) and os.path.isfile(tag_path):
-                        file_to_be_rendered = {
-                            "folder": folder,
-                            "video_target_path": video_target_path,
-                            "log_target_path": log_target_path,
-                            "video_src_path": video_src_path
-                        }
-                        monitor_detections.append(file_to_be_rendered)
+                    file_to_be_rendered = {
+                        "folder": folder,
+                        "video_target_path": video_target_path,
+                        "log_target_path": log_target_path,
+                        "video_src_path": video_src_path
+                    }
+                    detections.append(file_to_be_rendered)
                 if file.startswith('flight') and file.endswith(".mkv"):
                     video_target_path = folder + '/render_' + os.path.splitext(file)[0] + '.mkv'
                     log_target_path = folder + '/render_' + os.path.splitext(file)[0] + '.txt'
@@ -62,7 +59,7 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
                         }
                         flights.append(file_to_be_rendered)
 
-    return monitor_detections, flights
+    return detections, flights
 
 
 def render(detection, render_process_dir, render_mode):

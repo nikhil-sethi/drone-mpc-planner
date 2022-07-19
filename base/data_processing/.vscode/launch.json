@@ -10,10 +10,21 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "logs_to_json",
+      "name": "process_session",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/logs_to_json.py",
+      "program": "${workspaceFolder}/process_session.py",
+      "args": [
+        "-i",
+        "/home/houjebek/Downloads/pats_data/pats34/tmp/20220701_222020"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "aggregate_jsons",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/aggregate_jsons.py",
       "args": [
         "--dry-run",
         "1"
@@ -28,16 +39,6 @@
       "args": [
         "-i",
         "~/pats/data/"
-      ],
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "cut_moths.py",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/cut_moths.py",
-      "args": [
-        "-d"
       ],
       "console": "integratedTerminal"
     },

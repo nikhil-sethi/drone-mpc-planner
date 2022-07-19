@@ -29,6 +29,7 @@ disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_executor_flag = flags_dir + 'disable_executor'
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
+keep_videoraw_flag = flags_dir + 'keep_videoraw'
 remain_inactive_flag = flags_dir + 'remain_inactive'
 enable_wp_demo_flag = flags_dir + 'enable_wp_demo'
 

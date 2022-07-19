@@ -19,7 +19,7 @@ DRONE_ID=$(( $HOST_ID ))
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
 ./executor --rs-reset | /usr/bin/tee terminal_cam_reset.log || true
-sleep 15s # wait some time to enumerate device again after a reset
+sleep 10s # wait some time to enumerate device again after a reset
 
 while [ 1 ]; do
 
@@ -46,6 +46,10 @@ while [ 1 ]; do
 	/bin/mv logging/ ${OUTDIR_LOG}/ || true
 	/bin/mv terminal.log ${OUTDIR_LOG}/ || true
 
+	python3 ../data_processing/process_session.py ${OUTDIR_LOG}
+
+	sleep 5
+
 	echo "Hostname: $HOSTNAME" > $STAT_FN
 	echo "Drone ID: $DRONE_ID" >> $STAT_FN
 	SHA="$(git rev-parse HEAD)"
@@ -61,5 +65,4 @@ while [ 1 ]; do
 
 	./executor --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
-	sleep 5s
 done
