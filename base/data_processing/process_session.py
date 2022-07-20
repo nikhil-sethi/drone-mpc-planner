@@ -618,7 +618,9 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
 
 
 def process_session(folder: str, dry_run: bool = False):
+    logging.basicConfig()
     logger = logging.getLogger('process_session')
+    logger.setLevel(logging.DEBUG)
     logger.info("Processing " + folder)
     statuss = []
     detections = []

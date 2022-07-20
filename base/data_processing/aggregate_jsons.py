@@ -45,6 +45,7 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
 
     logger = logging.getLogger('aggregate_jsons')
     for folder in ordered_dirs:
+        logger.info('Processing: ' + folder)
         json_fn = folder + '/results.json'
         if not os.path.exists(json_fn):
             process_session(folder)
