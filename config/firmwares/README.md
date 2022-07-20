@@ -25,6 +25,21 @@ Flightcontroller Hammer CB v2 = F-H-40 16.9
 
 
 ## Flashing the multimodule:
+
+# NEW (CRAPPY) BOOTLOADER
+In case the module never comes out of DFU mode (signified by the red led continously blinking after plugging in usb), the multimodule has the new bootloader with "sticky-DFU". This means we first have to flash the old bootloader:
+```
+cd ~/code/pats/config/firmwares/multimodule/flash-multi-0.6.0/
+./multi-bootreloader -l
+```
+Then you need to replug the module (5s after the led has died) and flash it once with:
+```
+./flash-multi -s -f ./multi-stm-6.0.0.20.bin && sleep 1 && (cd .. && ./flash.py
+```
+From then on you can use old bootloader style flashing.
+
+
+# OLD (WORKING) BOOTLOADER
 ```
 cd ~/code/pats/config/firmwares/multimodule
 ./flash.py
