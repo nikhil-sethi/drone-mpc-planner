@@ -508,8 +508,9 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
                             detection['video_filename'] = cuts[i]['video_filename']
                     cuts[ii]['rs_id'] = -1
             cuts_new.append(cuts[i])
-    if cuts[i + 1]['rs_id'] >= 0:
-        cuts_new.append(cuts[i + 1])
+    if len(cuts) > 1:
+        if cuts[i + 1]['rs_id'] >= 0:
+            cuts_new.append(cuts[i + 1])
     return cuts_new
 
 
