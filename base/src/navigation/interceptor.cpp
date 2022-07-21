@@ -254,10 +254,12 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     current_insect_pos = {0};
             }
             cv::Point3f current_insect_vel = insect_state.vel();
+            cv::Point3f aim = current_insect_pos + 0.3f * current_insect_vel;
+            bool inview = _flight_area->inside(aim, bare);
 
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
-            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
+            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts && inview) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
                 float req_acceleration = normf(_drone->control.pid_error(tracking_data, current_insect_pos, current_insect_vel, true));
                 if (best_acceleration > req_acceleration) {
                     best_acceleration = req_acceleration;
@@ -267,6 +269,8 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
         }
     }
     _target_insecttracker = best_itrkr;
+    if (_target_insecttracker)
+        std::cout << "best ttrkr: " << _target_insecttracker->insect_trkr_id() << std::endl;
     return best_itrkr;
 }
 
