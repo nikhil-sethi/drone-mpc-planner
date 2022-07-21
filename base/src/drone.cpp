@@ -51,7 +51,7 @@ void Drone::update(double time) {
 
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
-                    _state = ds_charging_failure;
+                    _state = ds_overcharged_failure;
                     break;
                 }
                 break;
@@ -59,7 +59,7 @@ void Drone::update(double time) {
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);
-                    _state = ds_charging_failure;
+                    _state = ds_overcharged_failure;
                     break;
                 }
                 if (_interceptor->intercepting()) {
@@ -135,6 +135,13 @@ void Drone::update(double time) {
                     _state = ds_charging;
                 }
                 break;
+        } case ds_overcharged_failure: {
+                if (_rc->telemetry.batt_cell_v < max_safe_charging_telemetry_voltage - 0.1f) {
+                    _baseboard_link->allow_charging(true);
+                    _state = ds_charging;
+                }
+                break;
+
         } case ds_rc_loss: {
                 // #1177
                 break;

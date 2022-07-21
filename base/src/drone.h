@@ -14,6 +14,7 @@ static const char *drone_state_names[] = {
     "flight",
     "post_flight",
     "charge_fail",
+    "overcharged",
     "rc loss",
     "beep"
 };
@@ -54,6 +55,7 @@ public:
         ds_flight,
         ds_post_flight,
         ds_charging_failure,
+        ds_overcharged_failure,
         ds_rc_loss,
         ds_beep
     };
