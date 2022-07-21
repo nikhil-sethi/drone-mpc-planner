@@ -88,7 +88,7 @@ bool airsim_mode = false;
 bool airsim_wp_mode = false;
 bool render_mode = false;
 bool watchdog_skip_video_delay_override = false;
-uint8_t rc_id = 0;
+uint16_t rc_id = 0;
 std::string replay_dir, replay_video_fn;
 std::string airsim_map;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
