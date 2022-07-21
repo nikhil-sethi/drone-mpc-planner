@@ -191,8 +191,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 else if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration) {
                     _flight_mode = fm_1g;
                 } else {
-                    cv::Point3f burn_direction = (data_target.pos() - _dtrk->pad_location()) / normf(data_target.pos() - _dtrk->pad_location());
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(calibration.max_thrust * burn_direction);
+                    cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 1.5f * GRAVITY);
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(aim_acceleration);
                 }
                 break;
         } case fm_max_burn_spin_down: {
@@ -201,8 +201,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     _flight_mode = fm_1g;
                 break;
         }  case fm_1g: {
-                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control({0, 0, 0});
-                if (data_drone.vel_valid)
+                cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
+                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(aim_acceleration);
+                if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad())
                     _flight_mode = fm_flying_pid_init;
                 break;
         } case fm_flying_pid_init: {
