@@ -633,7 +633,7 @@ def process_session(folder: str, dry_run: bool = False):
     errors = []
     cam_resets = 0
 
-    t_end = str_to_datetime(os.path.basename(folder))
+    t_end = str_to_datetime(os.path.basename(os.path.normpath(folder)))
 
     waited_for_conditions, data_wait_for_conditions, offline_start, _ = process_wait_for_start_condition_status(folder, logger)
     t_start = datetime.max
