@@ -333,11 +333,11 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
     else:
         wing_beat = -1
 
-    monster = False
+    monster = 0
     if 'fp' in log:
         fps = log['fp'].dropna().values
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
-            monster = True
+            monster = 1
 
     hunt_id = -1
     if 'hunt_id' in log:
@@ -404,18 +404,48 @@ def process_flights_in_folder(folder: str, operational_log_start: str, logger: l
     return sessions
 
 
+def concat_monsters(events: list, min_in_between_time: float):
+    duration = -1
+    for i in range(0, len(events)):
+        if events[i]['duration'] > 0:
+            end_rs_id = events[i]['rs_id'] + events[i]['duration'] * 90
+            duration = events[i]['duration']
+            for ii in range(i + 1, len(events)):
+                if events[ii]['rs_id'] - (events[i]['rs_id'] + duration * 90) < 90 * min_in_between_time:
+                    end_rs_id_ii = events[ii]['rs_id'] + events[ii]['duration'] * 90
+                    if end_rs_id < end_rs_id_ii:
+                        end_rs_id = end_rs_id_ii
+                        duration = (events[ii]['rs_id'] - events[i]['rs_id']) / 90 + events[ii]['duration']
+                    events[ii]['duration'] = -1
+                else:
+                    break
+        if duration > 0:
+            rs_id = events[i]['rs_id'] - 90
+            if rs_id < 0:
+                rs_id = 0
+            duration += 2
+
+            events[i]['duration'] = duration
+
+            duration = -1
+
+
 def process_detections_in_folder(folder: str, operational_log_start: str, flights_in_folder: list, logger: logging.Logger):
     detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "log_i*.csv"))])
     session_start_datetime = str_to_datetime(operational_log_start)
 
-    sessions = []
+    detections = []
     for detection_fn in detection_fns:
         logger.info("Processing detection " + detection_fn)
         data = process_detection_log(detection_fn, folder, session_start_datetime, flights_in_folder, logger)
         if data:
-            sessions.append(data)
+            detections.append(data)
 
-    return sessions
+    monsters = [d for d in detections if d['monster'] and d['hunt_id'] < 0]
+    concat_monsters(monsters, 10)
+    detections = [d for d in detections if d['duration'] > 0]
+
+    return detections
 
 
 def create_and_associate_hunt_videos(flights, detections):
@@ -490,6 +520,7 @@ def associate_insects_to_monsters_cuts(monster_cuts: list, insects: list, monste
             if insect['rs_id'] >= monster_cuts[i]['rs_id'] - monster_in_between_time * 90 and insect['rs_id'] <= monster_cuts[i]['rs_id'] + monster_cuts[i]['duration'] * 90 + monster_in_between_time * 90:
                 insect['concat_id'] = monster_cuts[i]['id']
                 insect['video_filename'] = monster_cuts[i]['video_filename']
+                insect['monster'] = 2
                 break
             elif insect['rs_id'] >= monster_cuts[i]['rs_id'] + monster_cuts[i]['duration'] * 90 + monster_in_between_time * 90:
                 cut_id = i + 1
@@ -665,9 +696,7 @@ def process_session(folder: str, dry_run: bool = False):
             if flights_in_folder != []:
                 flights = flights_in_folder
 
-        detections_in_folder = process_detections_in_folder(folder, operational_log_start, flights_in_folder, logger)
-        if detections_in_folder != []:
-            detections = detections_in_folder
+        detections = process_detections_in_folder(folder, operational_log_start, flights_in_folder, logger)
 
     if mode == 'c' or mode == 'x':
         Path(folder + '/OK').touch()
