@@ -62,7 +62,8 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
             detections.extend(data['detections'])
             statuss.extend(data['statuss'])
             flights.extend(data['flights'])
-            flight_sessions.append(data['flight_sessions'])
+            if len(data['flight_sessions']):
+                flight_sessions.append(data['flight_sessions'])
             errors.extend(data['errors'])
             cam_resets += data['cam_resets']
 

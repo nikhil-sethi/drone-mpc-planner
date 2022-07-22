@@ -120,7 +120,7 @@ def process_flight_status_in_folder(folder: str, operational_log_start: str, mod
     logger.info('Processing flight session status...')
     results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
-        return []
+        return {}
     drone_flights = 0
     n_drone_detects = 0
     drone_has_been_ready = False
@@ -146,6 +146,9 @@ def process_flight_status_in_folder(folder: str, operational_log_start: str, mod
                 n_hunts = int(line.strip().split(':')[1])
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
+
+    if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=60):
+        return {}
 
     session = {"start_datetime": operational_log_start,
                "end_datetime": os.path.basename(folder),
@@ -656,7 +659,7 @@ def process_session(folder: str, dry_run: bool = False):
         flights_in_folder = []
         if mode == 'x':
             flight_status_in_folder = process_flight_status_in_folder(folder, operational_log_start, mode, logger)
-            if flight_status_in_folder != []:
+            if len(flight_status_in_folder):
                 flight_sessions = flight_status_in_folder
             flights_in_folder = process_flights_in_folder(folder, operational_log_start, logger)
             if flights_in_folder != []:
