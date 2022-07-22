@@ -79,6 +79,9 @@ def process_system_status_in_folder(folder: str, logger: logging.Logger):
     if log_start == '':
         return ([], 'Error: log_start empty!?', '')
 
+    if os.path.exists(Path(folder, 'no_multimodule_flag')):
+        return ([], 'Error: no multimodule:', '')
+
     if not os.path.exists(pats_xml_path):
         line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
         return ([], 'Error: xml does not exist. Last terminal line: ' + line, '')

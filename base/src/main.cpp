@@ -811,6 +811,7 @@ void check_hardware() {
             rc = std::unique_ptr<RC>(new MultiModule());
         }
         if (!rc->connect()) {
+            std::ofstream(data_output_dir + "no_multimodule_flag").close();
             std::string rc_type = (airsim_mode) ? "AirSim" : "MultiModule";
             throw std::runtime_error("cannot connect to " + rc_type);
         }
@@ -1235,9 +1236,9 @@ int main(int argc, char **argv)
         }
         return 1;
     } catch (std::runtime_error const &err) {
-        std::cout << "Error: " << err.what() << std::endl;
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.what(), true);
+        std::cout << "Error: " << err.what() << std::endl;
         return 1;
     } catch (NoRealsenseConnected const &err) {
         communicate_state(es_realsense_not_found);
@@ -1259,9 +1260,9 @@ int main(int argc, char **argv)
     } catch (std::runtime_error const &e) {
         exit_now = true;
         close(false);
-        std::cout << "Error: " << e.what() << std::endl;
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(e.what(), true);
+        std::cout << "Error: " << e.what() << std::endl;
         return 1;
     }
 
