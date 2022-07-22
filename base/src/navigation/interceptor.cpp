@@ -280,7 +280,12 @@ bool Interceptor::delay_takeoff_for_better_interception(tracking::InsectTracker 
     cv::Point3f lurk_distance = interception_center - insect.pos();
     bool interceptability_is_improving = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
 
-    cv::Point3f prediceted_insect_position = insect.pos() + _tti * insect.vel();
+    float tti = _tti;
+    if (_tti_iip > 0)
+        tti = _tti_iip;
+
+    float est_takeoff_time = 0.3f;
+    cv::Point3f prediceted_insect_position = insect.pos() + (tti + est_takeoff_time) * insect.vel();
     lurk_distance = interception_center - prediceted_insect_position;
     bool interceptability_will_improve = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
 
