@@ -59,11 +59,11 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
             if end_datetime > t_end:
                 t_end = end_datetime
 
-            detections.append(data['detections'])
-            statuss.append(data['statuss'])
-            flights.append(data['flights'])
+            detections.extend(data['detections'])
+            statuss.extend(data['statuss'])
+            flights.extend(data['flights'])
             flight_sessions.append(data['flight_sessions'])
-            errors.append(data['errors'])
+            errors.extend(data['errors'])
             cam_resets += data['cam_resets']
 
     system_at_office = check_if_system_at_office()
@@ -109,6 +109,7 @@ def send_all_jsons():
             logger.info("Json sent: " + json_fn)
         else:
             return 1
+    logger.info("Json sent to dash")
     return 0
 
 
