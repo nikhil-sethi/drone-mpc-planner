@@ -260,7 +260,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
             if ((trkr->type() == tt_insect && !pparams.disable_real_hunts && inview) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float req_acceleration = normf(_drone->control.pid_error(tracking_data, current_insect_pos, current_insect_vel, true));
+                float req_acceleration = normf(_drone->control.update_pid_controller(tracking_data, current_insect_pos, true));
                 if (best_acceleration > req_acceleration) {
                     best_acceleration = req_acceleration;
                     best_itrkr = static_cast<InsectTracker *>(trkr);

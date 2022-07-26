@@ -44,6 +44,7 @@ std::string execute(const char *cmd);
 float calc_light_level(int exposure, int gain, float brightness);
 bool is_number(const std::string &s);
 float optimization_thrust(float thrust);
+std::tuple<float, float, float> solve_quadratic_solution(float a, float b, float c);
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;

@@ -172,7 +172,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 [[fallthrough]];
         } case fm_take_off_aim: {
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
-                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(aim_acceleration);
+                std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
 
                 float remaining_aim_duration = remaining_spinup_duration_t0 + aim_duration  - static_cast<float>(time - take_off_start_time);
                 if (!(remaining_aim_duration <= aim_duration))
@@ -195,17 +195,17 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     _flight_mode = fm_1g;
                 } else {
                     cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 1.5f * GRAVITY);
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(aim_acceleration);
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
                 }
                 break;
         } case fm_max_burn_spin_down: {
-                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control({0, 0, 0});
+                std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, 0, 0});
                 if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
                     _flight_mode = fm_1g;
                 break;
         }  case fm_1g: {
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
-                std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(aim_acceleration);
+                std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad())
                     _flight_mode = fm_flying_pid_init;
                 break;
@@ -242,23 +242,22 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     if (_time - take_off_start_time < 0.5)
                         data_drone.state.pos = _dtrk->pad_location();
                 }
-                // Control_model_based must always be called! Even in position_control, pid filters must be update to prepare a switch back. Also the kiv-state must be updated.
-                control_model_based(data_drone, data_target.pos(), data_target.vel());
-                if (control_mode == acceleration_feedforward) {
-                    applied_acceleration = target_acceleration + kiv_ctrl.correction_acceleration(relaxed, data_drone, acceleration_feedforward);
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(applied_acceleration);
-                }
+                if (control_mode == acceleration_feedforward)
+                    control_drone_acceleration_based(data_drone, data_target.pos(), target_acceleration);
+                else
+                    control_drone_position_based(data_drone, data_target.pos());
+
                 break;
         } case fm_long_range_forth: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_model_based(data_drone, data_target.pos(), data_target.vel());
+                control_drone_position_based(data_drone, data_target.pos());
                 auto_pitch = RC_MIDDLE + RC_BOUND_RANGE / 2 / 8;
                 break;
         } case fm_long_range_back: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_model_based(data_drone, data_target.pos(), data_target.vel());
+                control_drone_position_based(data_drone, data_target.pos());
                 auto_pitch = RC_MIDDLE - RC_BOUND_RANGE / 2 / 8;
                 break;
         } case fm_calib_thrust:
@@ -267,7 +266,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         case fm_headed: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_model_based(data_drone, data_target.pos(), data_target.vel());
+                control_drone_position_based(data_drone, data_target.pos());
                 break;
         } case fm_reset_yaw_on_pad: {
                 mode += bf_headless_disabled;
@@ -278,7 +277,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 break;
         } case fm_correct_yaw: {
                 mode += bf_headless_disabled;
-                control_model_based(data_drone, data_target.pos(), data_target.vel());
+                control_drone_position_based(data_drone, data_target.pos());
                 if (data_drone.yaw_deviation_valid)
                     correct_yaw(data_drone.yaw_deviation);
                 break;
@@ -291,7 +290,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 [[fallthrough]];
         } case fm_ff_landing: {
                 mode += bf_headless_disabled;
-                control_model_based(data_drone, data_drone.pos(), data_target.vel());
+                control_drone_position_based(data_drone, data_drone.pos());
                 float dt = static_cast<float>(time - ff_land_start_time);
                 auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, dt);
 
@@ -647,17 +646,20 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
     cv::Point3f burn_direction = data_target.pos() - state_drone_takeoff.pos;
     burn_direction = lowest_direction_to_horizontal(burn_direction, min_takeoff_angle);
     cv::Point3f takeoff_accel = target_acceleration_y / burn_direction.y * burn_direction;
-    takeoff_accel -= cv::Point3f(0, GRAVITY, 0);
+
+    if (normf(takeoff_accel) > calibration.max_thrust) {
+        float modified_takeoff_angle = asinf(GRAVITY / calibration.max_thrust);
+        burn_direction = lowest_direction_to_horizontal(burn_direction, modified_takeoff_angle);
+        takeoff_accel = burn_direction * calibration.max_thrust;
+    }
     return takeoff_accel;
 }
 
 
-std::tuple<int, int, int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
+std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_acc) {
 
-    cv::Point3f des_acc_drone = compensate_gravity_and_crop_to_limit(desired_acc, calibration.max_thrust);
-    cv::Point3f direction = des_acc_drone / normf(des_acc_drone);
-
-    int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(des_acc_drone))));
+    cv::Point3f direction = desired_acc / normf(desired_acc);
+    int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(desired_acc))));
 
     if (throttle_cmd < dparams.min_throttle)
         throttle_cmd = dparams.min_throttle;
@@ -669,79 +671,51 @@ std::tuple<int, int, int> DroneController::calc_feedforward_control(cv::Point3f 
 }
 
 
-cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust) {
-    // des_acc /= normf(des_acc) * thrust;
+cv::Point3f DroneController::combine_drone_accelerations_with_priority(cv::Point3f prio_acc, cv::Point3f trivil_acc) {
+    if (normf(prio_acc) >= calibration.max_thrust)
+        return prio_acc / normf(prio_acc) * calibration.max_thrust;
 
-    // First, determine safe acceleration for the case that something goes wrong in the further calculation.
-    // A basic acceleration which compensates the gravity, maintains the direction of des_acc and which must hold the max_thrust constraint.
-    cv::Point3f acc_backup = des_acc / normf(des_acc) * (thrust - GRAVITY) + cv::Point3f(0, GRAVITY, 0);
+    cv::Point3f combined_acc = prio_acc + trivil_acc;
+    if (normf(combined_acc) <= calibration.max_thrust)
+        return combined_acc;
 
-    // Then, find the acceleration which:
-    //   - compensates gravity
-    //   - maintaints direction of des_acc
-    //   - and allow as much |des_acc| as possible (without violating max_thrust constraint)
-    // See ~code/pats/doc/desired_acceleration_drone.svg
-    cv::Point3f req_acc = des_acc + cv::Point3f(0, GRAVITY, 0);
+    float a = trivil_acc.dot(trivil_acc);
+    float b = 2 * prio_acc.dot(trivil_acc);
+    float c = prio_acc.dot(prio_acc) - powf(calibration.max_thrust, 2);
+    float a1, a2, valid;
+    std::tie(a1, a2, valid) = solve_quadratic_solution(a, b, c);
 
-    if (normf(req_acc) < thrust) {
-        applied_acceleration = req_acc;
-        return req_acc;
+    if (valid < 0) {
+        std::cout << "WARNING: combine drone acceleration failed with prio_acc: " << prio_acc << " and trivial acc: " << trivil_acc << ". Return only prio_acc." << std::endl;
+        return prio_acc;
     }
 
-    float denominator = des_acc.dot(des_acc);
-    float p = 2 * des_acc.y * GRAVITY / denominator;
-    float q = (powf(GRAVITY, 2) - powf(thrust, 2)) / denominator;
+    if (a1 > 1.f && a1 < 1.05f)
+        a1 = 1.;
+    if (a2 > 1.f && a2 < 1.05f)
+        a2 = 1.;
 
-    float root_square = powf(p / 2.f, 2) - q;
-    if (root_square < 0.f) {
-        applied_acceleration = acc_backup;
-        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
+    bool a1_valid = (0 <= a1) && (a1 <= 1);
+    bool a2_valid = (0 <= a2) && (a2 <= 1);
 
-        return acc_backup;
-    }
-
-    float k1 = -p / 2.f + sqrtf(root_square);
-    float k2 = -p / 2.f - sqrtf(root_square);
-
-    // Avoid warnings based on rounding errors
-    if (k1 > 1.f && k1 < 1.05f)
-        k1 = 1.;
-    if (k2 > 1.f && k2 < 1.05f)
-        k2 = 1.;
-
-    bool k1_valid = (0 <= k1) && (k1 <= 1);
-    bool k2_valid = (0 <= k2) && (k2 <= 1);
-
-    if (k1_valid && !k2_valid) {
-        applied_acceleration = k1 * des_acc;
-        return k1 * des_acc + cv::Point3f(0, GRAVITY, 0);
-    } else if (!k1_valid && k2_valid) {
-        applied_acceleration = k2 * des_acc;
-        return k2 * des_acc + cv::Point3f(0, GRAVITY, 0);
-    } else if (k1_valid && k2_valid) {
-        if (k1 >= k2) {
-            applied_acceleration = k1 * des_acc;
-            return k1 * des_acc + cv::Point3f(0, GRAVITY, 0);
+    if (a1_valid && !a2_valid) {
+        return prio_acc + a1 * trivil_acc;
+    } else if (!a1_valid && a2_valid) {
+        return prio_acc + a2 * trivil_acc;
+    } else if (a1_valid && a2_valid) {
+        if (a1 >= a2) {
+            return prio_acc + a1 * trivil_acc;
         } else {
-            applied_acceleration = k2 * applied_acceleration;
-            return k2 * des_acc + cv::Point3f(0, GRAVITY, 0);
+            return prio_acc + a2 * trivil_acc;
         }
-    } else if (!k1_valid && !k2_valid) {
-        applied_acceleration = acc_backup;
-        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
-        return acc_backup;
-    }
-    else {
-        applied_acceleration = acc_backup;
-        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
-        return acc_backup;
+    } else {
+        std::cout << "WARNING: combine drone acceleration failed with prio_acc: " << prio_acc << " and trivial acc: " << trivil_acc << ". Return only prio_acc." << std::endl;
+        return prio_acc;
     }
 
 }
 
-
-void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-
+void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f target_acc) {
     if (_dtrk->image_predict_item().out_of_image) {
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
@@ -749,11 +723,42 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
         auto_throttle = spinup_throttle();
         return;
     }
-    cv::Point3f desired_acc = pid_error(data_drone, setpoint_pos, setpoint_vel, false);
-    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acc);
+
+    cv::Point3f gravity_compensation = cv::Point3f(0, GRAVITY, 0);
+    cv::Point3f kiv_acc = kiv_update(data_drone);
+    applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
+    applied_acceleration = combine_drone_accelerations_with_priority(applied_acceleration, target_acc);
+
+    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(applied_acceleration);
 }
 
-cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool dry_run) {
+void DroneController::control_drone_acceleration_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc) {
+    update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
+    mix_drone_accelerations(data_drone, setpoint_acc);
+}
+
+void DroneController::control_drone_position_based(TrackData data_drone, cv::Point3f setpoint_pos) {
+    cv::Point3f pid_acc = update_pid_controller(data_drone, setpoint_pos, false);
+    mix_drone_accelerations(data_drone, pid_acc);
+}
+
+cv::Point3f DroneController::kiv_update(TrackData data_drone) {
+    kiv_ctrl.update(data_drone, transmission_delay_duration, _time);
+
+    bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
+
+    if (data_drone.pos_valid && data_drone.vel_valid && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
+        if (control_mode_hold_filter.output()) //feedforward was active in the close past
+            return kiv_ctrl.correction_acceleration(strict, data_drone, acceleration_feedforward);
+        else
+            return kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
+    }
+    else
+        return {0, 0, 0};
+}
+
+
+cv::Point3f DroneController::update_pid_controller(TrackData data_drone, cv::Point3f setpoint_pos, bool dry_run) {
     //WARNING: this function is not allowed to store any information (or apply filters that store),
     //because it is also being used for dummy calculations in the interceptor! See also the dry_run variable
     integrator_state enable_horizontal_integrators = hold;
@@ -762,35 +767,23 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
         pos_modelx.new_sample(setpoint_pos.x);
         pos_modely.new_sample(setpoint_pos.y);
         pos_modelz.new_sample(setpoint_pos.z);
-        enable_horizontal_integrators = horizontal_integrators(setpoint_vel, data_drone.time);
+        enable_horizontal_integrators = horizontal_integrators(data_drone.time);
     }
 
 
     auto [kp_pos, ki_pos, kd_pos] = adjust_control_gains(data_drone, enable_horizontal_integrators);
-    auto [pos_err_p, pos_err_d] = control_error(data_drone, setpoint_pos, enable_horizontal_integrators, dry_run);
+    auto [pos_err_p, pos_err_d] = pid_error(data_drone, setpoint_pos, enable_horizontal_integrators, dry_run);
 
-    cv::Point3f error = {0};
-    error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
-
-    bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
-
-    kiv_ctrl.update(data_drone, transmission_delay_duration);
-    if (data_drone.pos_valid && data_drone.vel_valid && !dry_run && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
-        if (control_mode_hold_filter.output()) //feedforward was active in the close past
-            error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
-        else
-            error += kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
-    }
-
-    return error;
+    return multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
 }
 
-DroneController::integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_vel, double time) {
+
+DroneController::integrator_state DroneController::horizontal_integrators(double time) {
     float duration_waypoint_update = duration_since_waypoint_moved(time);
 
     if (thrust_calibration
             || (_flight_mode == fm_headed && duration_waypoint_update > 1)
-            || (normf(setpoint_vel) < 0.01f && duration_waypoint_update > 2))
+            ||  duration_waypoint_update > 2)
         return running;
     else if (_flight_mode == fm_headed && duration_waypoint_update <= 1)
         return hold;
@@ -845,8 +838,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run) {
-    //WARNING: this function is not allowed to store any information (or apply filters that store), because it is also being used for dummy calculations in the interceptor!
+std::tuple<cv::Point3f, cv::Point3f> DroneController::pid_error(TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run) {
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if (data_drone.pos_valid) {

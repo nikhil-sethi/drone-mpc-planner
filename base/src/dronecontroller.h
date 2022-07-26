@@ -197,7 +197,7 @@ private:
 
     float thrust_to_throttle(float thrust);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
-    DroneController::integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
+    DroneController::integrator_state horizontal_integrators(double time);
 
     std::tuple<float, float> acc_to_deg(cv::Point3f acc);
     std::tuple<float, float> acc_to_quaternion(cv::Point3f acc);
@@ -205,11 +205,15 @@ private:
     void correct_yaw(float deviation_angle);
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, bool enable_horizontal_integrators);
-    std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
-    std::tuple<int, int, int> calc_feedforward_control(cv::Point3f desired_acceleration);
+    std::tuple<cv::Point3f, cv::Point3f> pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
+
+    cv::Point3f kiv_update(tracking::TrackData data_drone);
+    std::tuple<int, int, int> drone_commands(cv::Point3f desired_acceleration);
     cv::Point3f takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y);
-    cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
-    void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    cv::Point3f combine_drone_accelerations_with_priority(cv::Point3f prio_acc, cv::Point3f trivil_acc);
+    void mix_drone_accelerations(tracking::TrackData data_drone, cv::Point3f target_acc);
+    void control_drone_position_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos);
+    void control_drone_acceleration_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc);
 
     void send_data_joystick(void);
     void read_joystick(void);
@@ -226,7 +230,7 @@ public:
 
     void led_strength(float light_level);
 
-    cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
+    cv::Point3f update_pid_controller(tracking::TrackData data_drone, cv::Point3f setpoint_pos, bool choosing_insect);
     void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
     void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength * 2, 5, 100); }

@@ -315,6 +315,15 @@ bool is_number(const std::string &s)
     s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
 }
 
+std::tuple<float, float, float> solve_quadratic_solution(float a, float b, float c) {
+    // https://www.mathebibel.de/mitternachtsformel
+    float sqrt_term = powf(b, 2) - 4 * a * c;
+    float x1 = (-b + sqrtf(sqrt_term)) / 2 / a;
+    float x2 = (-b - sqrtf(sqrt_term)) / 2 / a;
+
+    return std::tuple(x1, x2, sqrt_term);
+}
+
 float optimization_thrust(float thrust) {
     return 0.6f * thrust;
 }

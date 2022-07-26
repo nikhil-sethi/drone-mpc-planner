@@ -43,6 +43,7 @@ private:
 
     // States:
     bool enabled = true;
+    double last_filter_update = -1;
     std::map<safety_margin_types, FlightAreaKIVStates> filters;
 
     // Handles:
@@ -61,7 +62,7 @@ public:
 
     // Methods:
     void init(FlightArea *flight_area, xmls::DroneCalibration *dcalib);
-    void update(tracking::TrackData data_drone, float transmission_delay_duration);
+    void update(tracking::TrackData data_drone, float transmission_delay_duration, double time);
     cv::Point3f correction_acceleration(safety_margin_types safety_margin, tracking::TrackData drone, control_modes control_mode);
     void enable() {enabled = true;};
     void disable() {enabled = false;};
