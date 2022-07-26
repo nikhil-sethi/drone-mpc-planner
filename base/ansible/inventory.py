@@ -18,17 +18,17 @@ def open_systems_db():
     return con
 
 
-sql_str = ''' SELECT system,active,customers.name FROM systems JOIN customers ON customers.customer_id = systems.customer_id ORDER BY system_id'''
+sql_str = '''SELECT system,operation_status,customers.name FROM systems JOIN customers ON customers.customer_id = systems.customer_id ORDER BY system_id'''
 with open_systems_db() as con:
     systems = con.execute(sql_str).fetchall()
 
 groups: Dict[str, Dict[str, List[str]]] = {'all': {'children': []}, 'monitoring': {'children': []}, 'hunts': {'children': []}, 'office': {'children': []}}
 groups['all'] = {'hosts': []}
 
-for system, active, customer in systems:
+for system, operation_status, customer in systems:
     customer = customer.replace(' ', '_').replace('.', '_')
 
-    if active:
+    if operation_status == 1:
         groups['all']['hosts'].append(system)
         if customer in groups:
             groups[customer]['hosts'].append(system)
