@@ -453,7 +453,12 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
         update_enable_window();
         if (patser.drone.program_restart_allowed()) {
             if (!log_replay_mode && !generator_mode && !airsim_mode) {
-                if (fps_smoothed.latest() < pparams.fps / 6 * 5 && fps_smoothed.ready() && time < 5) {
+                if ((fabs(time - received_img_count / pparams.fps)) > 60) {
+                    std::cout << "Error: more then 60s of frameloss detected. Assuming there's some camera problem. Cowardly exiting." << std::endl;
+                    communicate_state(es_realsense_fps_problem);
+                    exit_now = true;
+                }
+                else if ((fps_smoothed.latest() < pparams.fps / 6 * 5 && fps_smoothed.ready() && time < 5)) {
                     std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
                     communicate_state(es_realsense_fps_problem);
                     exit_now = true;

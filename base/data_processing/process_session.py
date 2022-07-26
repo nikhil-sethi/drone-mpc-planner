@@ -686,6 +686,9 @@ def process_session(folder: str, dry_run: bool = False):
         errors.append(mode + '(' + folder + ')')
     elif mode.startswith('Resetting cam'):
         cam_resets = 1
+    elif t_start < lb.str_to_datetime('20000101_120000'):
+        mode = 'Error: Date from t_start is: ' + lb.datetime_to_str(t_start)  # this seems to be caused by an occasionaly happening realsense problem, that the time just jumps to some extreme number...
+        errors.append(mode + '(' + folder + ')')
     else:
         flights_in_folder = []
         if mode == 'x':

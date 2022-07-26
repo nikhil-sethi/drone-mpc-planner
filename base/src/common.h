@@ -40,7 +40,6 @@ float deadzone(float v, float lo, float hi);
 cv::Point3f deadzone(cv::Point3f p, float lo, float hi);
 cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
-void reset_external_wdt_flag();
 std::string execute(const char *cmd);
 float calc_light_level(int exposure, int gain, float brightness);
 bool is_number(const std::string &s);
