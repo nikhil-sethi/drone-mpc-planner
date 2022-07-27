@@ -1,7 +1,6 @@
 ---
-- hosts: missing
+- hosts: c
   strategy: linear
-  order: inventory
   gather_facts: no
   tasks:
     - name: checks
@@ -14,8 +13,8 @@
         echo 4G: $(lsusb | grep 'E353/E3131')"
       register: output_checks
     - debug: var=output_checks.stdout_lines
-    - name: serial
-      become: true
-      shell: "cat /sys/class/dmi/id/product_serial"
-      register: output_serial
-    - debug: var=output_serial.stdout_lines
+    # - name: serial
+    #   become: true
+    #   shell: "cat /sys/class/dmi/id/product_serial"
+    #   register: output_serial
+    # - debug: var=output_serial.stdout_lines

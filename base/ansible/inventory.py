@@ -1,46 +1,71 @@
 #!/usr/bin/python3
 import argparse
 import os
+import re
 import json
 import sqlite3
 from typing import Dict, List
+import pandas as pd
 
-db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+db_systems_path = os.path.expanduser('~/patsc/db/meta.db')
 
 
-def open_systems_db():
-    con = None
+def open_meta_db():
     try:
         con = sqlite3.connect(db_systems_path)
         con.execute('pragma journal_mode=wal')
-    except Exception as e:
+        return con
+    except Exception as e:  # pylint: disable=broad-except
         print(e)
-    return con
+    return None
 
 
-sql_str = '''SELECT system,operation_status,customers.name FROM systems JOIN customers ON customers.customer_id = systems.customer_id ORDER BY system_id'''
-with open_systems_db() as con:
-    systems = con.execute(sql_str).fetchall()
+with open_meta_db() as con:
+    systems = con.execute('''SELECT system,operation,customers.name FROM systems JOIN customers ON customers.customer_id = systems.customer_id ORDER BY system_id''').fetchall()
+    operation_modes = pd.read_sql_query('SELECT * FROM operational_modes', con)
+operation_modes = operation_modes.set_index('name').to_dict()['status_id']
 
-groups: Dict[str, Dict[str, List[str]]] = {'all': {'children': []}, 'monitoring': {'children': []}, 'hunts': {'children': []}, 'office': {'children': []}}
+groups: Dict[str, Dict[str, List[str]]] = {'all': {'children': []}, 'c': {'children': []}, 'x': {'children': []}, 'kevin': {'children': []}, 'testing': {'children': []}}
 groups['all'] = {'hosts': []}
 
-for system, operation_status, customer in systems:
-    customer = customer.replace(' ', '_').replace('.', '_')
+for system, operation_mode, customer in systems:
+    customer = re.sub('[^a-zA-Z0-9 \n\.]', '', customer)
 
-    if operation_status == 1:
+    if operation_mode == operation_modes['c']:
         groups['all']['hosts'].append(system)
         if customer in groups:
             groups[customer]['hosts'].append(system)
         else:
             groups[customer] = {'hosts': []}
             groups[customer]['hosts'].append(system)
-            if customer in ['Pats', 'Agrobofood']:
-                groups['hunts']['children'].append(customer)
-            elif customer in ['Admin', 'Unassigned_systems', 'Deactivated_systems', 'Maintance']:
-                groups['office']['children'].append(customer)
-            else:
-                groups['monitoring']['children'].append(customer)
+            groups['c']['children'].append(customer)
+
+    if operation_mode == operation_modes['x']:
+        groups['all']['hosts'].append(system)
+        if customer in groups:
+            groups[customer]['hosts'].append(system)
+        else:
+            groups[customer] = {'hosts': []}
+            groups[customer]['hosts'].append(system)
+            groups['x']['children'].append(customer)
+
+    if operation_mode == operation_modes['kevin']:
+        groups['all']['hosts'].append(system)
+        if customer in groups:
+            groups[customer]['hosts'].append(system)
+        else:
+            groups[customer] = {'hosts': []}
+            groups[customer]['hosts'].append(system)
+            groups['kevin']['children'].append(customer)
+
+    if operation_mode == operation_modes['testing']:
+        groups['all']['hosts'].append(system)
+        if customer in groups:
+            groups[customer]['hosts'].append(system)
+        else:
+            groups[customer] = {'hosts': []}
+            groups[customer]['hosts'].append(system)
+            groups['testing']['children'].append(customer)
 
 
 if __name__ == "__main__":
