@@ -49,6 +49,8 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
         json_fn = folder + '/results.json'
         if not os.path.exists(json_fn):
             process_session(folder)
+        if not os.path.exists(json_fn):
+            continue
         with open(json_fn) as json_file:
             try:
                 data = json.load(json_file)
@@ -68,7 +70,7 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
                 errors.extend(data['errors'])
                 cam_resets += data['cam_resets']
             except json.JSONDecodeError:
-                logger.warning('Corrupted json file:' + json_file)
+                logger.warning('Corrupted json file:' + json_fn)
 
     system_at_office = check_if_system_at_office()
 
