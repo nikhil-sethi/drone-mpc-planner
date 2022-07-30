@@ -701,35 +701,33 @@ def process_session(folder: str, dry_run: bool = False):
 
         detections = process_detections_in_folder(folder, operational_log_start, flights_in_folder, logger)
 
-    if mode == 'c' or mode == 'x':
-        Path(folder + '/OK').touch()
-    else:
-        with open(folder + '/junk', 'w', encoding="utf-8") as outfile:
-            outfile.write(mode + '\n')
-
     if not dry_run:
         try:
             cut_video_raw(folder, detections, flights, logger)
         except Exception as e:  # pylint: disable=broad-except
             logger.error('Error in cutting in ' + folder + '; ' + str(e))
 
-    data_detections = {"start_datetime": lb.datetime_to_str(t_start),
-                       "end_datetime": lb.datetime_to_str(t_end),
-                       "detections": detections,
-                       "flights": flights,
-                       "flight_sessions": flight_sessions,
-                       "statuss": statuss,
-                       "errors": errors,
-                       "cam_resets": cam_resets
-                       }
-    if not dry_run:
-        json_fn = folder + '/results.json'
-        if exists(json_fn):
-            logger.warning('Results json already existed')
-        with open(json_fn, 'w', encoding="utf-8") as outfile:
-            json.dump(data_detections, outfile)
-
+    if mode == 'c' or mode == 'x':
+        Path(folder + '/OK').touch()
+        data_detections = {"start_datetime": lb.datetime_to_str(t_start),
+                           "end_datetime": lb.datetime_to_str(t_end),
+                           "detections": detections,
+                           "flights": flights,
+                           "flight_sessions": flight_sessions,
+                           "statuss": statuss,
+                           "errors": errors,
+                           "cam_resets": cam_resets
+                           }
+        if not dry_run:
+            json_fn = folder + '/results.json'
+            if exists(json_fn):
+                logger.warning('Results json already existed')
+            with open(json_fn, 'w', encoding="utf-8") as outfile:
+                json.dump(data_detections, outfile)
         logger.info("Processing complete, saved in " + json_fn)
+    else:
+        with open(folder + '/junk', 'w', encoding="utf-8") as outfile:
+            outfile.write(mode + '\n')
 
 
 if __name__ == "__main__":

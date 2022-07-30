@@ -50,22 +50,25 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
         if not os.path.exists(json_fn):
             process_session(folder)
         with open(json_fn) as json_file:
-            data = json.load(json_file)
+            try:
+                data = json.load(json_file)
 
-            start_datetime = lb.str_to_datetime(data['start_datetime'])
-            end_datetime = lb.str_to_datetime(data['end_datetime'])
-            if start_datetime < t_start:
-                t_start = start_datetime
-            if end_datetime > t_end:
-                t_end = end_datetime
+                start_datetime = lb.str_to_datetime(data['start_datetime'])
+                end_datetime = lb.str_to_datetime(data['end_datetime'])
+                if start_datetime < t_start:
+                    t_start = start_datetime
+                if end_datetime > t_end:
+                    t_end = end_datetime
 
-            detections.extend(data['detections'])
-            statuss.extend(data['statuss'])
-            flights.extend(data['flights'])
-            if len(data['flight_sessions']):
-                flight_sessions.append(data['flight_sessions'])
-            errors.extend(data['errors'])
-            cam_resets += data['cam_resets']
+                detections.extend(data['detections'])
+                statuss.extend(data['statuss'])
+                flights.extend(data['flights'])
+                if len(data['flight_sessions']):
+                    flight_sessions.append(data['flight_sessions'])
+                errors.extend(data['errors'])
+                cam_resets += data['cam_resets']
+            except json.JSONDecodeError:
+                logger.warning('Corrupted json file:' + json_file)
 
     system_at_office = check_if_system_at_office()
 
