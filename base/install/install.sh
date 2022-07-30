@@ -12,6 +12,7 @@ fi
 set -ex
 mkdir -p ~/dependencies
 mkdir -p ~/code
+mkdir -p ~/pats/sockets
 
 KERNEL=$(uname -r)
 ubuntu_str=$(lsb_release -a | grep Release)
@@ -246,9 +247,8 @@ fi
 QPOASES_FLAG=qpOASES-v1.done
 [ -f $QPOASES_FLAG ] || {
 	[ -d qpoases ] || {
-		rm -rf qpoases
+		git clone git@github.com:coin-or/qpOASES.git
 	}
-	git clone git@github.com:coin-or/qpOASES.git
 	pushd qpOASES
 	mkdir -p build
 	pushd build
@@ -263,9 +263,8 @@ QPOASES_FLAG=qpOASES-v1.done
 EIGEN_FLAG=Eigen-v1.done
 [ -f $EIGEN_FLAG ] || {
 	[ -d eigen ] || {
-		rm -rf eigen
+		git clone https://gitlab.com/libeigen/eigen.git
 	}
-	git clone https://gitlab.com/libeigen/eigen.git
 	pushd eigen
 	git checkout 3.4
 	mkdir -p build
