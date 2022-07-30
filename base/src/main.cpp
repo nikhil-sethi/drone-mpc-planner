@@ -1024,6 +1024,27 @@ void save_periodic_images(cv::Mat frame_bgr, cv::Mat frameL, cv::Mat frameR) {
     }
 }
 
+
+
+
+void write_live_status_image(cv::Mat frame, string state_str) {
+    if (frame.cols) {
+        cv::Mat out_rgb;
+        cvtColor(frame, out_rgb, cv::COLOR_GRAY2BGR);
+        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        std::stringstream date_ss;
+        date_ss << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T");
+        putText(out_rgb, date_ss.str(), cv::Point(5, 17), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
+        putText(out_rgb, state_str, cv::Point(5, 34), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+
+
+        if (pparams.op_mode == op_mode_x)
+            cv::circle(out_rgb, patser.drone.tracker.pad_im_location(), patser.drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
+        cv::imwrite("../../../../pats/status/live.jpg", out_rgb);
+    }
+}
+
+
 void wait_for_start_conditions() {
     bool enable_window_ok = false;
     bool light_conditions_ok = false;
@@ -1035,7 +1056,6 @@ void wait_for_start_conditions() {
 
     while (true) {
         auto [roll, pitch, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
-        cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         update_enable_window();
         save_periodic_images(frame_bgr, frameL, frameR);
@@ -1050,13 +1070,14 @@ void wait_for_start_conditions() {
 
         if (!enable_window_ok || !light_conditions_ok || !cam_angles_ok) {
             std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ", waiting for\t";
+            std::stringstream buf;
             if (!enable_window_ok)
-                std::cout << "enable window [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
+                buf << "enable window [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
             if (!cam_angles_ok)
-                std::cout << "cam angle [" << roll << ", " << pitch - 35 << ">" << pparams.max_cam_angle << "]\t";
+                buf << "cam angle [" << roll << ", " << pitch - 35 << ">" << pparams.max_cam_angle << "]\t";
             if (!light_conditions_ok)
-                std::cout << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
-            std::cout << std::endl;
+                buf << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
+            std::cout << buf.str() << std::endl;
             if (!cam_angles_ok)
                 communicate_state(es_wait_for_cam_angle);
             else if (!enable_window_ok)
@@ -1064,6 +1085,7 @@ void wait_for_start_conditions() {
             else if (!light_conditions_ok)
                 communicate_state(es_wait_for_light_level);
 
+            write_live_status_image(frameL, buf.str());
             std::this_thread::sleep_for(10s);
         } else {
             break;

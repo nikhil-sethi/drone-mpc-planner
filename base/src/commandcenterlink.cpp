@@ -156,7 +156,7 @@ void CommandCenterLink::write_commandcenter_status_image() {
 
                     if (pparams.op_mode == op_mode_x)
                         cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
-                    cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
+                    cv::imwrite("../../../../pats/status/live.jpg", out_rgb);
                 }
                 new_frame_request = 1;
             }
