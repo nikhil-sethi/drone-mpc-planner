@@ -24,8 +24,12 @@ def disk_space(logger):
 
 def strip_dir(dir_name, logger):
     logger.info('stripping: ' + dir_name)
+
     if os.path.isfile(dir_name + '/terminal.log'):
         os.remove(dir_name + '/terminal.log')
+
+    if os.exists(dir_name + '/logging/'):  # legacy
+        dir_name += '/logging/'
     if os.path.isfile(dir_name + 'log.csv'):
         os.remove(dir_name + 'log.csv')
     if os.path.isfile(dir_name + 'frames.csv'):
