@@ -1,20 +1,10 @@
 ---
-- hosts: c
+- hosts: tree
   strategy: linear
   gather_facts: no
   tasks:
     - name: checks
-      shell: "uptime -p &&
-        cd ~/code/pats && echo git sha: $(git rev-parse HEAD) &&
-        echo image version: $(cat ~/dependencies/image_version) kernel: $(uname -r) $(lsb_release -d) &&
-        lscpu | grep 'Model name' &&
-        if [ -f /var/run/reboot-required ]; then echo 'reboot required'; fi &&
-        if [ -f '/home/pats/pats/xml/pats.xml' ] ; then echo 'Custom pats.xml found' ; fi &&
-        if [ -f '/home/pats/pats/flags/disable_baseboard' ] ; then echo 'Baseboard DISABLED' ; fi &&
-        if [ -e '/dev/baseboard' ] ; then echo 'Baseboard: OK' ; else echo 'Baseboard: NOT DETECTED' ; fi &&
-        if [ -e '/dev/pats_mm0' ] ; then echo 'MultiModule: OK' ; else echo 'MultiModule: NOT DETECTED' ; fi &&
-        echo RealSense: $(lsusb | grep RealSens) &&
-        echo 4G: $(lsusb | grep 'E353/E3131')"
+      script: checks.sh
       register: output_checks
     - debug: var=output_checks.stdout_lines
     # - name: serial
