@@ -1,6 +1,6 @@
 ---
 - hosts: tree
-  strategy: free
+  strategy: linear
   tasks:
     - name: Disable all pats daemons
       ansible.builtin.file:

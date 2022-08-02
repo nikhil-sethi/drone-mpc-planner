@@ -16,4 +16,4 @@ if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT R
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if [ ! -f /home/pats/code/pats/base/build/executor ]; then echo 'EXECUTOR DOES NOT EXIST'; fi
 if ( ! ps -aux  | grep -q "[e]xecutor" ) ; then echo EXECUTOR NOT RUNNING ; fi
-if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 02ef06a89c29b3f7f9f86af346221c1bdd1e9c47 ) ; then echo SHA DISCREPANCY; fi
+if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 001da54433b157d87add460f60e5e1a8862fa0b5 ) ; then echo SHA DISCREPANCY; fi
