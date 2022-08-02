@@ -201,9 +201,9 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
 
 
     if (optimizer_select == time_to_intercept)
-        std::cout << "---------------------time_to_intercept-------------------------------" << std::endl;
+        std::cout << "---------------------(TTI) time_to_intercept-------------------------------" << std::endl;
     else if (optimizer_select == intercept_in_planes)
-        std::cout << "---------------------intercept_in_planes-----------------------------" << std::endl;
+        std::cout << "---------------------(IIP) intercept_in_planes-----------------------------" << std::endl;
     std::cout << "Setup:" << std::endl;
 
     switch (optimizer_select) {
