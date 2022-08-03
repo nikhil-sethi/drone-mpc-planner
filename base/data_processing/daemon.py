@@ -307,7 +307,7 @@ class wdt_tunnel_task(pats_task):
             for line in output:
                 if line:
                     if 'packets transmitted, ' in line:
-                        p = int(line.split(',')[2].strip().split('%')[0])
+                        p = float(line.split(',')[2].strip().split('%')[0])
                         if p < 90:
                             ping_ok = True
                             self.logger.info(line)
