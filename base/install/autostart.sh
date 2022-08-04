@@ -46,7 +46,7 @@ while [ 1 ]; do
 	/bin/mv logging/ ${OUTDIR_LOG}/ || true
 	/bin/mv terminal.log ${OUTDIR_LOG}/ || true
 
-	(cd ../data_processing/ && ./process_session.py -i ${OUTDIR_LOG})
+	(cd ../data_processing/ && ./process_session.py -i ${OUTDIR_LOG} || true)
 
 	sleep 5
 
