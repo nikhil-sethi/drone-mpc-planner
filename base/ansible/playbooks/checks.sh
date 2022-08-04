@@ -4,6 +4,7 @@
 # cd ~/code/pats && echo git sha: $(git rev-parse HEAD)
 # echo image version: $(cat ~/dependencies/image_version) kernel: $(uname -r) $(lsb_release -d)
 # lscpu | grep 'Model name' &&
+# tail ~/pats/logs/all_errors.log.20220803 -n +2
 if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
 if [ -f '/home/pats/pats/xml/pats.xml' ] ; then
     if ( ! grep -q "Version=\"1.20\"" /home/pats/pats/xml/pats.xml ) ; then echo pats.xml VERSION ERROR ; fi
@@ -16,4 +17,4 @@ if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT R
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if [ ! -f /home/pats/code/pats/base/build/executor ]; then echo 'EXECUTOR DOES NOT EXIST'; fi
 if ( ! ps -aux  | grep -q "[e]xecutor" ) ; then echo EXECUTOR NOT RUNNING ; fi
-if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 001da54433b157d87add460f60e5e1a8862fa0b5 ) ; then echo SHA DISCREPANCY; fi
+if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 9b61783b12fbd1677e2910e8ddfb4c6d8227239f ) ; then echo SHA DISCREPANCY; fi
