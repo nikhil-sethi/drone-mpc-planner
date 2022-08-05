@@ -60,9 +60,10 @@ All done!
     - Make sure both tunnels have been connected
 2. Prep the image
     - **Make sure the system hostname is called pats0**
-    - **Update the image version number in `~/pats/dependencies/image_version`**
+    - **Update the image version number in `~/dependencies/image_version`**
     - Set the disable flag
     - Delete all pats data, json and logs
+    - Make sure home/pats/dependencies/hostname_set does not exist
 3. Create the image with clonezilla
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
