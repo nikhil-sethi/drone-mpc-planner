@@ -7,19 +7,22 @@
 TEST_GROUP(TimeToIntercept) {
     TTIOptimizerInterface opti;
     OcpTester ocptester;
+
+    tracking::TrackData drone;
+    tracking::TrackData insect;
 };
 
-// TEST(TimeToIntercept, debug) {
+// TEST(TimeToIntercept, application_test) {
 //     opti.init(&(ocptester.thrust));
-//     tracking::TrackData drone;
-//     drone.state.pos = {1, 1, 1};
-//     drone.state.vel = {1, 1, 1};
-//     tracking::TrackData insect;
-//     insect.state.pos = {0, 0, 0};
-//     insect.state.vel = {0, 0, 0};
+//     std::tie(drone, insect, std::ignore) = ocptester.application_test();
+//     std::chrono::_V2::system_clock::time_point tic = std::chrono::high_resolution_clock::now();
+
 //     auto opti_res = opti.find_best_interception(drone, insect);
 
+//     std::chrono::_V2::system_clock::time_point toc = std::chrono::high_resolution_clock::now();
+//     double cpu_time = std::chrono::duration_cast<std::chrono::seconds>(toc - tic).count();
 //     CHECK(opti_res.valid);
+//     CHECK(cpu_time < 1. / 90);
 // }
 
 // TEST(TimeToIntercept, debug_casadi) {
