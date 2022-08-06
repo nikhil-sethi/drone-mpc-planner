@@ -29,20 +29,20 @@ def strip_dir(dir_name, logger):
         os.remove(dir_name + '/terminal.log')
 
     if os.path.exists(dir_name + '/logging/'):  # legacy
-        dir_name += '/logging/'
-    if os.path.isfile(dir_name + 'log.csv'):
-        os.remove(dir_name + 'log.csv')
-    if os.path.isfile(dir_name + 'frames.csv'):
-        os.remove(dir_name + 'frames.csv')
-    vids = glob.glob(dir_name + "*.mkv")
-    vids.extend(glob.glob(dir_name + "*.mp4"))
+        dir_name += '/logging'
+    if os.path.isfile(dir_name + '/log.csv'):
+        os.remove(dir_name + '/log.csv')
+    if os.path.isfile(dir_name + '/frames.csv'):
+        os.remove(dir_name + '/frames.csv')
+    vids = glob.glob(dir_name + "/*.mkv")
+    vids.extend(glob.glob(dir_name + "/*.mp4"))
     for vid in vids:
         if 'render' not in vid:
             os.remove(vid)
         elif Path(vid).stat().st_size > 10 * 1024 * 1024:  # 10 MB
             logger.info('removing: ' + vid)
             os.remove(vid)
-    insect_logs = glob.glob(dir_name + 'log_itrk*.csv')
+    insect_logs = glob.glob(dir_name + '/log_itrk*.csv')
     for log in insect_logs:
         if Path(log).stat().st_size > 5 * 1024 * 1024:  # 5 MB
             logger.info('removing: ' + log)
