@@ -28,6 +28,7 @@ sys.path.append('ai')  # noqa
 status_cc_status_str = '-'
 daemon2baseboard_pkg = ls.SocketDaemon2BaseboardLinkPackage()
 executor2daemon_pkg = ls.SocketExecutorStatePackage()
+no_realsense_cnt = 0
 
 
 def status_cc_worker():
@@ -224,8 +225,8 @@ class wdt_pats_task(pats_task):
     def __init__(self, error_file_handler, baseboard_comm):
         self.baseboard_comm = baseboard_comm
         super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
-        self.no_realsense_cnt = 0
-        self.last_realsense_reset = datetime.min
+        self.no_realsense_cnt_prev = 0
+        self.no_realsense_wdt_cycles = 0
 
     def task_func(self):
         if os.path.exists(lb.disable_flag):
@@ -238,20 +239,16 @@ class wdt_pats_task(pats_task):
             Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
             cmd = 'killall -9 executor'
             lb.execute(cmd, 1, logger_name=self.name)
-        elif executor2daemon_pkg.executor_state != ls.executor_states.es_realsense_error:
-            self.no_realsense_cnt = 0
-        else:
-            self.no_realsense_cnt += 1
-            self.logger.warning('Could not find realsense. #' + str(self.no_realsense_cnt))
 
-        if self.no_realsense_cnt > 12:  # 5 x 12 = 1 hour
+        if no_realsense_cnt != self.no_realsense_cnt_prev and no_realsense_cnt:
+            self.no_realsense_wdt_cycles += 1
+            self.no_realsense_cnt_prev = no_realsense_cnt
+        else:
+            self.no_realsense_wdt_cycles = 0
+        if self.no_realsense_wdt_cycles > 12:  # 5 x 12 = 1 hour
             self.logger.error('Could not find realsense for over an hour! Rebooting...')
             cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
-
-        if executor2daemon_pkg.executor_state == ls.executor_states.es_realsense_reset:
-            self.logger.info('Realsense was reset')
-            self.last_realsense_reset = datetime.now()
 
 
 class wdt_tunnel_task(pats_task):
@@ -362,11 +359,14 @@ def init_status_cc():
 
 
 def executor_receive(msg):
+    global no_realsense_cnt
     while len(msg) > 3:
         if msg[0] == ord(ls.EXECUTOR_PACKAGE_PRE_HEADER):
             if msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
                 executor2daemon_pkg.parse(msg[:struct.calcsize(executor2daemon_pkg.format)])
                 msg = msg[struct.calcsize(executor2daemon_pkg.format):]
+                if executor2daemon_pkg.executor_state == ls.executor_states.es_realsense_error:
+                    no_realsense_cnt += 1
             else:
                 msg = ''
                 logger.warning('Weird package received from executor...')
