@@ -651,7 +651,7 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
 
     run_ffmpeg(cuts, frames_fn, folder, video_in_fn)
 
-    if not lb.keep_videoraw_flag:
+    if not os.path.exists(lb.keep_videoraw_flag):
         os.remove(video_in_fn)
 
 
