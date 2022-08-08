@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <condition_variable>
+#include <queue>
 #include "versions.h"
 #include "common.h"
 using namespace std::chrono_literals;
@@ -29,6 +30,7 @@ private:
     std::condition_variable cv_to_daemon;
     std::mutex cv_m_to_daemon;
     SocketExecutorStatePackage executor_state_pkg_to_daemon;
+    std::queue<executor_states> executor_states_queue;
 
     void worker_receive();
     void worker_send();
@@ -41,8 +43,8 @@ public:
     void close_link();
 
     void time(double time) {executor_state_pkg_to_daemon.time = time;}
-    void executor_state(executor_states s) {
-        executor_state_pkg_to_daemon.executor_state = s;
+    void queue_executor_state(executor_states s) {
+        executor_states_queue.push(s);
         cv_to_daemon.notify_one();
     }
 

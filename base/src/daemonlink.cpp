@@ -50,7 +50,12 @@ void DaemonLink::send_over_socket(unsigned char *data, ssize_t len) {
 void DaemonLink::worker_send() {
     std::unique_lock<std::mutex> lk(cv_m_to_daemon);
     while (!exit_thread) {
-        cv_to_daemon.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
+        if (executor_states_queue.empty())
+            cv_to_daemon.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
+        if (!executor_states_queue.empty()) {
+            executor_states_queue.pop();
+            executor_state_pkg_to_daemon.executor_state = executor_states_queue.front();
+        }
         if (!exit_thread) {
             try {
                 send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_daemon), sizeof(SocketExecutorStatePackage));

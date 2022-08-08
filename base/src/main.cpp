@@ -249,7 +249,7 @@ void process_frame(StereoPair *frame) {
 
 
 void communicate_state(executor_states s) {
-    daemon_link.executor_state(s);
+    daemon_link.queue_executor_state(s);
     baseboard_link.executor_state(s, patser.drone.issues(), light_level);
 }
 
@@ -1221,6 +1221,7 @@ int main(int argc, char **argv)
             communicate_state(es_realsense_reset);
             Realsense rs;
             rs.reset();
+            std::this_thread::sleep_for(1s);
             return 0;
         }
 
@@ -1268,20 +1269,24 @@ int main(int argc, char **argv)
             std::cout << "Error: " << err2.what() << std::endl;
             cmdcenter.reset_commandcenter_status_file(err2.what(), true);
         }
+        std::this_thread::sleep_for(1s);
         return 1;
     } catch (std::runtime_error const &err) {
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.what(), true);
         std::cout << "Error: " << err.what() << std::endl;
+        std::this_thread::sleep_for(1s);
         return 1;
     } catch (NoRealsenseConnected const &err) {
         communicate_state(es_realsense_not_found);
         std::cout << "Error: " << err.msg << std::endl;
+        std::this_thread::sleep_for(1s);
         return 1;
     } catch (cv::Exception const &err) {
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.msg, true);
         std::cout << "Error: " << err.msg << std::endl;
+        std::this_thread::sleep_for(1s);
         return 1;
     }
 
@@ -1297,6 +1302,7 @@ int main(int argc, char **argv)
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(e.what(), true);
         std::cout << "Error: " << e.what() << std::endl;
+        std::this_thread::sleep_for(1s);
         return 1;
     }
 
