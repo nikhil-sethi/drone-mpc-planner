@@ -60,7 +60,7 @@ filtering::Smoother fps_smoothed;
 GStream video_render, video_raw;
 time_t start_datetime;
 float light_level = 0;
-auto wdt_timeout = 20s;
+auto wdt_timeout = 5s;
 
 enum enable_window_modes {
     enable_window_disabled,
@@ -910,6 +910,15 @@ void init() {
     communicate_state(es_init_vision); // patser still has to do some initializing, like motion calibration
 }
 
+void close_before_running() {
+    exit_now = true;
+    daemon_link.close_link();
+    baseboard_link.close_link();
+    std::cout << "Wait for watchdog thread..." << std::endl;
+    thread_watchdog.join();
+    std::this_thread::sleep_for(1s);
+}
+
 void close(bool sig_kill) {
     std::cout << "Closing" << std::endl;
     wdt_timeout = 5s;
@@ -1219,8 +1228,15 @@ int main(int argc, char **argv)
         communicate_state(es_starting);
         if (realsense_reset) {
             communicate_state(es_realsense_reset);
-            Realsense rs;
-            rs.reset();
+            try {
+                Realsense rs;
+                rs.reset();
+            }  catch (NoRealsenseConnected const &err) {
+                std::cout << "Realsense reset failed because not connected..." << std::endl;
+            }
+            exit_now = true;
+            daemon_link.close_link();
+            baseboard_link.close_link();
             std::this_thread::sleep_for(1s);
             return 0;
         }
@@ -1269,24 +1285,24 @@ int main(int argc, char **argv)
             std::cout << "Error: " << err2.what() << std::endl;
             cmdcenter.reset_commandcenter_status_file(err2.what(), true);
         }
-        std::this_thread::sleep_for(1s);
+        close_before_running();
         return 1;
     } catch (std::runtime_error const &err) {
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.what(), true);
         std::cout << "Error: " << err.what() << std::endl;
-        std::this_thread::sleep_for(1s);
+        close_before_running();
         return 1;
     } catch (NoRealsenseConnected const &err) {
         communicate_state(es_realsense_not_found);
         std::cout << "Error: " << err.msg << std::endl;
-        std::this_thread::sleep_for(1s);
+        close_before_running();
         return 1;
     } catch (cv::Exception const &err) {
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.msg, true);
         std::cout << "Error: " << err.msg << std::endl;
-        std::this_thread::sleep_for(1s);
+        close_before_running();
         return 1;
     }
 
@@ -1302,7 +1318,6 @@ int main(int argc, char **argv)
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(e.what(), true);
         std::cout << "Error: " << e.what() << std::endl;
-        std::this_thread::sleep_for(1s);
         return 1;
     }
 
