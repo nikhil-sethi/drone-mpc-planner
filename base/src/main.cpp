@@ -60,6 +60,7 @@ filtering::Smoother fps_smoothed;
 GStream video_render, video_raw;
 time_t start_datetime;
 float light_level = 0;
+auto wdt_timeout = 20s;
 
 enum enable_window_modes {
     enable_window_disabled,
@@ -851,11 +852,11 @@ void check_hardware() {
 }
 
 void init() {
+    wdt_timeout = 5s;
     communicate_state(es_init);
     init_terminal_signals();
     init_loggers();
     init_video_recorders();
-
 
     communicate_state(es_realsense_init);
     cam->init();
@@ -893,14 +894,13 @@ void init() {
     }
 
     init_thread_pool();
-    if (!pparams.has_screen)
-        thread_watchdog = std::thread(&watchdog_worker);
 
     start_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
     auto start_minute = (*std::localtime(std::addressof(start_time))).tm_min;
     int minutes_to_periodic_restart = roundf((start_minute + pparams.periodic_restart_minutes - 5.f) / pparams.periodic_restart_minutes) * pparams.periodic_restart_minutes + 5 - start_minute;
     periodic_stop_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::minutes(minutes_to_periodic_restart));
     std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T") << std::endl;
+    wdt_timeout = 1s;
 
     fps_smoothed.init(100);
 
@@ -912,6 +912,7 @@ void init() {
 
 void close(bool sig_kill) {
     std::cout << "Closing" << std::endl;
+    wdt_timeout = 5s;
 
     if (cam)
         cam->stop(); //cam needs to be closed after dnav, because of the camview class!
@@ -1001,11 +1002,12 @@ void print_warnings() {
         if (encoded_img_count != received_img_count)
             std::cout << "WARNING VIDEO FRAMES MISSING: " << received_img_count - encoded_img_count << std::endl;
     }
-    if (n_fps_warnings)
-        std::cout << "WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
-    if (cam->frame_loss_cnt())
-        std::cout << "WARNING FRAME LOSSES: : " << cam->frame_loss_cnt() << std::endl;
-
+    if (cam) {
+        if (n_fps_warnings)
+            std::cout << "WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
+        if (cam->frame_loss_cnt())
+            std::cout << "WARNING FRAME LOSSES: : " << cam->frame_loss_cnt() << std::endl;
+    }
 }
 
 void save_periodic_images(cv::Mat frame_bgr, cv::Mat frameL, cv::Mat frameR) {
@@ -1054,8 +1056,11 @@ void wait_for_start_conditions() {
     wait_logger.open(data_output_dir + "wait_for_start.csv", std::ofstream::out);
     wait_logger << "Datetime;Light level;Exposure;Gain;Brightness;Light_level_ok;Cam_angle_ok;Enable_window_ok" << std::endl;
 
+    wdt_timeout = 15s;
+
     while (true) {
         auto [roll, pitch, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
+        watchdog = true;
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         update_enable_window();
         save_periodic_images(frame_bgr, frameL, frameR);
@@ -1105,9 +1110,9 @@ void wait_for_start_conditions() {
 void watchdog_worker(void) {
     std::cout << "Watchdog thread started" << std::endl;
     std::unique_lock<std::mutex> lk(cv_m_watchdog);
-    cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + 10s); //wait until camera is running for sure
+
     while (!exit_now) {
-        cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + 500ms);
+        cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + wdt_timeout);
         if (watchdog_skip_video_delay_override && !exit_now) {
             for (int i = 0; i < 20; i++) {
                 if (exit_now)
@@ -1246,6 +1251,8 @@ int main(int argc, char **argv)
             enable_window_end_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::hours(999));
         }
 
+        if (!pparams.has_screen)
+            thread_watchdog = std::thread(&watchdog_worker);
         check_hardware();
         if (!generator_mode && !log_replay_mode && !airsim_mode) {
             wait_for_start_conditions();

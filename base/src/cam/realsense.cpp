@@ -23,7 +23,7 @@ StereoPair *Realsense::update(void) {
 
     if (new_current->second->rs_id == _current->rs_id) { // we need to wait for a new frame. Processing won :)
         while (last_iter->second->rs_id == _current->rs_id) {
-            update_real();
+            update_realsense();
             last_iter = buf.cend();
             last_iter--;
         }
@@ -102,7 +102,7 @@ void Realsense::delete_all_frames() {
     }
 }
 
-void Realsense::update_real(void) {
+void Realsense::update_realsense(void) {
     std::unique_lock<std::mutex> lk(lock_newframe_mutex);
     lock_newframe.wait(lk, [] { return new_frame_ready; }); // wait for a new frame passed by the rs callback
     new_frame_ready = false;
@@ -273,7 +273,7 @@ void Realsense::connect_and_check(string ser_nr, int id) {
     }
     dev_initialized = true;
 }
-void Realsense::init_real() {
+void Realsense::init_realsense() {
     std::cout << "Initializing cam " << serial_nr_str << std::endl;
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
@@ -326,7 +326,7 @@ void Realsense::init_real() {
 
     rs_depth_sensor.open({infrared1, infrared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
-    update_real();
+    update_realsense();
     auto p = buf.cend();
     p--;
     _current = p->second;

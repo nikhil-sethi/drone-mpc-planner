@@ -24,7 +24,7 @@ public:
             std::cout << "Error: unknown fps, not implemented" << std::endl;
             exit(1);
         }
-        init_real();
+        init_realsense();
     }
     void close();
     void reset();
@@ -67,8 +67,8 @@ private:
     static inline rs2::context const ctx;
 
     void calibration(rs2::stream_profile infrared1, rs2::stream_profile infrared2);
-    void init_real();
-    void update_real();
+    void init_realsense();
+    void update_realsense();
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
     void calib_depth_background();
