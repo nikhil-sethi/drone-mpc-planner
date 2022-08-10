@@ -204,7 +204,7 @@ class errors_to_vps_task(pats_task):
             if retry:
                 self.logger.error('Sending error file failed 5 times.')
         else:
-            self.logger.error('Error file rotation did not work')
+            self.logger.warning('Error file rotation did not work')
 
 
 class render_task(pats_task):
