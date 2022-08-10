@@ -55,6 +55,8 @@ void DaemonLink::worker_send() {
         if (!executor_states_queue.empty() && !exit_thread) {
             executor_state_pkg_to_daemon.executor_state = executor_states_queue.front();
             executor_states_queue.pop();
+        }
+        if (!exit_thread) {
             try {
                 send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_daemon), sizeof(SocketExecutorStatePackage));
             } catch (exception &exp) {
