@@ -55,6 +55,11 @@ void FileCam::read_frame_ids() {
         try {
             auto data = split_csv_line(line);
             if (data.size() != 4) {
+                if (frame_ids.size() > 100) {
+                    std::cout << "Line: " << line << std::endl;
+                    std::cout << "Warning, above line in frames.csv were corrupted. Processes did not close properly?" << std::endl;
+                    break;
+                }
                 if (getline(infile, line))
                     throw std::runtime_error("Could not read frame log! File: " + frames_file + '\n' + " at: " + line);
                 else {

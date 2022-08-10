@@ -1134,6 +1134,7 @@ void watchdog_worker(void) {
         if (!watchdog && !exit_now) {
             std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
             communicate_state(es_watchdog_restart);
+            cam.get()->stop();
 
             if (received_img_count > 0)
                 save_results_log();
@@ -1148,6 +1149,7 @@ void watchdog_worker(void) {
                 logger_video_ids << std::flush;
                 logger_video_ids.close();
                 video_raw.close();
+                std::cout << "Closed video raw..." << std::endl;
             }
             if (pparams.video_render)
                 video_render.close();
