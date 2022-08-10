@@ -912,11 +912,12 @@ void init() {
 
 void close_before_running() {
     exit_now = true;
-    daemon_link.close_link();
-    baseboard_link.close_link();
-    std::cout << "Wait for watchdog thread..." << std::endl;
-    thread_watchdog.join();
     std::this_thread::sleep_for(1s);
+    baseboard_link.close_link();
+    daemon_link.close_link();
+    std::cout << "Wait for watchdog thread..." << std::endl;
+    cv_watchdog.notify_one();
+    thread_watchdog.join();
 }
 
 void close(bool sig_kill) {

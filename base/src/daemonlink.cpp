@@ -52,11 +52,9 @@ void DaemonLink::worker_send() {
     while (!exit_thread) {
         if (executor_states_queue.empty())
             cv_to_daemon.wait_until(lk, std::chrono::system_clock::now() + 1000ms);
-        if (!executor_states_queue.empty()) {
-            executor_states_queue.pop();
+        if (!executor_states_queue.empty() && !exit_thread) {
             executor_state_pkg_to_daemon.executor_state = executor_states_queue.front();
-        }
-        if (!exit_thread) {
+            executor_states_queue.pop();
             try {
                 send_over_socket(reinterpret_cast<unsigned char *>(&executor_state_pkg_to_daemon), sizeof(SocketExecutorStatePackage));
             } catch (exception &exp) {

@@ -241,6 +241,7 @@ class wdt_pats_task(pats_task):
             lb.execute(cmd, 1, logger_name=self.name)
 
         if no_realsense_cnt != self.no_realsense_cnt_prev and no_realsense_cnt:
+            self.logger.warning('Could not find realsense...')
             self.no_realsense_wdt_cycles += 1
             self.no_realsense_cnt_prev = no_realsense_cnt
         else:
