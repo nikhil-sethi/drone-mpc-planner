@@ -366,7 +366,7 @@ def executor_receive(msg):
             if msg[1] == ord(ls.executor_package_headers.header_SocketExecutorStatePackage.value[0]):
                 executor2daemon_pkg.parse(msg[:struct.calcsize(executor2daemon_pkg.format)])
                 msg = msg[struct.calcsize(executor2daemon_pkg.format):]
-                if executor2daemon_pkg.executor_state == ls.executor_states.es_realsense_error:
+                if executor2daemon_pkg.executor_state == ls.executor_states.es_realsense_not_found.value[0]:
                     no_realsense_cnt += 1
             else:
                 msg = ''
