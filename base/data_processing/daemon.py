@@ -238,7 +238,9 @@ class wdt_pats_task(pats_task):
             self.logger.error('executor process watchdog alert! Executor does not seem to function. Restarting...')
             Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
             cmd = 'killall -9 executor'
-            lb.execute(cmd, 1, logger_name=self.name)
+            kill_result = lb.execute(cmd, 1, logger_name=self.name)
+            if kill_result:
+                self.logger.error('Help!? Could not restart executor...')
 
         if no_realsense_cnt != self.no_realsense_cnt_prev and no_realsense_cnt:
             self.logger.warning('Could not find realsense...')
@@ -417,7 +419,6 @@ tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
 tasks.append(wp_demo_task(error_file_handler))
 tasks.append(baseboard_task(error_file_handler))
-
 
 while True:
     os.system('clear')  # nosec
