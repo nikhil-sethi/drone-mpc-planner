@@ -11,8 +11,6 @@
 #
 # By default this script does nothing.
 
-python3 /home/pats/.local/lib/python3.8/site-packages/tzupdate.py || true
-
 exec 1>/tmp/rc.local.log 2>&1
 set -x
 
