@@ -67,8 +67,8 @@ float angle_to_horizontal(cv::Point3f direction) {
     float A = 0;
     float B = 1;
     float C = 0;
-    float sign_direction_y = direction.y/abs(direction.y);
-    if(sign_direction_y!=sign_direction_y)
+    float sign_direction_y = direction.y / abs(direction.y);
+    if (sign_direction_y != sign_direction_y)
         sign_direction_y = 1;
 
     return sign_direction_y * (fabs(A * direction.x + B * direction.y + C * direction.z) / normf({A, B, C}) / normf(direction));
@@ -77,7 +77,7 @@ float angle_to_horizontal(cv::Point3f direction) {
 cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle) {
     float ath = angle_to_horizontal(direction);
     if (ath < min_angle) {
-        if(normf({direction.x, direction.z})>0)
+        if (normf({direction.x, direction.z}) > 0)
             direction.y = tan(min_angle) / normf({direction.x, direction.z});
         else
             direction = {0, 1, 0};
@@ -125,4 +125,12 @@ cv::Point3f rotate_vector_around_y_axis(cv::Point3f vector, float angle) {
 cv::Point3f rotate_vector_around_z_axis(cv::Point3f vector, float angle) {
     cv::Matx33f rot(cosf(angle), -sinf(angle), 0.f, sinf(angle), cosf(angle), 0.f, 0.f, 0.f, 1.f);
     return rot * vector;
+}
+
+cv::Point3f component_a_parallel_to_b(cv::Point3f a, cv::Point3f b) {
+    return a.dot(b) / powf(normf(b), 2) * b;
+}
+
+cv::Point3f component_a_perpendicular_to_b(cv::Point3f a, cv::Point3f b) {
+    return a - component_a_parallel_to_b(a, b);
 }

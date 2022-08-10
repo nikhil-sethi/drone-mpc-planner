@@ -36,3 +36,6 @@ cv::Point3f rotate_vector_around_x_axis(cv::Point3f vector, float angle);
 cv::Point3f rotate_vector_around_y_axis(cv::Point3f vector, float angle);
 
 cv::Point3f rotate_vector_around_z_axis(cv::Point3f vector, float angle);
+
+cv::Point3f component_a_parallel_to_b(cv::Point3f a, cv::Point3f b);
+cv::Point3f component_a_perpendicular_to_b(cv::Point3f a, cv::Point3f b);

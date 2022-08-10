@@ -726,8 +726,12 @@ void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f 
 
     cv::Point3f gravity_compensation = cv::Point3f(0, GRAVITY, 0);
     cv::Point3f kiv_acc = kiv_update(data_drone);
-    applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
-    applied_acceleration = combine_drone_accelerations_with_priority(applied_acceleration, target_acc);
+    if (normf(kiv_acc) > 0) {
+        applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
+        applied_acceleration = combine_drone_accelerations_with_priority(applied_acceleration, component_a_perpendicular_to_b(target_acc, kiv_acc));
+    } else {
+        applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, target_acc);
+    }
 
     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(applied_acceleration);
 }
