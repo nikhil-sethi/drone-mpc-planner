@@ -34,7 +34,8 @@ for system, operation_mode, maintenance_date_str, baseboard, customer in systems
 
     maintenance = False
     if maintenance_date_str:
-        if datetime.strptime(maintenance_date_str, "%Y%m%d") < datetime.today():
+        maintenance_date_str = maintenance_date_str.strip()
+        if datetime.strptime(maintenance_date_str, "%Y%m%d") > datetime.today():
             maintenance = True
 
     if not maintenance:
