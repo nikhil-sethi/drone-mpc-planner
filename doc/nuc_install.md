@@ -63,7 +63,7 @@ All done!
     - **Update the image version number in `~/dependencies/image_version`**
     - Set the disable flag
     - Delete all pats data, json and logs
-    - Make sure home/pats/dependencies/hostname_set does not exist
+    - Make sure `/home/pats/dependencies/hostname_set` and `/home/pats/dependencies/timezone_set` do not exist
 3. Create the image with clonezilla
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
@@ -73,6 +73,9 @@ All done!
 4. Copy the image:
     - Repeat the procedure for the other USB stick
     - Copy the image to the backups in BigPats
+5. Update the default burn image
+    - Edit, commit, push `subl ~/code/pats/config/clonezilla/grub.cfg `
+    - Copy to both sticks
 
 ## Tools used to make the install stick:
 1. YUMI
