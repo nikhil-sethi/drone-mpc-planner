@@ -4,7 +4,7 @@
   gather_facts: no
   tasks:
     - name: checks
-      script: checks.sh
+      script: ssh_fix.sh
       register: output_checks
     - debug: var=output_checks.stdout_lines
     # - name: serial

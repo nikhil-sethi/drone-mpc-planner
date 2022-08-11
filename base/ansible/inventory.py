@@ -26,8 +26,7 @@ with open_meta_db() as con:
     operation_modes = pd.read_sql_query('SELECT * FROM operational_modes', con)
 operation_modes = operation_modes.set_index('name').to_dict()['status_id']
 
-groups: Dict[str, Dict[str, List[str]]] = {'all': {'children': []}, 'c': {'children': []}, 'x': {'children': []}, 'kevin': {'children': []}, 'testing': {'children': []}, 'tree': {'children': []}}
-groups['all'] = {'hosts': []}
+groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'kevin': {'hosts': []}, 'testing': {'hosts': []}, 'tree': {'hosts': []}}
 
 for system, operation_mode, maintenance_date_str, baseboard, customer in systems:
     customer = re.sub('[^a-zA-Z0-9 \n\.]', '', customer)
@@ -40,50 +39,21 @@ for system, operation_mode, maintenance_date_str, baseboard, customer in systems
 
     if not maintenance:
         if baseboard or True:  # optional use for upgrading baseboards
+            groups['all']['hosts'].append(system)
             if operation_mode == operation_modes['c']:
-                groups['all']['hosts'].append(system)
-                if customer in groups:
-                    groups[customer]['hosts'].append(system)
-                else:
-                    groups[customer] = {'hosts': []}
-                    groups[customer]['hosts'].append(system)
-                    groups['c']['children'].append(customer)
+                groups['c']['hosts'].append(system)
 
             if operation_mode == operation_modes['x']:
-                groups['all']['hosts'].append(system)
-                if customer in groups:
-                    groups[customer]['hosts'].append(system)
-                else:
-                    groups[customer] = {'hosts': []}
-                    groups[customer]['hosts'].append(system)
-                    groups['x']['children'].append(customer)
+                groups['x']['hosts'].append(system)
 
             if operation_mode == operation_modes['kevin']:
-                groups['all']['hosts'].append(system)
-                if customer in groups:
-                    groups[customer]['hosts'].append(system)
-                else:
-                    groups[customer] = {'hosts': []}
-                    groups[customer]['hosts'].append(system)
-                    groups['kevin']['children'].append(customer)
+                groups['kevin']['hosts'].append(system)
 
             if operation_mode == operation_modes['testing']:
-                groups['all']['hosts'].append(system)
-                if customer in groups:
-                    groups[customer]['hosts'].append(system)
-                else:
-                    groups[customer] = {'hosts': []}
-                    groups[customer]['hosts'].append(system)
-                    groups['testing']['children'].append(customer)
+                groups['testing']['hosts'].append(system)
 
             if operation_mode == operation_modes['tree']:
-                groups['all']['hosts'].append(system)
-                if customer in groups:
-                    groups[customer]['hosts'].append(system)
-                else:
-                    groups[customer] = {'hosts': []}
-                    groups[customer]['hosts'].append(system)
-                    groups['tree']['children'].append(customer)
+                groups['tree']['hosts'].append(system)
 
 
 if __name__ == "__main__":

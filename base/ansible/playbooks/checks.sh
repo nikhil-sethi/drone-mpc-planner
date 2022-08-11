@@ -4,7 +4,7 @@
 # cd ~/code/pats && echo git sha: $(git rev-parse HEAD)
 # echo image version: $(cat ~/dependencies/image_version) kernel: $(uname -r) $(lsb_release -d)
 # lscpu | grep 'Model name' &&
-tail ~/pats/logs/all_errors.log.20220810 -n +2
+# tail ~/pats/logs/all_errors.log.20220810 -n +2
 if [ -f '/home/pats/pats/flags/disable' ] ; then echo 'SYSTEM DISABLED' ; fi
 if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
 if [ -f '/home/pats/pats/xml/pats.xml' ] ; then
