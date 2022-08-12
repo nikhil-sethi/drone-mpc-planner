@@ -60,7 +60,7 @@ filtering::Smoother fps_smoothed;
 GStream video_render, video_raw;
 time_t start_datetime;
 float light_level = 0;
-auto wdt_timeout = 5s;
+auto wdt_timeout = 10s;
 
 enum enable_window_modes {
     enable_window_disabled,
@@ -853,6 +853,7 @@ void check_hardware() {
 
 void init() {
     wdt_timeout = 5s;
+    watchdog = true;
     communicate_state(es_init);
     init_terminal_signals();
     init_loggers();
@@ -900,7 +901,11 @@ void init() {
     int minutes_to_periodic_restart = roundf((start_minute + pparams.periodic_restart_minutes - 5.f) / pparams.periodic_restart_minutes) * pparams.periodic_restart_minutes + 5 - start_minute;
     periodic_stop_time = chrono::system_clock::to_time_t(chrono::system_clock::now() + std::chrono::minutes(minutes_to_periodic_restart));
     std::cout << "Periodic restart scheduled at: " << std::put_time(std::localtime(&periodic_stop_time), "%T") << std::endl;
-    wdt_timeout = 1s;
+    if (render_mode)
+        wdt_timeout = 15s;
+    else
+        wdt_timeout = 1s;
+    watchdog = true;
 
     fps_smoothed.init(100);
 
@@ -923,6 +928,7 @@ void close_before_running() {
 void close(bool sig_kill) {
     std::cout << "Closing" << std::endl;
     wdt_timeout = 5s;
+    watchdog = true;
 
     if (cam)
         cam->stop(); //cam needs to be closed after dnav, because of the camview class!
