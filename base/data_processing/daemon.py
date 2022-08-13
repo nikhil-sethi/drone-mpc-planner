@@ -240,7 +240,7 @@ class wdt_pats_task(pats_task):
             cmd = 'killall -9 executor'
             kill_result = lb.execute(cmd, 1, logger_name=self.name)
             if kill_result:
-                self.logger.error('Help!? Could not restart executor...')
+                self.logger.warning('Could not kill executor... probably because it did not exist')
 
         if no_realsense_cnt != self.no_realsense_cnt_prev and no_realsense_cnt:
             self.logger.warning('Could not find realsense...')
