@@ -233,7 +233,7 @@ class wdt_pats_task(pats_task):
             return
 
         dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
-        if dt_last_executor_msg > 60:
+        if dt_last_executor_msg > 300:  # processing_session.py can take quite some time.
             self.error_cnt += 1
             self.logger.error('executor process watchdog alert! Executor does not seem to function. Restarting...')
             Path(lb.executor_log_dir).mkdir(parents=True, exist_ok=True)
