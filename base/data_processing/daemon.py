@@ -321,7 +321,12 @@ class wdt_tunnel_task(pats_task):
         if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
             self.error_cnt += 1
             self.logger.error('Tunnel watchdog alert! Rebooting!')
-            cmd = 'sudo rtcwake -m off -s 120'
+            if not os.path.exists(lb.disable_baseboard_flag) and not os.path.exists(lb.disable_watchdog_flag):
+                self.logger.info('Baseboard exists, see you in an hour.')
+                cmd = 'sudo systemctl poweroff'
+            else:
+                self.logger.info('No baseboard, see in 2 minutes.')
+                cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
         elif not tunnel_ok:
             self.error_cnt += 1
