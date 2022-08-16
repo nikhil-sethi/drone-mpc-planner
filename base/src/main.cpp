@@ -220,6 +220,7 @@ void process_frame(StereoPair *frame) {
            << frame->rs_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
            << frame->time << ";"
+           << light_level << ";"
            << cam->measured_exposure() << ";" << cam->measured_gain() << ";"
            << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
     patser.update(frame->time);
@@ -569,9 +570,9 @@ void print_terminal(StereoPair *frame) {
 
 
     if (pparams.op_mode == op_mode_c) {
+        std::cout << ", light: " << to_string_with_precision(light_level, 2);
         if (patser.trackers.detections_count())
             std::cout <<
-                      ", light: " << to_string_with_precision(light_level, 2) <<
                       ", detections: " << patser.trackers.detections_count() <<
                       ", insects: " << patser.trackers.insects_count();
     } else {
@@ -689,7 +690,7 @@ void init_loggers() {
     }
 
     logger.open(data_output_dir + "log.csv", std::ofstream::out);
-    logger << "id;rs_id;time;elapsed;exposure;gain;charging_state_str;charging_state;";
+    logger << "id;rs_id;time;elapsed;light_level;exposure;gain;charging_state_str;charging_state;";
     logger_fn = data_output_dir + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
     if (pparams.video_raw) {
         logger_video_ids.open(data_output_dir + "frames.csv", std::ofstream::out);
