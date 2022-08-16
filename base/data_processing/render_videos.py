@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import time
 import glob
 import argparse
 import shutil
@@ -69,12 +70,13 @@ def render(detection, render_process_dir, render_mode):
     render_ok = False
     video_src_path = detection['video_src_path']
     video_target_path = detection['video_target_path']
-    for i in range(1, 5):
+    for i in range(1, 10):
         if lb.execute(cmd, render_process_dir=render_process_dir, raw_log_file=detection['log_target_path']) == 0:
             if os.stat((detection['video_src_path'])).st_size > 30000:  # another work around for #833
                 render_ok = True
                 break
         logger.warning('Render attempt ' + str(i) + f' failed for {video_src_path}')
+        time.sleep(3)
 
     video_render_path = render_process_dir + '/logging/replay/videoRender.mkv'
     results_txt_path = Path(render_process_dir, 'logging', 'replay', 'results.txt')
