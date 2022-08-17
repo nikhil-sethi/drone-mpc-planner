@@ -762,7 +762,7 @@ void ItemTracker::serialize_settings() {
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream(settings_file);
-    outfile << xmlData ;
+    outfile << xmlData;
     outfile.close();
 }
 
