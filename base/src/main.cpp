@@ -194,6 +194,7 @@ void process_video() {
 }
 
 void process_frame(StereoPair *frame) {
+    std::chrono::_V2::system_clock::time_point t_start_process_frame = std::chrono::high_resolution_clock::now();
     if (log_replay_mode && pparams.op_mode != op_mode_c) {
         if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
@@ -223,6 +224,9 @@ void process_frame(StereoPair *frame) {
            << light_level << ";"
            << cam->measured_exposure() << ";" << cam->measured_gain() << ";"
            << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
+    double max_opti_time = 1000. / 2 / pparams.fps - ((std::chrono::high_resolution_clock::now() - t_start_process_frame).count()) * 1e-6;
+    std::cout << "timing (planed_optimization_time): " << max_opti_time << "ms" << std::endl;
+    patser.interceptor.max_optimization_time(max_opti_time * 1e-3);
     patser.update(frame->time);
     if (pparams.drone != drone_none && dparams.tx != tx_none)
         rc->send_commands(frame->time);

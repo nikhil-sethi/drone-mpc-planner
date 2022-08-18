@@ -61,7 +61,7 @@ private:
     const double duration_intercept_maneuver = 0.2;
     double time_start_intercept_maneuver = -1;
 
-    const double optimization_time = 0.008; // @ 90fps optimization time max is 0.011
+    double optimization_time = 0.008; // @ 90fps optimization time max is 0.011
 
     std::ofstream *_logger;
 
@@ -82,6 +82,7 @@ public:
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);
     void update(bool drone_at_base, double time);
+    void max_optimization_time(double max_time) {optimization_time = max_time;};
 
 
     tracking::TrackData target_last_trackdata();
