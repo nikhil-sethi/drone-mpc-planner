@@ -343,6 +343,13 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
         if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
             monster = 1
 
+    if monster == 0:
+        imLx = np.delete(log['imLx_insect'].values, remove_ids)
+        imLy = np.delete(log['imLy_insect'].values, remove_ids)
+        tot_std = np.std(imLx) + np.std(imLy)
+        if tot_std < 10:
+            monster = 3
+
     hunt_id = -1
     if 'hunt_id' in log:
         hunt_id_df = log['hunt_id'].dropna()
@@ -446,7 +453,7 @@ def process_detections_in_folder(folder: str, operational_log_start: str, flight
         if data:
             detections.append(data)
 
-    monsters = [d for d in detections if d['monster'] and d['hunt_id'] < 0]
+    monsters = [d for d in detections if d['monster'] == 1 and d['hunt_id'] < 0]
     concat_monsters(monsters, 10)
     detections = [d for d in detections if d['duration'] > 0]
 
@@ -644,7 +651,7 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
         return detections, flights
 
     hunt_cuts = create_and_associate_hunt_videos(flights, detections)
-    monsters = [d for d in detections if d['monster'] and d['hunt_id'] < 0]
+    monsters = [d for d in detections if d['monster'] == 1 and d['hunt_id'] < 0]
     monster_cuts = create_concated_cuts(monsters, 5, 'anomoly')
     cuts = sorted(monster_cuts + hunt_cuts, key=lambda d: d['rs_id'])
     insects = [d for d in detections if not d['monster'] and d['hunt_id'] < 0]
