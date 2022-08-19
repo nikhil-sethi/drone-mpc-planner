@@ -40,6 +40,7 @@ private:
     // Parameter:
     float drone_rotating_time;
     const float safety = 2.f;
+    const float top_plane_correction = .2f;
 
     // States:
     bool enabled = true;
