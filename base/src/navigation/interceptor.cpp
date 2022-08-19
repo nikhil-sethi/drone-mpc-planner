@@ -54,8 +54,12 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     aim_in_flightarea = false;
     _aim_acc = cv::Point3f(0, 0, 0);
     _control_mode = position_control;
-    interception_max_thrust = *_drone->control.max_thrust();
     auto target_trkr = update_target_insecttracker();
+
+    interception_max_thrust = *_drone->control.max_thrust();
+    if (!_drone->nav.drone_hunting()) {
+        interception_max_thrust = 2 * (*_drone->control.max_thrust()); // COmpensate ground effect
+    }
 
     switch (_interceptor_state) {
         case  is_init: {
@@ -129,6 +133,10 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 break;
 
             }
+    }
+
+    if (!_drone->nav.drone_hunting()) { //Correct too high thrust due to ground compensation (see beginning of this method)
+        _aim_acc /= 2;
     }
 }
 
