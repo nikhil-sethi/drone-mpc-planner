@@ -1,6 +1,6 @@
 ---
-- hosts: tree
-  strategy: linear
+- hosts: c,tree,kevin,qc
+  strategy: free
   gather_facts: no
   tasks:
     - name: checks

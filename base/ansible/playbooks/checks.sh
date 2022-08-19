@@ -5,6 +5,27 @@
 # echo image version: $(cat ~/dependencies/image_version) kernel: $(uname -r) $(lsb_release -d)
 # lscpu | grep 'Model name' &&
 # tail ~/pats/logs/all_errors.log.20220810 -n +2
+# rm ~/pats/data/dl_* -rf
+# cd ~/pats/flags
+# rm buf_overflow_realsense_flag
+# rm daemon_wdt_flag
+# rm fps_warning_flag
+# rm proces_wdt_flag
+# rm ~/pats/status/monitor_tmp.jpg
+# rm ~/pats/logs/term.log
+# rm ~/data_json_old -r
+# rm ~/Downloads -rf
+# rm ~/Desktop -rf
+# rm ~/Music -rf
+# rm ~/Pictures -rf
+# rm ~/Videos -rf
+# rm ~/code/pats/base/install/sshd_config.ucf-dist  -rf
+# rm ~/code/pats/base/install/20auto-upgrades.ucf-dist -rf
+# rm ~/code/pats/base/install/50unattended-upgrades.ucf-dist -rf
+# rm ~/code/pats/base/install/sshd_config.ucf-dist -rf
+# rm ~/code/pats/base/build_render -rf
+
+
 if [ -f '/home/pats/pats/flags/disable' ] ; then echo 'SYSTEM DISABLED' ; fi
 if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
 if [ -f '/home/pats/pats/xml/pats.xml' ] ; then
@@ -18,4 +39,4 @@ if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT R
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if [ ! -f /home/pats/code/pats/base/build/executor ]; then echo 'EXECUTOR DOES NOT EXIST'; fi
 if ( ! ps -aux  | grep -q "[e]xecutor" ) ; then echo EXECUTOR NOT RUNNING ; fi
-if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q aba44f1d57c1a2d20283ae06a0811fd0165a5800 ) ; then echo SHA DISCREPANCY; fi
+if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 98ab746062614a94f1840b301f414aceca8c0c71 ) ; then echo SHA DISCREPANCY; fi
