@@ -672,16 +672,17 @@ std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_ac
 
 
 cv::Point3f DroneController::combine_drone_accelerations_with_priority(cv::Point3f prio_acc, cv::Point3f trivil_acc) {
-    if (normf(prio_acc) >= calibration.max_thrust)
-        return prio_acc / normf(prio_acc) * calibration.max_thrust;
+    float thrust_limit = 0.95f * calibration.max_thrust;
+    if (normf(prio_acc) >= thrust_limit)
+        return prio_acc / normf(prio_acc) * thrust_limit;
 
     cv::Point3f combined_acc = prio_acc + trivil_acc;
-    if (normf(combined_acc) <= calibration.max_thrust)
+    if (normf(combined_acc) <= thrust_limit)
         return combined_acc;
 
     float a = trivil_acc.dot(trivil_acc);
     float b = 2 * prio_acc.dot(trivil_acc);
-    float c = prio_acc.dot(prio_acc) - powf(calibration.max_thrust, 2);
+    float c = prio_acc.dot(prio_acc) - powf(thrust_limit, 2);
     float a1, a2, valid;
     std::tie(a1, a2, valid) = solve_quadratic_solution(a, b, c);
 
