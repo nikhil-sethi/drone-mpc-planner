@@ -250,8 +250,10 @@ void process_frame(StereoPair *frame) {
 
 
 void communicate_state(executor_states s) {
-    daemon_link.queue_executor_state(s);
-    baseboard_link.executor_state(s, patser.drone.issues(), light_level);
+    if (!log_replay_mode) {
+        daemon_link.queue_executor_state(s);
+        baseboard_link.executor_state(s, patser.drone.issues(), light_level);
+    }
 }
 
 void init_insect_log(int n) {
@@ -1115,6 +1117,7 @@ void wait_for_start_conditions() {
 
         if (baseboard_link.exit_now() || daemon_link.exit_now()) {
             throw std::runtime_error("Internal communication error");
+            break;
         }
         if (baseboard_link.contact_problem() && pparams.op_mode == op_mode_x && !baseboard_link.disabled()) {
             std::cout << "Exiting wait prematurely because of a contact problem of some sort..." << std::endl;
@@ -1298,9 +1301,9 @@ int main(int argc, char **argv)
         close_before_running();
         return 1;
     } catch (std::runtime_error const &err) {
+        std::cout << "Error: " << err.what() << std::endl;
         communicate_state(es_runtime_error);
         cmdcenter.reset_commandcenter_status_file(err.what(), true);
-        std::cout << "Error: " << err.what() << std::endl;
         close_before_running();
         return 1;
     } catch (NoRealsenseConnected const &err) {
