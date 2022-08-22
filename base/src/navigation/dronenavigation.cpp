@@ -297,8 +297,15 @@ void DroneNavigation::update(double time) {
                     if (_control->att_somewhere_on_pad()) {
                         _navigation_status = ns_flight_done;
                         time_start_wait_after_landing = -1;
-                    } else
-                        _navigation_status = ns_landing_failure;
+                        time_start_wait_for_second_telemetry = -1;
+                    } else {
+                        if (time_start_wait_for_second_telemetry < -1)
+                            time_start_wait_for_second_telemetry = time;
+                        else if (static_cast<float>(time - time_start_wait_for_second_telemetry) > duration_wait_second_telemetry) {
+                            _navigation_status = ns_landing_failure;
+                        }
+
+                    }
                 }
                 break;
         } case ns_flight_aborted: {
