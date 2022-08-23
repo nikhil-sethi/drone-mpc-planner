@@ -16,12 +16,19 @@ Host mavlab-gpu
 	Hostname 131.180.117.41
 	User pats
 
-Host pats0 pats_game
+Host pats0
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 10000
+
+Host pats_game
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 20000
 
 Host pats1 pats_mooy1
 	Hostname localhost
