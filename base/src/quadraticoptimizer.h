@@ -103,6 +103,13 @@ public:
         std::cout << vec[n - 1] << "]" << std::endl;
     }
 
+    void print_vector(std::string name, std::vector<float> vec) {
+        std::cout << name << ": [";
+        for (long long int k = 0; k < vec.size() - 1; k++)
+            std::cout << vec[k] << ", ";
+        std::cout << vec[vec.size() - 1] << "]" << std::endl;
+    }
+
     void print_quadratic_problem_design(problem_parameters prob_params, problem_solution prob_sol) {
         std::cout << "***********Problem optimization step (PATS):**************" << std::endl;
         print_eigenvector("idx", Eigen::VectorXd::LinSpaced(prob_params.X0.size(), 0, prob_params.X0.size() - 1));
