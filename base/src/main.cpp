@@ -1075,7 +1075,7 @@ void wait_for_start_conditions() {
     wait_logger.open(data_output_dir + "wait_for_start.csv", std::ofstream::out);
     wait_logger << "Datetime;Light level;Exposure;Gain;Brightness;Light_level_ok;Cam_angle_ok;Enable_window_ok" << std::endl;
 
-    wdt_timeout = 15s;
+    wdt_timeout = 30s;
 
     while (true) {
         auto [roll, pitch, light_level_, expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_camera_conditions();
