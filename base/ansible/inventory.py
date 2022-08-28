@@ -26,7 +26,7 @@ with open_meta_db() as con:
     operation_modes = pd.read_sql_query('SELECT * FROM operational_modes', con)
 operation_modes = operation_modes.set_index('name').to_dict()['status_id']
 
-groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'kevin': {'hosts': []}, 'qc': {'hosts': []}, 'tree': {'hosts': []}, 'darkroom': {'hosts': []}}
+groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'kevin': {'hosts': []}, 'qc': {'hosts': []}, 'rc': {'hosts': []}, 'darkroom': {'hosts': []}}
 
 for system, operation_mode, maintenance_date_str, baseboard, customer in systems:
     customer = re.sub('[^a-zA-Z0-9 \n\.]', '', customer)
@@ -52,8 +52,8 @@ for system, operation_mode, maintenance_date_str, baseboard, customer in systems
             if operation_mode == operation_modes['qc']:
                 groups['qc']['hosts'].append(system)
 
-            if operation_mode == operation_modes['tree']:
-                groups['tree']['hosts'].append(system)
+            if operation_mode == operation_modes['rc']:
+                groups['rc']['hosts'].append(system)
 
             if operation_mode == operation_modes['darkroom']:
                 groups['darkroom']['hosts'].append(system)
