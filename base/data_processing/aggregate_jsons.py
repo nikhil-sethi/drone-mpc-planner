@@ -62,11 +62,15 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
                 if end_datetime > t_end:
                     t_end = end_datetime
 
-                detections.extend(data['detections'])
-                statuss.extend(data['statuss'])
-                flights.extend(data['flights'])
-                if len(data['flight_sessions']):
-                    flight_sessions.append(data['flight_sessions'])
+                if 'detections' in data:
+                    detections.extend(data['detections'])
+                if 'statuss' in data:
+                    statuss.extend(data['statuss'])
+                if 'flights' in data:
+                    flights.extend(data['flights'])
+                if 'flight_sessions' in data:
+                    if len(data['flight_sessions']):
+                        flight_sessions.append(data['flight_sessions'])
                 errors.extend(data['errors'])
                 cam_resets += data['cam_resets']
             except json.JSONDecodeError:
