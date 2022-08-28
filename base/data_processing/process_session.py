@@ -26,7 +26,7 @@ else:
     import use_model as ai
 
 
-version_c = "2.2"
+version_c = "2.3"
 version_x = "1.2"
 lia_model = "cnn5_size_v1"
 lia_n_insect_classes = 5
@@ -319,6 +319,10 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
     radiuss = np.delete(log['radius_insect'].values, remove_ids)
     size = np.mean(radiuss) * 2
 
+    light_level = -1
+    if 'light_level' in log:
+        light_level = np.mean(log['light_level'].values)
+
     if 'motion_sum_insect' in log:
         motion_sums = np.delete(log['motion_sum_insect'].values, remove_ids)
         d_motion_sums = motion_sums[1:] - motion_sums[:-1]
@@ -384,6 +388,7 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
                   "folder_detection_id": folder_detection_id,
                   "monster": monster,
                   "hunt_id": hunt_id,
+                  "light_level": light_level,
                   "version": version_c
                   }
     return detections
