@@ -275,12 +275,12 @@ void VisionData::init_insect_replay(std::string folder) {
     motion_max_noise_mapL = cv::imread(folder + "/motion_max_noise_mapL.png", cv::IMREAD_ANYDEPTH);
 }
 void VisionData::init_flight_replay(std::string folder, int id) {
-    overexposed_mapL = cv::imread(folder + "/overexposed_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
-    overexposed_mapR = cv::imread(folder + "/overexposed_mapR_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
-    motion_filtered_noise_mapL = cv::imread(folder + "/motion_filtered_noise_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
-    motion_filtered_noise_mapR = cv::imread(folder + "/motion_filtered_noise_mapR_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
-    motion_filtered_noise_mapL_small = cv::imread(folder + "/motion_filtered_noise_mapL_small_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
-    motion_max_noise_mapL = cv::imread(folder + "/motion_max_noise_mapL_" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    overexposed_mapL = cv::imread(folder + "/overexposed_mapL" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    overexposed_mapR = cv::imread(folder + "/overexposed_mapR" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL = cv::imread(folder + "/motion_filtered_noise_mapL" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapR = cv::imread(folder + "/motion_filtered_noise_mapR" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_filtered_noise_mapL_small = cv::imread(folder + "/motion_filtered_noise_mapL_small" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
+    motion_max_noise_mapL = cv::imread(folder + "/motion_max_noise_mapL" + to_string(id) + ".png", cv::IMREAD_ANYDEPTH);
 }
 
 
