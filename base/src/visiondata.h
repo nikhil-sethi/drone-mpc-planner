@@ -105,9 +105,9 @@ public:
     float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}
     void reset_motion_integration() {_reset_motion_integration = true;}
-    void init_insect_replay(std::string folder);
-    void init_flight_replay(std::string folder, int id);
-    void save_maps_before_monitoring(std::string folder);
-    void save_maps_before_flight(int id, std::string folder);
+    void init_replay(std::string folder);
+    void init_replay(std::string folder, int id);
+    void save_maps(std::string folder);
+    void save_maps(int id, std::string folder);
     void save_maps_worker(int id, std::string folder, cv::Mat overexposed_mapL, cv::Mat overexposed_mapR, cv::Mat motion_filtered_noise_mapL, cv::Mat motion_filtered_noise_mapR, cv::Mat motion_filtered_noise_mapL_small, cv::Mat motion_max_noise_mapL);
 };

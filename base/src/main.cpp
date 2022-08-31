@@ -879,10 +879,10 @@ void init() {
     patser.init(&logger, rc_id, rc.get(), replay_dir, cam.get(), &visdat, &baseboard_link);
     if (flight_replay_mode) {
         patser.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
-        visdat.init_flight_replay(replay_dir, logreader.log_drone()->flight_id());
+        visdat.init_replay(replay_dir, logreader.log_drone()->flight_id());
     } else if (insect_replay_mode) {
         patser.init_insect_replay();
-        visdat.init_insect_replay(replay_dir);
+        visdat.init_replay(replay_dir);
     } else if (log_replay_mode) {
         patser.drone.init_full_log_replay(replay_dir);
     }

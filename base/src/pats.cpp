@@ -48,7 +48,7 @@ void Patser::update(double time) {
                 maintain_motion_map(time);
                 trackers.update(time);
                 if (static_cast<float>(time - time_start_motion_calibration) > duration_motion_calibration && _visdat->motion_filtered_noise_initialized()) {
-                    _visdat->save_maps_before_monitoring(data_output_dir);
+                    _visdat->save_maps(data_output_dir);
                     if (pparams.op_mode == op_mode_c) {
                         trackers.mode(tracking::TrackerManager::t_c);
                         _pats_state = pats_c;

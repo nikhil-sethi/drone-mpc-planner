@@ -495,7 +495,7 @@ void Drone::take_off(bool hunt, double time) {
         _n_wp_flights++;
         std::cout << "Taking off for waypoint flight #" << _n_wp_flights << std::endl;
     }
-    _visdat->save_maps_before_flight(_n_take_offs, data_output_dir);
+    _visdat->save_maps(_n_take_offs, data_output_dir);
 
     flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);
     tracker.init_flight(&flight_logger, time);
