@@ -94,6 +94,7 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     data.state.spos.x = insect_pos.x;
     data.state.spos.y = insect_pos.y;
     data.state.spos.z = insect_pos.z;
+    data.vel_valid = true;
     data.state.vel.x = insect_vel.x;
     data.state.vel.y = insect_vel.y;
     data.state.vel.z = insect_vel.z;
