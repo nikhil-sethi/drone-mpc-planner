@@ -29,8 +29,11 @@ Step 2: Strip the cable and the five small wires. Strip the blue and red wire sh
 
 
 Step 3: Solder the red and blue wires to the barrel connector:
-- Blue to the middle pin
-- Red to the left pin (center)
+- Blue to the left pin (center positive)
+- Red to the middle pin
+
+### **Photo is incorrect!**
+
 
 Step 4: Plug the driver in the LED pcb ports, pay attention to the color coding in CAPS.
 
