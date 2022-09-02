@@ -94,17 +94,26 @@ def process_system_status_in_folder(folder: str, logger: logging.Logger):
 
     results_path = Path(folder, 'results.txt')
     if not os.path.exists(results_path):
-        return ([], 'Error: results.txt does not exist', '')
-    runtime = -1.0
-    with open(results_path, "r", encoding="utf-8") as results_txt:
-        result_lines = results_txt.readlines()
-        for line in result_lines:
-            if line.find('run_time') != -1:
-                runtime = float(line.split(':')[1])
-                break
-    if runtime < 0:
-        # something bad must have happened. A crash of the program prevents the writing of results.txt
-        return ([], 'Error: results.txt does not contain run_time', '')
+        logger.warning("Results.txt does not exist. Log was likely not closed properly...")
+        frames_path = Path(folder, 'frames.csv')
+        if not os.path.exists(frames_path):
+            return ([], 'Error: Could not determine runtime', '')
+        frames_log = pd.read_csv(frames_path, sep=";")
+        if len(frames_log) > 2:
+            runtime = frames_log['time'].values[-2]  # use the second last because a not properly closed log likely has a corrupted last line...
+        else:
+            runtime = 0
+    else:
+        runtime = -1.0
+        with open(results_path, "r", encoding="utf-8") as results_txt:
+            result_lines = results_txt.readlines()
+            for line in result_lines:
+                if line.find('run_time') != -1:
+                    runtime = float(line.split(':')[1])
+                    break
+        if runtime < 0:
+            # something bad must have happened. A crash of the program prevents the writing of results.txt
+            return ([], 'Error: results.txt does not contain run_time', '')
 
     log_end_datetime = str_to_datetime(os.path.basename(folder))
     operational_log_start = datetime_to_str(log_end_datetime - timedelta(seconds=runtime))
