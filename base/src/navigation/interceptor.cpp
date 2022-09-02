@@ -19,11 +19,33 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
 }
 
 void Interceptor::init_flight(std::ofstream *logger) {
-    (*logger) << "tti;tti_iip;aimx;aimy;aimz;accx_iip;accy_iip;accz_iip;";
+    (*logger) << "posX_bestinsect;posY_bestinsect;posZ_bestinsect;velX_bestinsect;velY_bestinsect;velZ_bestinsect;tti;posX_aim;posY_aim;posZ_aim;tti_iip;accX_iip;accY_iip;accZ_iip;";
 }
 
 void Interceptor::log(std::ostream *logger) {
-    (*logger) << _tti << ";" << _tti_iip << ";" << _aim_pos.x << ";" << _aim_pos.y << ";" << _aim_pos.z  << ";" << _aim_acc.x << ";" << _aim_acc.y << ";" << _aim_acc.z << ";";
+    if (_target_insecttracker)
+        (*logger) <<
+                  _target_insecttracker->last_track_data().pos().x << ";" <<
+                  _target_insecttracker->last_track_data().pos().y << ";" <<
+                  _target_insecttracker->last_track_data().pos().z << ";" <<
+                  _target_insecttracker->last_track_data().vel().x << ";" <<
+                  _target_insecttracker->last_track_data().vel().y << ";" <<
+                  _target_insecttracker->last_track_data().vel().z << ";";
+    else
+        (*logger) << - 1 << ";" <<
+                  -1 << ";" <<
+                  -1 << ";" <<
+                  -1 << ";" <<
+                  -1 << ";" <<
+                  -1 << ";";
+    (*logger) << _tti << ";" <<
+              _aim_pos.x << ";" <<
+              _aim_pos.y << ";" <<
+              _aim_pos.z  << ";" <<
+              _tti_iip << ";" <<
+              _aim_acc.x << ";" <<
+              _aim_acc.y << ";" <<
+              _aim_acc.z << ";";
 }
 
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {

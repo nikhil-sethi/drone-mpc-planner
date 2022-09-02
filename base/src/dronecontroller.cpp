@@ -35,7 +35,10 @@ void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *fli
 void DroneController::init_flight(std::ofstream *logger, int flight_id) {
     _logger = logger;
     (*_logger) << "flight_mode_str;" <<
-               "tracking_valid;target_pos_x;target_pos_y;target_pos_z;" <<
+               "tracking_valid;" <<
+               "posX_target;posY_target;posZ_target;" <<
+               "accX_target;accY_target;accZ_target;" <<
+               "accX_applied;accY_applied;accZ_applied;" <<
                "auto_throttle;auto_roll;auto_pitch;auto_yaw;" <<
                "joy_throttle;joy_roll;joy_pitch;joy_yaw; " <<
                "joy_arm_switch;joy_mode_switch;joy_takeoff_switch;" <<
@@ -242,8 +245,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 // Control_model_based must always be called! Even in position_control, pid filters must be update to prepare a switch back. Also the kiv-state must be updated.
                 control_model_based(data_drone, data_target.pos(), data_target.vel());
                 if (control_mode == acceleration_feedforward) {
-                    target_acceleration += kiv_ctrl.correction_acceleration(relaxed, data_drone, acceleration_feedforward);
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(target_acceleration);
+                    applied_acceleration = target_acceleration + kiv_ctrl.correction_acceleration(relaxed, data_drone, acceleration_feedforward);
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(applied_acceleration);
                 }
                 break;
         } case fm_long_range_forth: {
@@ -505,9 +508,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         (*_logger) <<
                    flight_mode_names[_flight_mode] << ";" <<
                    static_cast<int>(data_drone.pos_valid)  << ";" <<
-                   data_target.pos().x << ";" <<
-                   data_target.pos().y  << ";" <<
-                   data_target.pos().z << ";" <<
+                   data_target.pos().x << ";" << data_target.pos().y  << ";" << data_target.pos().z << ";" <<
+                   target_acceleration.x << ";" << target_acceleration.y << ";" << target_acceleration.z << ";" <<
+                   applied_acceleration.x << ";" << applied_acceleration.y << ";"  << applied_acceleration.z << ";" <<
                    auto_throttle << ";" <<
                    auto_roll << ";" <<
                    auto_pitch << ";" <<
@@ -680,8 +683,10 @@ cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f de
     // See ~code/pats/doc/desired_acceleration_drone.svg
     cv::Point3f req_acc = des_acc + cv::Point3f(0, GRAVITY, 0);
 
-    if (normf(req_acc) < thrust)
+    if (normf(req_acc) < thrust) {
+        applied_acceleration = req_acc;
         return req_acc;
+    }
 
     float denominator = des_acc.dot(des_acc);
     float p = 2 * des_acc.y * GRAVITY / denominator;
@@ -689,7 +694,9 @@ cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f de
 
     float root_square = powf(p / 2.f, 2) - q;
     if (root_square < 0.f) {
+        applied_acceleration = acc_backup;
         std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
+
         return acc_backup;
     }
 
@@ -706,20 +713,26 @@ cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f de
     bool k2_valid = (0 <= k2) && (k2 <= 1);
 
     if (k1_valid && !k2_valid) {
+        applied_acceleration = k1 * des_acc;
         return k1 * des_acc + cv::Point3f(0, GRAVITY, 0);
     } else if (!k1_valid && k2_valid) {
+        applied_acceleration = k2 * des_acc;
         return k2 * des_acc + cv::Point3f(0, GRAVITY, 0);
     } else if (k1_valid && k2_valid) {
         if (k1 >= k2) {
+            applied_acceleration = k1 * des_acc;
             return k1 * des_acc + cv::Point3f(0, GRAVITY, 0);
         } else {
+            applied_acceleration = k2 * applied_acceleration;
             return k2 * des_acc + cv::Point3f(0, GRAVITY, 0);
         }
     } else if (!k1_valid && !k2_valid) {
+        applied_acceleration = acc_backup;
         std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
         return acc_backup;
     }
     else {
+        applied_acceleration = acc_backup;
         std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration." << std::endl;
         return acc_backup;
     }
