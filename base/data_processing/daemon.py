@@ -164,17 +164,17 @@ class aggregate_jsons_task(pats_task):
     def task_func(self):
         daemon2baseboard_pkg.post_processing = 1
         aggregate_jsons(lb.data_dir, socket.gethostname(), lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json')
-        tries = 0
-        retry = True
-        while retry and tries < 5:
+        send_success = False
+        intervals = (1, 2, 5, 10, 60, 60, 120)
+        for i in intervals:
             if send_all_jsons() == 0:
-                retry = False
+                send_success = True
+                break
             else:
-                tries += 1
-                self.logger.warning('Sending error file failed retrying in 10 min.')
-                pause.until(datetime.today() + timedelta(minutes=10))
-        if retry:
-            self.logger.error('Sending jsons failed 5 times.')
+                self.logger.warning('Sending error file failed retrying in ' + str(i) + ' minutes.')
+                pause.until(datetime.today() + timedelta(minutes=i))
+        if not send_success:
+            self.logger.error('Sending jsons failed.')
         daemon2baseboard_pkg.post_processing = 0
 
 
@@ -191,17 +191,16 @@ class errors_to_vps_task(pats_task):
         if os.path.exists(yesterday_file):
             remote_err_file = 'daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str_with_timezone(datetime.today()) + '.log'
             cmd = 'rsync -az ' + yesterday_file + ' dash:' + remote_err_file
-            tries = 0
-            retry = True
-            while retry and tries < 5:
+            send_success = False
+            intervals = (1, 2, 5, 10, 60, 60, 120)
+            for i in intervals:
                 if lb.execute(cmd, 5, logger_name=self.name) == 0:
                     self.logger.info(yesterday_file + ' send to dash.')
-                    retry = False
+                    send_success = True
                 else:
-                    tries += 1
-                    self.logger.warning('Sending error file failed retrying in 10 min.')
-                    pause.until(datetime.today() + timedelta(minutes=10))
-            if retry:
+                    self.logger.warning('Sending error file failed retrying in ' + str(i) + ' minutes.')
+                    pause.until(datetime.today() + timedelta(minutes=i))
+            if not send_success:
                 self.logger.error('Sending error file failed 5 times.')
         else:
             self.logger.warning('Error file rotation did not work')
