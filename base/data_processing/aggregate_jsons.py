@@ -25,7 +25,7 @@ def check_if_system_at_office():
         return False
 
 
-def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
+def aggregate_jsons(data_folder, sys_str, aggregated_fn):
 
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
     Path(data_folder + '/junk').mkdir(parents=True, exist_ok=True)
@@ -90,9 +90,16 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
                        "cam_resets": cam_resets,
                        "system": sys_str
                        }
+    aggregated_json_fn = aggregated_fn + '.json'
     with open(aggregated_json_fn, 'w', encoding="utf-8") as outfile:
         json.dump(data_detections, outfile)
-    logger.info("Counting complete, saved in " + aggregated_json_fn)
+
+    aggregated_tar_fn = aggregated_fn + '.tar.xz'
+    cmd = 'tar -C ' + os.path.split(aggregated_tar_fn)[0] + ' -cJf ' + aggregated_tar_fn + ' ' + os.path.split(aggregated_json_fn)[1]
+    lb.execute(cmd, 1, 'aggregate_jsons')
+    os.remove(aggregated_json_fn)
+
+    logger.info("Counting complete, saved in " + aggregated_tar_fn)
 
     # move the folders so that we know if they were processed
     # moving is done after writing the json, so that if anything before that fails no data gets lost between the cracks
@@ -110,9 +117,10 @@ def aggregate_jsons(data_folder, sys_str, aggregated_json_fn):
 def send_all_jsons():
     logger = logging.getLogger('aggregate_jsons')
     Path(lb.json_dir + '/sent').mkdir(parents=True, exist_ok=True)
-    for json_fn in glob.glob(lb.json_dir + '/*.json'):
+    files = glob.glob(lb.json_dir + '/*.tar.xz') + glob.glob(lb.json_dir + '/*.json')
+    for json_fn in files:
         remote_json_file = 'patsc/jsons/' + socket.gethostname() + '_' + os.path.basename(json_fn)
-        cmd = 'rsync -az ' + json_fn + ' dash:' + remote_json_file
+        cmd = 'rsync -a ' + json_fn + ' dash:' + remote_json_file
         if lb.execute(cmd, 3, 'aggregate_jsons') == 0:
             json_sent_fn = lb.json_dir + '/sent/' + os.path.basename(json_fn)
             os.rename(json_fn, json_sent_fn)
@@ -135,15 +143,15 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
 
     if args.filename:
-        json_out_fn = args.filename
+        out_fn = args.filename
     else:
-        json_out_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json'
+        out_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now())
     if args.i:
         data_folder = args.i
     else:
         data_dir = lb.data_dir
 
-    aggregate_jsons(data_dir, socket.gethostname(), json_out_fn)
+    aggregate_jsons(data_dir, socket.gethostname(), out_fn)
 
     if not args.dry_run:
         send_all_jsons()

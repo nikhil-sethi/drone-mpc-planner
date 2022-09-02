@@ -163,7 +163,7 @@ class aggregate_jsons_task(pats_task):
 
     def task_func(self):
         daemon2baseboard_pkg.post_processing = 1
-        aggregate_jsons(lb.data_dir, socket.gethostname(), lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now()) + '.json')
+        aggregate_jsons(lb.data_dir, socket.gethostname(), lb.json_dir + socket.gethostname().lower() + '_' + lb.datetime_to_str_with_timezone(datetime.now()))
         send_success = False
         intervals = (1, 2, 5, 10, 60, 60, 120)
         for i in intervals:
