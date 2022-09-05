@@ -1,5 +1,8 @@
 #include "plane.h"
 #include "common.h"
+#include <opencv2/core/matx.hpp>
+#include <opencv2/core/types.hpp>
+#include <cmath>
 
 // Generates the plane normal vector based on 3 points. The third point is always asumed to be (0,0,0).
 cv::Point3f Plane::create_plane_normal_vector(cv::Point3f cam_corner_1_, cv::Point3f cam_corner_2_) {
@@ -33,9 +36,12 @@ cv::Point3f intersection_of_3_planes(Plane *p1, Plane *p2, Plane *p3) {
     auto [d3, n03] = p3->hesse_normal_form();
 
     cv::Matx31f b(d1, d2, d3);
-    cv::Mat  A;
-    cv::hconcat(cv::Matx31f(n01), cv::Matx31f(n02), A);
-    cv::hconcat(A, cv::Matx31f(n03), A);
+    cv::Matx33f A(n01.x, n02.x, n03.x, n01.y, n02.y, n03.y, n01.z, n02.z, n03.z);
+
+    if (abs(cv::determinant(A)) < 1e-2) {
+        return cv::Point3f(std::nan("0"), std::nan("0"), std::nan("0"));
+    }
+
     cv::Mat tmp = A.t().inv() * cv::Mat(b);
     return  cv::Point3f(tmp);
 }

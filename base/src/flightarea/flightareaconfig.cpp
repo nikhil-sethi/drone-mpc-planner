@@ -99,19 +99,20 @@ void FlightAreaConfig::find_active_planes_and_their_corner_points() {
                 if (plane1.id < plane2.id && plane2.id < plane3.id && plane3.id > plane1.id) {
                     cv::Point3f intrs_pnt = intersection_of_3_planes(&plane1, &plane2, &plane3);
 
-                    bool in_view = true;
-                    for (auto plane : _planes) {
-                        if (!plane.on_normal_side(intrs_pnt, eps)) {
-                            in_view = false;
-                            break;
+                    if (!std::isnan(intrs_pnt.x)) {
+                        bool in_view = true;
+                        for (auto plane : _planes) {
+                            if (!plane.on_normal_side(intrs_pnt, eps)) {
+                                in_view = false;
+                                break;
+                            }
+                        }
+                        if (in_view) {
+                            CornerPoint cp = CornerPoint(intrs_pnt, plane1.id, plane2.id, plane3.id);
+                            _corner_points.push_back(cp);
+                            mark_active_planes(plane1, plane2, plane3);
                         }
                     }
-                    if (in_view == true) {
-                        CornerPoint cp = CornerPoint(intrs_pnt, plane1.id, plane2.id, plane3.id);
-                        _corner_points.push_back(cp);
-                        mark_active_planes(plane1, plane2, plane3);
-                    }
-
                 }
             }
         }
