@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
 
-if [ "$#" -ne 1 ]; then
-	echo "Usage: $./install.sh [install_monitoring_system=0,1]"
+set -ex
+
+
+if [[ $HOSTNAME != pats* ]]; then
+	echo "Change hostname before running this script!"
+	echo "!!! Note: this script is no longer ment to run on your personal laptop !!!"
 	exit 1
 fi
 
-if [[ $1 -eq 1 ]] ; then
-	echo "Starting install install script for monitoring systems!"
-fi
-
-set -ex
 mkdir -p ~/dependencies
 mkdir -p ~/code
 mkdir -p ~/pats/sockets
+mkdir -p ~/pats/xml
+mkdir -p ~/pats/data
+mkdir -p ~/pats/jsons
+mkdir -p ~/pats/renders
+mkdir -p ~/pats/logs
+mkdir -p ~/pats/flags
+mkdir -p ~/pats/status
+mkdir -p ~/pats/images
 
 KERNEL=$(uname -r)
 ubuntu_str=$(lsb_release -a | grep Release)
 
-if [ ! -f ~/dependencies/ssh_keys.done ] && [ $1 -eq 1 ] ; then
+if [ ! -f ~/dependencies/ssh_keys.done ] ; then
 
 	#Change hostname:
 	#Update: sudo nano /etc/hosts
@@ -67,26 +74,16 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 			sudo apt remove -y intel-media-va-driver intel-media-va-driver-non-free
 		fi
 		# gstreamer compile packages:
-		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
-
-		
-		if [[ $1 -eq 1 ]] ; then
-			sudo apt remove -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-		else
-			sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-		fi
+		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev		
+		sudo apt remove -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev		
 	else
 		sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 	fi
 
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache qtbase5-dev
-
-	sudo apt-get remove -y modemmanager
-
-	if [[ $1 -eq 1 ]] ; then
-		sudo apt purge -y snapd # remove snap, because it uses data
-	fi
+	sudo apt-get remove -y modemmanager	
+	sudo apt purge -y snapd # remove snap, because it uses data
 
 	touch $DEPENDENCIES_FLAG
 }
@@ -139,34 +136,18 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 	touch python-packages-v1.3.done
 }
 
-# Install dev packages
-if [[ $1 -eq 0 ]] ; then
-	[ -f dev-dependencies-packages-v1.1.done ] || {
-		wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-		sudo apt-get -y install apt-transport-https
-		#to install sublime
-		#echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-		#sudo snap install sublime-text --classic
-		sudo snap install code --classic
-		sudo apt update
-		sudo apt install -y libqt5opengl5 libqt5opengl5-dev meld gitk git-gui terminator jstest-gtk
-		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
-		touch dev-dependencies-packages-v1.1.done
-	}
+[ -f dnn-dependencies-packages-v1.0.done ] || {
+	pip3 install matplotlib
+}
 
-	[ -f dnn-dependencies-packages-v1.0.done ] || {
-		pip3 install matplotlib
-	}
+# Install command center packages
+[ -f cc-dependencies-packages-v1.1.done ] || {
+	sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
+	sudo apt install -y ansible ansible-lint
+	touch cc-dependencies-packages-v1.1.done
+}
 
-	# Install command center packages
-	[ -f cc-dependencies-packages-v1.1.done ] || {
-		sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
-		sudo apt install -y ansible ansible-lint
-		touch cc-dependencies-packages-v1.1.done
-	}
-fi
-
-if [[ $ubuntu_str != *"18.04"* ]] && [[ $1 -eq 1 ]] && [[ ! -f gstreamer-v1.18.5.done ]]; then
+if [[ $ubuntu_str != *"18.04"* ]] && [[ ! -f gstreamer-v1.18.5.done ]]; then
 	pushd ~/code/
 	[ -d pats ] || {
 		git clone git@github-pats:pats-drones/pats.git # needed for the patch
@@ -185,6 +166,20 @@ if [[ $ubuntu_str != *"18.04"* ]] && [[ $1 -eq 1 ]] && [[ ! -f gstreamer-v1.18.5
 	touch gstreamer-v1.18.5.done
 fi
 
+FFMPEG_FLAG=ffmpeg-v1.done
+if [[ $ubuntu_str != *"18.04"* ]] && [[ ! -f $FFMPEG_FLAG ]]; then
+	sudo apt-get update -qq && sudo apt install -y autoconf automake build-essential cmake git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget yasm zlib1g-dev libunistring-dev libaom-dev libunistring-dev libaom-dev libx264-dev nasm libx265-dev libnuma-dev libvpx-dev
+	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
+	tar -xf ffmpeg-snapshot.tar.bz2
+	pushd ffmpeg
+	./configure --extra-libs="-lpthread -lm" --ld="g++" --enable-gpl --enable-gnutls --enable-libaom --enable-libass --enable-libfreetype --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 --enable-nonfree 
+	time make -j$(nproc)
+	sudo make install
+	sudo ldconfig
+	popd
+	touch $FFMPEG_FLAG
+fi
+
 # Uninstall openCV 3
 [ ! -f opencv-3.4.2.done ] || {
 	pushd opencv-3.4.2
@@ -193,7 +188,7 @@ fi
 	sudo ldconfig
 	popd
 	popd
-	rm  opencv-3.4.2* -rf
+	rm opencv-3.4.2* -rf
 }
 
 # Install openCV
@@ -218,14 +213,12 @@ if [ ! -f opencv-4.5.2.done ] && [ ! -f opencv-4.3.0.done ] ; then
 	touch opencv-4.5.2.done
 fi
 
-if [[ $1 -eq 1 ]] ; then
-	[ -f git.done ] || {
-		git config --global push.default simple
-		git config --global user.email "${HOSTNAME}@pats.com"
-		git config --global user.name $HOSTNAME
-		touch git.done
-	}
-fi
+[ -f git.done ] || {
+	git config --global push.default simple
+	git config --global user.email "${HOSTNAME}@pats.com"
+	git config --global user.name $HOSTNAME
+	touch git.done
+}
 
 [ -f git_aliases_v1.0.done ] || {
 	git config --global alias.co checkout
@@ -278,7 +271,6 @@ EIGEN_FLAG=Eigen-v1.done
 	touch $EIGEN_FLAG
 }
 
-
 [ -f pats_code_v1.1.done ] || {
 	echo Warning: manual config change required!
 	exit
@@ -303,156 +295,120 @@ PATS_CODE_FLAG=pats_code_v1.2.done
 	popd
 	popd
 
-	if [ ! ~/.ssh/config ] && [ $1 -eq 1 ] && [ ! ~/.ssh/config_tmp ]; then
+	if [ ! ~/.ssh/config ] && [ ! ~/.ssh/config_tmp ]; then
 		mv ~/.ssh/config_tmp ~/.ssh/config
 	fi
 
 	touch $PATS_CODE_FLAG
 }
 
-# Install pats-c dev packages
-if [[ $1 -eq 0 ]] ; then
-
-	# Install the Dash code
-	PATSC_CODE_FLAG=patsc_code_v1.0.done
-	[ -f $PATSC_CODE_FLAG ] || {
-		
-
-		pushd ./code/
-		[ -d ../code/dash ] || {
-			git clone git@github-dash:pats-drones/dash.git
-		}
-		popd
-
-		touch $PATSC_CODE_FLAG
+SYMLINK_FLAG=symlinks-v1.6.done
+# Create nice symlinks
+[ -f $SYMLINK_FLAG ] || {
+	[ -f ~/.screenrc ] && {
+		cp ~/.screenrc{,.bak} --backup=numbered
+		rm ~/.screenrc
 	}
+	ln -s ~/code/pats/base/install/.screenrc ~/
 
-
-	[ -f patsc-dependencies-packages-v1.1.done ] || {
-		pip3 install -r ~/code/dash/patsc/requirements.txt
-		touch patsc-dependencies-packages-v1.1.done
+	[ -f ~/.bashrc ] && {
+		cp ~/.bashrc{,.bak} --backup=numbered
+		rm ~/.bashrc
 	}
-fi
+	ln -s ~/code/pats/base/install/.bashrc ~/
 
-if [[ $1 -eq 1 ]] ; then
-
-	mkdir -p ~/pats/xml
-	mkdir -p ~/pats/data
-	mkdir -p ~/pats/jsons
-	mkdir -p ~/pats/renders
-	mkdir -p ~/pats/logs
-	mkdir -p ~/pats/flags
-	mkdir -p ~/pats/status
-	mkdir -p ~/pats/images
-
-	SYMLINK_FLAG=symlinks-v1.6.done
-	# Create nice symlinks
-	[ -f $SYMLINK_FLAG ] || {
-		[ -f ~/.screenrc ] && {
-			cp ~/.screenrc{,.bak} --backup=numbered
-			rm ~/.screenrc
-		}
-		ln -s ~/code/pats/base/install/.screenrc ~/
-
-		[ -f ~/.bashrc ] && {
-			cp ~/.bashrc{,.bak} --backup=numbered
-			rm ~/.bashrc
-		}
-		ln -s ~/code/pats/base/install/.bashrc ~/
-
-		[ -f /etc/ssh/sshd_config ] && {
-			sudo cp  /etc/ssh/sshd_config{,.bak} --backup=numbered
-			sudo rm /etc/ssh/sshd_config
-		}
-		sudo ln -s ~/code/pats/base/install/sshd_config /etc/ssh/
-
-		[ -f /etc/network/interfaces ] && {
-				sudo cp /etc/network/interfaces{,.bak} --backup=numbered
-				sudo rm /etc/network/interfaces
-		}
-		sudo ln -s ~/code/pats/base/install/interfaces /etc/network/interfaces
-
-		[ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && {
-				sudo rm /etc/apt/apt.conf.d/50unattended-upgrades
-		}
-		sudo ln -s ~/code/pats/base/install/50unattended-upgrades /etc/apt/apt.conf.d/
-
-
-		[ -f /etc/apt/apt.conf.d/10periodic ] && {
-				sudo rm /etc/apt/apt.conf.d/10periodic
-		}
-		sudo ln -s ~/code/pats/base/install/10periodic /etc/apt/apt.conf.d/
-
-
-		[ -f /etc/apt/apt.conf.d/20auto-upgrades ] && {
-				sudo rm /etc/apt/apt.conf.d/20auto-upgrades
-		}
-		sudo ln -s ~/code/pats/base/install/20auto-upgrades /etc/apt/apt.conf.d/
-
-
-		[ -f /etc/rc.local ] && {
-			sudo cp  /etc/rc.local{,.bak} --backup=numbered
-			sudo rm /etc/rc.local
-		}
-		sudo ln -s ~/code/pats/base/install/rc.local /etc/rc.local
-
-		[ -f /etc/environment ] && {
-			sudo cp  /etc/environment{,.bak} --backup=numbered
-			sudo rm /etc/environment
-		}
-		ubuntu_str=$(lsb_release -a | grep Release)
-		if [[ $ubuntu_str == *"18.04"* ]] ; then
-  			sudo ln -s ~/code/pats/base/install/environment_18.04 /etc/environment
-		else
-  			sudo ln -s ~/code/pats/base/install/environment_20.04 /etc/environment
-		fi
-
-		rm ~/.ssh/config -f
-		ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config
-
-		[ -f ~/.gdbinit ] && {
-			sudo cp  ~/.gdbinit{,.bak} --backup=numbered
-			sudo rm ~/.gdbinit
-		}
-		sudo ln -s ~/code/pats/base/install/.gdbinit ~/.gdbinit
-
-		sudo cp  /etc/sudoers{,.bak} --backup=numbered
-		sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
-
-
-		[ -f /etc/NetworkManager/NetworkManager.conf ] && {
-			sudo cp /etc/NetworkManager/NetworkManager.conf{,.bak} --backup=numbered
-			sudo rm /etc/NetworkManager/NetworkManager.conf
-		}
-		sudo ln -s ~/code/pats/base/install/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf
-
-		[ -f /etc/netplan/networkmanager.yaml ] && {
-			sudo cp /etc/netplan/networkmanager.yaml{,.bak} --backup=numbered
-			sudo rm /etc/netplan/networkmanager.yaml
-		}
-		sudo ln -s ~/code/pats/base/install/networkmanager.yaml /etc/netplan/networkmanager.yaml
-		sudo netplan generate
-		sudo netplan apply
-		sudo service NetworkManager restart
-
-		[ -f /etc/systemd/system.conf ] && {
-			sudo cp /etc/systemd/system.conf{,.bak} --backup=numbered
-			sudo rm /etc/systemd/system.conf
-		}
-		sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
-
-		sudo systemctl restart ssh.service
-
-		mkdir -p ~/Arduino
-		[ -d ~/Arduino/libraries ] && {
-			cp -r ~/Arduino/libraries{,.bak} --backup=numbered
-			rm -r ~/Arduino/libraries
-		}
-		ln -s ~/code/pats/Arduino/libraries ~/Arduino/libraries
-
-		touch $SYMLINK_FLAG
+	[ -f /etc/ssh/sshd_config ] && {
+		sudo cp /etc/ssh/sshd_config{,.bak} --backup=numbered
+		sudo rm /etc/ssh/sshd_config
 	}
-fi
+	sudo ln -s ~/code/pats/base/install/sshd_config /etc/ssh/
+
+	[ -f /etc/network/interfaces ] && {
+			sudo cp /etc/network/interfaces{,.bak} --backup=numbered
+			sudo rm /etc/network/interfaces
+	}
+	sudo ln -s ~/code/pats/base/install/interfaces /etc/network/interfaces
+
+	[ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && {
+			sudo rm /etc/apt/apt.conf.d/50unattended-upgrades
+	}
+	sudo ln -s ~/code/pats/base/install/50unattended-upgrades /etc/apt/apt.conf.d/
+
+
+	[ -f /etc/apt/apt.conf.d/10periodic ] && {
+			sudo rm /etc/apt/apt.conf.d/10periodic
+	}
+	sudo ln -s ~/code/pats/base/install/10periodic /etc/apt/apt.conf.d/
+
+
+	[ -f /etc/apt/apt.conf.d/20auto-upgrades ] && {
+			sudo rm /etc/apt/apt.conf.d/20auto-upgrades
+	}
+	sudo ln -s ~/code/pats/base/install/20auto-upgrades /etc/apt/apt.conf.d/
+
+
+	[ -f /etc/rc.local ] && {
+		sudo cp /etc/rc.local{,.bak} --backup=numbered
+		sudo rm /etc/rc.local
+	}
+	sudo ln -s ~/code/pats/base/install/rc.local /etc/rc.local
+
+	[ -f /etc/environment ] && {
+		sudo cp /etc/environment{,.bak} --backup=numbered
+		sudo rm /etc/environment
+	}
+	ubuntu_str=$(lsb_release -a | grep Release)
+	if [[ $ubuntu_str == *"18.04"* ]] ; then
+		sudo ln -s ~/code/pats/base/install/environment_18.04 /etc/environment
+	else
+		sudo ln -s ~/code/pats/base/install/environment_20.04 /etc/environment
+	fi
+
+	rm ~/.ssh/config -f
+	ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config
+
+	[ -f ~/.gdbinit ] && {
+		sudo cp ~/.gdbinit{,.bak} --backup=numbered
+		sudo rm ~/.gdbinit
+	}
+	sudo ln -s ~/code/pats/base/install/.gdbinit ~/.gdbinit
+
+	sudo cp /etc/sudoers{,.bak} --backup=numbered
+	sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
+
+
+	[ -f /etc/NetworkManager/NetworkManager.conf ] && {
+		sudo cp /etc/NetworkManager/NetworkManager.conf{,.bak} --backup=numbered
+		sudo rm /etc/NetworkManager/NetworkManager.conf
+	}
+	sudo ln -s ~/code/pats/base/install/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf
+
+	[ -f /etc/netplan/networkmanager.yaml ] && {
+		sudo cp /etc/netplan/networkmanager.yaml{,.bak} --backup=numbered
+		sudo rm /etc/netplan/networkmanager.yaml
+	}
+	sudo ln -s ~/code/pats/base/install/networkmanager.yaml /etc/netplan/networkmanager.yaml
+	sudo netplan generate
+	sudo netplan apply
+	sudo service NetworkManager restart
+
+	[ -f /etc/systemd/system.conf ] && {
+		sudo cp /etc/systemd/system.conf{,.bak} --backup=numbered
+		sudo rm /etc/systemd/system.conf
+	}
+	sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
+
+	sudo systemctl restart ssh.service
+
+	mkdir -p ~/Arduino
+	[ -d ~/Arduino/libraries ] && {
+		cp -r ~/Arduino/libraries{,.bak} --backup=numbered
+		rm -r ~/Arduino/libraries
+	}
+	ln -s ~/code/pats/Arduino/libraries ~/Arduino/libraries
+
+	touch $SYMLINK_FLAG
+}
 
 [ -f pats_sys_config-v1.0.done ] || {
 	# Add to groups
@@ -489,10 +445,46 @@ sudo apt-get clean -y
 
 set +x
 echo "********************** ALL DONE ***************************"
-if [[ $1 -eq 1 ]] ; then
-	echo todo:
-	echo 1. Set bios to startup always at power on
-	echo 2. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
-	echo 3. Change hostname stuff
-	echo "***********************************************************"
-fi
+echo todo:
+echo 1. Set bios to startup always at power on
+echo 2. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
+echo 3. Change hostname stuff
+echo "***********************************************************"
+
+
+
+# Install pats-c dev packages
+# # Install the Dash code
+# PATSC_CODE_FLAG=patsc_code_v1.0.done
+# [ -f $PATSC_CODE_FLAG ] || {
+	
+
+# 	pushd ./code/
+# 	[ -d ../code/dash ] || {
+# 		git clone git@github-dash:pats-drones/dash.git
+# 	}
+# 	popd
+
+# 	touch $PATSC_CODE_FLAG
+# }
+
+
+# [ -f patsc-dependencies-packages-v1.1.done ] || {
+# 	pip3 install -r ~/code/dash/patsc/requirements.txt
+# 	touch patsc-dependencies-packages-v1.1.done
+# }
+
+# # Install dev packages
+# [ -f dev-dependencies-packages-v1.1.done ] || {
+# 	wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+# 	sudo apt-get -y install apt-transport-https
+# 	#to install sublime
+# 	#echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+# 	#sudo snap install sublime-text --classic
+# 	sudo snap install code --classic
+# 	sudo apt update
+# 	sudo apt install -y libqt5opengl5 libqt5opengl5-dev meld gitk git-gui terminator jstest-gtk
+# 	#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1 libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev libgtk2.0-dev libgtk-3-dev gnome-devel
+# 	touch dev-dependencies-packages-v1.1.done
+# }
+
