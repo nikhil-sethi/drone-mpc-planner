@@ -286,8 +286,6 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
         }
     }
     _target_insecttracker = best_itrkr;
-    if (_target_insecttracker)
-        std::cout << "best ttrkr: " << _target_insecttracker->insect_trkr_id() << std::endl;
     return best_itrkr;
 }
 
