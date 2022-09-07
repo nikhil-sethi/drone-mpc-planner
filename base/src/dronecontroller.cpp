@@ -197,7 +197,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 else if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration) {
                     _flight_mode = fm_1g;
                 } else {
-                    cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 1.5f * GRAVITY);
+                    cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 2.f * GRAVITY);
                     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
                 }
                 break;
@@ -664,6 +664,9 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
 
 
 std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_acc) {
+
+    if (normf(desired_acc) > calibration.max_thrust)
+        desired_acc *= calibration.max_thrust / normf(desired_acc);
 
     cv::Point3f direction = desired_acc / normf(desired_acc);
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(desired_acc))));
