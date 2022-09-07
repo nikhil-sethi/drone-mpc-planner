@@ -36,14 +36,14 @@ TEST_GROUP(TimeToIntercept) {
 //     CHECK(opti_res.valid);
 // }
 
-// TEST(TimeToIntercept, overall_behavior) {
-//     bool average_timing_ok, max_timing_ok, invalid_results_ok;
-//     std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(time_to_intercept, false, sqp_solver_configuration());
-//     CHECK(average_timing_ok);
-//     CHECK(max_timing_ok);
-//     CHECK(invalid_results_ok);
+TEST(TimeToIntercept, overall_behavior) {
+    bool average_timing_ok, max_timing_ok, invalid_results_ok;
+    std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(time_to_intercept, false, sqp_solver_configuration());
+    CHECK(average_timing_ok);
+    CHECK(max_timing_ok);
+    CHECK(invalid_results_ok);
 
-// }
+}
 
 // TEST(TimeToIntercept, overall_behavior_casadi) {
 //     bool average_timing_ok, max_timing_ok, invalid_results_ok;

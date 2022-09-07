@@ -165,9 +165,9 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                             //           " " << valid << " " << timetointercept << " " << positiontointercept << std::endl;
 
                             n_optimizer_tests++;
-                            double dt = (t_end - t_start) / 1ms;
+                            double dt = (t_end - t_start) / 1us;
                             timings.push_back(dt);
-                            if (dt > realtime_boundary_ms) {
+                            if (dt > realtime_boundary_ms * 1000) {
                                 invalid_timings++;
                             }
                             accumulated_optimizing_time += dt;
@@ -206,6 +206,18 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
         std::cout << "---------------------intercept_in_planes-----------------------------" << std::endl;
     std::cout << "Setup:" << std::endl;
 
+    switch (optimizer_select) {
+        case intercept_in_planes: {
+                std::cout << "- Quadratic solver: " << iip.quadratic_solver_library() << std::endl;
+                break;
+            }
+        case time_to_intercept: {
+                std::cout << "- Quadratic solver: " << tti.quadratic_solver_library() << std::endl;
+                break;
+            }
+    }
+
+
     if (use_casadi)
         std::cout << "- Used casadi: " << use_casadi << std::endl;
 // else
@@ -213,19 +225,24 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
 
     std::cout << "- SQP setup: max_iterations: " << sqp_config.max_iterations << " tol_primal: " << sqp_config.tol_pr << " tol_dual: " << sqp_config.tol_du << " min_dx: " << sqp_config.min_step_size << std::endl;
     if (optimizer_select == intercept_in_planes) {
-        int n_planes, n_samples_intercepting;
-        std::tie(n_samples_intercepting, n_planes) =  iip.scenario_setup();
-        std::cout << "- Scenario setup: n_samples_intercepting: " << n_samples_intercepting << " n_planes: " << n_planes << std::endl;
+        int n_planes, n_samples_intercepting, n_samples_breaking;
+        std::tie(n_samples_intercepting, n_samples_breaking, n_planes) =  iip.scenario_setup();
+        std::cout << "- Scenario setup: n_samples_intercepting: " << n_samples_intercepting;
+        if (optimizer_select == intercept_in_planes)
+            std::cout << " n_samples_breaking: " << n_samples_breaking;
+        std::cout << std::endl;
+        std::cout << "- N planes: " << n_planes << std::endl;
     }
     std::cout << "- System under stress: " << enable_stress << std::endl;
     std::cout << "- Disable timing ensurance: " << disable_time_ensurance << std::endl;
 
     std::cout << std::endl << "Timing:" << std::endl;
-    std::cout << "- Average optimization time: " << average_opt_time << "ms" << std::endl;
-    std::cout << "- Variance optimization time: " << var_calculation_time << "ms" << std::endl;
-    std::cout << "- Max optimization time: " << max_optimizing_time << "ms" << std::endl;
+    std::cout << "- Average optimization time: " << average_opt_time << "us" << std::endl;
+    std::cout << "- Variance optimization time: " << var_calculation_time << "us" << std::endl;
+    std::cout << "- Max optimization time: " << max_optimizing_time << "us" << std::endl;
     std::cout << "- Valid optimization timings: "  << static_cast<double>(n_optimizer_tests - invalid_timings) / static_cast<double>(n_optimizer_tests) * 100. << "% in total: " << n_optimizer_tests - invalid_timings << std::endl;
-    std::cout << "- Realtime applicable in 2*sigma: " << average_opt_time + 2 * var_calculation_time << " <? " << 1. / 90 * 1000 << ": " << ((average_opt_time + 2 * var_calculation_time) / 1000 < (1. / 90)) << std::endl;
+    float sigma2interval_ms = static_cast<float>(average_opt_time + 2 * var_calculation_time) / 1000;
+    std::cout << "- Realtime applicable in 2*sigma: " << sigma2interval_ms << " <? " << realtime_boundary_ms << ": " << (sigma2interval_ms < realtime_boundary_ms) << std::endl;
     std::cout << std::endl << "Optimiality:" << std::endl;
     std::cout << "- Interceptions: " << static_cast<double>(interceptions_found) / n_optimizer_tests * 100. << "% in total: " << interceptions_found << std::endl;
     std::cout << "- Average interception time: " << accumulated_interception_time / n_optimizer_tests << "s" << std::endl;
