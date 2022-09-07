@@ -6,6 +6,20 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+option(PATS_PROFILING "pats_profiling" 0)
+
+if(PATS_PROFILING)
+  add_definitions(-DPATS_PROFILING)
+  message("Set -DPATS_PROFILING")
+endif(PATS_PROFILING)
+
+option(PATS_OCP_PROFILING "pats_ocp_profiling" 0)
+if(PATS_OCP_PROFILING)
+  add_definitions(-DPATS_OCP_PROFILING)
+  message("Set -DPATS_OCP_PROFILING")
+endif(PATS_OCP_PROFILING)
+
+
 set(SRC_DIR ./src/)
 set(OPTI_SRC_DIR ./ocp_design/)
 set(ignoreMe "${QT_QMAKE_EXECUTABLE}") #get rid unused variable warning:

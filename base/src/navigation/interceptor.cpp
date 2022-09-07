@@ -49,6 +49,9 @@ void Interceptor::log(std::ostream *logger) {
 }
 
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_interceptor = std::chrono::high_resolution_clock::now();
+#endif
     _tti = -1;
     _tti_iip = -1;
     aim_in_flightarea = false;
@@ -138,6 +141,10 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     if (!_drone->nav.drone_hunting()) { //Correct too high thrust due to ground compensation (see beginning of this method)
         _aim_acc /= 2;
     }
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_interceptor = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (update_interceptor): " << (t_end_interceptor - t_start_interceptor).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 void Interceptor::update_aim_in_flightarea(tti_result tti_res) {

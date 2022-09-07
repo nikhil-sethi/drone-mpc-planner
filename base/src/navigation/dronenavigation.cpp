@@ -53,6 +53,9 @@ void DroneNavigation::init_flight(bool hunt, std::ofstream *logger) {
 }
 
 void DroneNavigation::update(double time) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_navigation = std::chrono::high_resolution_clock::now();
+#endif
     switch (_navigation_status) {
         case ns_takeoff: {
                 _control->reset_manual_override_take_off_now();
@@ -325,6 +328,10 @@ void DroneNavigation::update(double time) {
     }
     (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";" << _iceptor->tti() << ";";
 
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_navigation = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (drone_navigation): " << (t_end_navigation - t_start_navigation).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 void DroneNavigation::close() {
     if (initialized) {

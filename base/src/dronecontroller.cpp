@@ -113,6 +113,9 @@ void DroneController::led_strength(float light_level) {
 }
 
 void DroneController::control(TrackData data_drone, TrackData data_target, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_control = std::chrono::high_resolution_clock::now();
+#endif
     _time = time;
     control_mode_hold_filter.update(control_mode, time);
 
@@ -528,6 +531,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                    pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                    _rc->telemetry.batt_cell_v  << ";" <<
                    static_cast<int>(_rc->telemetry.rssi)  << ";";
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_control = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (drone_control): " << (t_end_control - t_start_control).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 

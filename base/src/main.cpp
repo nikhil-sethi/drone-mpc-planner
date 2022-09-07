@@ -176,6 +176,7 @@ void process_video() {
 
         light_level = visdat.light_level();
         check_exit_conditions(frame->time, escape_key_pressed);
+
         encode_video(frame);
         print_terminal(frame);
         received_img_count++;
@@ -193,8 +194,19 @@ void process_video() {
     std::cout << "Exiting main loop" << std::endl;
 }
 
+#ifdef PATS_PROFILING
+std::chrono::_V2::system_clock::time_point time_last_process_frame_called;
+float process_frame_call_dt = -1;
+#endif
+
 void process_frame(StereoPair *frame) {
     std::chrono::_V2::system_clock::time_point t_start_process_frame = std::chrono::high_resolution_clock::now();
+#ifdef PATS_PROFILING
+    if ((t_start_process_frame - time_last_process_frame_called).count() > 0 && time_last_process_frame_called != std::chrono::_V2::system_clock::time_point())
+        process_frame_call_dt = (t_start_process_frame - time_last_process_frame_called).count() * 1e-6; //Don't cout here because it messes up cout in different thread.
+    time_last_process_frame_called = t_start_process_frame;
+#endif
+
     if (log_replay_mode && pparams.op_mode != op_mode_c) {
         if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
@@ -225,9 +237,13 @@ void process_frame(StereoPair *frame) {
            << cam->measured_exposure() << ";" << cam->measured_gain() << ";"
            << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
     double max_opti_time = 1000. / 2 / pparams.fps - ((std::chrono::high_resolution_clock::now() - t_start_process_frame).count()) * 1e-6;
-    std::cout << "timing (planed_optimization_time): " << max_opti_time << "ms" << std::endl;
     patser.interceptor.max_optimization_time(max_opti_time * 1e-3);
+
+#ifdef PATS_PROFILING
+    std::cout << "timing (available_opt_time): " << max_opti_time << "ms" << std::endl;
+#endif
     patser.update(frame->time);
+
     if (pparams.drone != drone_none && dparams.tx != tx_none)
         rc->send_commands(frame->time);
     baseboard_link.time(frame->time);
@@ -245,11 +261,18 @@ void process_frame(StereoPair *frame) {
 
         }
     }
+
     if (!log_replay_mode)
         cmdcenter.update(frame->left, frame->time);
 
     watchdog = true;
     logger << '\n';
+#ifdef PATS_PROFILING
+    if (process_frame_call_dt > 0)
+        std::cout << "timing (process_frame_call_dt): " << process_frame_call_dt << "ms" << std::endl;
+    std::chrono::_V2::system_clock::time_point t_end_process_frame = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (process_frame): " << (t_end_process_frame - t_start_process_frame).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 

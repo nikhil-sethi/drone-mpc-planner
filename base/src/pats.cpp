@@ -26,6 +26,9 @@ void Patser::init_flight_replay(std::string replay_dir, int flight_id) {
 }
 
 void Patser::update(double time) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+#endif
     (*_logger) << state_str() << ";" << static_cast<uint16_t>(_pats_state) << ";";
     switch (_pats_state) {
         case pats_init: {
@@ -68,12 +71,17 @@ void Patser::update(double time) {
         } case pats_x: {
                 if (!drone.in_flight())
                     maintain_motion_map(time);
+
                 trackers.update(time);
                 interceptor.update(drone.control.at_base(), time);
                 drone.update(time);
                 break;
             }
     }
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (update_patser): " << (t_end - t_start).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 void Patser::maintain_motion_map(double time) {

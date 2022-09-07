@@ -38,6 +38,9 @@ void VisionData::init(Cam *cam) {
 }
 
 void VisionData::update(StereoPair *data) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+#endif
     track_avg_brightness(data->left, _current_frame_time);
     frameL = data->left;
     frameR = data->right;
@@ -87,6 +90,7 @@ void VisionData::update(StereoPair *data) {
                 motion_update_iterator_max++;
                 motion_update_iterator = 0;
             }
+
             fade(diffL16, exclude_drone_from_motion_fading_spot_L);
             fade(diffR16, exclude_drone_from_motion_fading_spot_R);
         }
@@ -108,6 +112,10 @@ void VisionData::update(StereoPair *data) {
     if (enable_viz_motion)
         viz_frame = diffL * 10;
 
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (update visiondata): " << (t_end - t_start).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {

@@ -5,8 +5,6 @@
 #endif
 #include <sstream>
 
-//#define PROFILING
-
 void InterceptInPlanesOptimizerInterface::init(float *thrust, FlightArea  *flightarea, safety_margin_types safety_margin) {
     _thrust = thrust;
     _flight_area = flightarea;

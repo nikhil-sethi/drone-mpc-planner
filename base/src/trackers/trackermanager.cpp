@@ -34,6 +34,9 @@ void TrackerManager::stop_drone_tracking(DroneTracker *dtrk) {
 }
 
 void TrackerManager::update(double time) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_trackers = std::chrono::high_resolution_clock::now();
+#endif
     prep_vizs();
     if (_mode != t_idle) {
         find_blobs();
@@ -46,6 +49,10 @@ void TrackerManager::update(double time) {
     (*_logger) << trackermanager_mode_names[_mode] << ";" << static_cast<uint16_t>(_mode) << ";" << _trackers.size() << ";" << _blobs.size() << ";" << time_since_monsters << ";";
     draw_trackers_viz();
     finish_vizs();
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_trackers = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (update_trackers): " << (t_end_trackers - t_start_trackers).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 cv::Rect pre_select_roi(ImagePredictItem item, cv::Mat diff) {

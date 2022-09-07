@@ -1,6 +1,5 @@
 #include "tti_optimizer_interface.h"
 #include <chrono>
-//#define PROFILING
 
 enum op_idx {
     dt = 0,

@@ -1,4 +1,5 @@
 #include "drone.h"
+#include <chrono>
 #include <experimental/filesystem>
 #include "navigation.h"
 
@@ -30,8 +31,17 @@ void Drone::init_flight_replay(std::string replay_dir, int flight_id) {
 }
 
 void Drone::update(double time) {
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_drone = std::chrono::high_resolution_clock::now();
+#endif
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_start_attitude_pad_update = std::chrono::high_resolution_clock::now();
+#endif
     control.update_attitude_pad_state();
-
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_attitude_pad_update = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (drone_attitude_pad_update): " << (t_end_attitude_pad_update - t_start_attitude_pad_update).count() * 1e-6 << "ms" << std::endl;
+#endif
     switch (_state) {
         case ds_pre_flight: {
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false); // TODO need better solution for this
@@ -63,9 +73,11 @@ void Drone::update(double time) {
                     break;
                 }
                 if (_interceptor->intercepting()) {
+
                     take_off(true, time);
                     _state = ds_flight;
                     _interceptor->reset_hunt_error();
+
                     _baseboard_link->allow_charging(false);
                     break;
                 } else if (_interceptor->target_detected(time)) {
@@ -103,12 +115,14 @@ void Drone::update(double time) {
                 break;
         } case ds_flight: {
                 auto state = tracker.last_track_data();
+
                 flight_logger << _visdat->frame_id << ";" << time << ";" << state.dt << ";" << drone_state_str() << ";";
                 nav.update(time);
                 if (_interceptor->control_mode() == acceleration_feedforward)
                     control.control(state, nav.setpoint(),  acceleration_feedforward, _interceptor->aim_acc(), time, true);
                 else
                     control.control(state, nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, true);
+
                 _interceptor->log(&flight_logger);
                 _interceptor->target_is_hunted(_n_take_offs);
                 flight_logger << std::endl;
@@ -152,6 +166,10 @@ void Drone::update(double time) {
     }
 
     (*main_logger) << drone_state_str() << ";";
+#ifdef PATS_PROFILING
+    std::chrono::_V2::system_clock::time_point t_end_drone = std::chrono::high_resolution_clock::now();
+    std::cout << "timing (update_drone): " << (t_end_drone - t_start_drone).count() * 1e-6 << "ms" << std::endl;
+#endif
 }
 
 void Drone::pre_flight(double time) {
@@ -495,6 +513,7 @@ void Drone::take_off(bool hunt, double time) {
         _n_wp_flights++;
         std::cout << "Taking off for waypoint flight #" << _n_wp_flights << std::endl;
     }
+
     _visdat->save_maps(_n_take_offs, data_output_dir);
 
     flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);
