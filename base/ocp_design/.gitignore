@@ -6,4 +6,6 @@ tmp/
 *.txt
 *.so
 *intercept_in_planes_optimizer.cpp
+*quadratic_optimizer.*
+*index*
 .clangd
