@@ -203,7 +203,7 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
     if (optimizer_select == time_to_intercept)
         std::cout << "---------------------(TTI) time_to_intercept-------------------------------" << std::endl;
     else if (optimizer_select == intercept_in_planes)
-        std::cout << "---------------------(IIP) intercept_in_planes-----------------------------" << std::endl;
+        std::cout << "---------------------(IIPv3) intercept_in_planes-----------------------------" << std::endl;
     std::cout << "Setup:" << std::endl;
 
     switch (optimizer_select) {
