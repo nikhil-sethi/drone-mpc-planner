@@ -98,10 +98,14 @@ def process_system_status_in_folder(folder: str, logger: logging.Logger):
         frames_path = Path(folder, 'frames.csv')
         if not os.path.exists(frames_path):
             return ([], 'Error: Could not determine runtime', '')
-        frames_log = pd.read_csv(frames_path, sep=";")
-        if len(frames_log) > 2:
-            runtime = frames_log['time'].values[-2]  # use the second last because a not properly closed log likely has a corrupted last line...
-        else:
+        try:
+            frames_log = pd.read_csv(frames_path, sep=";")
+            if len(frames_log) > 2:
+                runtime = frames_log['time'].values[-2]  # use the second last because a not properly closed log likely has a corrupted last line...
+            else:
+                runtime = 0
+        except pd.errors.EmptyDataError:
+            logger.warning('frames.csv is empty')
             runtime = 0
     else:
         runtime = -1.0
