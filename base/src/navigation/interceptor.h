@@ -63,6 +63,7 @@ private:
 
     double optimization_time = 0.008; // @ 90fps optimization time max is 0.011
 
+    bool realtime_check = true;
     std::ofstream *_logger;
 
     tracking::InsectTracker *update_target_insecttracker();
@@ -86,6 +87,12 @@ public:
 
 
     tracking::TrackData target_last_trackdata();
+
+    void disable_realtime_checks() {
+        realtime_check = false;
+        intercept_in_planes_optimizer.max_cpu_time(0);
+        tti_optimizer.max_cpu_time(0);
+    };
 
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
     int insect_id() {

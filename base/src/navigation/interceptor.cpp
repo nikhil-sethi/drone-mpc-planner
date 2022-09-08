@@ -213,8 +213,9 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     t_now = std::chrono::high_resolution_clock::now();
                     double time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count() * 1e-6;
                     double remaining_time = optimization_time - time_passed;
-                    if (remaining_time > 0.002) { // see iip timing statistics in interceptinplanes.cpp run
-                        intercept_in_planes_optimizer.max_cpu_time(remaining_time);
+                    if (!realtime_check || remaining_time > 0.002) { // see iip timing statistics in interceptinplanes.cpp run
+                        if (realtime_check)
+                            intercept_in_planes_optimizer.max_cpu_time(remaining_time);
                         auto res = intercept_in_planes_optimizer.find_best_interception(drone, target);
 
                         if (res.valid) {

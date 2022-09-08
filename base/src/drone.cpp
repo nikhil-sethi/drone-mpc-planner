@@ -23,6 +23,7 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
 
 void Drone::init_full_log_replay(std::string replay_dir) {
     control.init_full_log_replay(replay_dir);
+    _interceptor->disable_realtime_checks();
 }
 void Drone::init_flight_replay(std::string replay_dir, int flight_id) {
     _state = ds_ready;

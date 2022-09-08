@@ -124,6 +124,8 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
     switch (optimizer_select) {
         case time_to_intercept: {
                 tti.init(&thrust);
+                // if (disable_time_ensurance)
+                //     tti.max_cpu_time(0);
 #ifdef OCP_DEV
                 if (use_casadi) {
                     tti.init_casadi("../../ocp_design/casadi/tti/tti_optimizer.so");
