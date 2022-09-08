@@ -11,6 +11,7 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2  -Wno-missing-field-initializers")
 MESSAGE( STATUS "CMAKE BUILD TYPE: " ${CMAKE_BUILD_TYPE} )
 
+find_package(osqp REQUIRED)
 pkg_check_modules(CASADI REQUIRED casadi)
 
 message("CASADI_LIBRARY_DIRS: ${CASADI_LIBRARY_DIRS}")
@@ -72,3 +73,11 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} CppUTest CppUTestExt)
 target_link_libraries(${PROJECT_NAME} qpOASES)
 target_link_libraries(${PROJECT_NAME} ${CASADI_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} osqp::osqp)
+target_link_libraries(${PROJECT_NAME} osqp::osqpstatic)
+
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/min_nlp/min_nlp_quadratic_optimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/tti/tti_quadratic_optimizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/intercept_in_planes/intercept_in_planes_quadratic_optimizer.cpp DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/casadi_parser/solvertemplate_osqp.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/casadi_parser/solvertemplate_osqp.h ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/casadi_parser/solvertemplate_qpoases.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/casadi_parser/solvertemplate_qpoases.h ${CMAKE_CURRENT_SOURCE_DIR} ./../ocp_design/intercept_in_planes/ocp_intercept_in_planes.py ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/tti/ocp_tti.py
+                   COMMAND make all
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../ocp_design/
+)
