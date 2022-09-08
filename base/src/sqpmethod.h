@@ -63,5 +63,6 @@ private:
     double l1_sum_viol(Eigen::VectorXd z, problem_parameters *prob_params);
     void backtracking_casadi(problem_solution *prev_qpsolution, problem_solution *qpsolution, problem_parameters *prob_params);
 
-    Eigen::VectorXd gradient_lagrangian(problem_solution *prob_sol, problem_parameters *prob_param) ;
+    Eigen::VectorXd gradient_lagrangian(problem_solution *prob_sol, problem_parameters *prob_param);
+    Eigen::VectorXd return_xopt(Eigen::VectorXd Xopt, Eigen::VectorXd X0);
 };

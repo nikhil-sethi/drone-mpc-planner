@@ -108,6 +108,7 @@ void SQPSolver::backtracking_casadi(problem_solution *prev_qpsolution, problem_s
 }
 
 Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
+    Eigen::VectorXd X0 = prob_param->X0;
     problem_solution prev_qpsolution(prob_param);
     problem_solution qpsolution = prev_qpsolution;
     std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
@@ -134,13 +135,13 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
         //           << " pr_inf: " << pr_inf << " du_inf: " << du_inf << " dx_inf: " << dx_inf << std::endl;
 
         if (iteration > 0) {
-            if (iteration >= min_iterations && pr_inf < config.tol_pr && du_inf < du_inf) { // solver converged
 #ifdef PROFILING
+            if (iteration >= min_iterations && pr_inf < config.tol_pr && du_inf < config.tol_du) { // solver converged
                 t_now = std::chrono::high_resolution_clock::now();
                 cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
                 std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
 #endif
-                return qpsolution.Xopt;
+                return return_xopt(qpsolution.Xopt, X0);
             }
             if (iteration >= min_iterations && dx_inf < config.min_step_size) {// solver doesn't make progress
 
@@ -149,7 +150,7 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
                 cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
                 std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
 #endif
-                return qpsolution.Xopt;
+                return return_xopt(qpsolution.Xopt, X0);
             }
         }
 
@@ -169,10 +170,10 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
 #endif
             if (cpu_time_remaining < 0.001) {
                 // std::cout << "WARNING: SQP stops not enough time is left for another QP iteration." << std::endl;
-                return qpsolution.Xopt;
+                return return_xopt(qpsolution.Xopt, X0);
             }
         } else {
-            cpu_time_remaining = -1;
+            cpu_time_remaining = 0;
         }
 #ifdef PROFILING
         t_start_updating = std::chrono::high_resolution_clock::now();
@@ -192,7 +193,7 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
         std::cout << "SQPMethod: cpu_time (qpoasis iteration): " << cpu_time_passed << "us" << std::endl;
 #endif
 
-        if (qpsolution.status > 0 && iteration == 0) {
+        if (qpsolution.status != 0 && iteration == 0) {
             // std::cout << "WARNING: Quadratic solver is complaining in initial iteration! return status " << qpsolution.status << std::endl;
 #ifdef PROFILING
             t_now = std::chrono::high_resolution_clock::now();
@@ -200,14 +201,14 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
             std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
 #endif
             return Eigen::VectorXd(prev_qpsolution.Xopt.size()).setZero();
-        } else if (qpsolution.status > 0) {
-            std::cout << "WARNING: Quadratic solver is complaining after some iterations! return status " << qpsolution.status << std::endl;
 #ifdef PROFILING
+        } else if (qpsolution.status != 0) {
+            // std::cout << "WARNING: Quadratic solver is complaining after some iterations! return status " << qpsolution.status << std::endl;
             t_now = std::chrono::high_resolution_clock::now();
             cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
             std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
 #endif
-            return prev_qpsolution.Xopt;
+            return return_xopt(prev_qpsolution.Xopt, X0);
         }
     }
 
@@ -216,7 +217,7 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
     cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
     std::cout << "SQPMethod: cpu_time: " << cpu_time_passed * 1e3 << "ms" << std::endl;
 #endif
-    return qpsolution.Xopt;
+    return return_xopt(qpsolution.Xopt, X0);
 }
 
 
@@ -247,3 +248,13 @@ Eigen::VectorXd SQPSolver::solve_casadi(problem_parameters *prob_param) {
 }
 
 #endif
+
+Eigen::VectorXd SQPSolver::return_xopt(Eigen::VectorXd Xopt, Eigen::VectorXd X0) {
+    // Safety check to ensure that the optimizer was actually called. If the result hasn't changed (optimizer hasn't called) return 0 vector.
+    if ((Xopt - X0).norm() > 0)
+        return Xopt;
+    else {
+        std::cout << "SQPSolver: Return_xopt has set xopt to 0." << std::endl;
+        return Xopt.setZero();
+    }
+}
