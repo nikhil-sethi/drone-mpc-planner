@@ -30,7 +30,7 @@ void SQPSolver::init_casadi(std::string problem_solver_path) {
     opts["min_step_size"] = config.min_step_size;
     opts["convexify_strategy"] = "eigen-reflect"; //NONE|regularize|eigen-reflect|eigen-clip.
     opts["hessian_approximation"] = "exact"; //limited-memory|exact
-    opts["max_iter"] = config.max_iterations;
+    opts["max_iter"] = config.max_sqp_iterations;
     opts["qpsol_options.printLevel"] = "none";
     opts["qpsol_options.error_on_fail"] = false;
 
@@ -120,7 +120,7 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
     sigma = 0;
     // _qpsolver->print_eigenvector("X0", prob_param->X0.transpose());
 
-    for (int iteration = 0; iteration <= config.max_iterations; iteration++) {
+    for (int iteration = 0; iteration <= config.max_sqp_iterations; iteration++) {
 
         Eigen::VectorXd gLag = gradient_lagrangian(&qpsolution, prob_param);
         double du_inf = gLag.cwiseAbs().maxCoeff();

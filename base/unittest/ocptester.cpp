@@ -257,7 +257,6 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
     std::cout << "Testing time: " << std::chrono::duration_cast<std::chrono::seconds>(t_test_end - t_test_start).count() << "s" << std::endl;
 
     auto stats = eval_range_data(range_dat);
-
     cout_header(optimizer_select);
     cout_setup(optimizer_select, use_casadi, sqp_config, enable_stress, disable_time_ensurance);
     cout_optmization_stats(optimizer_select, range_dat, stats);

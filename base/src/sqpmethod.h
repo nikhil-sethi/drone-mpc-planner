@@ -7,13 +7,13 @@
 #endif
 
 struct sqp_solver_configuration {
-    int max_iterations;
+    int max_sqp_iterations;
     double tol_pr;
     double tol_du;
     double min_step_size;
 
-    sqp_solver_configuration(): max_iterations(30), tol_pr(1e-2), tol_du(1e-2), min_step_size(1e-1) {};
-    sqp_solver_configuration(int mi, double tp, double td, double mss) : max_iterations(mi), tol_pr(tp), tol_du(td), min_step_size(mss) {};
+    sqp_solver_configuration(): max_sqp_iterations(30), tol_pr(1e-2), tol_du(1e-2), min_step_size(1e-1) {};
+    sqp_solver_configuration(int mi, double tp, double td, double mss) : max_sqp_iterations(mi), tol_pr(tp), tol_du(td), min_step_size(mss) {};
 };
 
 class SQPSolver {
