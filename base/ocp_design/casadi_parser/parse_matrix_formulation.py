@@ -33,7 +33,7 @@ def find_definitions(lines):
 def insert_definitions(consts, lines):
     for line, line_content in enumerate(lines):
         lines[line] = lines[line].replace(" ", "")
-        for const in consts:
+        for const in dict(reversed(list(consts.items()))):
             lines[line] = lines[line].replace(const, consts[const])
 
     for line, line_content in enumerate(lines):
@@ -42,18 +42,31 @@ def insert_definitions(consts, lines):
 
     return lines
 
+def parse_casadi_expression(expr):
+    if len(expr.split(",")) > 1:
+        parts = expr.split(",")
+        expr = parts[-1]
+        for p in list(reversed(range(len(parts)-1))):
+            def_key_value = parts[p].split('=')
+            expr = expr.replace(def_key_value[0].replace(" ", ""), "("+def_key_value[1].replace(" ", "")+")")
+
+    return expr
+
+
 def parse_sparse_matrix_entry(line):
-    """Expects lines like: (0, 46) -> 0.001."""
+    """Expects lines like: (0, 46) -> @1=x1, 0.001*x1."""
     tmp = line.split("->")
 
     tmp_idx = tmp[0].split(",")
     row = int(tmp_idx[0].replace("(", ""))
     colum = int(tmp_idx[1].replace(")", ""))
     expr = tmp[1]
-    return [row, colum, parse_expression(expr)]
+    expr = parse_variable_for_cpp(expr)
+    expr = parse_casadi_expression(expr)
+    return [row, colum, expr]
 
 def parse_matrix_formulation(lines):
-    """Return a list of [row, column, expression]."""
+    """Return a list of [row, column, expression]. While expression will hold the cpp code."""
     defs, lines = find_definitions(lines)
     lines = insert_definitions(defs, lines)
 
@@ -84,7 +97,7 @@ def repl_elem(m):
     pattern = m.group(0)
     return re.sub("[a-z]{4,5}", repl_key, pattern)+"]"
 
-def parse_expression(expr):
+def parse_variable_for_cpp(expr):
     """."""
     patterns = list(set(re.findall("xopt[0-9]{0,9}", expr)))
     patterns = sorted(patterns, key=len)
@@ -101,13 +114,6 @@ def parse_expression(expr):
     for pattern in list(reversed(patterns)):
         expr = re.sub(pattern, repl_elem, expr)
 
-    if len(expr.split(",")) > 1:
-        parts = expr.split(",")
-        for p in range(len(parts)-1):
-            def_key_value = parts[p].split('=')
-            parts[-1] = parts[-1].replace(def_key_value[0], def_key_value[1])
-
-        expr = parts[-1]
     return expr
 
 def parse_constraint_formulation(line):
@@ -118,10 +124,10 @@ def parse_constraint_formulation(line):
 
     defs, lines = find_definitions(lines)
     for l, line_content in enumerate(lines):
-        lines[l] = parse_expression(line_content)
+        lines[l] = parse_variable_for_cpp(line_content)
 
     for d in defs:
-        defs[d] = parse_expression(defs[d])
+        defs[d] = parse_variable_for_cpp(defs[d])
 
     return defs, lines
 

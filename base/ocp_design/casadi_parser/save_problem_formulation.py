@@ -30,19 +30,19 @@ def save_problem_as_text(name, xopt, parameters, objective, constraints):
         f.write(save_as_sparse_matrix(jacobian_objective))
 
         jacobian_constraints = casadi.jacobian(constraints, xopt)
-
         hessian_objective = casadi.jacobian(jacobian_objective, xopt)
         for c in range(n_constr):
             hessian_objective += casadi.jacobian(lam_g[c] * jacobian_constraints[c,:], xopt)
+
         f.write("Objectives hessian:\n")
         f.write(save_as_sparse_matrix(hessian_objective))
 
         f.write("Constraints:\n")
-        f.write(str(constraints)+'\n')
+        f.write(save_as_sparse_matrix(constraints))
         f.write("Constraints jacobian:\n")
         f.write(save_as_sparse_matrix(jacobian_constraints))
         f.write("CX0-dCX0:\n")
-        f.write(str(constraints - jacobian_constraints@xopt) + '\n')
+        f.write(save_as_sparse_matrix(constraints - jacobian_constraints@xopt))
 
 
 if __name__ == '__main__':

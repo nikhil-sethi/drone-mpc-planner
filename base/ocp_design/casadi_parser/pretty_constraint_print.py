@@ -11,24 +11,13 @@ def pretty_constraint_print(name):
 
     formulation_lines = formulation.split('\n')
     line_objective_jacobian, line_objective_hessian, line_constraints, line_constraints_jacobian, line_bound_constraints = find_keywords(formulation_lines)
-    lines = formulation_lines[line_constraints].split(",")
+    lines = formulation_lines[line_constraints:line_constraints_jacobian-1]
 
     defs = {}
     clean_lines = []
     for line in lines:
-        line = line.replace(" ", "")
-        line = line.replace("[", "")
-        line = line.replace("]", "")
+        line = line.split(" -> ")[1]
+        clean_lines.append(line.replace(",", ""))
 
-        for key in defs:
-            line = line.replace(key, defs[key])
-
-        if line[0] == "@" and "=" in line:
-            def_elements = line.split("=")
-            defs[def_elements[0]] = def_elements[1]
-
-        else:
-            clean_lines.append(line)
-
-    print("constraint_idx:", [*range(len(clean_lines))])
+    print("constraint_idx:", [*range(len(lines))])
     print("constraint:", clean_lines)

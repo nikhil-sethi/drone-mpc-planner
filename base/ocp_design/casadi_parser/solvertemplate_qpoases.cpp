@@ -1,15 +1,15 @@
 #include "solvertemplate.h"
 
 void SolverTemplate::init() {
-    solver = new SQProblem(N_XOPTS, N_CONSTRAINTS);
+    solver = SQProblem(N_XOPTS, N_CONSTRAINTS);
 
     Options options;
     options.setToMPC();
     options.printLevel = PL_NONE;
     options.enableRegularisation = BT_TRUE;
-    Eigen::VectorXd xopt = Eigen::VectorXd(N_XOPTS);
+    Eigen::VectorXd xopt = Eigen::VectorXd(N_XOPTS).setZero();
 
-    solver->setOptions(options);
+    solver.setOptions(options);
     memset(H, 0, sizeof(H));
     Eigen::VectorXd lamg = Eigen::VectorXd(N_CONSTRAINTS).setZero();
     /* INIT H PLACEHOLDER*/
@@ -29,7 +29,7 @@ Eigen::VectorXd SolverTemplate::constraints(problem_parameters *prob_params, pro
 }
 
 Eigen::VectorXd SolverTemplate::constraints(Eigen::VectorXd xopt, Eigen::VectorXd param [[maybe_unused]]) {
-    Eigen::VectorXd constraints = Eigen::VectorXd(N_CONSTRAINTS);
+    Eigen::VectorXd constraints = Eigen::VectorXd(N_CONSTRAINTS).setZero();
     /* CONSTRAINTS PLACEHOLDER*/
     return constraints;
 }
@@ -37,7 +37,7 @@ Eigen::VectorXd SolverTemplate::constraints(Eigen::VectorXd xopt, Eigen::VectorX
 Eigen::MatrixXd SolverTemplate::constraint_derivative(problem_parameters *prob_params, problem_solution *prev_qpsolution) {
     Eigen::VectorXd xopt = prev_qpsolution->Xopt;
     Eigen::VectorXd param = prob_params->param;
-    Eigen::MatrixXd dconstraints = Eigen::MatrixXd(N_CONSTRAINTS, N_XOPTS);
+    Eigen::MatrixXd dconstraints = Eigen::MatrixXd(N_CONSTRAINTS, N_XOPTS).setZero();
     /* CONSTRAINT_DERIVATIVES PLACEHOLDER*/
     return dconstraints;
 }
@@ -107,19 +107,19 @@ problem_solution SolverTemplate::solve(problem_parameters *prob_params, problem_
     else
         _cpu_time = nullptr;
 
-    if (!solver->isInitialised() || init)
-        solver_status = solver->init(H, g, A, lb, ub, lbA, ubA, nwsr, _cpu_time);
+    if (!solver.isInitialised() || init)
+        solver_status = solver.init(H, g, A, lb, ub, lbA, ubA, nwsr, _cpu_time);
     else
-        solver_status = solver->hotstart(H, g, A, lb, ub, lbA, ubA, nwsr, _cpu_time);
+        solver_status = solver.hotstart(H, g, A, lb, ub, lbA, ubA, nwsr, _cpu_time);
 
     real_t primal[N_XOPTS];
-    solver->getPrimalSolution(primal);
+    solver.getPrimalSolution(primal);
     Eigen::VectorXd xopt = prev_qpsolution->Xopt + Eigen::Map<Eigen::VectorXd>(primal, N_XOPTS);
     real_t _dual[N_XOPTS + N_CONSTRAINTS];
-    solver->getDualSolution(_dual);
+    solver.getDualSolution(_dual);
     Eigen::VectorXd lagrange_multiplier = -Eigen::Map<Eigen::VectorXd>(&(_dual[N_XOPTS]), N_CONSTRAINTS);
 
-    problem_solution ret = problem_solution(xopt, constraints(xopt, prob_params->param), lagrange_multiplier, solver->getObjVal(), solver_status);
+    problem_solution ret = problem_solution(xopt, constraints(xopt, prob_params->param), lagrange_multiplier, solver.getObjVal(), qp_return_status(solver_status));
     // print_quadratic_problem_design(*prob_params, ret);
     // print_quadratic_problem(primal, _dual);
     // print_array("H", N_XOPTS * N_XOPTS, H);

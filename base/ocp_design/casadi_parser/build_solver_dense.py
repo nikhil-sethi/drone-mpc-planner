@@ -9,7 +9,7 @@ def build_classname(name):
     return name+"QuadraticOptimizer"
 
 def build_header(name, n_xopts, n_constraints):
-    with open(Path('~/code/pats/base/ocp_design/casadi_parser/solvertemplate.h').expanduser(), 'r') as f:
+    with open(Path('~/code/pats/base/ocp_design/casadi_parser/solvertemplate_qpoases.h').expanduser(), 'r') as f:
         header = f.read();
 
     class_name = build_classname(name)
@@ -59,10 +59,8 @@ def build_linear_constraint_entry(n_xopts, row, column, value):
 
 def build_A(n_xopts, constraint_slopes):
     A = ""
-    for def_name in constraint_slopes[0]:
-        A += build_definition(def_name, constraint_slopes[0][def_name])
 
-    for lin_c in constraint_slopes[1]:
+    for lin_c in constraint_slopes:
         A += build_linear_constraint_entry(n_xopts, lin_c[0], lin_c[1], lin_c[2])
     return A
 
@@ -72,10 +70,8 @@ def build_dconstraint_entry(n_xopts, row, column, value):
 def build_dconstraints(n_xopts, constraint_slopes):
     """Almost as build A but saves into a Matrix structure and not a array."""
     A = ""
-    for def_name in constraint_slopes[0]:
-        A += build_definition(def_name, constraint_slopes[0][def_name])
 
-    for lin_c in constraint_slopes[1]:
+    for lin_c in constraint_slopes:
         A += build_dconstraint_entry(n_xopts, lin_c[0], lin_c[1], lin_c[2])
 
     return A
@@ -93,11 +89,11 @@ def build_bA(bound_corrections):
     # for def_name in bound_corrections[0]:
     #     bA += build_definition(def_name, bound_corrections[0][def_name])
 
-    for c_idx, lbAc in enumerate(bound_corrections[1]):
-        bA += build_lbA_entry(c_idx, lbAc)
+    for c_idx, lbAc in enumerate(bound_corrections):
+        bA += build_lbA_entry(lbAc[0], lbAc[2])
 
-    for c_idx, ubAc in enumerate(bound_corrections[1]):
-        bA += build_ubA_entry(c_idx, ubAc)
+    for c_idx, ubAc in enumerate(bound_corrections):
+        bA += build_ubA_entry(ubAc[0], ubAc[2])
     return bA
 
 def build_c_entry(c_idx, value):
@@ -106,20 +102,17 @@ def build_c_entry(c_idx, value):
 def build_c(constraints):
     c = ""
 
-    for def_name in constraints[0]:
-        c += build_definition(def_name, constraints[0][def_name])
-
-    for c_idx, ck in enumerate(constraints[1]):
-        c += build_c_entry(c_idx, ck)
+    for c_idx, ck in enumerate(constraints):
+        c += build_c_entry(ck[0], ck[2])
 
     return c
 
-def build_solver(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections):
+def build_solver_dense(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections):
     """."""
-    n_constraints = len(constraints[1])
+    n_constraints = len(constraints)
     build_header(name, n_xopts, n_constraints)
 
-    with open(Path('~/code/pats/base/ocp_design/casadi_parser/solvertemplate.cpp').expanduser(), 'r') as f:
+    with open(Path('~/code/pats/base/ocp_design/casadi_parser/solvertemplate_qpoases.cpp').expanduser(), 'r') as f:
         source = f.read();
 
     source = source.replace("solvertemplate", name+"_quadratic_optimizer")

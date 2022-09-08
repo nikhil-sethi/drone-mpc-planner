@@ -17,7 +17,10 @@ public:
     problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time);
 
     void nWSR(int nwsr) {if (nwsr < 1) _nWSR = 1; else _nWSR = nwsr;};
+    void change_settings(float alpha, [[maybe_unused]] bool polish [[maybe_unused]]) {return;};
     double costs(Eigen::VectorXd X);
+
+    std::string quadratic_solver_library() { return "qpOases";};
 
 private:
     real_t H[N_DIMS_H];
@@ -28,7 +31,7 @@ private:
     real_t lbA[N_CONSTRAINTS];
     real_t ubA[N_CONSTRAINTS];
 
-    SQProblem *solver;
+    SQProblem solver;
     int _nWSR = 40;
     double *_cpu_time;
 
@@ -42,6 +45,13 @@ private:
 
     double sq(double x) {return x * x;};
 
+    int qp_return_status(int solver_status) {
+        if (solver_status == SUCCESSFUL_RETURN) // || solver_status == RET_MAX_NWSR_REACHED)
+            return 0;
+        else
+            return 1;
+    };
+
     void print_quadratic_problem(real_t *primal, real_t *dual) {
         std::cout << "***********PATS Optimization step:**************" << std::endl;
         print_array("H", N_DIMS_H, H);
@@ -54,5 +64,5 @@ private:
         print_array("prim", N_XOPTS, primal);
         print_array("(-1)*dual", N_XOPTS + N_CONSTRAINTS, dual); //dual is printed with inverted sign, the lagrange_multiplier for the constraints have the correct sign however.
         std::cout << "*******************************************" << std::endl;
-    }
+    };
 };

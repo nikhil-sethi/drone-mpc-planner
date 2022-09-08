@@ -7,14 +7,14 @@ def load_optimizer_settings(optimizer_option='sqpmethod'):
         opts = {"qpsol":"qpoases",
                 "verbose": False,
                 "print_time": False,
-                "print_status": False,
-                "print_header": False,
+                "print_status": True,
+                "print_header": True,
                 "print_iteration": False,
-                "convexify_strategy": "eigen-clip", #NONE|regularize|eigen-reflect|eigen-clip.
+                "convexify_strategy": "regularize", #NONE|regularize|eigen-reflect|eigen-clip.
                 "hessian_approximation": "exact", #limited-memory|exact
-                "max_iter": 100,
+                "max_iter": 1000,
                 "qpsol_options": {"printLevel":"none",
-                                  "error_on_fail": False}
+                                  "error_on_fail": True}
                 }
     else:
         solvername = 'ipopt'

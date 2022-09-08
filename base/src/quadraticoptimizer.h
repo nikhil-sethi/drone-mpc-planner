@@ -3,6 +3,7 @@
 #include <iostream>
 #include <eigen3/Eigen/Core>
 #include <limits>
+#include <osqp.h>
 
 
 struct problem_parameters {
@@ -72,6 +73,7 @@ class QuadraticOptimizer {
 public:
     virtual void init() = 0;
     virtual Eigen::VectorXd constraints(problem_parameters *prob_params, problem_solution *prev_qpsolution) = 0;
+    virtual Eigen::VectorXd constraints(Eigen::VectorXd xopt, Eigen::VectorXd param) = 0;
     virtual Eigen::MatrixXd constraint_derivative(problem_parameters *prob_params, problem_solution *prev_qpsolution) = 0;
     virtual problem_solution solve(problem_parameters *prob_params, bool init, double cpu_time) = 0;
     virtual problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time) = 0;
@@ -96,7 +98,15 @@ public:
         }
     }
 
-    void print_array(std::string name, long long int n, double *vec) {
+    void print_array(std::string name, long long int n, c_float *vec) {
+        std::cout << name << ": [";
+        for (long long int k = 0; k < n - 1; k++)
+            std::cout << vec[k] << ", ";
+        std::cout << vec[n - 1] << "]" << std::endl;
+    }
+
+
+    void print_array(std::string name, long long int n, c_int *vec) {
         std::cout << name << ": [";
         for (long long int k = 0; k < n - 1; k++)
             std::cout << vec[k] << ", ";
@@ -105,7 +115,7 @@ public:
 
     void print_vector(std::string name, std::vector<float> vec) {
         std::cout << name << ": [";
-        for (long long int k = 0; k < vec.size() - 1; k++)
+        for (long unsigned int k = 0; k < vec.size() - 1; k++)
             std::cout << vec[k] << ", ";
         std::cout << vec[vec.size() - 1] << "]" << std::endl;
     }
@@ -114,12 +124,15 @@ public:
         std::cout << "***********Problem optimization step (PATS):**************" << std::endl;
         print_eigenvector("idx", Eigen::VectorXd::LinSpaced(prob_params.X0.size(), 0, prob_params.X0.size() - 1));
         print_eigenvector("X0", prob_params.X0);
-        print_eigenvector("lbg", prob_params.lbg);
-        print_eigenvector("ubg", prob_params.ubg);
         print_eigenvector("lbx", prob_params.lbx);
         print_eigenvector("ubx", prob_params.ubx);
-        print_eigenvector("param", prob_params.param);
         print_eigenvector("Xopt", prob_sol.Xopt);
+
+        print_eigenvector("lbg", prob_params.lbg);
+        print_eigenvector("g(x0)", constraints(prob_params.X0, prob_params.param));
+        print_eigenvector("ubg", prob_params.ubg);
+        print_eigenvector("lam", prob_sol.lagrange_multiplier);
+        print_eigenvector("param", prob_params.param);
         std::cout << "solver_status: " << prob_sol.status << std::endl;
         std::cout << "*******************************************" << std::endl;
 
@@ -130,7 +143,6 @@ public:
     }
 
 protected:
-    Eigen::MatrixXd _H_orig; // H from Taylor development of the cost function
-    Eigen::MatrixXd _H; // H used to solve quadratic subproblem
+    Eigen::MatrixXd _H;
     Eigen::VectorXd _g;
 };

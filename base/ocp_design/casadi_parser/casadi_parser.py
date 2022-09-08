@@ -7,7 +7,8 @@ from save_problem_formulation import save_problem_as_text
 from generalize_formulation import *
 from clean_formulation import clean_formulation
 from parse_matrix_formulation import parse_matrix_formulation, parse_constraint_formulation, parse_complex_matrix_formulation
-from build_solver import build_solver
+from build_solver_dense import build_solver_dense
+from build_solver_sparse import build_solver_sparse
 from pretty_constraint_print import pretty_constraint_print
 
 
@@ -30,9 +31,6 @@ def parse_casadi_formulation(name):
     formulation_lines = formulation.split('\n')
     n_xopts = find_nxopts(formulation_lines)
 
-    line_objective_jacobian, line_objective_hessian, line_constraints, line_constraints_jacobian, line_bound_constraints = find_keywords(formulation_lines)
-    # formulation_lines = clean_formulation(formulation_lines, line_objective_jacobian, line_constraints)
-
     with open(name+'-parsed.txt', 'w') as f:
         for fl in formulation_lines:
             f.write(fl+"\n")
@@ -49,17 +47,18 @@ def parse_casadi_formulation(name):
     quadratic_costs = parse_matrix_formulation(formulation_lines[line_objective_hessian:line_constraints-1])
     # print("quadratic_costs:", quadratic_costs)
 
-    # print("line_constraint_formulation: " + formulation_lines[line_constraints])
-    constraints = parse_constraint_formulation(formulation_lines[line_constraints])
+    constraints = parse_matrix_formulation(formulation_lines[line_constraints:line_constraints_jacobian-1])
     # print("constraints:", constraints)
 
     # print("Constraint slopes formualtions: " + str(formulation_lines[line_constraints_jacobian:line_bound_constraints]))
-    constraint_slopes = parse_complex_matrix_formulation(formulation_lines[line_constraints_jacobian:line_bound_constraints-1])
+    constraint_slopes = parse_matrix_formulation(formulation_lines[line_constraints_jacobian:line_bound_constraints-1])
+
     # print("bound_constraint_formulation: " + str(formulation_lines[line_bound_constraints]))
-    bound_corrections = parse_constraint_formulation(formulation_lines[line_bound_constraints])
+    bound_corrections = parse_matrix_formulation(formulation_lines[line_bound_constraints:-1])
     # print("bound_constraint: " + str(bound_corrections))
 
-    build_solver(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
+    build_solver_sparse(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
+    # build_solver_dense(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
 
     formulation = lines_to_string(formulation_lines)
 
