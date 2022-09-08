@@ -236,8 +236,11 @@ void process_frame(StereoPair *frame) {
            << light_level << ";"
            << cam->measured_exposure() << ";" << cam->measured_gain() << ";"
            << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
-    double max_opti_time = 1000. / 2 / pparams.fps - ((std::chrono::high_resolution_clock::now() - t_start_process_frame).count()) * 1e-6;
-    patser.interceptor.max_optimization_time(max_opti_time * 1e-3);
+
+    if (pparams.op_mode == op_mode_x) {
+        double max_opti_time = 1000. / 2 / pparams.fps - ((std::chrono::high_resolution_clock::now() - t_start_process_frame).count()) * 1e-6;
+        patser.interceptor.max_optimization_time(max_opti_time * 1e-3);
+    }
 
 #ifdef PATS_PROFILING
     std::cout << "timing (available_opt_time): " << max_opti_time << "ms" << std::endl;
