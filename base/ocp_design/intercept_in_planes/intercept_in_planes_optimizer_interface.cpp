@@ -281,7 +281,7 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
 
 
 intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interception(tracking::TrackData drone, tracking::TrackData insect) {
-#ifdef PROFILING
+#ifdef PATS_OCP_PROFILING
     std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
     std::chrono::_V2::system_clock::time_point t_now;
 #endif
@@ -304,7 +304,7 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
     update_box_constraints(drone, insect);
     update_plane_parameters(planes);
 
-#ifdef PROFILING
+#ifdef PATS_OCP_PROFILING
     t_now = std::chrono::high_resolution_clock::now();
     double cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
     std::cout << "IIP: cpu_time (build problem): " << cpu_time_passed << "us" << std::endl;
@@ -319,7 +319,7 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
 #endif
         opti_var = sqpsolver.solve_line_search(&prob_params);
 
-#ifdef PROFILING
+#ifdef PATS_OCP_PROFILING
     t_now = std::chrono::high_resolution_clock::now();
     cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
     std::cout << "IIP: cpu_time (run sqpmethod): " << cpu_time_passed << "us" << std::endl;
@@ -341,7 +341,7 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
     //     export_scenario(drone, insect, planes);
     // report_scenario_result(drone, insect, res);
 
-#ifdef PROFILING
+#ifdef PATS_OCP_PROFILING
     t_now = std::chrono::high_resolution_clock::now();
     cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
     std::cout << "IIP: cpu_time (evaluate result): " << cpu_time_passed << "us" << std::endl;

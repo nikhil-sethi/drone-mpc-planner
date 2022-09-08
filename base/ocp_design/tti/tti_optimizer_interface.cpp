@@ -199,8 +199,10 @@ tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData tra
     update_initial_guess(track_data_drone, track_data_insect);
     update_variable_bounds(track_data_drone, track_data_insect);
 
+#ifdef PATS_OCP_PROFILING
     std::chrono::_V2::system_clock::time_point t_start, t_end;
     t_start = std::chrono::high_resolution_clock::now();
+#endif
 
     Eigen::VectorXd opti_var;
 
@@ -212,8 +214,8 @@ tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData tra
         opti_var = sqpsolver.solve_line_search(&prob_params);
 
 
+#ifdef PATS_OCP_PROFILING
     t_end = std::chrono::high_resolution_clock::now();
-#ifdef PROFILING
     std::cout << "TTI: Optimization time: " << (t_end - t_start).count() * 1E-6 << " ms" << std::endl;
 #endif
     res.time_to_intercept = opti_var[dt];
