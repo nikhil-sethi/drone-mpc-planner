@@ -237,22 +237,24 @@ fi
 	touch git_aliases_v1.0.done
 }
 
-QPOASES_FLAG=qpOASES-v1.done
-[ -f $QPOASES_FLAG ] || {
-	[ -d qpoases ] || {
-		git clone git@github.com:coin-or/qpOASES.git
+OSQP_FLAG=osqp-v1.done
+[ -f $OSQP_FLAG ] || {
+	[ -d osqp ] || {
+		git clone --recursive https://github.com/osqp/osqp
 	}
-	pushd qpOASES
+	pushd osqp
+	git checkout release-0.6.2
 	mkdir -p build
 	pushd build
-	cmake -DBUILD_SHARED_LIBS=1 ..
+	cmake -DPRINTING=false -DPROFILING=true ..
 	make -j4
 	sudo make install
 	sudo ldconfig
 	popd
 	popd
-	touch $QPOASES_FLAG
+	touch $OSQP_FLAG
 }
+
 EIGEN_FLAG=Eigen-v1.done
 [ -f $EIGEN_FLAG ] || {
 	[ -d eigen ] || {
