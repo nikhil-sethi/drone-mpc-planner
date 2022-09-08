@@ -27,19 +27,7 @@ include_directories(../ocp_design/intercept_in_planes)
 include_directories(../ocp_design/tti)
 include_directories(../ocp_design/min_nlp)
 
-option(PROFILING "profiling" 1)
-
-if(PROFILING)
-  add_definitions(-DPROFILING)
-  message("Set -DPROFILING")
-endif(PROFILING)
-
-option(IIP_OPTIMIZER_DEBUGGING "optimizer_debugging" 1)
-
-if(IIP_OPTIMIZER_DEBUGGING)
-  add_definitions(-DIIP_OPTIMIZER_DEBUGGING=2)
-  message("Set -DIIP_OPTIMIZER_DEBUGGING=2")
-endif(IIP_OPTIMIZER_DEBUGGING)
+add_definitions(-DOCP_DEV=true)
 
 add_definitions(-DUNIT_TESTING)
 
