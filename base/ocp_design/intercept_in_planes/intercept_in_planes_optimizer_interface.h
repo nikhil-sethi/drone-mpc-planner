@@ -50,8 +50,8 @@ public:
     sqp_solver_configuration sqp_convergence_parameter() {
         return sqpsolver.convergence_parameter();
     };
-    std::tuple<int, int> scenario_setup() {
-        return std::tuple(N_SAMPLES_INTERCEPTING, N_PLANES);
+    std::tuple<int, int, int> scenario_setup() {
+        return std::tuple(N_STEPS_INTERCEPTING + 1, N_STEPS_BREAKING + 1, N_PLANES);
     };
 
     void max_cpu_time(double mcput) {
