@@ -11,6 +11,8 @@
             "compilerArgs": [],
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/../src/**",
+                "${workspaceFolder}/../ocp_design/**",
                 "/usr/include/**",
                 "/usr/include/glib-2.0/**",
                 "/usr/include/gstreamer-1.0/**",
