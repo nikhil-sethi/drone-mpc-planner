@@ -46,6 +46,10 @@ std::vector<Plane> OcpTester::cube_planes(float cube_size, uint n_planes) {
 std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config) {
     bool enable_stress = false;
     bool disable_time_ensurance = false;
+    std::vector<Plane> planes = cube_planes(3.f, 6);
+
+    FlightArea flightarea;
+    flightarea.init(planes);
     switch (optimizer_select) {
         case time_to_intercept: {
                 tti.init(&thrust);
@@ -58,9 +62,6 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                 break;
             }
         case intercept_in_planes: {
-                FlightArea flightarea;
-                std::vector<Plane> planes = cube_planes(3.f, 6);
-                flightarea.init(planes);
 
                 iip.init(&thrust, &flightarea, bare);
                 iip.sqp_setup(sqp_config);
