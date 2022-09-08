@@ -1,5 +1,5 @@
 ---
-- hosts: c,tree,kevin,qc
+- hosts: c,rc,qc
   strategy: free
   gather_facts: no
   tasks:
