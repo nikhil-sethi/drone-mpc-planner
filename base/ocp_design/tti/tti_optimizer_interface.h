@@ -31,6 +31,8 @@ public:
 #endif
     tti_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
 
+    std::string quadratic_solver_library() { return qpsolver.quadratic_solver_library();};
+
 private:
     SQPSolver sqpsolver;
     TtiQuadraticOptimizer qpsolver;

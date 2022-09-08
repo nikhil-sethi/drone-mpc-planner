@@ -58,6 +58,8 @@ public:
         sqpsolver.max_cpu_time(mcput);
     };
 
+    std::string quadratic_solver_library() { return qpsolver.quadratic_solver_library();};
+
 private:
     const double interception_error_threshold = 0.05;
     bool print_warning_enabled = true;
