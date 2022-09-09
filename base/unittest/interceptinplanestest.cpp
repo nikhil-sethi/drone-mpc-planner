@@ -1,3 +1,4 @@
+#include "common.h"
 #include "intercept_in_planes_optimizer_interface.h"
 #include "flightarea.h"
 #include "plane.h"
@@ -7,6 +8,7 @@
 #include <CppUTest/TestHarness.h> //include at last!
 
 TEST_GROUP(InterceptInPlanes) {
+    xmls::DroneParameters dparams;
     InterceptInPlanesOptimizerInterface opti;
     OcpTester ocptester;
     tracking::TrackData drone;
@@ -124,20 +126,19 @@ TEST_GROUP(InterceptInPlanes) {
 // }
 
 // TEST(InterceptInPlanes, overall_behavior_casadi) {
-//     bool average_timing_ok, max_timing_ok, invalid_results_ok;
-//     std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(intercept_in_planes, true, sqp_solver_configuration());
-//     CHECK(average_timing_ok);
-//     CHECK(max_timing_ok);
-//     CHECK(invalid_results_ok);
+//     dparams.deserialize("../../xml/drone_anvil_superbee.xml");
+//     auto stats = ocptester.exec_range_test(intercept_in_planes, true, sqp_solver_configuration());
+//     CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms);
+//     CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
+//     CHECK(stats.invalid_optimization_results == 0);
 // }
 
 
 TEST(InterceptInPlanes, overall_behavior_linesearch) {
-    bool average_timing_ok, max_timing_ok, invalid_results_ok;
-    // sqp_solver_configuration sqp_config = sqp_solver_configuration(30, 1e-0, 1e-0, 1e-0);
-    // std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(intercept_in_planes, false, sqp_config);
-    std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(intercept_in_planes, false, sqp_solver_configuration());
-    CHECK(average_timing_ok);
-    CHECK(max_timing_ok);
-    CHECK(invalid_results_ok);
+    dparams.deserialize("../../xml/drone_anvil_superbee.xml");
+    sqp_solver_configuration sqp_config = sqp_solver_configuration(30, 1e-6, 1e-6, 1e-9);
+    auto stats = ocptester.exec_range_test(intercept_in_planes, false, sqp_config);
+    CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms);
+    CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
+    CHECK(stats.invalid_optimization_results == 0);
 }

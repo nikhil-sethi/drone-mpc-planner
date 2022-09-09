@@ -40,18 +40,18 @@ TEST_GROUP(TimeToIntercept) {
 // }
 
 TEST(TimeToIntercept, overall_behavior) {
-    bool average_timing_ok, max_timing_ok, invalid_results_ok;
-    std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(time_to_intercept, false, sqp_solver_configuration());
-    CHECK(average_timing_ok);
-    CHECK(max_timing_ok);
-    CHECK(invalid_results_ok);
-
+    auto stats = ocptester.exec_range_test(time_to_intercept, false, sqp_solver_configuration());
+    CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms);
+    CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
+    CHECK(stats.invalid_optimization_results == 0);
 }
 
 // TEST(TimeToIntercept, overall_behavior_casadi) {
-//     bool average_timing_ok, max_timing_ok, invalid_results_ok;
-//     std::tie(average_timing_ok, max_timing_ok, invalid_results_ok) = ocptester.exec_range_test(time_to_intercept, true, sqp_solver_configuration());
-//     CHECK(average_timing_ok);
-//     CHECK(max_timing_ok);
-//     CHECK(invalid_results_ok);
+//     auto stats = ocptester.exec_range_test(time_to_intercept, true, sqp_solver_configuration());
+//     CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms);
+//     CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
+//     CHECK(stats.invalid_optimization_results == 0);
+// }
+
+// TEST(TimeToIntercept, paramater_finding) {
 // }

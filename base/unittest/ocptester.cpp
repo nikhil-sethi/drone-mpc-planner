@@ -9,7 +9,7 @@ bool OcpTester::is_tti_good(float optimizer_tti, float estimated_tti) {
 }
 
 bool OcpTester::is_optimizer_results_good(tracking::TrackData drone, tracking::TrackData insect, bool res_valid, float res_tti) {
-    if (norm(drone.pos() - insect.pos()) < eps) {
+    if (normf(drone.pos() - insect.pos()) < eps) {
         return false;
     } else {
         // Worst case estimation
@@ -43,7 +43,78 @@ std::vector<Plane> OcpTester::cube_planes(float cube_size, uint n_planes) {
 }
 
 
-std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config) {
+range_stats OcpTester::eval_range_data(range_data data) {
+    range_stats stats;
+    stats.average_optimizing_time_us = data.accumulated_optimizing_time_us / data.n_optimizer_tests;
+    double var_calculation_time_us = 0;
+    for (auto timing : data.timings_us) {
+        var_calculation_time_us += pow(timing - stats.average_optimizing_time_us, 2);
+    }
+    stats. max_optimizing_time_us = data.max_optimizing_time_us;
+    stats.timing_variance_us = sqrt(1. / (data.timings_us.size() - 1) * var_calculation_time_us);
+    stats.sigma2_optimizing_time_ms = (stats.average_optimizing_time_us + 2 * stats.timing_variance_us) / 1000;
+    stats.valid_optimizing_timings_percent = static_cast<double>(data.n_optimizer_tests - data.invalid_timings) / static_cast<double>(data.n_optimizer_tests) * 100.;
+    stats.average_interception_time_s = data.accumulated_interception_time_s / data.interceptions_found;
+
+    return stats;
+}
+
+void OcpTester::cout_header(optimizer_test optimizer_select) {
+    if (optimizer_select == time_to_intercept)
+        std::cout << "---------------------(TTI) time_to_intercept-------------------------------" << std::endl;
+    else if (optimizer_select == intercept_in_planes)
+        std::cout << "---------------------(IIPv3) intercept_in_planes-----------------------------" << std::endl;
+
+}
+
+void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, bool enable_stress, bool disable_time_ensurance) {
+    std::cout << "Setup:" << std::endl;
+
+    switch (optimizer_select) {
+        case intercept_in_planes: {
+                std::cout << "- Quadratic solver: " << iip.quadratic_solver_library() << std::endl;
+                break;
+            }
+        case time_to_intercept: {
+                std::cout << "- Quadratic solver: " << tti.quadratic_solver_library() << std::endl;
+                break;
+            }
+    }
+
+    if (use_casadi)
+        std::cout << "- Used casadi: " << use_casadi << std::endl;
+
+    std::cout << "- SQP setup: max_sqp_iterations: " << sqp_config.max_sqp_iterations << " tol_primal: " << sqp_config.tol_pr << " tol_dual: " << sqp_config.tol_du << " min_dx: " << sqp_config.min_step_size << std::endl;
+    if (optimizer_select == intercept_in_planes) {
+        int n_planes, n_samples_intercepting, n_samples_breaking;
+        std::tie(n_samples_intercepting, n_samples_breaking, n_planes) =  iip.scenario_setup();
+        std::cout << "- Scenario setup: n_samples_intercepting: " << n_samples_intercepting;
+        if (optimizer_select == intercept_in_planes)
+            std::cout << " n_samples_breaking: " << n_samples_breaking;
+        std::cout << std::endl;
+        std::cout << "- N planes: " << n_planes << std::endl;
+    }
+    std::cout << "- System under stress: " << enable_stress << std::endl;
+    std::cout << "- Disable timing ensurance: " << disable_time_ensurance << std::endl;
+}
+
+void OcpTester::cout_optmization_stats(optimizer_test optimizer_select, range_data data, range_stats stats) {
+    std::cout << std::endl << "Timing:" << std::endl;
+    std::cout << "- Average optimization time: " << stats.average_optimizing_time_us << "us" << std::endl;
+    std::cout << "- Variance optimization time: " << stats.timing_variance_us << "us" << std::endl;
+    std::cout << "- Max optimization time: " << stats.max_optimizing_time_us << "us" << std::endl;
+    std::cout << "- Valid optimization timings: "  << stats.valid_optimizing_timings_percent << "% in total: " << data.n_optimizer_tests - data.invalid_timings << std::endl;
+    std::cout << "- Realtime applicable in 2*sigma: " << stats.sigma2_optimizing_time_ms << " <? " << realtime_boundary_ms << ": " << (stats.sigma2_optimizing_time_ms < realtime_boundary_ms) << std::endl;
+    std::cout << std::endl << "Optimiality:" << std::endl;
+    std::cout << "- Interceptions: " << static_cast<double>(data.interceptions_found) / data.n_optimizer_tests * 100. << "% in total: " << data.interceptions_found << std::endl;
+    std::cout << "- Average interception time: " << stats.average_interception_time_s << "s" << std::endl;
+    std::cout << std::endl << "Stats:" << std::endl;
+    std::cout << "- N_optimizations: " << data.n_optimizer_tests << std::endl;
+    std::cout << "---------------------------------------------------------------------" << std::endl;
+
+}
+
+range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config) {
     bool enable_stress = false;
     bool disable_time_ensurance = false;
     std::vector<Plane> planes = cube_planes(3.f, 6);
@@ -81,20 +152,11 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
     tracking::TrackData drone;
     tracking::TrackData insect;
     std::chrono::_V2::system_clock::time_point t_start, t_end;
-    uint invalid_optimization_results = 0;
-    uint interceptions_found = 0;
-    uint n_optimizer_tests = 0;
-    uint invalid_timings = 0;
-    double max_optimizing_time = 0;
-    double accumulated_interception_time = 0;
-    double accumulated_optimizing_time = 0;
-    double realtime_boundary_ms = 1. / 90 * 1000; //[ms]
+    range_data range_dat;
 
     float summon_box_size = 2;
     int n_samples_per_direction = 2;
     float step_size = summon_box_size / n_samples_per_direction;
-    std::vector<double> timings = {};
-
 
     std::chrono::_V2::system_clock::time_point t_test_start = std::chrono::high_resolution_clock::now();
     for (int idx_drone_posx = 0; idx_drone_posx <= n_samples_per_direction; idx_drone_posx++) {
@@ -151,8 +213,8 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                             t_end = std::chrono::high_resolution_clock::now();
 
                             if (valid) {
-                                accumulated_interception_time += static_cast<double>(timetointercept);
-                                interceptions_found++;
+                                range_dat.interceptions_found++;
+                                range_dat.accumulated_interception_time_s += static_cast<double>(timetointercept);
                             }
                             // else
                             //     std::cout << "invalid for drone: " << drone.pos() << ", " << drone.vel() << ", insect: " << insect.pos() << ", " << insect.vel() << std::endl;
@@ -165,15 +227,15 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
                             // std::cout << opti_name << drone.state.pos <<  drone.state.vel << insect.state.pos << insect.state.vel <<
                             //           " " << valid << " " << timetointercept << " " << positiontointercept << std::endl;
 
-                            n_optimizer_tests++;
-                            double dt = (t_end - t_start) / 1us;
-                            timings.push_back(dt);
-                            if (dt > realtime_boundary_ms * 1000) {
-                                invalid_timings++;
+                            range_dat.n_optimizer_tests++;
+                            double dt_us = (t_end - t_start) / 1us;
+                            range_dat.timings_us.push_back(dt_us);
+                            if (dt_us > realtime_boundary_ms * 1000) {
+                                range_dat.invalid_timings++;
                             }
-                            accumulated_optimizing_time += dt;
-                            if (dt > max_optimizing_time)
-                                max_optimizing_time = dt;
+                            range_dat.accumulated_optimizing_time_us += dt_us;
+                            if (dt_us > range_dat.max_optimizing_time_us)
+                                range_dat.max_optimizing_time_us = dt_us;
 
                         }
                     }
@@ -192,66 +254,13 @@ std::tuple<bool, bool, bool> OcpTester::exec_range_test(optimizer_test optimizer
     std::chrono::_V2::system_clock::time_point t_test_end = std::chrono::high_resolution_clock::now();
     std::cout << "Testing time: " << std::chrono::duration_cast<std::chrono::seconds>(t_test_end - t_test_start).count() << "s" << std::endl;
 
-    double average_opt_time = accumulated_optimizing_time / n_optimizer_tests;
+    auto stats = eval_range_data(range_dat);
 
-    double var_calculation_time = 0;
-    for (auto timing : timings) {
-        var_calculation_time += pow(timing - average_opt_time, 2);
-    }
-    var_calculation_time = sqrt(1. / (timings.size() - 1) * var_calculation_time);
+    cout_header(optimizer_select);
+    cout_setup(optimizer_select, use_casadi, sqp_config, enable_stress, disable_time_ensurance);
+    cout_optmization_stats(optimizer_select, range_dat, stats);
 
-
-    if (optimizer_select == time_to_intercept)
-        std::cout << "---------------------(TTI) time_to_intercept-------------------------------" << std::endl;
-    else if (optimizer_select == intercept_in_planes)
-        std::cout << "---------------------(IIPv3) intercept_in_planes-----------------------------" << std::endl;
-    std::cout << "Setup:" << std::endl;
-
-    switch (optimizer_select) {
-        case intercept_in_planes: {
-                std::cout << "- Quadratic solver: " << iip.quadratic_solver_library() << std::endl;
-                break;
-            }
-        case time_to_intercept: {
-                std::cout << "- Quadratic solver: " << tti.quadratic_solver_library() << std::endl;
-                break;
-            }
-    }
-
-
-    if (use_casadi)
-        std::cout << "- Used casadi: " << use_casadi << std::endl;
-// else
-// std::cout << "Used trust regions: " << opti->use_trustregionmethod << std::endl;
-
-    std::cout << "- SQP setup: max_iterations: " << sqp_config.max_iterations << " tol_primal: " << sqp_config.tol_pr << " tol_dual: " << sqp_config.tol_du << " min_dx: " << sqp_config.min_step_size << std::endl;
-    if (optimizer_select == intercept_in_planes) {
-        int n_planes, n_samples_intercepting, n_samples_breaking;
-        std::tie(n_samples_intercepting, n_samples_breaking, n_planes) =  iip.scenario_setup();
-        std::cout << "- Scenario setup: n_samples_intercepting: " << n_samples_intercepting;
-        if (optimizer_select == intercept_in_planes)
-            std::cout << " n_samples_breaking: " << n_samples_breaking;
-        std::cout << std::endl;
-        std::cout << "- N planes: " << n_planes << std::endl;
-    }
-    std::cout << "- System under stress: " << enable_stress << std::endl;
-    std::cout << "- Disable timing ensurance: " << disable_time_ensurance << std::endl;
-
-    std::cout << std::endl << "Timing:" << std::endl;
-    std::cout << "- Average optimization time: " << average_opt_time << "us" << std::endl;
-    std::cout << "- Variance optimization time: " << var_calculation_time << "us" << std::endl;
-    std::cout << "- Max optimization time: " << max_optimizing_time << "us" << std::endl;
-    std::cout << "- Valid optimization timings: "  << static_cast<double>(n_optimizer_tests - invalid_timings) / static_cast<double>(n_optimizer_tests) * 100. << "% in total: " << n_optimizer_tests - invalid_timings << std::endl;
-    float sigma2interval_ms = static_cast<float>(average_opt_time + 2 * var_calculation_time) / 1000;
-    std::cout << "- Realtime applicable in 2*sigma: " << sigma2interval_ms << " <? " << realtime_boundary_ms << ": " << (sigma2interval_ms < realtime_boundary_ms) << std::endl;
-    std::cout << std::endl << "Optimiality:" << std::endl;
-    std::cout << "- Interceptions: " << static_cast<double>(interceptions_found) / n_optimizer_tests * 100. << "% in total: " << interceptions_found << std::endl;
-    std::cout << "- Average interception time: " << accumulated_interception_time / n_optimizer_tests << "s" << std::endl;
-    std::cout << std::endl << "Stats:" << std::endl;
-    std::cout << "- N_optimizations: " << n_optimizer_tests << std::endl;
-    std::cout << "---------------------------------------------------------------------" << std::endl;
-
-    return std::tuple(average_opt_time < realtime_boundary_ms, max_optimizing_time < realtime_boundary_ms, invalid_optimization_results == 0);
+    return stats;
 }
 
 
