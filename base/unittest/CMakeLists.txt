@@ -28,9 +28,9 @@ include_directories(../src/navigation)
 include_directories(../ocp_design/intercept_in_planes)
 include_directories(../ocp_design/tti)
 include_directories(../ocp_design/min_nlp)
+include_directories(../src/third_party/tinyxml)
 
 add_definitions(-DOCP_DEV=true)
-
 add_definitions(-DUNIT_TESTING)
 
 set(SOURCE_FILES  ../src/quaternion.cpp
@@ -46,6 +46,9 @@ set(SOURCE_FILES  ../src/quaternion.cpp
                   # ../ocp_design/min_nlp/min_nlp_optimizer_interface.cpp
                   # ../ocp_design/min_nlp/min_nlp_quadratic_optimizer.cpp
                   ../src/sqpmethod.cpp
+                  ../src/third_party/tinyxml/XMLSerialization.cpp
+                  ../src/third_party/tinyxml/tinyxml2.cpp
+
 
                   main.cpp
                   ocptester.cpp
@@ -56,7 +59,7 @@ set(SOURCE_FILES  ../src/quaternion.cpp
                   # commontest.cpp
                   # linalgtest.cpp
                   # filtertest.cpp
-                  flightareatest.cpp
+                  # flightareatest.cpp
                   # planetest.cpp
 )
 
