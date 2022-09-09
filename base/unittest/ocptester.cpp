@@ -296,3 +296,34 @@ std::tuple<tracking::TrackData, tracking::TrackData, std::vector<Plane>> OcpTest
     _planes.push_back(Plane(0, -0.9037, 0, 0, 1, 0, unspecified_plane)); (Plane(0, -0.91133, 0, 0, 1, 0, unspecified_plane));
     return std::tuple(drone, insect, _planes);
 }
+
+void OcpTester::find_parameter(optimizer_test optimizer_select, bool use_casadi) {
+    std::vector<double> tol_params = {1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9};
+    std::vector<int> max_sqp_iter = {10, 20, 30, 40, 50, 60, 70, 80, 90};
+    std::vector<sqp_solver_configuration> sqp_configurations;
+    for (auto mi : max_sqp_iter) {
+        for (auto prtol : tol_params) {
+            for (auto dutol : tol_params) {
+                for (auto dx : tol_params) {
+                    sqp_configurations.push_back(sqp_solver_configuration(mi, prtol, dutol, dx));
+                }
+            }
+        }
+    }
+    std::vector<range_stats> stats = {};
+    for (auto sqp_conf : sqp_configurations) {
+        auto statsi = exec_range_test(optimizer_select, use_casadi, sqp_conf);
+        stats.push_back(statsi);
+    }
+
+    cout_configuration_results(sqp_configurations, stats);
+}
+
+void OcpTester::cout_configuration_results(std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats) {
+
+    for (uint i = 0; i < sqp_conf.size() - 1; i++) {
+        std::cout << i << ": [" << sqp_conf[i].max_sqp_iterations << ", " << sqp_conf[i].tol_pr << ", " << sqp_conf[i].tol_du << ", " << sqp_conf[i].min_step_size << ", ";
+        std::cout << stats[i].average_optimizing_time_us << ", " << stats[i].max_optimizing_time_us << ", " << stats[i].sigma2_optimizing_time_ms << ", " <<
+                  stats[i].average_interception_time_s << "]" << std::endl;
+    }
+}

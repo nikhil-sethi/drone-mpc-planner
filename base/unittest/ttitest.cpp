@@ -53,5 +53,6 @@ TEST(TimeToIntercept, overall_behavior) {
 //     CHECK(stats.invalid_optimization_results == 0);
 // }
 
-// TEST(TimeToIntercept, paramater_finding) {
+// TEST(TimeToIntercept, find_parameters) {
+//     ocptester.find_parameter(time_to_intercept, false);
 // }

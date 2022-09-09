@@ -61,6 +61,7 @@ public:
     std::vector<Plane> cube_planes(float cube_size, uint n_planes);
 
     range_stats exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config);
+    void find_parameter(optimizer_test optimizer_select, bool use_casadi);
     std::tuple<tracking::TrackData, tracking::TrackData> case_test();
     std::tuple<tracking::TrackData, tracking::TrackData, std::vector<Plane>> application_test();
 
@@ -72,4 +73,5 @@ private:
     void cout_header(optimizer_test optimizer_select);
     void cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, bool enable_stress, bool disable_time_ensurance);
     void cout_optmization_stats(optimizer_test optimizer_select, range_data range_dat, range_stats stats);
+    void cout_configuration_results(std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats);
 };

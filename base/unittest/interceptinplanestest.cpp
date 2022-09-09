@@ -142,3 +142,7 @@ TEST(InterceptInPlanes, overall_behavior_linesearch) {
     CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
     CHECK(stats.invalid_optimization_results == 0);
 }
+
+// TEST(InterceptInPlanes, find_parameters) {
+// ocptester.find_parameter(intercept_in_planes, false);
+// }
