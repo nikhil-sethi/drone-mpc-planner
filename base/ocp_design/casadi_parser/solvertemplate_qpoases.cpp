@@ -1,12 +1,14 @@
 #include "solvertemplate.h"
+#include <intercept_in_planes_index.h>
 
 void SolverTemplate::init() {
     solver = SQProblem(N_XOPTS, N_CONSTRAINTS);
 
     Options options;
-    options.setToMPC();
+    options.setToDefault();
     options.printLevel = PL_NONE;
-    options.enableRegularisation = BT_TRUE;
+
+    // options.enableRegularisation = BT_TRUE;
     Eigen::VectorXd xopt = Eigen::VectorXd(N_XOPTS).setZero();
 
     solver.setOptions(options);
@@ -101,7 +103,7 @@ problem_solution SolverTemplate::solve(problem_parameters *prob_params, problem_
     update_vectors_bx(prob_params, prev_qpsolution);
 
     int solver_status;
-    int nwsr = _nWSR;
+    int nwsr = 5 * (N_XOPTS + N_CONSTRAINTS);
     if (cpu_time > 0)
         _cpu_time = &cpu_time;
     else
