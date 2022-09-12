@@ -7,7 +7,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 option(PATS_PROFILING "pats_profiling" 0)
-
 if(PATS_PROFILING)
   add_definitions(-DPATS_PROFILING)
   message("Set -DPATS_PROFILING")
@@ -19,6 +18,11 @@ if(PATS_OCP_PROFILING)
   message("Set -DPATS_OCP_PROFILING")
 endif(PATS_OCP_PROFILING)
 
+option(OCP_DEV "ocp_dev" 0)
+if(OCP_DEV)
+  add_definitions(-DOCP_DEV)
+  message("Set -DOCP_DEV")
+endif(OCP_DEV)
 
 set(SRC_DIR ./src/)
 set(OPTI_SRC_DIR ./ocp_design/)
@@ -127,7 +131,9 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_part
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/intercept_in_planes")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/tti")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GST_INCLUDE_DIRS})
+
 if(OCP_DEV)
+  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ~/repos/qpOASES/include)
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CASADI_INCLUDE_DIR})
 endif()
 
@@ -146,6 +152,7 @@ target_link_libraries(${PROJECT_NAME} osqp::osqp)
 target_link_libraries(${PROJECT_NAME} osqp::osqpstatic)
 
 if(OCP_DEV)
+  target_link_libraries(${PROJECT_NAME} qpOASES)
   target_link_libraries(${PROJECT_NAME} ${CASADI_LIBRARIES})
 endif()
 if(VIZ_3D)

@@ -13,6 +13,10 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
 
     tti_optimizer.init(&interception_max_thrust);
+#ifdef OCP_DEV
+    tti_optimizer.init_casadi("../ocp_design/tti/tti_optimizer.so");
+    intercept_in_planes_optimizer.init_casadi("../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");
+#endif
     intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
 
     initialized = true;
