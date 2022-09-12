@@ -112,9 +112,6 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
     problem_solution prev_qpsolution(prob_param, _qpsolver->constraints(prob_param->X0, prob_param->param));
     problem_solution qpsolution = prev_qpsolution;
     std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
-#ifdef PATS_OCP_PROFILING
-    std::chrono::_V2::system_clock::time_point t_start_updating = t_start;
-#endif
     std::chrono::_V2::system_clock::time_point t_now;
     double cpu_time_passed;
     sigma = 0;
@@ -136,20 +133,10 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
 
         if (iteration > 0) {
             if (iteration >= min_iterations && pr_inf < config.tol_pr && du_inf < config.tol_du) { // solver converged
-#ifdef PATS_OCP_PROFILING
-                t_now = std::chrono::high_resolution_clock::now();
-                cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
-                std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
-#endif
                 return return_xopt(qpsolution.Xopt, X0);
             }
             if (iteration >= min_iterations && dx_inf < config.min_step_size) {// solver doesn't make progress
 
-#ifdef PATS_OCP_PROFILING
-                t_now = std::chrono::high_resolution_clock::now();
-                cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
-                std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
-#endif
                 return return_xopt(qpsolution.Xopt, X0);
             }
         }
@@ -175,9 +162,6 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
         } else {
             cpu_time_remaining = 0;
         }
-#ifdef PATS_OCP_PROFILING
-        t_start_updating = std::chrono::high_resolution_clock::now();
-#endif
 
         if (iteration == 0) {
             qpsolution = _qpsolver->solve(prob_param, &prev_qpsolution, true, cpu_time_remaining);
@@ -189,36 +173,16 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
 
         // _qpsolver->print_eigenvector("X", qpsolution.Xopt);
 
-#ifdef PATS_OCP_PROFILING
-        t_now = std::chrono::high_resolution_clock::now();
-        cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start_updating).count();
-        std::cout << "SQPMethod: cpu_time (qpoasis iteration): " << cpu_time_passed << "us" << std::endl;
-#endif
 
         if (qpsolution.status != 0 && iteration == 0) {
             // std::cout << "WARNING: Quadratic solver is complaining in initial iteration! return status " << qpsolution.status << std::endl;
-#ifdef PATS_OCP_PROFILING
-            t_now = std::chrono::high_resolution_clock::now();
-            cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
-            std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
-#endif
             return Eigen::VectorXd(prev_qpsolution.Xopt.size()).setZero();
         } else if (qpsolution.status != 0) {
             // std::cout << "WARNING: Quadratic solver is complaining after some iterations! return status " << qpsolution.status << std::endl;
-#ifdef PATS_OCP_PROFILING
-            t_now = std::chrono::high_resolution_clock::now();
-            cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
-            std::cout << "SQPMethod: cpu_time: " << cpu_time_passed << "us" << std::endl;
-#endif
             return return_xopt(prev_qpsolution.Xopt, X0);
         }
     }
 
-#ifdef PATS_OCP_PROFILING
-    t_now = std::chrono::high_resolution_clock::now();
-    cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
-    std::cout << "SQPMethod: cpu_time: " << cpu_time_passed * 1e3 << "ms" << std::endl;
-#endif
     return return_xopt(qpsolution.Xopt, X0);
 }
 
