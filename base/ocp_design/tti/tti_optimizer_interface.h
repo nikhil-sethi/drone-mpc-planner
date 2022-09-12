@@ -31,6 +31,10 @@ public:
 #endif
     tti_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
 
+    void max_cpu_time(double mcput) {
+        sqpsolver.max_cpu_time(mcput);
+    };
+
     std::string quadratic_solver_library() { return qpsolver.quadratic_solver_library();};
 
 private:
