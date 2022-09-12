@@ -57,14 +57,15 @@ struct problem_solution {
         Z.segment(xopt.size(), consts.size()) = consts;
     };
 
-    problem_solution(problem_parameters *prob_param) {
+    problem_solution(problem_parameters *prob_param, Eigen::VectorXd _constraints_val) {
         int n_optvars = prob_param->X0.size();
         int n_constraints = prob_param->lbg.size();
         Xopt = prob_param->X0;
-        constraints_val = Eigen::VectorXd(n_constraints).setZero();
+        constraints_val = _constraints_val;
         lagrange_multiplier = Eigen::VectorXd(n_constraints).setZero();
         Z = Eigen::VectorXd(n_optvars + n_constraints).setZero();
         Z.segment(0, n_optvars) = prob_param->X0;
+        Z.segment(n_optvars, n_constraints) = _constraints_val;
         status = -1;
     };
 };

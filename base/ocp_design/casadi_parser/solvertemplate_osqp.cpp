@@ -124,7 +124,7 @@ void SolverTemplate::update_init_guess(problem_solution *prev_qpsolution) {
 }
 
 problem_solution SolverTemplate::solve(problem_parameters *prob_params, bool init, double cpu_time) {
-    problem_solution prev_qpsolution(prob_params);
+    problem_solution prev_qpsolution(prob_params, constraints(prob_params->X0, prob_params->param));
     return solve(prob_params, &prev_qpsolution, init, cpu_time);
 }
 

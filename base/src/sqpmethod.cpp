@@ -109,7 +109,7 @@ void SQPSolver::backtracking_casadi(problem_solution *prev_qpsolution, problem_s
 
 Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
     Eigen::VectorXd X0 = prob_param->X0;
-    problem_solution prev_qpsolution(prob_param);
+    problem_solution prev_qpsolution(prob_param, _qpsolver->constraints(prob_param->X0, prob_param->param));
     problem_solution qpsolution = prev_qpsolution;
     std::chrono::_V2::system_clock::time_point t_start = std::chrono::high_resolution_clock::now();
 #ifdef PATS_OCP_PROFILING
