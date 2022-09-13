@@ -74,6 +74,15 @@ private:
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos);
     bool delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker);
+    void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
+        _intercepting_state = is_intercept_maneuvering;
+        time_start_intercept_maneuver = time;
+        _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
+        _control_mode = position_control;
+    };
+    bool exit_is_intercept_maneuvering(double time) {
+        return norm(time - time_start_intercept_maneuver) > duration_intercept_maneuver;
+    };
 
 public:
     TTIOptimizerInterface tti_optimizer;

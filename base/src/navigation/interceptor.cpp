@@ -121,22 +121,25 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 [[fallthrough]];
 
         } case is_intercepting: {
-                if (!target_trkr) {
+                std::cout << "intercepting_state: " << _intercepting_state << std::endl;
+                if (_intercepting_state == is_intercept_maneuvering && exit_is_intercept_maneuvering(time)) {
+                    _intercepting_state = is_approaching;
                     _interceptor_state = is_waiting_for_target;
                     break;
                 }
-                if (target_trkr->n_frames_lost() > 0.112 * pparams.fps
-                        || _n_frames_aim_not_in_range > 0.34 * pparams.fps
-                        || target_trkr->false_positive()
-                        || _trackers->monster_alert()) {
+                if (_intercepting_state == is_approaching && !target_trkr) {
                     _interceptor_state = is_waiting_for_target;
+                    break;
+                } else if (_intercepting_state != is_intercept_maneuvering && (target_trkr->n_frames_lost() > 0.112 * pparams.fps
+                           || _n_frames_aim_not_in_range > 0.34 * pparams.fps
+                           || target_trkr->false_positive()
+                           || _trackers->monster_alert())) {
+                    enter_is_intercept_maneuvering(time, _drone->tracker.last_track_data());
                     break;
                 }
 
-
-                if (!target_trkr->n_frames_lost()) {
+                if (_intercepting_state == is_approaching)
                     update_hunt_strategy(drone_at_base, target_trkr->last_track_data(), time);
-                }
                 break;
 
             }
@@ -234,16 +237,13 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 }
 
                 if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel())) {
-                    _intercepting_state = is_intercept_maneuvering;
-                    time_start_intercept_maneuver = time;
-                    _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
-                    _control_mode = position_control;
+                    enter_is_intercept_maneuvering(time, drone);
                 } else {
                     break;
                 }
                 [[fallthrough]];
         } case is_intercept_maneuvering: {
-                if (norm(time - time_start_intercept_maneuver) > duration_intercept_maneuver)
+                if (exit_is_intercept_maneuvering(time))
                     _intercepting_state = is_approaching;
                 break;
             }
