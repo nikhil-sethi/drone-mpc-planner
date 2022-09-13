@@ -152,9 +152,6 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
                 return qpsolution.Xopt;
             }
             cpu_time_remaining = _max_cpu_time - cpu_time_passed;
-#ifdef PATS_OCP_PROFILING
-            std::cout << "SQP: cpu_time (time remaining for qpoases): " << cpu_time_remaining * 1e6 << "us" << std::endl;
-#endif
             if (cpu_time_remaining < 0.001) {
                 // std::cout << "WARNING: SQP stops not enough time is left for another QP iteration." << std::endl;
                 return return_xopt(qpsolution.Xopt, X0);
