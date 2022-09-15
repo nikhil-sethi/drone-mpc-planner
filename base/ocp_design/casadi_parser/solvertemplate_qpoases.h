@@ -7,17 +7,22 @@
 
 USING_NAMESPACE_QPOASES
 
+#include "qpoasesconfig.h"
+
 class SolverTemplate : public QuadraticOptimizer {
 public:
+
     void init();
+    void qp_setup(QPSettings qpsettings);
+    QPSettings qp_setup() {
+        return QPSettings(solver.getOptions());
+    };
     Eigen::VectorXd constraints(problem_parameters *prob_params, problem_solution *prev_qpsolution);
     Eigen::VectorXd constraints(Eigen::VectorXd xopt, Eigen::VectorXd param);
     Eigen::MatrixXd constraint_derivative(problem_parameters *prob_params, problem_solution *prev_qpsolution);
     problem_solution solve(problem_parameters *prob_params, bool init, double cpu_time);
     problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time);
 
-    void nWSR(int nwsr) {if (nwsr < 1) _nWSR = 1; else _nWSR = nwsr;};
-    void change_settings(float alpha [[maybe_unused]], bool polish [[maybe_unused]]) {return;};
     double costs(Eigen::VectorXd X);
 
     std::string quadratic_solver_library() { return "qpOases";};
@@ -32,7 +37,6 @@ private:
     real_t ubA[N_CONSTRAINTS];
 
     SQProblem solver;
-    int _nWSR = 40;
     double *_cpu_time;
 
     void update_vectors_bx(problem_parameters *prob_params, problem_solution *prev_qpsolution);

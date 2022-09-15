@@ -8,6 +8,7 @@ import time
 import numpy as np
 import casadi
 from casadi import SX, DM
+from pathlib import Path
 
 sys.path.append("../")
 sys.path.append("../casadi_parser")
@@ -100,7 +101,7 @@ key_planes = 'planes'
 
 def export_casadi_defines(n_vars, n_ineqs, ineq_idxs):
     """Export index of optimization parameters for easier CPP integration."""
-    with open("intercept_in_planes_index.h", "w") as f:
+    with open(Path("~/code/pats/base/src/optimization/intercept_in_planes_index.h").expanduser(), "w") as f:
         f.write("#pragma once\n")
         f.write("#define N_OPTVARS " + str(n_vars) +  "\n")
         f.write("#define N_CONSTRAINTS " + str(n_ineqs) + "\n")

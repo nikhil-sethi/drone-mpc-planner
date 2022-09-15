@@ -7,8 +7,8 @@ from save_problem_formulation import save_problem_as_text
 from generalize_formulation import *
 from clean_formulation import clean_formulation
 from parse_matrix_formulation import parse_matrix_formulation, parse_constraint_formulation, parse_complex_matrix_formulation
-from build_solver_dense import build_solver_dense
-from build_solver_sparse import build_solver_sparse
+from build_solver_qpoases import build_solver_qpoases
+from build_solver_osqp import build_solver_osqp
 from pretty_constraint_print import pretty_constraint_print
 
 
@@ -57,8 +57,8 @@ def parse_casadi_formulation(name):
     bound_corrections = parse_matrix_formulation(formulation_lines[line_bound_constraints:-1])
     # print("bound_constraint: " + str(bound_corrections))
 
-    # build_solver_sparse(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
-    build_solver_dense(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
+    build_solver_osqp(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
+    build_solver_qpoases(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections)
 
     formulation = lines_to_string(formulation_lines)
 

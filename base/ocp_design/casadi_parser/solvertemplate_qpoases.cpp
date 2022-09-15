@@ -23,6 +23,9 @@ void SolverTemplate::init() {
     _g = Eigen::Map<Eigen::VectorXd>(g, N_XOPTS);
 }
 
+void SolverTemplate::qp_setup(QPSettings qpsettings [[maybe_unused]]) {
+
+}
 
 Eigen::VectorXd SolverTemplate::constraints(problem_parameters *prob_params, problem_solution *prev_qpsolution) {
     Eigen::VectorXd xopt = prev_qpsolution->Xopt;

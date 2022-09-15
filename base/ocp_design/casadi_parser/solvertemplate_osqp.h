@@ -3,13 +3,18 @@
 #include <vector>
 #include <eigen3/Eigen/Core>
 #include <osqp.h>
-
 #include "quadraticoptimizer.h"
 
+#include "osqpconfig.h"
 
 class SolverTemplate : public QuadraticOptimizer {
 public:
     void init();
+    void qp_setup(QPSettings qpsettings);
+    QPSettings qp_setup() {
+        return QPSettings(settings);
+    };
+
     Eigen::VectorXd constraints(problem_parameters *prob_params, problem_solution *prev_qpsolution);
     Eigen::VectorXd constraints(Eigen::VectorXd xopt, Eigen::VectorXd param);
     Eigen::MatrixXd constraint_derivative(problem_parameters *prob_params, problem_solution *prev_qpsolution);
@@ -22,28 +27,13 @@ public:
 
     ~SolverTemplate() {
         osqp_cleanup(work);
-        if (data) {
-            if (data->A) c_free(data->A);
-            if (data->P) c_free(data->P);
-            c_free(data);
-        }
         if (settings)
             c_free(settings);
+        if (data) {
+            c_free(data);
+        }
     }
 
-    void change_settings(float alpha, bool polish) {
-        if (settings && !setup) {
-            settings->polish = polish;
-            if (alpha > 0 && alpha < 2)
-                settings->alpha = alpha;
-        }
-        else if (setup) {
-            osqp_update_polish(work, polish);
-            if (alpha > 0 && alpha < 2)
-                osqp_update_alpha(work, alpha);
-        }
-    }
-    void nWSR(int nwsr [[maybe_unused]]) {return;};
 
 private:
     OSQPWorkspace *work;

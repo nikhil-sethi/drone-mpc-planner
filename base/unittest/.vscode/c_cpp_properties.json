@@ -2,7 +2,7 @@
     "configurations": [
         {
             "name": "Linux",
-            "defines": ["HAS_AIRSIM=0"],
+            "defines": ["HAS_AIRSIM=0", "USE_QPOASES=true"],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",
             "cppStandard": "c++17",
@@ -13,6 +13,7 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../src/**",
                 "${workspaceFolder}/../ocp_design/**",
+                "${workspaceFolder}/../src/optimization/**",
                 "/usr/include/**",
                 "/usr/include/glib-2.0/**",
                 "/usr/include/gstreamer-1.0/**",

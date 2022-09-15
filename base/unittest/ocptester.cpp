@@ -1,4 +1,5 @@
 #include "ocptester.h"
+#include <limits>
 #include <stdlib.h>
 
 
@@ -11,14 +12,13 @@ bool OcpTester::is_tti_good(float optimizer_tti, float estimated_tti) {
 bool OcpTester::is_optimizer_results_good(tracking::TrackData drone, tracking::TrackData insect, bool res_valid, float res_tti) {
     if (normf(drone.pos() - insect.pos()) < eps) {
         return false;
-    } else {
-        // Worst case estimation
-        float pos_err = norm(drone.pos() - insect.pos());
-        float vel_err = norm(drone.vel() - insect.vel());
-        float est_tti = vel_err / thrust + sqrt(2 * pos_err / thrust);
-
-        return res_valid && is_tti_good(res_tti, est_tti);
     }
+    // Worst case estimation
+    float pos_err = norm(drone.pos() - insect.pos());
+    float vel_err = norm(drone.vel() - insect.vel());
+    float est_tti = vel_err / thrust + sqrt(2 * pos_err / thrust);
+
+    return res_valid && is_tti_good(res_tti, est_tti);
 }
 
 std::vector<Plane> OcpTester::cube_planes(float cube_size, uint n_planes) {
@@ -50,11 +50,13 @@ range_stats OcpTester::eval_range_data(range_data data) {
     for (auto timing : data.timings_us) {
         var_calculation_time_us += pow(timing - stats.average_optimizing_time_us, 2);
     }
-    stats. max_optimizing_time_us = data.max_optimizing_time_us;
+    stats.max_optimizing_time_us = data.max_optimizing_time_us;
     stats.timing_variance_us = sqrt(1. / (data.timings_us.size() - 1) * var_calculation_time_us);
     stats.sigma2_optimizing_time_ms = (stats.average_optimizing_time_us + 2 * stats.timing_variance_us) / 1000;
     stats.valid_optimizing_timings_percent = static_cast<double>(data.n_optimizer_tests - data.invalid_timings) / static_cast<double>(data.n_optimizer_tests) * 100.;
     stats.average_interception_time_s = data.accumulated_interception_time_s / data.interceptions_found;
+    stats.invalid_optimization_results = data.invalid_optimization_results;
+    stats.valid_optimization_results = static_cast<double>(data.interceptions_found) / data.n_optimizer_tests * 100.;
 
     return stats;
 }
@@ -67,7 +69,7 @@ void OcpTester::cout_header(optimizer_test optimizer_select) {
 
 }
 
-void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, bool enable_stress, bool disable_time_ensurance) {
+void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config) {
     std::cout << "Setup:" << std::endl;
 
     switch (optimizer_select) {
@@ -84,7 +86,8 @@ void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp
     if (use_casadi)
         std::cout << "- Used casadi: " << use_casadi << std::endl;
 
-    std::cout << "- SQP setup: max_sqp_iterations: " << sqp_config.max_sqp_iterations << " tol_primal: " << sqp_config.tol_pr << " tol_dual: " << sqp_config.tol_du << " min_dx: " << sqp_config.min_step_size << std::endl;
+    std::cout << "- SQP setup: " << sqp_config << std::endl;
+    std::cout << "- QP setup: " << range_test_config.qp_settings << std::endl;
     if (optimizer_select == intercept_in_planes) {
         int n_planes, n_samples_intercepting, n_samples_breaking;
         std::tie(n_samples_intercepting, n_samples_breaking, n_planes) =  iip.scenario_setup();
@@ -98,7 +101,7 @@ void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp
     std::cout << "- Disable timing ensurance: " << disable_time_ensurance << std::endl;
 }
 
-void OcpTester::cout_optmization_stats(optimizer_test optimizer_select, range_data data, range_stats stats) {
+void OcpTester::cout_optmization_stats(range_data data, range_stats stats) {
     std::cout << std::endl << "Timing:" << std::endl;
     std::cout << "- Average optimization time: " << stats.average_optimizing_time_us << "us" << std::endl;
     std::cout << "- Variance optimization time: " << stats.timing_variance_us << "us" << std::endl;
@@ -106,7 +109,7 @@ void OcpTester::cout_optmization_stats(optimizer_test optimizer_select, range_da
     std::cout << "- Valid optimization timings: "  << stats.valid_optimizing_timings_percent << "% in total: " << data.n_optimizer_tests - data.invalid_timings << std::endl;
     std::cout << "- Realtime applicable in 2*sigma: " << stats.sigma2_optimizing_time_ms << " <? " << realtime_boundary_ms << ": " << (stats.sigma2_optimizing_time_ms < realtime_boundary_ms) << std::endl;
     std::cout << std::endl << "Optimiality:" << std::endl;
-    std::cout << "- Interceptions: " << static_cast<double>(data.interceptions_found) / data.n_optimizer_tests * 100. << "% in total: " << data.interceptions_found << std::endl;
+    std::cout << "- Interceptions: " << stats.valid_optimization_results << "% in total: " << data.interceptions_found << std::endl;
     std::cout << "- Average interception time: " << stats.average_interception_time_s << "s" << std::endl;
     std::cout << std::endl << "Stats:" << std::endl;
     std::cout << "- N_optimizations: " << data.n_optimizer_tests << std::endl;
@@ -114,30 +117,34 @@ void OcpTester::cout_optmization_stats(optimizer_test optimizer_select, range_da
 
 }
 
-range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config) {
-    bool enable_stress = false;
-    bool disable_time_ensurance = false;
+void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, QPSettings *qp_settings) {
+    enable_stress = false;
+    disable_time_ensurance = false;
     std::vector<Plane> planes = cube_planes(3.f, 6);
+    range_test_config = range_test_configuration(optimizer_select, use_casadi, sqp_config, *qp_settings);
 
-    FlightArea flightarea;
     flightarea.init(planes);
     switch (optimizer_select) {
         case time_to_intercept: {
+                // tti = TTIOptimizerInterface();
                 tti.init(&thrust);
-                // if (disable_time_ensurance)
-                //     tti.max_cpu_time(0);
+                tti.sqp_setup(sqp_config);
+                tti.qp_setup(*qp_settings);
+                if (disable_time_ensurance)
+                    tti.max_cpu_time(0);
 #ifdef OCP_DEV
                 if (use_casadi) {
-                    tti.init_casadi("../../ocp_design/casadi/tti/tti_optimizer.so");
+                    tti.init_casadi("../../ocp_design/tti/tti_optimizer.so");
                 }
 #endif
 
                 break;
             }
         case intercept_in_planes: {
-
+                // iip = InterceptInPlanesOptimizerInterface();
                 iip.init(&thrust, &flightarea, bare);
                 iip.sqp_setup(sqp_config);
+                // iip.qp_setup(*qp_settings);
                 if (disable_time_ensurance)
                     iip.max_cpu_time(0);
                 if (enable_stress)
@@ -145,12 +152,16 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
 
 #ifdef OCP_DEV
                 if (use_casadi)
-                    iip.init_casadi("../../ocp_design/casadi/intercept_in_planes/intercept_in_planes_optimizer.so");
+                    iip.init_casadi("../../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");
 #endif
                 break;
             }
 
     }
+
+}
+
+range_stats OcpTester::exec_range_test() {
     tracking::TrackData drone;
     tracking::TrackData insect;
     std::chrono::_V2::system_clock::time_point t_start, t_end;
@@ -196,7 +207,7 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
                             float timetointercept;
                             cv::Point3f positiontointercept;
                             t_start = std::chrono::high_resolution_clock::now();
-                            switch (optimizer_select) {
+                            switch (range_test_config.optimizer_select) {
                                 case time_to_intercept: {
                                         auto opti_res = tti.find_best_interception(drone, insect);
                                         valid = opti_res.valid;
@@ -217,11 +228,13 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
                             if (valid) {
                                 range_dat.interceptions_found++;
                                 range_dat.accumulated_interception_time_s += static_cast<double>(timetointercept);
+                            } else {
+                                range_dat.invalid_optimization_results++;
+                                //     std::cout << "invalid for drone: " << drone.pos() << ", " << drone.vel() << ", insect: " << insect.pos() << ", " << insect.vel() << std::endl;
                             }
-                            // else
-                            //     std::cout << "invalid for drone: " << drone.pos() << ", " << drone.vel() << ", insect: " << insect.pos() << ", " << insect.vel() << std::endl;
+
                             std::string opti_name;
-                            if (use_casadi)
+                            if (range_test_config.use_casadi)
                                 opti_name = "casadi: ";
                             else
                                 opti_name = "pats: ";
@@ -257,9 +270,9 @@ range_stats OcpTester::exec_range_test(optimizer_test optimizer_select, bool use
     std::cout << "Testing time: " << std::chrono::duration_cast<std::chrono::seconds>(t_test_end - t_test_start).count() << "s" << std::endl;
 
     auto stats = eval_range_data(range_dat);
-    cout_header(optimizer_select);
-    cout_setup(optimizer_select, use_casadi, sqp_config, enable_stress, disable_time_ensurance);
-    cout_optmization_stats(optimizer_select, range_dat, stats);
+    cout_header(range_test_config.optimizer_select);
+    cout_setup(range_test_config.optimizer_select, range_test_config.use_casadi, range_test_config.sqp_config);
+    cout_optmization_stats(range_dat, stats);
 
     return stats;
 }
@@ -298,33 +311,193 @@ std::tuple<tracking::TrackData, tracking::TrackData, std::vector<Plane>> OcpTest
     return std::tuple(drone, insect, _planes);
 }
 
-void OcpTester::find_parameter(optimizer_test optimizer_select, bool use_casadi) {
-    std::vector<double> tol_params = {1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9};
-    std::vector<int> max_sqp_iter = {10, 20, 30, 40, 50, 60, 70, 80, 90};
-    std::vector<sqp_solver_configuration> sqp_configurations;
+void OcpTester::find_parameter(optimizer_test optimizer_select) {
+
+    auto sqp_configs = generate_sqp_configs();
+    auto qp_configs = generate_qp_configs();
+
+    std::vector<range_stats> stats = {};
+    std::vector<QPSettings> qp_config_combination = {};
+    std::vector<sqp_solver_configuration> sqp_config_combination = {};
+
+    for (auto sqp_conf : sqp_configs) {
+        for (auto qp_conf : qp_configs) {
+            init_range_test(optimizer_select, false, sqp_conf, &qp_conf);
+            auto statsi = exec_range_test();
+            qp_config_combination.push_back(qp_conf);
+            sqp_config_combination.push_back(sqp_conf);
+            stats.push_back(statsi);
+        }
+    }
+    cout_configuration_results(qp_config_combination, sqp_config_combination, stats);
+}
+
+std::vector<sqp_solver_configuration> OcpTester::generate_sqp_configs() {
+    std::vector<double> tol_params = {  1e-5, };//{1e0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9};
+    std::vector<int> max_sqp_iter = { 50};
+    std::vector<sqp_solver_configuration> sqp_configs;
     for (auto mi : max_sqp_iter) {
         for (auto prtol : tol_params) {
             for (auto dutol : tol_params) {
                 for (auto dx : tol_params) {
-                    sqp_configurations.push_back(sqp_solver_configuration(mi, prtol, dutol, dx));
+                    sqp_configs.push_back(sqp_solver_configuration(mi, prtol, dutol, dx));
                 }
             }
         }
     }
-    std::vector<range_stats> stats = {};
-    for (auto sqp_conf : sqp_configurations) {
-        auto statsi = exec_range_test(optimizer_select, use_casadi, sqp_conf);
-        stats.push_back(statsi);
-    }
-
-    cout_configuration_results(sqp_configurations, stats);
+    return sqp_configs;
 }
 
-void OcpTester::cout_configuration_results(std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats) {
+#ifdef USE_OSQP
+std::vector<QPSettings> OcpTester::generate_qp_configs() {
+    std::vector<float> rhos = { 1e-1,}; // {1e-3, 1e-2, 5e-2, 1e-1, 2e-1, 5e-1, 1e0, 2e0, 5e0, 1e1};
+    std::vector<float> sigmas = {1e-7, 1e-6, 1e-5};
+    std::vector<uint> max_iters = { 4000};
+    std::vector<float> eps_abss = {1e-2, 1e-4, 1e-5};
+    std::vector<float> eps_rels = {1e-2, 1e-4, 1e-5};
+    std::vector<float> eps_prim_infs = { 1e-3, 1e-4, 1e-5};
+    std::vector<float> eps_dual_infs = { 1e-3, 1e-4, 1e-5};
+    std::vector<float> alphas = {0.5, 1, 1.5};
+    std::vector<float> deltas = {1e-7, 1e-6, 1e-5};
+    std::vector<bool> polishs = {false, true};
+    std::vector<uint> polish_refine_iters = {1, 3, 5};
+    std::vector<bool> verboses = {false};
+    std::vector<bool> scaled_terminations = {false, true};
+    std::vector<int> check_terminations = {10, 25,};
+    std::vector<bool> warm_starts = {false, true};
+    std::vector<uint> scalings = {2, 5, 10};
+    std::vector<bool> adaptive_rhos = {false, true};
+    std::vector<float> adaptive_rho_intervals = { 2, 5};
+    std::vector<float> adaptive_rho_tolerances = {2, 5, 10};
+    std::vector<float> adaptive_rho_fractions = { 0.2, 0.4, 0.6,};
+    std::vector<float> time_limits = {0};
 
-    for (uint i = 0; i < sqp_conf.size() - 1; i++) {
-        std::cout << i << ": [" << sqp_conf[i].max_sqp_iterations << ", " << sqp_conf[i].tol_pr << ", " << sqp_conf[i].tol_du << ", " << sqp_conf[i].min_step_size << ", ";
-        std::cout << stats[i].average_optimizing_time_us << ", " << stats[i].max_optimizing_time_us << ", " << stats[i].sigma2_optimizing_time_ms << ", " <<
-                  stats[i].average_interception_time_s << "]" << std::endl;
+    std::vector<QPSettings> qp_configs;
+    std::cout << "max combi: " << qp_configs.max_size() << " vs actual combinations: " << rhos.size() * sigmas.size() * max_iters.size() * eps_abss.size() * eps_rels.size()
+              * eps_prim_infs.size() * eps_dual_infs.size() * alphas.size() * deltas.size() * polishs.size() * polish_refine_iters.size() * verboses.size() * scaled_terminations.size()
+              * check_terminations.size() * warm_starts.size() * scalings.size() * adaptive_rhos.size() * adaptive_rho_intervals.size() * adaptive_rho_tolerances.size()
+              * adaptive_rho_fractions.size() * time_limits.size() << std::endl;
+
+    for (auto r : rhos) {
+        for (auto s : sigmas) {
+            for (auto mi : max_iters) {
+                for (auto ea : eps_abss) {
+                    for (auto er : eps_rels) {
+                        for (auto epi : eps_prim_infs) {
+                            for (auto  edi : eps_dual_infs) {
+                                for (auto a : alphas) {
+                                    for (auto d : deltas) {
+                                        for (auto p : polishs) {
+                                            for (auto pri : polish_refine_iters) {
+                                                for (auto v : verboses) {
+                                                    for (auto st : scaled_terminations) {
+                                                        for (auto ct : check_terminations) {
+                                                            for (auto ws : warm_starts) {
+                                                                for (auto sc : scalings) {
+                                                                    bool adapative_rho_deactivated_saved = false;
+                                                                    for (auto ar : adaptive_rhos) {
+                                                                        for (auto ari : adaptive_rho_intervals) {
+                                                                            for (auto art : adaptive_rho_tolerances) {
+                                                                                for (auto arf : adaptive_rho_fractions) {
+                                                                                    for (auto tl : time_limits) {
+                                                                                        QPSettings qpsettings;
+                                                                                        qpsettings.rho(r);
+                                                                                        qpsettings.sigma(s);
+                                                                                        qpsettings.max_iter(mi);
+                                                                                        qpsettings.eps_abs(ea);
+                                                                                        qpsettings.eps_rel(er);
+                                                                                        qpsettings.eps_prim_inf(epi);
+                                                                                        qpsettings.eps_dual_inf(edi);
+                                                                                        qpsettings.alpha(a);
+                                                                                        qpsettings.delta(d);
+                                                                                        qpsettings.polish(p);
+                                                                                        qpsettings.polish_refine_iter(pri);
+                                                                                        qpsettings.verbose(v);
+                                                                                        qpsettings.scaled_termination(st);
+                                                                                        qpsettings.check_termination(ct);
+                                                                                        qpsettings.warm_start(ws);
+                                                                                        qpsettings.scaling(sc);
+                                                                                        qpsettings.adaptive_rho(ar);
+                                                                                        qpsettings.adaptive_rho_interval(ari);
+                                                                                        qpsettings.adaptive_rho_tolerance(art);
+                                                                                        qpsettings.adaptive_rho_fraction(arf);
+                                                                                        qpsettings.time_limit(tl);
+                                                                                        if (!ar && !adapative_rho_deactivated_saved) {
+                                                                                            adapative_rho_deactivated_saved = true;
+                                                                                            qp_configs.push_back(qpsettings);
+                                                                                        } else if (ar)
+                                                                                            qp_configs.push_back(qpsettings);
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+    return qp_configs;
+}
+#else
+std::vector<QPSettings> OcpTester::generate_qp_configs() {
+    std::vector<QPSettings> qp_configs;
+    qp_configs.push_back(QPSettings());
+
+    return qp_configs;
+}
+
+#endif
+
+void OcpTester::cout_configuration_results(std::vector<QPSettings> qp_confs, std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats) {
+    uint i_best_average_interception_time = 0;
+    double best_average_interception_time = std::numeric_limits<double>::infinity();
+    uint i_best_sigma2_optimization_time = 0;
+    double best_sigma2_optimization_time = std::numeric_limits<double>::infinity();
+    uint i_best_valid_results = 0;
+    float best_valid_results = 0;
+    for (uint i = 0; i < sqp_conf.size() - 1; i++) {
+        if (stats.at(i).sigma2_optimizing_time_ms < best_sigma2_optimization_time) {
+            best_sigma2_optimization_time = stats.at(i).sigma2_optimizing_time_ms;
+            i_best_sigma2_optimization_time = i;
+        }
+        if (stats.at(i).average_interception_time_s < best_average_interception_time) {
+            best_average_interception_time = stats.at(i).average_interception_time_s;
+            i_best_average_interception_time = i;
+        }
+        if (stats.at(i).valid_optimization_results > best_valid_results) {
+            best_valid_results = stats.at(i).valid_optimization_results;
+            i_best_valid_results = i;
+        }
+    }
+
+    std::cout << "Best config for valid results:" << std::endl;
+    uint i = i_best_valid_results;
+    std::cout << i << ": [" << stats[i] << ", " << sqp_conf[i] << ", " << qp_confs[i] << "]" << std::endl;
+
+    std::cout << "Best config for interception time:" << std::endl;
+    i = i_best_average_interception_time;
+    std::cout << i << ": [" << stats[i] << ", " << sqp_conf[i] << ", " << qp_confs[i] << "]" << std::endl;
+
+    std::cout << "Best config for sigma2 optimization time:" << std::endl;
+    i = i_best_sigma2_optimization_time;
+    std::cout << i << ": [" << stats[i] << ", " << sqp_conf[i] << ", " << qp_confs[i] << "]" << std::endl;
+}
+
+std::ostream &operator<<(std::ostream &os, range_stats &rng_stats) {
+    os << "valid results[%]: " << rng_stats.valid_optimization_results
+       << ", sigma2_optimization_time[ms]: " << rng_stats.sigma2_optimizing_time_ms
+       << ", average_interception_time[s]: " << rng_stats.average_interception_time_s;
+    return os;
 }

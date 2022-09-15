@@ -48,6 +48,11 @@ void TTIOptimizerInterface::init(float *thrust) {
     init_const_variable_bounds();
 }
 
+void TTIOptimizerInterface::qp_setup(QPSettings qpsettings) {
+    qpsolver.qp_setup(qpsettings);
+}
+
+
 void TTIOptimizerInterface::init_const_variable_bounds() {
     prob_params.lbx.setZero();
     prob_params.ubx.setZero();

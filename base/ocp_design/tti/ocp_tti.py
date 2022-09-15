@@ -90,8 +90,8 @@ def def_optimization():
     constraints = casadi.vertcat(constr_dronedynamicI, constr_insectdynamic, constr_intercepting)
 
     solver = casadi.nlpsol('solver', solvername, {'x':variables_flat, 'f':objective, 'g':constraints}, opts)
-    # solver.generate_dependencies(problem_name+'.cpp', {'with_header': False, 'cpp': False})
-    # os.system("gcc -fPIC -shared -O3 "+problem_name+".cpp -o "+problem_name+".so")
+    solver.generate_dependencies(name + '.cpp', {'with_header': False, 'cpp': False})
+    os.system("gcc -fPIC -shared -O3 " + name + ".cpp -o " + name + ".so")
 
     parse_casadi_to_QP(name, variables_flat, [], objective, constraints)
 

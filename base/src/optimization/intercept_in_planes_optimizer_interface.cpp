@@ -15,7 +15,6 @@ void InterceptInPlanesOptimizerInterface::init(float *thrust, FlightArea  *fligh
     init_box_constraints();
     init_inequality_constraints();
     qpsolver.init();
-    qpsolver.nWSR(20);
     sqpsolver.init(&qpsolver);
     sqp_solver_configuration config(30, 1e-2, 1e-2, 1e-1);
     sqpsolver.setup(config);

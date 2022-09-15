@@ -16,6 +16,8 @@ struct sqp_solver_configuration {
     sqp_solver_configuration(int mi, double tp, double td, double mss) : max_sqp_iterations(mi), tol_pr(tp), tol_du(td), min_step_size(mss) {};
 };
 
+
+std::ostream &operator<<(std::ostream &os, sqp_solver_configuration &sqp_config);
 class SQPSolver {
 public:
     void init(QuadraticOptimizer *qpsolver);

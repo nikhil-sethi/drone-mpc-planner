@@ -6,6 +6,9 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+add_definitions(-DUSE_QPOASES)
+remove_definitions(-DUSE_OSQP)
+
 option(PATS_PROFILING "pats_profiling" 0)
 if(PATS_PROFILING)
   add_definitions(-DPATS_PROFILING)
@@ -25,7 +28,6 @@ if(OCP_DEV)
 endif(OCP_DEV)
 
 set(SRC_DIR ./src/)
-set(OPTI_SRC_DIR ./ocp_design/)
 set(ignoreMe "${QT_QMAKE_EXECUTABLE}") #get rid unused variable warning:
 include(CheckCXXCompilerFlag)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2  -Wno-missing-field-initializers")
@@ -34,10 +36,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 MESSAGE( STATUS "CMAKE BUILD TYPE: " ${CMAKE_BUILD_TYPE} )
 
+
 # sources
 FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h" "${SRC_DIR}/flightarea/*.cpp" "${SRC_DIR}/flightarea/*.h")
 FILE(GLOB THIRD_PARTY_SRCS "${SRC_DIR}third_party/*.h" "${SRC_DIR}third_party/*.hpp" "${SRC_DIR}third_party/*.cpp" "${SRC_DIR}third_party/*.c" "${SRC_DIR}third_party/cereal/*.hpp" "${SRC_DIR}third_party/tinyxml/*.h" "${SRC_DIR}third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "${SRC_DIR}third_party/3dviz/*.cpp" "${SRC_DIR}third_party/3dviz/*.h")
-FILE(GLOB OPTI_SRCS "${OPTI_SRC_DIR}/tti/tti_optimizer_interface*" "${OPTI_SRC_DIR}/tti/tti_quadratic_optimizer*" "${OPTI_SRC_DIR}/intercept_in_planes/intercept_in_planes_optimizer_interface*" "${OPTI_SRC_DIR}/intercept_in_planes/intercept_in_planes_quadratic_optimizer*")
+FILE(GLOB OPTI_SRCS "${SRC_DIR}/optimization/sqpmethod.*"
+  "${SRC_DIR}/optimization/qpoasesconfig.*"
+  "${SRC_DIR}/optimization/tti_optimizer_interface*"
+  "${SRC_DIR}/optimization/tti_quad_opti_qpoases*"
+  "${SRC_DIR}/optimization/intercept_in_planes_optimizer_interface*"
+  "${SRC_DIR}/optimization/intercept_in_planes_quad_opti_qpoases*")
 
 if(VIZ_3D)
     FILE(GLOB ROS_SRCS "${SRC_DIR}third_party/3dviz/ros_msgs/*.cxx" "${SRC_DIR}third_party/3dviz/ros_msgs/*.h" "${SRC_DIR}third_party/3dviz/fastrtps/*.cxx" "${SRC_DIR}third_party/3dviz/fastrtps/*.h" "${SRC_DIR}third_party/3dviz/publishers/*.cpp" "${SRC_DIR}third_party/3dviz/publishers/*.h")
@@ -128,6 +136,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/rc")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/airsim")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/navigation")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/flightarea")
+target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/optimization")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/third_party/ros_msgs/")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_party")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/intercept_in_planes")

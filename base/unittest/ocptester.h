@@ -16,13 +16,16 @@ struct range_stats {
     double max_optimizing_time_us;
     float valid_optimizing_timings_percent;
 
-    uint invalid_optimization_results; // aka found flights
+    uint invalid_optimization_results; //[1]
+    float valid_optimization_results; //[%]
     double average_interception_time_s;
     double timing_variance_us;
 
     range_stats(): average_optimizing_time_us(0), sigma2_optimizing_time_ms(0), max_optimizing_time_us(0), valid_optimizing_timings_percent(0),
-        invalid_optimization_results(0), average_interception_time_s(0), timing_variance_us(0) {};
+        invalid_optimization_results(0), valid_optimization_results(0), average_interception_time_s(0), timing_variance_us(0) {};
 };
+
+std::ostream &operator<<(std::ostream &os, range_stats &rng_stats);
 
 struct range_data {
     uint invalid_optimization_results;
@@ -40,6 +43,19 @@ struct range_data {
         accumulated_interception_attitude(0), accumulated_interception_time_s(0), accumulated_optimizing_time_us(0) {
         timings_us = {};
     }
+};
+
+struct range_test_configuration {
+    optimizer_test optimizer_select;
+    bool use_casadi;
+    sqp_solver_configuration sqp_config;
+    QPSettings qp_settings;
+
+    range_test_configuration(): optimizer_select(time_to_intercept), use_casadi(false) {
+        sqp_config = sqp_solver_configuration();
+        qp_settings = QPSettings();
+    }
+    range_test_configuration(optimizer_test os, bool uc, sqp_solver_configuration sqp_c, QPSettings qp_s): optimizer_select(os), use_casadi(uc), sqp_config(sqp_c), qp_settings(qp_s) {};
 };
 
 class OcpTester {
@@ -60,18 +76,29 @@ public:
 
     std::vector<Plane> cube_planes(float cube_size, uint n_planes);
 
-    range_stats exec_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config);
-    void find_parameter(optimizer_test optimizer_select, bool use_casadi);
+
+    void  init_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, QPSettings *qp_settings);
+    range_stats exec_range_test();
+
+    void find_parameter(optimizer_test optimizer_select);
     std::tuple<tracking::TrackData, tracking::TrackData> case_test();
     std::tuple<tracking::TrackData, tracking::TrackData, std::vector<Plane>> application_test();
 
 private:
     TTIOptimizerInterface tti;
     InterceptInPlanesOptimizerInterface iip;
+    FlightArea flightarea;
 
+    std::vector<sqp_solver_configuration> generate_sqp_configs();
+    std::vector<QPSettings> generate_qp_configs();
+
+    bool enable_stress = false;
+    bool disable_time_ensurance = false;
+    range_test_configuration range_test_config;
     range_stats eval_range_data(range_data data);
     void cout_header(optimizer_test optimizer_select);
-    void cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, bool enable_stress, bool disable_time_ensurance);
-    void cout_optmization_stats(optimizer_test optimizer_select, range_data range_dat, range_stats stats);
-    void cout_configuration_results(std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats);
+    void cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config);
+    void cout_optmization_stats(range_data range_dat, range_stats stats);
+
+    void cout_configuration_results(std::vector<QPSettings> qp_confs, std::vector<sqp_solver_configuration> sqp_conf, std::vector<range_stats> stats);
 };

@@ -1,11 +1,6 @@
-.DS_Store
-.idea
-*.log
-tmp/
+*
 
-*.txt
-*.so
-*intercept_in_planes_optimizer.cpp
-*quadratic_optimizer.*
-*index*
-.clangd
+!*.py
+!*.kst
+!casadi_parser/solvertemplate_qpoases.*
+!casadi_parser/solvertemplate_osqp.*

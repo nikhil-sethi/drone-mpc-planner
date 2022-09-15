@@ -2,9 +2,11 @@
 #include <eigen3/Eigen/Core>
 #include "tracking.h"
 #include "sqpmethod.h"
-#include "tti_quadratic_optimizer.h"
-
-#define TTI_OPTIMIZER_DEBUGGING 2
+#ifdef USE_OSQP
+#include "tti_quad_opti_osqp.h"
+#else
+#include "tti_quad_opti_qpoases.h"
+#endif
 
 struct tti_result {
     tti_result() {
@@ -20,6 +22,8 @@ struct tti_result {
 class TTIOptimizerInterface {
 public:
     void init(float *thrust);
+    void qp_setup(QPSettings qpsettings);
+    QPSettings qp_setup();
     void sqp_setup(sqp_solver_configuration config) {
         sqpsolver.setup(config);
     }

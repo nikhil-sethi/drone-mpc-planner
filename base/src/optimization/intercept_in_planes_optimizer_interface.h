@@ -8,7 +8,12 @@
 #include "flightarea.h"
 #include "sqpmethod.h"
 #include "intercept_in_planes_index.h"
-#include "intercept_in_planes_quadratic_optimizer.h"
+#ifdef USE_OSQP
+#include "intercept_in_planes_quad_opti_osqp.h"
+#else
+#include "intercept_in_planes_quad_opti_qpoases.h"
+#endif
+
 #define COLORED_RESET   "\033[0m"
 #define COLORED_RED     "\033[31m"
 #define COLORED_YELLOW  "\033[33m"

@@ -20,7 +20,6 @@ void SQPSolver::setup(sqp_solver_configuration _config) {
 void SQPSolver::init_casadi(std::string problem_solver_path) {
     use_casadi = true;
     casadi::Dict opts;
-    opts["qpsol"] = "qpoases";
     opts["print_time"] = false;
     opts["print_status"] =  false;
     opts["print_header"] = false;
@@ -31,8 +30,12 @@ void SQPSolver::init_casadi(std::string problem_solver_path) {
     opts["convexify_strategy"] = "eigen-reflect"; //NONE|regularize|eigen-reflect|eigen-clip.
     opts["hessian_approximation"] = "exact"; //limited-memory|exact
     opts["max_iter"] = config.max_sqp_iterations;
+
+    opts["qpsol"] = "qpoases";
     opts["qpsol_options.printLevel"] = "none";
     opts["qpsol_options.error_on_fail"] = false;
+
+    // opts["qpsol"] = "osqp"; //TODO: Requires some work to install casadi with osqp
 
     casadi_solver = casadi::nlpsol("solver", "sqpmethod", problem_solver_path, opts);
 
@@ -220,4 +223,10 @@ Eigen::VectorXd SQPSolver::return_xopt(Eigen::VectorXd Xopt, Eigen::VectorXd X0)
         std::cout << "SQPSolver: Return_xopt has set xopt to 0." << std::endl;
         return Xopt.setZero();
     }
+}
+
+std::ostream &operator<<(std::ostream &os, sqp_solver_configuration &sqp_config) {
+    os << "sqp_max_iterations: " << sqp_config.max_sqp_iterations << ", tol_pr: " << sqp_config.tol_pr << ", tol_du: " << sqp_config.tol_du
+       << ", min_step_size: " << sqp_config.min_step_size;
+    return os;
 }

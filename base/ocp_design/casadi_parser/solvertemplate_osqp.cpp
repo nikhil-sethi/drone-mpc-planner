@@ -44,6 +44,10 @@ void SolverTemplate::init() {
 }
 
 
+void SolverTemplate::qp_setup(QPSettings qpsettings) {
+    qpsettings.apply(settings);
+}
+
 Eigen::VectorXd SolverTemplate::constraints(problem_parameters *prob_params, problem_solution *prev_qpsolution) {
     Eigen::VectorXd xopt = prev_qpsolution->Xopt;
     Eigen::VectorXd param = prob_params->param;

@@ -203,11 +203,13 @@ def build_header(name, n_xopts, n_constraints, P_nnz, A_nnz, quadratic_costs, co
     init_A = build_A(True, n_xopts, n_constraints, constraint_slopes)
     header = header.replace("    /* INIT A_P AND A_I PLACEHOLDER*/", init_A)
 
-    with open(name+"_quadratic_optimizer.h", "w") as f:
+    file_name = name + "_quad_opti_osqp.h"
+    print(file_name)
+    with open(Path('~/code/pats/base/src/optimization/' + file_name).expanduser(), "w") as f:
         f.write(header)
 
 
-def build_solver_sparse(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections):
+def build_solver_osqp(name, n_xopts, linear_costs, quadratic_costs, constraints, constraint_slopes, bound_corrections):
     """."""
     n_constraints = len(constraints)
 
@@ -221,7 +223,7 @@ def build_solver_sparse(name, n_xopts, linear_costs, quadratic_costs, constraint
     with open(Path('~/code/pats/base/ocp_design/casadi_parser/solvertemplate_osqp.cpp').expanduser(), 'r') as f:
         source = f.read()
 
-    source = source.replace("solvertemplate", name+"_quadratic_optimizer")
+    source = source.replace("solvertemplate", name+"_quad_opti_osqp")
     class_name = build_classname(name)
     source = source.replace("SolverTemplate", class_name)
     source = source.replace("N_XOPTS + N_CONSTRAINTS", str(n_xopts + n_constraints))
@@ -249,8 +251,9 @@ def build_solver_sparse(name, n_xopts, linear_costs, quadratic_costs, constraint
     dconstr = build_dconstraints(n_xopts, copy.deepcopy(constraint_slopes))
     source = source.replace("    /* CONSTRAINT_DERIVATIVES PLACEHOLDER*/", dconstr)
 
-    print(name+"_quadratic_optimizer.cpp")
-    with open(name+"_quadratic_optimizer.cpp", "w") as f:
+    file_name = name + "_quad_opti_osqp.cpp"
+    print(file_name)
+    with open(Path('~/code/pats/base/src/optimization/' + file_name).expanduser(), "w") as f:
         f.write(source)
 
 if __name__ == "__main__":

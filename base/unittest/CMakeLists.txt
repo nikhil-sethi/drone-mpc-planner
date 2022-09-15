@@ -26,29 +26,45 @@ include_directories(../src/flightarea)
 include_directories(../src/trackers)
 include_directories(../src/filtering)
 include_directories(../src/navigation)
-include_directories(../ocp_design/intercept_in_planes)
-include_directories(../ocp_design/tti)
-include_directories(../ocp_design/min_nlp)
+include_directories(../src/optimization)
 include_directories(../src/third_party/tinyxml)
 
-add_definitions(-DOCP_DEV=true)
-add_definitions(-DUNIT_TESTING)
+option(USE_OSQP "use_osqp" 0)
+option(USE_QPOASES "use_qpoases" 1)
 
-set(SOURCE_FILES  ../src/quaternion.cpp
+if(USE_OSQP AND USE_QPOASES)
+            set(USE_OSQP 0)
+            set(USE_QPOASES 1)
+            message("Two optimizer libaries select, while only one is supported at the same time. Enable osqp by disabling qpoases at the same time.")
+endif()
+
+if(USE_OSQP)
+  add_definitions(-DUSE_OSQP)
+  remove_definitions(-DUSE_QPOASES)
+  message("Set -DUSE_OSQP")
+endif(USE_OSQP)
+
+if(USE_QPOASES)
+  remove_definitions(-DUSE_OSQP)
+  add_definitions(-DUSE_QPOASES)
+  message("Set -DUSE_QPOASES")
+endif(USE_QPOASES)
+
+
+add_definitions(-DOCP_DEV=true)
+add_definitions(-DUNIT_TESTING=true)
+
+set(SRC_FILES  ../src/quaternion.cpp
                   ../src/common.cpp
                   ../src/linalg.cpp
                   ../src/flightarea/plane.cpp
                   ../src/flightarea/flightarea.cpp
                   ../src/flightarea/flightareaconfig.cpp
-                  ../ocp_design/intercept_in_planes/intercept_in_planes_optimizer_interface.cpp
-                  ../ocp_design/intercept_in_planes/intercept_in_planes_quadratic_optimizer.cpp
-                  ../ocp_design/tti/tti_optimizer_interface.cpp
-                  ../ocp_design/tti/tti_quadratic_optimizer.cpp
-                  # ../ocp_design/min_nlp/min_nlp_optimizer_interface.cpp
-                  # ../ocp_design/min_nlp/min_nlp_quadratic_optimizer.cpp
-                  ../src/sqpmethod.cpp
+                  ../src/optimization/sqpmethod.cpp
                   ../src/third_party/tinyxml/XMLSerialization.cpp
                   ../src/third_party/tinyxml/tinyxml2.cpp
+                  ../src/optimization/intercept_in_planes_optimizer_interface.cpp
+                  ../src/optimization/tti_optimizer_interface.cpp
 
 
                   main.cpp
@@ -64,11 +80,26 @@ set(SOURCE_FILES  ../src/quaternion.cpp
                   # planetest.cpp
 )
 
+if(USE_OSQP)
+  set(OPTI_SRC_FILES
+                  ../src/optimization/intercept_in_planes_quad_opti_osqp.cpp
+                  ../src/optimization/tti_quad_opti_osqp.cpp
+                  ../src/optimization/osqpconfig.cpp
+
+      )
+else()
+  set(OPTI_SRC_FILES
+                  ../src/optimization/intercept_in_planes_quad_opti_qpoases.cpp
+                  ../src/optimization/tti_quad_opti_qpoases.cpp
+                  ../src/optimization/qpoasesconfig.cpp
+      )
+endif()
+
 include_directories(~/repos/qpOASES/include)
 include_directories(${CASADI_INCLUDE_DIR})
 link_directories(~/repos/qpOASES/build/libs)
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${OPTI_SRC_FILES})
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} CppUTest CppUTestExt)
 target_link_libraries(${PROJECT_NAME} qpOASES)
