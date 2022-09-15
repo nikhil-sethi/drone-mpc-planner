@@ -52,14 +52,27 @@ def process_wait_for_start_condition_status(folder: str, logger: logging.Logger)
     offline_start = datetimes.values[0]
     offline_end = datetimes.values[-1]
 
-    offline_start = offline_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
-    offline_end = offline_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    try:
+        offline_start_datetime = datetime.strptime(offline_start.strip(), '%Y/%m/%d %H:%M:%S')
+    except ValueError:
+        logger.warning('Could not parse offline start in wait_for_start')
+        return (False, [], '', '')
+    try:
+        offline_end_datetime = datetime.strptime(offline_end.strip(), '%Y/%m/%d %H:%M:%S')
+    except ValueError:
+        logger.warning('Could not parse offline end in wait_for_start')
+        offline_end = datetimes.values[-2]
+        try:
+            offline_end_datetime = datetime.strptime(offline_end.strip(), '%Y/%m/%d %H:%M:%S')
+        except ValueError:
+            logger.warning('Also second to last line did not work')
+            return (False, [], '', '')
 
-    data_wait_for_start = {"start_datetime": offline_start,
-                           "end_datetime": offline_end,
+    data_wait_for_start = {"start_datetime": datetime_to_str(offline_start_datetime),
+                           "end_datetime": datetime_to_str(offline_end_datetime),
                            "mode": 'wait_for_conditions'
                            }
-    return (True, data_wait_for_start, offline_start, offline_end)
+    return (True, data_wait_for_start, datetime_to_str(offline_start_datetime), datetime_to_str(offline_end_datetime))
 
 
 def process_system_status_in_folder(folder: str, logger: logging.Logger):
