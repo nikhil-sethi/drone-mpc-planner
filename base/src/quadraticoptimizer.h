@@ -3,7 +3,6 @@
 #include <iostream>
 #include <eigen3/Eigen/Core>
 #include <limits>
-#include <osqp.h>
 
 
 struct problem_parameters {
@@ -99,15 +98,8 @@ public:
         }
     }
 
-    void print_array(std::string name, long long int n, c_float *vec) {
-        std::cout << name << ": [";
-        for (long long int k = 0; k < n - 1; k++)
-            std::cout << vec[k] << ", ";
-        std::cout << vec[n - 1] << "]" << std::endl;
-    }
-
-
-    void print_array(std::string name, long long int n, c_int *vec) {
+    template<class T>
+    void print_array(std::string name, long long int n, T *vec) {
         std::cout << name << ": [";
         for (long long int k = 0; k < n - 1; k++)
             std::cout << vec[k] << ", ";

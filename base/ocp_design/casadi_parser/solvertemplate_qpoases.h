@@ -17,7 +17,7 @@ public:
     problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time);
 
     void nWSR(int nwsr) {if (nwsr < 1) _nWSR = 1; else _nWSR = nwsr;};
-    void change_settings(float alpha, [[maybe_unused]] bool polish [[maybe_unused]]) {return;};
+    void change_settings(float alpha [[maybe_unused]], bool polish [[maybe_unused]]) {return;};
     double costs(Eigen::VectorXd X);
 
     std::string quadratic_solver_library() { return "qpOases";};
