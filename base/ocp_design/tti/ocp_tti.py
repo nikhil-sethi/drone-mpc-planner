@@ -5,7 +5,7 @@ import os
 import sys
 import numpy as np
 import casadi
-from casadi import SX, DM
+from casadi import SX
 
 sys.path.append("../")
 sys.path.append("../casadi_parser")
@@ -14,45 +14,77 @@ from dronemodel import *
 from insectmodel import *
 from helper import *
 from casadi_parser import  parse_casadi_to_QP
+from pathlib import Path
 
 from optimizer_configurations import load_optimizer_settings
 
 solvername, opts = load_optimizer_settings()
-name = 'tti'
+problem_name = 'tti'
+version = "1"
 
 n_timestepsI = 2
 
 # Create Optimization Variables
-n_optvars = 0
+optvars = init_optvar()
 delta_tI = SX.sym('delta_tI')
-n_optvars, idx_delta_tI = update_optvar_index(n_optvars, delta_tI)
+optvars = register_optvar(delta_tI, "delta_tI", optvars)
 
-statesI = SX.sym('statesI', n_states, n_timestepsI,)
-n_optvars, idx_statesI = update_optvar_index(n_optvars, statesI)
+statesI = SX.sym('statesI', n_drone_states, n_timestepsI,)
+optvars = register_optvar(statesI, "statesI", optvars)
 
-inputsI = SX.sym('inputsI', n_inputs, n_timestepsI-1)
-n_optvars, idx_inputsI = update_optvar_index(n_optvars, inputsI)
+inputsI = SX.sym('inputsI', n_drone_inputs, n_timestepsI-1)
+optvars = register_optvar(inputsI, "inputsI", optvars)
 
-virtual_inputsI = SX.sym('virtual_inputsI', n_states, n_timestepsI-1) #compensates for infeasible integration steps
-n_optvars, idx_virtual_inputsI = update_optvar_index(n_optvars, virtual_inputsI)
+virtual_inputsI = SX.sym('virtual_inputsI', n_drone_states, n_timestepsI-1) #compensates for infeasible integration steps
+optvars = register_optvar(virtual_inputsI, "virtual_inputsI", optvars)
 
-insect_states = SX.sym('insect_state', n_insectstates, n_timestepsI)
-n_optvars, idx_insect_states = update_optvar_index(n_optvars, insect_states)
-
-key_dronedynamicsI = 'dronedynamicsI'
-key_insectdynamics = 'insectdynamics'
-key_intercepting = 'intercepting'
+insect_states = SX.sym('insect_state', n_insect_states, n_timestepsI)
+optvars = register_optvar(insect_states, "insect_states", optvars)
 
 # Create mapping between structured and flattened variables
-variables_list = [delta_tI, statesI, inputsI, virtual_inputsI, insect_states]
-variables_flat = casadi.vertcat(*[casadi.reshape(e, -1, 1) for e in variables_list])
-variables_name = ['delta_tI', 'statesI', 'inputsI', 'virtual_inputsI', 'insect_states']
-pack_variables_fn = casadi.Function('pack_variables_fn', variables_list, [variables_flat], variables_name, ['flat'])
-unpack_variables_fn = casadi.Function('unpack_variables_fn', [variables_flat], variables_list, ['flat'], variables_name)
-# print("variables_flat: ", variables_flat)
+variables_flat = casadi.vertcat(*[casadi.reshape(e, -1, 1) for e in optvars["variables_list"]])
+pack_variables_fn = casadi.Function('pack_variables_fn', optvars["variables_list"], [variables_flat], optvars["variables_name"], ['flat'])
+unpack_variables_fn = casadi.Function('unpack_variables_fn', [variables_flat], optvars["variables_list"], ['flat'], optvars["variables_name"])
+
+def export_casadi_defines(optvars, constraints):
+    """Export index of optimization parameters for easier CPP integration."""
+    with open(Path("~/code/pats/base/src/optimization/" + problem_name + "_index.h").expanduser(), "w") as f:
+        f.write("#pragma once\n")
+        f.write('#define ' + problem_name.upper() + '_VERSION "' + str(version) + '"\n')
+        f.write("#define N_OPTVARS " + str(optvars["n_optvars"]) + "\n")
+        f.write("#define N_CONSTRAINTS " + str(constraints["n_constraints"]) + "\n")
+        f.write("#define N_DRONE_STATES " + str(n_drone_states) + "\n")
+        f.write("#define N_DRONE_INPUTS " + str(n_drone_inputs) + "\n")
+        f.write("#define N_INSECT_STATES " + str(n_insect_states) + "\n")
+        for key in drone_model_idxs:
+            f.write("#define " + str(key) + " " + str(drone_model_idxs[key]) + "\n")
+        for key in insect_model_idxs:
+            f.write("#define " + str(key) + " " + str(insect_model_idxs[key]) + "\n")
+
+        f.write("\n")
+        f.write("enum optvar_idx {\n")
+        for j, idxs_key in enumerate(optvars["idxs"]):
+            name = optvars["variables_name"][j]
+            idxs = optvars["idxs"][idxs_key]
+            if len(idxs) == 1:
+                f.write("    " + name + " = " + str(optvars["idxs"][idxs_key][0, 0]) + ",\n")
+            else:
+                f.write("    " + name + "_first = " + str(optvars["idxs"][idxs_key][0, 0]) + ",\n")
+                f.write("    " + name + "_last = " + str(optvars["idxs"][idxs_key][-1, -1]) + ",\n")
+        f.write("};\n")
+        f.write("\n")
+        f.write("enum inequality_constraint_idx {\n")
+        for j, idxs_key in enumerate(constraints["idxs"]):
+            name = idxs_key
+            idxs = constraints["idxs"][idxs_key]
+            if len(idxs) == 1:
+                f.write("    " + name + " = " + str(constraints["idxs"][idxs_key][0]) + ",\n")
+            else:
+                f.write("    " + name + "_first = " + str(constraints["idxs"][idxs_key][0]) + ",\n")
+                f.write("    " + name + "_last = " + str(constraints["idxs"][idxs_key][-1]) + ",\n")
+        f.write("};\n")
 
 def def_optimization():
-    """."""
     ineq_idxs = {}
     n_ineq = 0
 
@@ -61,41 +93,42 @@ def def_optimization():
     objective += 1e13*casadi.sum1(casadi.sum2(virtual_inputsI[:, :]**2))/(n_timestepsI-1)
 
     ## Differential equation constraints
+    constraints = init_constraints()
     ### There is no loop here, because it is vectorized.
     X0I = statesI[:, 0:(n_timestepsI - 1)]
     X1I = statesI[:, 1:n_timestepsI]
     ### Heun's method (some other method, like RK4 could also be used here)
     K1I = drone_dynamics(X0I.T, inputsI.T)
     K2I = drone_dynamics(X0I.T + delta_tI * K1I, inputsI.T)
-    constr_dronedynamicI = X0I.T + delta_tI * (K1I + K2I) / 2.0 - X1I.T + virtual_inputsI[:, :].T
-    constr_dronedynamicI = casadi.reshape(constr_dronedynamicI, -1, 1)
-    ineq_idxs, n_ineq = update_consraint_index(n_ineq, ineq_idxs, key_dronedynamicsI, constr_dronedynamicI)
+    dronedynamicI = X0I.T + delta_tI * (K1I + K2I) / 2.0 - X1I.T + virtual_inputsI[:, :].T
+    constraints = register_constraints(dronedynamicI, "dronedynamicI", constraints)
+
 
     X0_insect = insect_states[:, 0:(n_timestepsI-1)]
     X1_insect = insect_states[:, 1:n_timestepsI]
     K1_insect = insect_dynamics(X0_insect.T)
     K2_insect = insect_dynamics(X0_insect.T + delta_tI * K1_insect)
-    constr_insectdynamic = X0_insect.T + delta_tI * (K1_insect + K2_insect) / 2.0 - X1_insect.T
-    constr_insectdynamic = casadi.reshape(constr_insectdynamic, -1, 1)
-    ineq_idxs, n_ineq = update_consraint_index(n_ineq, ineq_idxs, key_insectdynamics, constr_insectdynamic)
+    insectdynamic = X0_insect.T + delta_tI * (K1_insect + K2_insect) / 2.0 - X1_insect.T
+    constraints = register_constraints(insectdynamic, "insectdynamic", constraints)
 
     # Constraint equations:
     ## Final state stage I:
-    constr_intercepting = statesI[idx_pos, -1] - insect_states[idx_pos, -1]
-    constr_intercepting = casadi.reshape(constr_intercepting, -1, 1)
-    ineq_idxs, n_ineq = update_consraint_index(n_ineq, ineq_idxs, key_intercepting, constr_intercepting)
-
+    intercepting = statesI[idx_pos, -1] - insect_states[idx_pos, -1]
+    constraints = register_constraints(intercepting, "intercepting", constraints)
 
     ### Run optimization
-    constraints = casadi.vertcat(constr_dronedynamicI, constr_insectdynamic, constr_intercepting)
+    ocp_constraints = []
+    for i in range(len(constraints["equations"])):
+        ocp_constraints = casadi.vertcat(ocp_constraints, constraints["equations"][i])
 
-    solver = casadi.nlpsol('solver', solvername, {'x':variables_flat, 'f':objective, 'g':constraints}, opts)
-    solver.generate_dependencies(name + '.cpp', {'with_header': False, 'cpp': False})
-    os.system("gcc -fPIC -shared -O3 " + name + ".cpp -o " + name + ".so")
+    solver = casadi.nlpsol('solver', solvername, {'x': variables_flat, 'f': objective, 'g': ocp_constraints}, opts)
+    solver.generate_dependencies(problem_name + '_optimizer.cpp', {'with_header': False, 'cpp': False})
+    os.system("gcc -fPIC -shared -O3 " + problem_name + "_optimizer.cpp -o " + problem_name + "_optimizer.so")
 
-    parse_casadi_to_QP(name, variables_flat, [], objective, constraints)
+    parse_casadi_to_QP(problem_name, variables_flat, [], objective, ocp_constraints)
+    export_casadi_defines(optvars, constraints)
 
-    return solver, n_ineq, ineq_idxs
+    return solver, constraints["n_constraints"], constraints["idxs"]
 
 
 def gen_initguess(x0, xinsect):
@@ -107,19 +140,19 @@ def gen_initguess(x0, xinsect):
 
     # Calc initial guess
     deltatI_guess = t_guess/n_timestepsI
-    insect_guess = np.zeros([n_timestepsI, n_insectstates])
+    insect_guess = np.zeros([n_timestepsI, n_insect_states])
     insect_guess[:, idx_pos] = np.linspace(insect_pos0, insect_pos0 + n_timestepsI * insect_vel0 * deltatI_guess, n_timestepsI, axis=1).T
     insect_guess[:, idx_vel] = np.linspace(insect_vel0, insect_vel0, n_timestepsI, axis=1).T
     xend = np.array([insect_guess[-1, 0], insect_guess[-1, 1], insect_guess[-1, 2], 0, 0, 0])
     statesI_guess = np.linspace(x0, xend, n_timestepsI, axis=1).T
     inputsI_guess = np.linspace(u0, u0, n_timestepsI-1, axis=1).T
-    virtualinputsI_guess = np.zeros([n_timestepsI-1, n_states])
+    virtualinputsI_guess = np.zeros([n_timestepsI-1, n_drone_states])
 
     init_guess = np.concatenate((np.array([[deltatI_guess]]),
-                                 statesI_guess.reshape((n_states*n_timestepsI, 1)),
-                                 inputsI_guess.reshape(((n_timestepsI-1)*n_inputs, 1)),
-                                 virtualinputsI_guess.reshape((n_states*(n_timestepsI-1), 1)),
-                                 insect_guess.reshape((n_insectstates*n_timestepsI, 1))))
+                                 statesI_guess.reshape((n_drone_states*n_timestepsI, 1)),
+                                 inputsI_guess.reshape(((n_timestepsI-1)*n_drone_inputs, 1)),
+                                 virtualinputsI_guess.reshape((n_drone_states*(n_timestepsI-1), 1)),
+                                 insect_guess.reshape((n_insect_states*n_timestepsI, 1))))
     return init_guess
 
 def run_optimization(init_guess):

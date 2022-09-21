@@ -1,4 +1,5 @@
 #pragma once
+#define INTERCEPT_IN_PLANES_VERSION "1"
 #define N_OPTVARS 65
 #define N_CONSTRAINTS 47
 #define N_SAMPLES_INTERCEPTING 2
@@ -10,47 +11,56 @@
 #define N_DRONE_STATES 6
 #define N_DRONE_INPUTS 3
 #define N_INSECT_STATES 6
+#define DRONE_POSX 0
+#define DRONE_POSY 1
+#define DRONE_POSZ 2
+#define DRONE_VELX 3
+#define DRONE_VELY 4
+#define DRONE_VELZ 5
+#define DRONE_ACCX 0
+#define DRONE_ACCY 1
+#define DRONE_ACCZ 2
+#define INSECT_POSX 0
+#define INSECT_POSY 1
+#define INSECT_POSZ 2
+#define INSECT_VELX 3
+#define INSECT_VELY 4
+#define INSECT_VELZ 5
 
 enum optvar_idx {
     dt_intercepting = 0,
-    drone_posx0_intercepting = 1,
-    drone_posy0_intercepting = 2,
-    drone_posz0_intercepting = 3,
-    drone_velx0_intercepting = 4,
-    drone_vely0_intercepting = 5,
-    drone_velz0_intercepting = 6,
-    drone_posxF_intercepting = 7,
-    drone_posyF_intercepting = 8,
-    drone_poszF_intercepting = 9,
-    drone_velzF_intercepting = 12,
-    drone_accx0_intercepting = 13,
-    drone_accy0_intercepting = 14,
-    drone_accz0_intercepting = 15,
-    drone_acczF_intercepting = 15,
-    drone_virt_accx0_intercepting = 16,
-    drone_virt_acczF_intercepting = 21,
-    insect_posx0 = 22,
-    insect_posy0 = 23,
-    insect_posz0 = 24,
-    insect_velx0 = 25,
-    insect_vely0 = 26,
-    insect_velz0 = 27,
-    insect_velzF = 33,
+    drone_states_intercepting_first = 1,
+    drone_states_intercepting_last = 12,
+    drone_inputs_intercepting_first = 13,
+    drone_inputs_intercepting_last = 15,
+    drone_virtual_inputs_intercepting_first = 16,
+    drone_virtual_inputs_intercepting_last = 21,
+    insect_states_first = 22,
+    insect_states_last = 33,
     dt_breaking = 34,
-    drone_posx0_breaking = 35,
-    drone_velxF_breaking = 44,
-    drone_velzF_breaking = 46,
-    drone_accx0_breaking = 47,
-    drone_acczF_breaking = 49,
-    drone_virt_accx0_breaking = 50,
-    drone_virt_acczF_breaking = 55,
-    interception_slack0 = 56,
-    interception_slackF = 58,
-    state_transition_slack0 = 59,
-    state_transition_slackF = 61,
+    drone_states_breaking_first = 35,
+    drone_states_breaking_last = 46,
+    drone_inputs_breaking_first = 47,
+    drone_inputs_breaking_last = 49,
+    drone_virtual_inputs_breaking_first = 50,
+    drone_virtual_inputs_breaking_last = 55,
+    interception_slacks_first = 56,
+    interception_slacks_last = 58,
+    drone_transition_slacks_first = 59,
+    drone_transition_slacks_last = 64,
 };
 
 enum inequality_constraint_idx {
-    first_plane_constraint = 27,
-    last_plane_constraint = 46
+    dronedynamics_intercepting_first = 0,
+    dronedynamics_intercepting_last = 5,
+    insectdynamic_first = 6,
+    insectdynamic_last = 11,
+    intercepting_error_first = 12,
+    intercepting_error_last = 14,
+    transition_dronestate_first = 15,
+    transition_dronestate_last = 20,
+    dronedynamic_breaking_first = 21,
+    dronedynamic_breaking_last = 26,
+    plane_constraints_first = 27,
+    plane_constraints_last = 46,
 };

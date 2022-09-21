@@ -7,7 +7,6 @@
 #include "plane.h"
 #include "flightarea.h"
 #include "sqpmethod.h"
-#include "intercept_in_planes_index.h"
 #ifdef USE_OSQP
 #include "intercept_in_planes_quad_opti_osqp.h"
 #else
@@ -39,6 +38,7 @@ public:
     bool use_casadi = false;
 
     void init(float *thrust, FlightArea *flightarea, safety_margin_types safety_margin);
+    std::string version();
     intercept_in_planes_result find_best_interception(tracking::TrackData drone, tracking::TrackData insect);
     void export_scenario(tracking::TrackData drone, tracking::TrackData insect, std::vector<Plane> planes);
     std::vector<cv::Point3f> interception_trajectory();
@@ -55,10 +55,7 @@ public:
     sqp_solver_configuration sqp_convergence_parameter() {
         return sqpsolver.convergence_parameter();
     };
-    std::tuple<int, int, int> scenario_setup() {
-        return std::tuple(N_STEPS_INTERCEPTING + 1, N_STEPS_BREAKING + 1, N_PLANES);
-    };
-
+    std::tuple<int, int, int> scenario_setup();
     void max_cpu_time(double mcput) {
         sqpsolver.max_cpu_time(mcput);
     };
@@ -67,6 +64,7 @@ public:
 
 private:
     const double interception_error_threshold = 0.05;
+    const double max_dt_breaking = std::numeric_limits<double>::infinity();
     bool print_warning_enabled = true;
 
     SQPSolver sqpsolver;

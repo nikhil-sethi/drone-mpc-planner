@@ -33,6 +33,7 @@ public:
         sqpsolver.init_casadi(problem_solver_path);
     }
 #endif
+    std::string version();
     tti_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
 
     void max_cpu_time(double mcput) {

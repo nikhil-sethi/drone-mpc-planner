@@ -63,9 +63,9 @@ range_stats OcpTester::eval_range_data(range_data data) {
 
 void OcpTester::cout_header(optimizer_test optimizer_select) {
     if (optimizer_select == time_to_intercept)
-        std::cout << "---------------------(TTI) time_to_intercept-------------------------------" << std::endl;
+        std::cout << "---------------------(TTIv" + tti.version() + ") time to intercept-------------------------------" << std::endl;
     else if (optimizer_select == intercept_in_planes)
-        std::cout << "---------------------(IIPv3) intercept_in_planes-----------------------------" << std::endl;
+        std::cout << "---------------------(IIPv" + iip.version() + ") intercept_in_planes-----------------------------" << std::endl;
 
 }
 

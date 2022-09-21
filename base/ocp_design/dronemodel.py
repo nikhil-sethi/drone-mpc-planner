@@ -15,6 +15,14 @@ idx_velz = 5
 idx_pos = [0, 1, 2]
 idx_vel = [3, 4, 5]
 
+drone_model_idxs = {}
+drone_model_idxs["DRONE_POSX"] = 0
+drone_model_idxs["DRONE_POSY"] = 1
+drone_model_idxs["DRONE_POSZ"] = 2
+drone_model_idxs["DRONE_VELX"] = 3
+drone_model_idxs["DRONE_VELY"] = 4
+drone_model_idxs["DRONE_VELZ"] = 5
+
 # Control Vector Indices
 idx_accx = 0
 idx_accy = 1
@@ -22,9 +30,13 @@ idx_accz = 2
 
 idx_acc = [0, 1, 2]
 
+drone_model_idxs["DRONE_ACCX"] = 0
+drone_model_idxs["DRONE_ACCY"] = 1
+drone_model_idxs["DRONE_ACCZ"] = 2
+
 ## Model Size
-n_states = 6
-n_inputs = 3
+n_drone_states = 6
+n_drone_inputs = 3
 
 DRONE_MAX_THRUST = 20 #[m/s^2]
 

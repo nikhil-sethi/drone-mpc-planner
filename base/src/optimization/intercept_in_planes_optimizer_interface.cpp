@@ -1,9 +1,15 @@
 #include "intercept_in_planes_optimizer_interface.h"
+#include "intercept_in_planes_index.h"
 #include <chrono>
 #ifdef OCP_DEV
 #include <casadi/casadi.hpp>
 #endif
 #include <sstream>
+
+std::string InterceptInPlanesOptimizerInterface::version() {
+    return INTERCEPT_IN_PLANES_VERSION;
+}
+
 
 void InterceptInPlanesOptimizerInterface::init(float *thrust, FlightArea  *flightarea, safety_margin_types safety_margin) {
     _thrust = thrust;
@@ -27,41 +33,48 @@ void InterceptInPlanesOptimizerInterface::init_box_constraints() {
     prob_params.lbx[dt_intercepting] = 1e-06;
     prob_params.ubx[dt_intercepting] = inf;
     prob_params.lbx[dt_breaking] = 1e-06;
-    prob_params.ubx[dt_breaking] = inf;
+    prob_params.ubx[dt_breaking] = max_dt_breaking;
 
-    for (int i = drone_posx0_intercepting; i <= drone_velzF_intercepting; i++) {
+    for (int i = drone_states_intercepting_first; i <= drone_states_intercepting_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
 
-    for (int i = insect_posx0; i <= insect_velzF; i++) {
+    for (int i = insect_states_first; i <= insect_states_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
 
-    for (int i = drone_virt_accx0_intercepting; i <= drone_virt_acczF_intercepting; i++) {
+    for (int i = drone_virtual_inputs_intercepting_first; i <= drone_virtual_inputs_intercepting_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
 
 
-    for (int i = drone_posx0_breaking; i <= drone_velzF_breaking; i++) {
+    for (int i = drone_states_breaking_first; i <= drone_states_breaking_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
 
-    for (int i = drone_virt_accx0_breaking; i <= drone_virt_acczF_breaking; i++) {
+    for (int i = drone_virtual_inputs_breaking_first; i <= drone_virtual_inputs_breaking_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
 
-    for (int i = drone_velxF_breaking; i <= drone_velzF_breaking; i++) {
+    uint drone_velx_breaking_final = drone_states_breaking_last - 2;
+    uint drone_velz_breaking_final = drone_states_breaking_last;
+    for (uint i = drone_velx_breaking_final; i <= drone_velz_breaking_final; i++) {
         prob_params.lbx[i] = 0;
         prob_params.ubx[i] = 0;
     }
 
 
-    for (int i = interception_slack0; i <= state_transition_slackF; i++) { // interception_slacks, state_transition_slacks
+    for (int i = drone_transition_slacks_first; i <= drone_transition_slacks_last; i++) {
+        prob_params.lbx[i] = -inf;
+        prob_params.ubx[i] =  inf;
+    }
+
+    for (int i = interception_slacks_first; i <= interception_slacks_last; i++) {
         prob_params.lbx[i] = -inf;
         prob_params.ubx[i] =  inf;
     }
@@ -71,7 +84,7 @@ void InterceptInPlanesOptimizerInterface::init_inequality_constraints() {
     prob_params.lbg.setZero();
     prob_params.ubg.setZero();
 
-    for (uint p = first_plane_constraint; p <= last_plane_constraint; p++) {
+    for (uint p = plane_constraints_first; p <= plane_constraints_last; p++) {
         prob_params.ubg[p] = inf;
     }
 }
@@ -87,13 +100,12 @@ void InterceptInPlanesOptimizerInterface::update_initial_guess(tracking::TrackDa
     Eigen::Vector3d insect_pos0(static_cast<double>(insect.state.pos.x), static_cast<double>(insect.state.pos.y), static_cast<double>(insect.state.pos.z));
     Eigen::Vector3d insect_vel0(static_cast<double>(insect.state.vel.x), static_cast<double>(insect.state.vel.y), static_cast<double>(insect.state.vel.z));
 
-    float thrust = optimization_thrust(*_thrust) / sqrtf(3.);
+    float thrust = optimization_thrust(*_thrust) / sqrt(3.);
 
     float pos_err = (insect_pos0 - drone_pos0).norm();
     float vel_err = (insect_vel0 - drone_vel0).norm();
     float est_tti = vel_err / thrust + sqrt(2 * pos_err / (thrust)); // The size of THIS is crucial for the optimality of the result!!
     est_tti *= 2.f;
-    float t_breaking = 1.f;
 
     Eigen::Vector3d insect_posEnd = insect_pos0 + est_tti * insect_vel0;
     // std::cout << "Guessed intersect pos: " << insect_posEnd.transpose() << std::endl;
@@ -107,37 +119,39 @@ void InterceptInPlanesOptimizerInterface::update_initial_guess(tracking::TrackDa
     // std::cout << "u_dir: " << u_dir.transpose() << std::endl;
 
     prob_params.X0[dt_intercepting] = static_cast<double>(est_tti) / N_STEPS_INTERCEPTING;
-    for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
+    prob_params.X0.segment(drone_states_intercepting_first, N_DRONE_STATES) = drone_x0;
+    for (uint k = 1; k < N_SAMPLES_INTERCEPTING; k++) {
         double tau = static_cast<double>(k) / N_STEPS_INTERCEPTING;
 
         Eigen::VectorXd drone_state_k = (1 - tau) * drone_x0 + tau * drone_x_intercepting;
         cv::Point3f checked_drone_state_k = _flight_area->move_inside(cv::Point3f(drone_state_k[0], drone_state_k[1], drone_state_k[2]), relaxed, drone.pos());
-        prob_params.X0.segment(drone_posx0_intercepting + k * N_DRONE_STATES, N_DRONE_STATES) = drone_state_k;
-        prob_params.X0.segment(drone_posx0_intercepting + k * N_DRONE_STATES, 3) = Eigen::Vector3d(checked_drone_state_k.x, checked_drone_state_k.y, checked_drone_state_k.z);
+        prob_params.X0.segment(drone_states_intercepting_first + k * N_DRONE_STATES, N_DRONE_STATES) = drone_state_k;
+        prob_params.X0.segment(drone_states_intercepting_first + k * N_DRONE_STATES, 3) = Eigen::Vector3d(checked_drone_state_k.x, checked_drone_state_k.y, checked_drone_state_k.z);
     }
 
     Eigen::VectorXd u0 = (thrust) * u_dir;
     for (uint k = 0; k < N_STEPS_INTERCEPTING; k++) {
-        prob_params.X0.segment(drone_accx0_intercepting + k * N_DRONE_INPUTS, N_DRONE_INPUTS) = u0;
+        prob_params.X0.segment(drone_inputs_intercepting_first + k * N_DRONE_INPUTS, N_DRONE_INPUTS) = u0;
     }
 
-    prob_params.X0[dt_breaking] = static_cast<double>(t_breaking) / N_STEPS_BREAKING;
+    float dt_breaking_guess = static_cast<float>(drone_vel_intercepting.norm()) / thrust;
+    prob_params.X0[dt_breaking] = std::min(static_cast<double>(dt_breaking_guess) / N_STEPS_BREAKING, max_dt_breaking);
     Eigen::Vector3d u_breaking = -u0;
 
     Eigen::VectorXd drone_xstoped(N_DRONE_STATES);
     drone_xstoped.setZero();
-    drone_xstoped.segment(0, 3) = 0.5 * static_cast<double>(t_breaking * t_breaking) *  u_breaking + drone_x_intercepting.segment(0, 3);
+    drone_xstoped.segment(0, 3) = 0.5 * static_cast<double>(dt_breaking_guess * dt_breaking_guess) *  u_breaking + drone_x_intercepting.segment(0, 3);
 
     for (uint k = 0; k < N_SAMPLES_BREAKING; k++) {
         double tau = static_cast<double>(k) / N_STEPS_BREAKING;
         Eigen::VectorXd drone_state_k = (1. - tau) * drone_x_intercepting + tau * drone_xstoped;
         cv::Point3f checked_drone_state_k = _flight_area->move_inside(cv::Point3f(drone_state_k[0], drone_state_k[1], drone_state_k[2]), relaxed, drone.pos());
-        prob_params.X0.segment(drone_posx0_breaking + k * N_DRONE_STATES, N_DRONE_STATES) = drone_state_k;
-        prob_params.X0.segment(drone_posx0_breaking + k * N_DRONE_STATES, 3) = Eigen::Vector3d(checked_drone_state_k.x, checked_drone_state_k.y, checked_drone_state_k.z);
+        prob_params.X0.segment(drone_states_breaking_first + k * N_DRONE_STATES, N_DRONE_STATES) = drone_state_k;
+        prob_params.X0.segment(drone_states_breaking_first + k * N_DRONE_STATES, 3) = Eigen::Vector3d(checked_drone_state_k.x, checked_drone_state_k.y, checked_drone_state_k.z);
     }
 
     for (uint k = 0; k < N_STEPS_BREAKING; k++) {
-        prob_params.X0.segment(drone_accx0_breaking + k * N_DRONE_INPUTS, N_DRONE_INPUTS) = u_breaking;
+        prob_params.X0.segment(drone_inputs_breaking_first + k * N_DRONE_INPUTS, N_DRONE_INPUTS) = u_breaking;
     }
 
     Eigen::VectorXd insect_x0(N_INSECT_STATES);
@@ -147,60 +161,60 @@ void InterceptInPlanesOptimizerInterface::update_initial_guess(tracking::TrackDa
     for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
         double tau = static_cast<double>(k) / N_SAMPLES_INTERCEPTING;
 
-        prob_params.X0.segment(insect_posx0 + k * N_INSECT_STATES, N_INSECT_STATES) = (1. - tau) * insect_x0 + tau * insect_xF;
+        prob_params.X0.segment(insect_states_first + k * N_INSECT_STATES, N_INSECT_STATES) = (1. - tau) * insect_x0 + tau * insect_xF;
     }
 }
 
 void InterceptInPlanesOptimizerInterface::update_box_constraints(tracking::TrackData drone, tracking::TrackData insect) {
-    prob_params.lbx[drone_posx0_intercepting] = static_cast<double>(drone.pos().x);
-    prob_params.lbx[drone_posy0_intercepting] = static_cast<double>(drone.pos().y);
-    prob_params.lbx[drone_posz0_intercepting] = static_cast<double>(drone.pos().z);
-    prob_params.lbx[drone_velx0_intercepting] = static_cast<double>(drone.vel().x);
-    prob_params.lbx[drone_vely0_intercepting] = static_cast<double>(drone.vel().y);
-    prob_params.lbx[drone_velz0_intercepting] = static_cast<double>(drone.vel().z);
-    prob_params.ubx[drone_posx0_intercepting] = static_cast<double>(drone.pos().x);
-    prob_params.ubx[drone_posy0_intercepting] = static_cast<double>(drone.pos().y);
-    prob_params.ubx[drone_posz0_intercepting] = static_cast<double>(drone.pos().z);
-    prob_params.ubx[drone_velx0_intercepting] = static_cast<double>(drone.vel().x);
-    prob_params.ubx[drone_vely0_intercepting] = static_cast<double>(drone.vel().y);
-    prob_params.ubx[drone_velz0_intercepting] = static_cast<double>(drone.vel().z);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_POSX] = static_cast<double>(drone.pos().x);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_POSY] = static_cast<double>(drone.pos().y);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_POSZ] = static_cast<double>(drone.pos().z);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_VELX] = static_cast<double>(drone.vel().x);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_VELY] = static_cast<double>(drone.vel().y);
+    prob_params.lbx[drone_states_intercepting_first + DRONE_VELZ] = static_cast<double>(drone.vel().z);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_POSX] = static_cast<double>(drone.pos().x);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_POSY] = static_cast<double>(drone.pos().y);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_POSZ] = static_cast<double>(drone.pos().z);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_VELX] = static_cast<double>(drone.vel().x);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_VELY] = static_cast<double>(drone.vel().y);
+    prob_params.ubx[drone_states_intercepting_first + DRONE_VELZ] = static_cast<double>(drone.vel().z);
 
-    prob_params.lbx[insect_posx0] = static_cast<double>(insect.pos().x);
-    prob_params.lbx[insect_posy0] = static_cast<double>(insect.pos().y);
-    prob_params.lbx[insect_posz0] = static_cast<double>(insect.pos().z);
-    prob_params.lbx[insect_velx0] = static_cast<double>(insect.vel().x);
-    prob_params.lbx[insect_vely0] = static_cast<double>(insect.vel().y);
-    prob_params.lbx[insect_velz0] = static_cast<double>(insect.vel().z);
-    prob_params.ubx[insect_posx0] = static_cast<double>(insect.pos().x);
-    prob_params.ubx[insect_posy0] = static_cast<double>(insect.pos().y);
-    prob_params.ubx[insect_posz0] = static_cast<double>(insect.pos().z);
-    prob_params.ubx[insect_velx0] = static_cast<double>(insect.vel().x);
-    prob_params.ubx[insect_vely0] = static_cast<double>(insect.vel().y);
-    prob_params.ubx[insect_velz0] = static_cast<double>(insect.vel().z);
+    prob_params.lbx[insect_states_first + INSECT_POSX] = static_cast<double>(insect.pos().x);
+    prob_params.lbx[insect_states_first + INSECT_POSY] = static_cast<double>(insect.pos().y);
+    prob_params.lbx[insect_states_first + INSECT_POSZ] = static_cast<double>(insect.pos().z);
+    prob_params.lbx[insect_states_first + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.lbx[insect_states_first + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.lbx[insect_states_first + INSECT_VELZ] = static_cast<double>(insect.vel().z);
+    prob_params.ubx[insect_states_first + INSECT_POSX] = static_cast<double>(insect.pos().x);
+    prob_params.ubx[insect_states_first + INSECT_POSY] = static_cast<double>(insect.pos().y);
+    prob_params.ubx[insect_states_first + INSECT_POSZ] = static_cast<double>(insect.pos().z);
+    prob_params.ubx[insect_states_first + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.ubx[insect_states_first + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.ubx[insect_states_first + INSECT_VELZ] = static_cast<double>(insect.vel().z);
 
     double insect_vel[3] = {static_cast<double>(insect.vel().x), static_cast<double>(insect.vel().y), static_cast<double>(insect.vel().z)};
     for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
         for (uint uk = 0; uk < 3; uk++) {
-            prob_params.lbx[insect_posx0 + k * N_INSECT_STATES + 3 + uk] = insect_vel[uk];
-            prob_params.ubx[insect_posx0 + k * N_INSECT_STATES + 3 + uk] = insect_vel[uk];
+            prob_params.lbx[insect_states_first + k * N_INSECT_STATES + 3 + uk] = insect_vel[uk];
+            prob_params.ubx[insect_states_first + k * N_INSECT_STATES + 3 + uk] = insect_vel[uk];
         }
     }
 
     double thrust =  static_cast<double>(optimization_thrust(*_thrust)) / sqrt(3);
-    if (prob_params.ubx[drone_accx0_intercepting] != thrust) {
+    if (prob_params.ubx[drone_inputs_intercepting_first] != thrust) {
         for (uint k = 0; k < N_STEPS_INTERCEPTING; k++) {
             for (uint uk = 0; uk < N_DRONE_INPUTS; uk++) {
-                prob_params.lbx[drone_accx0_intercepting + k * N_DRONE_INPUTS + uk] = -thrust;
-                prob_params.ubx[drone_accx0_intercepting + k * N_DRONE_INPUTS + uk] =  thrust;
+                prob_params.lbx[drone_inputs_intercepting_first + k * N_DRONE_INPUTS + uk] = -thrust;
+                prob_params.ubx[drone_inputs_intercepting_first + k * N_DRONE_INPUTS + uk] =  thrust;
             }
         }
     }
 
-    if (prob_params.ubx[drone_accx0_breaking] != thrust) {
+    if (prob_params.ubx[drone_inputs_breaking_first] != thrust) {
         for (uint k = 0; k < N_STEPS_BREAKING; k++) {
             for (uint uk = 0; uk < N_DRONE_INPUTS; uk++) {
-                prob_params.lbx[drone_accx0_breaking + k * N_DRONE_INPUTS + uk] = -thrust;
-                prob_params.ubx[drone_accx0_breaking + k * N_DRONE_INPUTS + uk] =  thrust;
+                prob_params.lbx[drone_inputs_breaking_first + k * N_DRONE_INPUTS + uk] = -thrust;
+                prob_params.ubx[drone_inputs_breaking_first + k * N_DRONE_INPUTS + uk] =  thrust;
             }
         }
     }
@@ -227,7 +241,8 @@ void InterceptInPlanesOptimizerInterface::update_plane_parameters(std::vector<Pl
 }
 
 bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xopt) {
-    // qpsolver.print_eigenvector("xopt", xopt);
+    // qpsolver.print_eigenvector("Xopt", xopt);
+    // std::cout << "dt_intercepting: " << xopt[dt_intercepting] << ", dt_breaking: " << xopt[dt_breaking] << std::endl;
 
     if (xopt.norm() < 0.1) {
         // print_warning("INFEASIBLE: Xopt=0!");
@@ -237,12 +252,12 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
     double virt_input_sum = 0;
     for (uint k = 0; k < N_STEPS_INTERCEPTING; k++) {
         for (uint suk = 0; suk < N_DRONE_INPUTS; suk++) {
-            virt_input_sum += abs(xopt[drone_virt_accx0_intercepting + k * N_DRONE_INPUTS + suk]);
+            virt_input_sum += abs(xopt[drone_virtual_inputs_intercepting_first + k * N_DRONE_INPUTS + suk]);
         }
     }
     for (uint k = 0; k < N_STEPS_BREAKING; k++) {
         for (uint suk = 0; suk < N_DRONE_INPUTS; suk++) {
-            virt_input_sum += abs(xopt[drone_virt_accx0_breaking + k * N_DRONE_INPUTS + suk]);
+            virt_input_sum += abs(xopt[drone_virtual_inputs_breaking_first + k * N_DRONE_INPUTS + suk]);
         }
     }
     if (virt_input_sum > 0.001) {
@@ -255,9 +270,39 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
         return false;
     }
 
-    Eigen::Vector3d interception_error;
-    for (uint i = interception_slack0; i < interception_slackF; i++) {
-        interception_error[i - interception_slack0] = xopt[i];
+    for (uint k = 1; k < N_SAMPLES_INTERCEPTING; k++) {
+        if (abs(xopt[drone_states_intercepting_first + k * N_DRONE_STATES]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+        if (abs(xopt[drone_states_intercepting_first + k * N_DRONE_STATES + 1]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+        if (abs(xopt[drone_states_intercepting_first + k * N_DRONE_STATES + 2]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+    }
+
+    for (uint k = 1; k < N_SAMPLES_BREAKING; k++) {
+        if (abs(xopt[drone_states_breaking_first + k * N_DRONE_STATES]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+        if (abs(xopt[drone_states_breaking_first + k * N_DRONE_STATES + 1]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+        if (abs(xopt[drone_states_breaking_first + k * N_DRONE_STATES + 2]) > 100) {
+            // std::cout << "INFEASIBLE: Single position component is too high" << std::endl;
+            return false;
+        }
+    }
+
+    Eigen::Vector3d interception_error = Eigen::Vector3d().setZero();
+    for (uint i = interception_slacks_first; i < interception_slacks_last; i++) {
+        interception_error[i - interception_slacks_first] = xopt[i];
     }
     double interception_error_abs = interception_error.norm();
     if (interception_error_abs > 0.02) {
@@ -266,7 +311,7 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
     }
 
     double transition_error = 0;
-    for (uint i = state_transition_slack0; i < state_transition_slackF; i++) {
+    for (uint i = drone_transition_slacks_first; i < drone_transition_slacks_last; i++) {
         transition_error += abs(xopt[i]);
     }
     if (transition_error > 0.01) {
@@ -274,7 +319,6 @@ bool InterceptInPlanesOptimizerInterface::feasible_trajectory(Eigen::VectorXd xo
         return false;
     }
 
-    // print_success("IIP ok.");
     return true;
 }
 
@@ -325,10 +369,16 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
     t_start = std::chrono::high_resolution_clock::now();
 #endif
 
+    int drone_posxF_intercepting = drone_states_intercepting_first + N_STEPS_INTERCEPTING * N_DRONE_STATES + DRONE_POSX;
+    int drone_posyF_intercepting = drone_states_intercepting_first + N_STEPS_INTERCEPTING * N_DRONE_STATES + DRONE_POSY;
+    int drone_poszF_intercepting = drone_states_intercepting_first + N_STEPS_INTERCEPTING * N_DRONE_STATES + DRONE_POSZ;
+    int drone_posxF_breaking = drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSX;
+    int drone_posyF_breaking = drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSY;
+    int drone_poszF_breaking = drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSZ;
     res.time_to_intercept = opti_var[dt_intercepting] * N_STEPS_INTERCEPTING;
     res.position_to_intercept = cv::Point3f(opti_var[drone_posxF_intercepting], opti_var[drone_posyF_intercepting], opti_var[drone_poszF_intercepting]);
-    res.acceleration_to_intercept = cv::Point3f(opti_var[drone_accx0_intercepting], opti_var[drone_accy0_intercepting], opti_var[drone_accz0_intercepting]);
-    res.position_stopped = cv::Point3f(opti_var[drone_velxF_breaking - 3], opti_var[drone_velxF_breaking - 2], opti_var[drone_velxF_breaking - 1]);
+    res.acceleration_to_intercept = cv::Point3f(opti_var[drone_inputs_intercepting_first + DRONE_ACCX], opti_var[drone_inputs_intercepting_first + DRONE_ACCY], opti_var[drone_inputs_intercepting_first + DRONE_ACCZ]);
+    res.position_stopped = cv::Point3f(opti_var[drone_posxF_breaking], opti_var[drone_posyF_breaking], opti_var[drone_poszF_breaking]);
 
     // qpsolver.print_eigenvector("Xopt", opti_var);
     opti_res_valid = false;
@@ -383,12 +433,12 @@ std::vector<cv::Point3f> InterceptInPlanesOptimizerInterface::interception_traje
     // if (feasible_trajectory(opti_var)) {
     if (opti_res_valid) {
         for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
-            Eigen::VectorXd state_k = opti_var.segment(drone_posx0_intercepting + k * N_DRONE_STATES, 3);
+            Eigen::VectorXd state_k = opti_var.segment(drone_states_intercepting_first + k * N_DRONE_STATES, 3);
             intercept_trajectory.push_back(cv::Point3f(state_k[0], state_k[1], state_k[2]));
         }
 
         for (uint k = 1; k < N_SAMPLES_BREAKING; k++) {
-            Eigen::VectorXd state_k = opti_var.segment(drone_posx0_breaking + k * N_DRONE_STATES, 3);
+            Eigen::VectorXd state_k = opti_var.segment(drone_states_breaking_first + k * N_DRONE_STATES, 3);
             intercept_trajectory.push_back(cv::Point3f(state_k[0], state_k[1], state_k[2]));
         }
     }
@@ -396,3 +446,7 @@ std::vector<cv::Point3f> InterceptInPlanesOptimizerInterface::interception_traje
 
     return intercept_trajectory;
 }
+
+std::tuple<int, int, int> InterceptInPlanesOptimizerInterface::scenario_setup() {
+    return std::tuple(N_SAMPLES_INTERCEPTING, N_SAMPLES_BREAKING, N_PLANES);
+};

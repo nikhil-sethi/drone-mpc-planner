@@ -13,8 +13,17 @@ idx_insectvelz = 5
 idx_insectpos = [0, 1, 2]
 idx_insectvel = [3, 4, 5]
 
+insect_model_idxs = {}
+insect_model_idxs["INSECT_POSX"] = 0
+insect_model_idxs["INSECT_POSY"] = 1
+insect_model_idxs["INSECT_POSZ"] = 2
+insect_model_idxs["INSECT_VELX"] = 3
+insect_model_idxs["INSECT_VELY"] = 4
+insect_model_idxs["INSECT_VELZ"] = 5
+
 ## Model Size
-n_insectstates = 6
+n_insect_states = 6
+
 def insect_dynamics(X):
     PosX = X[:, idx_insectposx]
     PosY = X[:, idx_insectposy]
