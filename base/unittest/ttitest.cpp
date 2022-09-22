@@ -41,7 +41,7 @@ TEST_GROUP(TimeToIntercept) {
 
 TEST(TimeToIntercept, overall_behavior) {
     QPSettings qpsettings = QPSettings();
-    ocptester.init_range_test(time_to_intercept, true, sqp_solver_configuration(), &qpsettings);
+    ocptester.init_range_test(time_to_intercept, false, sqp_solver_configuration(), &qpsettings);
     auto stats = ocptester.exec_range_test();
     CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms * 1000);
     CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms * 1000);
@@ -55,6 +55,6 @@ TEST(TimeToIntercept, overall_behavior) {
 //     CHECK(stats.invalid_optimization_results == 0);
 // }
 
-TEST(TimeToIntercept, find_parameters) {
-    ocptester.find_parameter(time_to_intercept);
-}
+// TEST(TimeToIntercept, find_parameters) {
+//     ocptester.find_parameter(time_to_intercept);
+// }
