@@ -2,5 +2,8 @@
 
 !*.py
 !*.kst
-!casadi_parser/solvertemplate_qpoases.*
-!casadi_parser/solvertemplate_osqp.*
+!./casadi_parser/*.py
+!./casadi_parser/solvertemplate_qpoases.*
+!./casadi_parser/solvertemplate_osqp.*
+!./tti/*.py
+!./intercept_in_planes/*.py
