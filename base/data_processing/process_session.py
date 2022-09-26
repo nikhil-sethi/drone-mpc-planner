@@ -577,7 +577,7 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
             for ii in range(i + 1, len(cuts)):
                 if cuts[i]['end_rs_id'] > cuts[ii]['end_rs_id'] and (cuts[ii]['type'] == 'insect' or cuts[ii]['type'] == 'anomoly') and cuts[i]['type'] == 'flight':
                     for detection in detections:
-                        if detection['video_filename'] == cuts[ii]['video_filename']:
+                        if "video_filename" in detection and detection['video_filename'] == cuts[ii]['video_filename']:
                             detection.pop('concat_id', None)
                             detection.pop('video_duration', None)
                             detection['video_filename'] = cuts[i]['video_filename']
