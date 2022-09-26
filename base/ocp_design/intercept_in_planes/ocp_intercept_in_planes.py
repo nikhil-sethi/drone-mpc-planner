@@ -33,33 +33,30 @@ if n_steps_intercepting <= 0 and n_steps_breaking <= 0:
     raise("All stages need to do have at least one step!.")
 
 # Create Optimization Variables:
+#   Order of optvar registration matters! Important to show optimization trajectory correctly
 optvars = init_optvar()
 dt_intercepting = SX.sym('dt_intercepting')
 optvars = register_optvar(dt_intercepting, "dt_intercepting", optvars)
-
-drone_states_intercepting = SX.sym('drone_states_intercepting', n_drone_states, n_samples_intercepting)
-optvars = register_optvar(drone_states_intercepting, "drone_states_intercepting", optvars)
-
-drone_inputs_intercepting = SX.sym('drone_inputs_intercepting', n_drone_inputs, n_steps_intercepting)
-optvars = register_optvar(drone_inputs_intercepting, "drone_inputs_intercepting", optvars)
-
-drone_virtual_inputs_intercepting = SX.sym('virtual_inputs_intercepting', n_drone_states, n_steps_intercepting)
-optvars = register_optvar(drone_virtual_inputs_intercepting, "drone_virtual_inputs_intercepting", optvars)
-
-insect_states = SX.sym('insect_states', n_insect_states, n_samples_intercepting)
-optvars = register_optvar(insect_states, 'insect_states', optvars)
-
 dt_breaking = SX.sym('dt_breaking')
 optvars = register_optvar(dt_breaking, "dt_breaking", optvars)
 
+drone_states_intercepting = SX.sym('drone_states_intercepting', n_drone_states, n_samples_intercepting)
+optvars = register_optvar(drone_states_intercepting, "drone_states_intercepting", optvars)
 drone_states_breaking = SX.sym('drone_states_breaking', n_drone_states, n_samples_breaking)
 optvars = register_optvar(drone_states_breaking, "drone_states_breaking", optvars)
 
+drone_inputs_intercepting = SX.sym('drone_inputs_intercepting', n_drone_inputs, n_steps_intercepting)
+optvars = register_optvar(drone_inputs_intercepting, "drone_inputs_intercepting", optvars)
 drone_inputs_breaking = SX.sym('drone_inputs_breaking', n_drone_inputs, n_steps_breaking)
 optvars = register_optvar(drone_inputs_breaking, "drone_inputs_breaking", optvars)
 
+drone_virtual_inputs_intercepting = SX.sym('virtual_inputs_intercepting', n_drone_states, n_steps_intercepting)
+optvars = register_optvar(drone_virtual_inputs_intercepting, "drone_virtual_inputs_intercepting", optvars)
 drone_virtual_inputs_breaking = SX.sym('drone_virtual_inputs_breaking', n_drone_states, n_steps_breaking)
 optvars = register_optvar(drone_virtual_inputs_breaking, "drone_virtual_inputs_breaking", optvars)
+
+insect_states = SX.sym('insect_states', n_insect_states, n_samples_intercepting)
+optvars = register_optvar(insect_states, 'insect_states', optvars)
 
 interception_slacks = SX.sym('interception_slacks', 3, 1)
 optvars = register_optvar(interception_slacks, "interception_slacks", optvars)
