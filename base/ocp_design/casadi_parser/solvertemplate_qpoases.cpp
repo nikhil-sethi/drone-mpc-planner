@@ -1,5 +1,5 @@
 #include "solvertemplate.h"
-#include <intercept_in_planes_index.h>
+#include "problem_index.h"
 
 void SolverTemplate::init() {
     solver = SQProblem(N_XOPTS, N_CONSTRAINTS);

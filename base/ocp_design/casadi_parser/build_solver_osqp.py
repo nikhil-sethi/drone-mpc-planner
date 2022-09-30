@@ -225,6 +225,7 @@ def build_solver_osqp(name, n_xopts, linear_costs, quadratic_costs, constraints,
 
     source = source.replace("solvertemplate", name+"_quad_opti_osqp")
     class_name = build_classname(name)
+    source = source.replace('#include "problem_index.h"', '#include "' + str(name) + '_index.h"')
     source = source.replace("SolverTemplate", class_name)
     source = source.replace("N_XOPTS + N_CONSTRAINTS", str(n_xopts + n_constraints))
     source = source.replace("N_XOPTS", str(n_xopts))
