@@ -140,6 +140,7 @@ TEST(InterceptInPlanes, overall_behavior_linesearch) {
     sqp_solver_configuration sqp_config = sqp_solver_configuration(30, 1e-6, 1e-6, 1e-9);
     ocptester.init_range_test(intercept_in_planes, false, sqp_config, &qpsettings);
     auto stats = ocptester.exec_range_test();
+    ocptester.check_range_optimality(intercept_in_planes, stats);
     CHECK(stats.average_optimizing_time_us < ocptester.realtime_boundary_ms);
     CHECK(stats.max_optimizing_time_us < ocptester.realtime_boundary_ms);
     CHECK(stats.invalid_optimization_results == 0);

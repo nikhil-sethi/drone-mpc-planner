@@ -495,6 +495,20 @@ void OcpTester::cout_configuration_results(std::vector<QPSettings> qp_confs, std
     std::cout << i << ": [" << stats[i] << ", " << sqp_conf[i] << ", " << qp_confs[i] << "]" << std::endl;
 }
 
+void OcpTester::check_range_optimality(optimizer_test optimizer_select, range_stats range_stats) {
+    double previous_intercept_time = 0;
+    if (optimizer_select == time_to_intercept)
+        previous_intercept_time = 0.537538;
+    else if (optimizer_select == intercept_in_planes)
+        previous_intercept_time = 0.509424;
+
+    if (abs(range_stats.average_interception_time_s - previous_intercept_time) > 0.01)
+        std::cout << "\033[33m" << "Optimality significantly changed!" << "\033[0m" <<  std::endl;
+    else
+        std::cout << "\033[92m" << "Optimality as expected" << "\033[0m" <<  std::endl;
+
+}
+
 std::ostream &operator<<(std::ostream &os, range_stats &rng_stats) {
     os << "valid results[%]: " << rng_stats.valid_optimization_results
        << ", sigma2_optimization_time[ms]: " << rng_stats.sigma2_optimizing_time_ms

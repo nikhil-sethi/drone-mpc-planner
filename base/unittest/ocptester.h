@@ -79,6 +79,7 @@ public:
 
     void  init_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, QPSettings *qp_settings);
     range_stats exec_range_test();
+    void check_range_optimality(optimizer_test optimizer_select, range_stats range_stats);
 
     void find_parameter(optimizer_test optimizer_select);
     std::tuple<tracking::TrackData, tracking::TrackData> case_test();
