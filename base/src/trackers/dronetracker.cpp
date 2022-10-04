@@ -377,16 +377,15 @@ void DroneTracker::reset_takeoff_im_prediction_if_direction_bad(cv::Point2f take
 bool DroneTracker::detect_lift_off() {
     float dist2takeoff = normf(_world_item.pt - pad_location());
     float takeoff_y =  _world_item.pt.y - pad_location().y;
-
-    if (dist2takeoff > 0.1f
+    if ((dist2takeoff > 0.1f
             && takeoff_y > 0.05f
-            && _world_item.radius < dparams.radius * 4.f) {
+            && _world_item.radius < dparams.radius * 4.f) || (dist2takeoff > dparams.pad_radius && _world_item.radius < dparams.radius * 4.f)) {
         take_off_frame_cnt++;
         if (take_off_frame_cnt >= 3) {
             return true;
         }
     } else {
-        take_off_frame_cnt = 0;
+        take_off_frame_cnt = std::max(0, take_off_frame_cnt - 1);
     }
     return false;
 }
