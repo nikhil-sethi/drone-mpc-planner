@@ -667,6 +667,7 @@ std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_ac
 
     if (normf(desired_acc) > calibration.max_thrust)
         desired_acc *= calibration.max_thrust / normf(desired_acc);
+    applied_acceleration = desired_acc;
 
     cv::Point3f direction = desired_acc / normf(desired_acc);
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(desired_acc))));
@@ -737,14 +738,15 @@ void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f 
 
     cv::Point3f gravity_compensation = cv::Point3f(0, GRAVITY, 0);
     cv::Point3f kiv_acc = kiv_update(data_drone);
+    cv::Point3f acceleration_mix = {0, 0, 0};
     if (normf(kiv_acc) > 0) {
-        applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
-        applied_acceleration = combine_drone_accelerations_with_priority(applied_acceleration, component_a_perpendicular_to_b(target_acc, kiv_acc));
+        acceleration_mix = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
+        acceleration_mix = combine_drone_accelerations_with_priority(acceleration_mix, component_a_perpendicular_to_b(target_acc, kiv_acc));
     } else {
-        applied_acceleration = combine_drone_accelerations_with_priority(gravity_compensation, target_acc);
+        acceleration_mix = combine_drone_accelerations_with_priority(gravity_compensation, target_acc);
     }
 
-    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(applied_acceleration);
+    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(acceleration_mix);
 }
 
 void DroneController::control_drone_acceleration_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc) {

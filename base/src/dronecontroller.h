@@ -173,7 +173,6 @@ private:
     bool _manual_override_take_off_now = false;
 
     cv::Point3f pos_err_i;
-    cv::Point3f applied_acceleration;
 
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
@@ -227,6 +226,8 @@ public:
     LandingController land_ctrl;
     KeepInViewController kiv_ctrl;
     AccelerometerTrim accelerometer_trim;
+
+    cv::Point3f applied_acceleration;
 
     tracking::DroneTracker *dronetracker() {
         return _dtrk;
