@@ -52,9 +52,13 @@ private:
     bool use_casadi = false;
     bool print_warning_enabled = false;
 
-    void init_const_variable_bounds();
+    void init_box_constraints();
     void update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
-    void update_variable_bounds(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
+    void update_box_constraints(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
     bool feasible_solution(Eigen::VectorXd opti_var);
     // void export_scenario(tracking::TrackData drone, tracking::TrackData insect);
+
+#ifdef OPTI_ROSVIS
+    RosVisualizerInterface *_ros_interface;
+#endif
 };

@@ -9,7 +9,7 @@ void TTIOptimizerInterface::init(float *thrust) {
     sqp_solver_configuration config(30, 1e-2, 1e-2, 1e-1);
     sqpsolver.setup(config);
     prob_params = problem_parameters(34, 15, 0);
-    init_const_variable_bounds();
+    init_box_constraints();
 }
 
 void TTIOptimizerInterface::qp_setup(QPSettings qpsettings) {
@@ -18,23 +18,16 @@ void TTIOptimizerInterface::qp_setup(QPSettings qpsettings) {
 
 std::string TTIOptimizerInterface::version() {return TTI_VERSION;};
 
-void TTIOptimizerInterface::init_const_variable_bounds() {
+void TTIOptimizerInterface::init_box_constraints() {
     prob_params.lbx.setZero();
     prob_params.ubx.setZero();
     prob_params.lbx[delta_tI] = 1e-06; //, 0.0616, -inf, -1.28, -inf, -1.322, -inf, 0, -inf, 0, -inf, 0, -inf, -20, -20, -20, -inf, -inf, -inf, -inf, -inf, -inf, 0.99, -inf, -0.4, -inf, -1.899, -inf, -0.5, -0.5, 0, 0, 0, 0};
     prob_params.ubx[delta_tI] = inf; //, 0.0616, inf, -1.28, inf, -1.322, inf, 0, inf, 0, inf, 0, inf, 20, 20, 20, inf, inf, inf, inf, inf, inf, 0.99, inf, -0.4, inf, -1.899, inf, -0.5, -0.5, 0, 0, 0, 0};
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_POSX] = -inf;
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_POSY] = -inf;
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_POSZ] = -inf;
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_VELX] = -inf;
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_VELY] = -inf;
-    prob_params.lbx[statesI_first + N_DRONE_STATES + DRONE_VELZ] = -inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_POSX] = inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_POSY] = inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_POSZ] = inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_VELX] = inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_VELY] = inf;
-    prob_params.ubx[statesI_first + N_DRONE_STATES + DRONE_VELZ] = inf;
+    for (uint i = statesI_first + N_DRONE_STATES; i <= statesI_last; i++) {
+        prob_params.lbx[i] = -inf;
+        prob_params.ubx[i] = inf;
+
+    }
     prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSX] = -inf;
     prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSY] = -inf;
     prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSZ] = -inf;
@@ -68,8 +61,9 @@ void TTIOptimizerInterface::update_initial_guess(tracking::TrackData drone, trac
     prob_params.X0[insect_states_first + INSECT_VELX] = static_cast<double>(insect.vel().x);
     prob_params.X0[insect_states_first + INSECT_VELY] = static_cast<double>(insect.vel().y);
     prob_params.X0[insect_states_first + INSECT_VELZ] = static_cast<double>(insect.vel().z);
+
     cv::Point3f insect_predicted_pos = insect.pos() + static_cast<float>(prob_params.X0[delta_tI]) * insect.vel();
-    cv::Point3f drone_vel2 = drone.vel() + est_tti * (drone.pos() - insect.pos()) / pos_err * effective_thrust;
+    cv::Point3f drone_vel2 = drone.vel() + est_tti * (insect.pos() - drone.pos()) / pos_err * effective_thrust;
     prob_params.X0[statesI_first + N_DRONE_STATES + DRONE_POSX] = static_cast<double>(insect_predicted_pos.x);
     prob_params.X0[statesI_first + N_DRONE_STATES + DRONE_POSY] = static_cast<double>(insect_predicted_pos.y);
     prob_params.X0[statesI_first + N_DRONE_STATES + DRONE_POSZ] = static_cast<double>(insect_predicted_pos.z);
@@ -90,55 +84,64 @@ void TTIOptimizerInterface::update_initial_guess(tracking::TrackData drone, trac
     // qpsolver.print_eigenvector("X0", prob_params.X0);
 }
 
-void TTIOptimizerInterface::update_variable_bounds(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect) {
+void TTIOptimizerInterface::update_box_constraints(tracking::TrackData drone, tracking::TrackData insect) {
     float effective_max_thrust = optimization_thrust(*_thrust) / sqrtf(3.f);
-    prob_params.lbx[statesI_first + DRONE_POSX] = static_cast<double>(track_data_drone.pos().x);
-    prob_params.lbx[statesI_first + DRONE_POSY] = static_cast<double>(track_data_drone.pos().y);
-    prob_params.lbx[statesI_first + DRONE_POSZ] = static_cast<double>(track_data_drone.pos().z);
-    prob_params.lbx[statesI_first + DRONE_VELX] = static_cast<double>(track_data_drone.vel().x);
-    prob_params.lbx[statesI_first + DRONE_VELY] = static_cast<double>(track_data_drone.vel().y);
-    prob_params.lbx[statesI_first + DRONE_VELZ] = static_cast<double>(track_data_drone.vel().z);
-    prob_params.lbx[insect_states_first + INSECT_POSX] = static_cast<double>(track_data_insect.pos().x);
-    prob_params.lbx[insect_states_first + INSECT_POSY] = static_cast<double>(track_data_insect.pos().y);
-    prob_params.lbx[insect_states_first + INSECT_POSZ] = static_cast<double>(track_data_insect.pos().z);
-    prob_params.lbx[insect_states_first + INSECT_POSX] = static_cast<double>(track_data_insect.vel().x);
-    prob_params.lbx[insect_states_first + INSECT_POSY] = static_cast<double>(track_data_insect.vel().y);
-    prob_params.lbx[insect_states_first + INSECT_POSZ] = static_cast<double>(track_data_insect.vel().z);
-    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSX] = static_cast<double>(track_data_insect.vel().x);
-    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSY] = static_cast<double>(track_data_insect.vel().y);
-    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_POSZ] = static_cast<double>(track_data_insect.vel().z);
+    prob_params.lbx[statesI_first + DRONE_POSX] = static_cast<double>(drone.pos().x);
+    prob_params.lbx[statesI_first + DRONE_POSY] = static_cast<double>(drone.pos().y);
+    prob_params.lbx[statesI_first + DRONE_POSZ] = static_cast<double>(drone.pos().z);
+    prob_params.lbx[statesI_first + DRONE_VELX] = static_cast<double>(drone.vel().x);
+    prob_params.lbx[statesI_first + DRONE_VELY] = static_cast<double>(drone.vel().y);
+    prob_params.lbx[statesI_first + DRONE_VELZ] = static_cast<double>(drone.vel().z);
+    prob_params.lbx[insect_states_first + INSECT_POSX] = static_cast<double>(insect.pos().x);
+    prob_params.lbx[insect_states_first + INSECT_POSY] = static_cast<double>(insect.pos().y);
+    prob_params.lbx[insect_states_first + INSECT_POSZ] = static_cast<double>(insect.pos().z);
+    prob_params.lbx[insect_states_first + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.lbx[insect_states_first + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.lbx[insect_states_first + INSECT_VELZ] = static_cast<double>(insect.vel().z);
+    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.lbx[insect_states_first + N_INSECT_STATES + INSECT_VELZ] = static_cast<double>(insect.vel().z);
     prob_params.lbx[inputsI_first + DRONE_ACCX] = static_cast<double>(- effective_max_thrust);
     prob_params.lbx[inputsI_first + DRONE_ACCY] = static_cast<double>(- effective_max_thrust);
     prob_params.lbx[inputsI_first + DRONE_ACCZ] = static_cast<double>(- effective_max_thrust);
-    prob_params.ubx[statesI_first + DRONE_POSX] = static_cast<double>(track_data_drone.pos().x);
-    prob_params.ubx[statesI_first + DRONE_POSY] = static_cast<double>(track_data_drone.pos().y);
-    prob_params.ubx[statesI_first + DRONE_POSZ] = static_cast<double>(track_data_drone.pos().z);
-    prob_params.ubx[statesI_first + DRONE_VELX] = static_cast<double>(track_data_drone.vel().x);
-    prob_params.ubx[statesI_first + DRONE_VELY] = static_cast<double>(track_data_drone.vel().y);
-    prob_params.ubx[statesI_first + DRONE_VELZ] = static_cast<double>(track_data_drone.vel().z);
-    prob_params.ubx[insect_states_first + INSECT_POSX] = static_cast<double>(track_data_insect.pos().x);
-    prob_params.ubx[insect_states_first + INSECT_POSY] = static_cast<double>(track_data_insect.pos().y);
-    prob_params.ubx[insect_states_first + INSECT_POSZ] = static_cast<double>(track_data_insect.pos().z);
-    prob_params.ubx[insect_states_first + INSECT_VELX] = static_cast<double>(track_data_insect.vel().x);
-    prob_params.ubx[insect_states_first + INSECT_VELY] = static_cast<double>(track_data_insect.vel().y);
-    prob_params.ubx[insect_states_first + INSECT_VELZ] = static_cast<double>(track_data_insect.vel().z);
-    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELX] = static_cast<double>(track_data_insect.vel().x);
-    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELY] = static_cast<double>(track_data_insect.vel().y);
-    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELZ] = static_cast<double>(track_data_insect.vel().z);
+
+    prob_params.ubx[statesI_first + DRONE_POSX] = static_cast<double>(drone.pos().x);
+    prob_params.ubx[statesI_first + DRONE_POSY] = static_cast<double>(drone.pos().y);
+    prob_params.ubx[statesI_first + DRONE_POSZ] = static_cast<double>(drone.pos().z);
+    prob_params.ubx[statesI_first + DRONE_VELX] = static_cast<double>(drone.vel().x);
+    prob_params.ubx[statesI_first + DRONE_VELY] = static_cast<double>(drone.vel().y);
+    prob_params.ubx[statesI_first + DRONE_VELZ] = static_cast<double>(drone.vel().z);
+    prob_params.ubx[insect_states_first + INSECT_POSX] = static_cast<double>(insect.pos().x);
+    prob_params.ubx[insect_states_first + INSECT_POSY] = static_cast<double>(insect.pos().y);
+    prob_params.ubx[insect_states_first + INSECT_POSZ] = static_cast<double>(insect.pos().z);
+    prob_params.ubx[insect_states_first + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.ubx[insect_states_first + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.ubx[insect_states_first + INSECT_VELZ] = static_cast<double>(insect.vel().z);
+    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELX] = static_cast<double>(insect.vel().x);
+    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELY] = static_cast<double>(insect.vel().y);
+    prob_params.ubx[insect_states_first + N_INSECT_STATES + INSECT_VELZ] = static_cast<double>(insect.vel().z);
     prob_params.ubx[inputsI_first + DRONE_ACCX] = static_cast<double>(effective_max_thrust);
     prob_params.ubx[inputsI_first + DRONE_ACCY] = static_cast<double>(effective_max_thrust);
     prob_params.ubx[inputsI_first + DRONE_ACCZ] = static_cast<double>(effective_max_thrust);
 }
 
-tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect) {
+tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData drone, tracking::TrackData insect) {
     tti_result res;
-    if (norm(track_data_drone.pos() - track_data_insect.pos()) < 0.01) {
+    if (norm(drone.pos() - insect.pos()) < 0.01) {
         return res;
     }
 
-    update_initial_guess(track_data_drone, track_data_insect);
-    update_variable_bounds(track_data_drone, track_data_insect);
+    update_initial_guess(drone, insect);
+    update_box_constraints(drone, insect);
 
+#ifdef OPTI_ROSVIS
+    _ros_interface->drone(drone);
+    _ros_interface->insect(insect);
+    _ros_interface->path(qpsolver.trajectory(prob_params.X0, state_trajectory_t), opti_initial_guess);
+    _ros_interface->state_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t));
+    _ros_interface->input_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t), qpsolver.trajectory(prob_params.X0, input_trajectory_t), drone_input_trajectory);
+    _ros_interface->publish();
+#endif
 #ifdef PATS_OCP_PROFILING
     std::chrono::_V2::system_clock::time_point t_start, t_end;
     t_start = std::chrono::high_resolution_clock::now();
@@ -187,6 +190,8 @@ bool TTIOptimizerInterface::feasible_solution(Eigen::VectorXd opti_var) {
     }
 
     cv::Point3f intercept_pos_drone = cv::Point3f(opti_var[statesI_first + N_DRONE_STATES + DRONE_POSX], opti_var[statesI_first + N_DRONE_STATES + DRONE_POSY], opti_var[statesI_first + N_DRONE_STATES + DRONE_POSZ]);
+    // cv::Point3f intercept_vel_drone = cv::Point3f(opti_var[statesI_first + N_DRONE_STATES + DRONE_VELX], opti_var[statesI_first + N_DRONE_STATES + DRONE_VELY], opti_var[statesI_first + N_DRONE_STATES + DRONE_VELZ]);
+    // std::cout << "Intercept vel drone: " << intercept_vel_drone << std::endl;
     cv::Point3f intercept_pos_insect = cv::Point3f(opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSX], opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSY], opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSZ]);
     float intercept_error = normf(intercept_pos_drone - intercept_pos_insect);
     if (intercept_error > 0.02f) {
