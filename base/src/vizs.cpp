@@ -504,6 +504,11 @@ void Visualizer::draw_tracker_viz() {
         cv::circle(frameL_color, p.pt(), p.size / 2, cv::Scalar(0, 0, 255));
     }
 
+    putText(frameL_color, "Drone prediction replay", cv::Point(3, frameL_color.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
+    putText(frameL_color, "Drone detection live", cv::Point(3, frameL_color.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
+    putText(frameL_color, "Drone detection replay", cv::Point(3, frameL_color.rows - 36), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
+    putText(frameL_color, "Drone detection template match", cv::Point(3, frameL_color.rows - 48), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 255));
+
     cv::Scalar itrkr_color = cv::Scalar(0, 0, 128);
     if (last_insect_detection.predicted_image_item.valid) {
         std::stringstream ss;
