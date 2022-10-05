@@ -148,6 +148,7 @@ public:
     cv::Point2f takeoff_direction_predicted() { return _takeoff_direction_predicted; };
     void set_pad_location_from_blink(cv::Point3f);
     void set_pad_location(cv::Point3f pad_world);
+    cv::Point3f pad_location_from_blink(cv::Point3f blink_location) {return blink_location + cv::Point3f(0, 0, -dparams.radius);}
     cv::Point2f pad_im_location() { return _pad_im_location; }
     float pad_im_size() { return _pad_im_size; }
     float pad_disparity() { return _pad_disparity; }

@@ -101,6 +101,7 @@ private:
 
     //pre flight
     int n_locate_drone_attempts = 0;
+    uint n_detected_blink_locations = 0;
 
     bool confirm_drone_on_pad = false;
     double time_start_locating_drone = 0;
@@ -109,8 +110,6 @@ private:
     double time_waiting_for_charge = 0;
     double time_led_init = 0;
     double time_start_att_wait_pad = 0;
-
-    uint n_detected_pad_locations = 0;
 
     // flight
     bool _has_been_ready = false;

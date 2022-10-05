@@ -150,7 +150,7 @@ private:
 
     uint16_t next_insecttrkr_id = 1;
     uint16_t next_blinktrkr_id = 1;
-    std::vector<cv::Point3f> _detected_pad_locations;
+    std::vector<cv::Point3f> _detected_blink_locations;
 
     cv::Mat diff_viz;
     bool _enable_viz_blob = false;
@@ -317,7 +317,7 @@ public:
     }
     int motion_thresh() {return _motion_thresh;}
 
-    std::vector<cv::Point3f> detected_pad_locations() {return _detected_pad_locations;}
+    std::vector<cv::Point3f> detected_blink_locations() {return _detected_blink_locations;}
 
     void enable_draw_stereo_viz() {
         _enable_draw_stereo_viz = true;

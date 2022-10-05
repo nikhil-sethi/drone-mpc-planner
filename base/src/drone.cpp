@@ -206,7 +206,7 @@ void Drone::pre_flight(double time) {
                     _trackers->mode(tracking::TrackerManager::t_locate_drone);
                     control.flight_mode(DroneController::fm_disarmed);
                     pre_flight_state = pre_locate_drone;
-                    n_detected_pad_locations = _trackers->detected_pad_locations().size();
+                    n_detected_blink_locations = _trackers->detected_blink_locations().size();
                 }
                 break;
         } case pre_locate_drone: {
@@ -222,15 +222,15 @@ void Drone::pre_flight(double time) {
                     communicate_state(es_pats_x);
                 }
 
-                auto detected_pad_locations = _trackers->detected_pad_locations();
-                if (detected_pad_locations.size() > n_detected_pad_locations) {
-                    std::cout << "Blink detected at " << detected_pad_locations.back() << std::endl;
-                    n_detected_pad_locations = detected_pad_locations.size();
+                auto detected_blink_locations = _trackers->detected_blink_locations();
+                if (detected_blink_locations.size() > n_detected_blink_locations) {
+                    std::cout << "Blink detected at " << detected_blink_locations.back() << std::endl;
+                    n_detected_blink_locations = detected_blink_locations.size();
                     control.LED(true);
                     _visdat->disable_fading = false;
                     if (confirm_drone_on_pad) {
                         confirm_drone_on_pad = false;
-                        float dist = normf(tracker.pad_location(false) - detected_pad_locations.back());
+                        float dist = normf(tracker.pad_location(false) - tracker.pad_location_from_blink(detected_blink_locations.back()));
                         std::cout << "Confirmed drone on " << dist << " from the pad... while charging is: " << _baseboard_link->charging() << std::endl;
                         if (dist < confirm_drone_on_pad_delta_distance && _baseboard_link->charging()) {
                             pre_flight_state = pre_init;
@@ -238,7 +238,7 @@ void Drone::pre_flight(double time) {
                             _trackers->mode(tracking::TrackerManager::t_x);
                         } else if (_baseboard_link->charging()) {
                             control.invalidize_blink();
-                            tracker.set_pad_location_from_blink(detected_pad_locations.back());
+                            tracker.set_pad_location_from_blink(detected_blink_locations.back());
                             _trackers->mode(tracking::TrackerManager::t_x);
                             time_located_drone = time;
                             n_locate_drone_attempts = 0;
@@ -258,7 +258,7 @@ void Drone::pre_flight(double time) {
                             _trackers->mode(tracking::TrackerManager::t_c);
                         }
                     } else if (_baseboard_link->charging() || _baseboard_link->disabled()) {
-                        tracker.set_pad_location_from_blink(detected_pad_locations.back());
+                        tracker.set_pad_location_from_blink(detected_blink_locations.back());
                         _trackers->mode(tracking::TrackerManager::t_x);
                         time_located_drone = time;
                         n_locate_drone_attempts = 0;
