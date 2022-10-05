@@ -1,4 +1,5 @@
 #include "solvertemplate.h"
+#include "problem_index.h"
 
 void SolverTemplate::init() {
     settings = reinterpret_cast<OSQPSettings *>(c_malloc(sizeof(OSQPSettings)));
