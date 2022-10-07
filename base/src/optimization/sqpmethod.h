@@ -5,6 +5,9 @@
 #ifdef OCP_DEV
 #include <casadi/casadi.hpp>
 #endif
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 
 struct sqp_solver_configuration {
     int max_sqp_iterations;
@@ -22,12 +25,6 @@ class SQPSolver {
 public:
     void init(QuadraticOptimizer *qpsolver);
     void setup(sqp_solver_configuration _config);
-
-#ifdef OCP_DEV
-    void init_casadi(std::string problem_solver_path);
-    Eigen::VectorXd solve_casadi(problem_parameters *prob_param);
-#endif
-
     Eigen::VectorXd solve_line_search(problem_parameters *prob_param);
 
     sqp_solver_configuration convergence_parameter() {
@@ -40,6 +37,14 @@ public:
             std::cout << "SQPMethod: Realtime ensurance disabled." << std::endl;
     };
 
+#ifdef OCP_DEV
+    void init_casadi(std::string problem_solver_path);
+    Eigen::VectorXd solve_casadi(problem_parameters *prob_param);
+#endif
+#ifdef OPTI_ROSVIS
+    void ros_interface(RosVisualizerInterface *interface) {_ros_interface = interface;};
+#endif
+
 private:
 
     bool use_casadi = false;
@@ -50,11 +55,6 @@ private:
 
     int min_iterations = 1;
 
-#ifdef OCP_DEV
-    casadi::Function casadi_solver;
-    std::map<std::string, casadi::DM> arg;
-    std::map<std::string, casadi::DM> res;
-#endif
 
 
     // Backtracking casadi:
@@ -67,4 +67,13 @@ private:
 
     Eigen::VectorXd gradient_lagrangian(problem_solution *prob_sol, problem_parameters *prob_param);
     Eigen::VectorXd return_xopt(Eigen::VectorXd Xopt, Eigen::VectorXd X0);
+
+#ifdef OCP_DEV
+    casadi::Function casadi_solver;
+    std::map<std::string, casadi::DM> arg;
+    std::map<std::string, casadi::DM> res;
+#endif
+#ifdef OPTI_ROSVIS
+    RosVisualizerInterface *_ros_interface;
+#endif
 };

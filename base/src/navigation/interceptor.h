@@ -7,6 +7,9 @@
 #include "tti_optimizer_interface.h"
 #include "intercept_in_planes_optimizer_interface.h"
 #include "drone.h"
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 
 static const char *interceptor_state_names[] = { "is_init",
                                                  "is_await_target",
@@ -88,12 +91,17 @@ public:
     TTIOptimizerInterface tti_optimizer;
     InterceptInPlanesOptimizerInterface intercept_in_planes_optimizer;
 
+#ifdef OPTI_ROSVIS
+    void ros_interface(RosVisualizerInterface *interface) {
+        tti_optimizer.ros_interface(interface);
+        intercept_in_planes_optimizer.ros_interface(interface);
+    }
+#endif
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);
     void update(bool drone_at_base, double time);
     void max_optimization_time(double max_time) {optimization_time = max_time;};
-
 
     tracking::TrackData target_last_trackdata();
 

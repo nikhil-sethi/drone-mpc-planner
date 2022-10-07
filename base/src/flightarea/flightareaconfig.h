@@ -106,6 +106,7 @@ public:
     std::vector<CornerPoint> corner_points() {
         return _corner_points;
     };
+    std::vector<cv::Point3f> find_corner_points_of_plane(uint plane_id);
 };
 
 

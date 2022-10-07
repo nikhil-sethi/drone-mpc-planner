@@ -1,32 +1,46 @@
 Panels:
-  - Class: rviz_common/Displays
+  - Class: rviz/Displays
     Help Height: 78
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /TF1
-        - /TF1/Frames1
-        - /TF1/Tree1
-        - /Path1
-      Splitter Ratio: 0.5
-    Tree Height: 779
-  - Class: rviz_common/Selection
+        - /Global Options1
+        - /Status1
+        - /Drone velocity1/Namespaces1
+        - /Insect state1/Namespaces1
+        - /Opti current guess1
+        - /Opti solution1
+      Splitter Ratio: 0.5771929621696472
+    Tree Height: 746
+  - Class: rviz/Selection
     Name: Selection
-  - Class: rviz_common/Tool Properties
-    Expanded: ~
+  - Class: rviz/Tool Properties
+    Expanded:
+      - /2D Pose Estimate1
+      - /2D Nav Goal1
+      - /Publish Point1
     Name: Tool Properties
     Splitter Ratio: 0.5886790156364441
-  - Class: rviz_common/Views
+  - Class: rviz/Views
     Expanded:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
+  - Class: rviz/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
+Preferences:
+  PromptSaveOnExit: true
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
       Cell Size: 1
-      Class: rviz_default_plugins/Grid
+      Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
       Line Style:
@@ -42,138 +56,121 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Class: rviz_default_plugins/TF
+    - Class: rviz/Marker
       Enabled: true
-      Frame Timeout: 1e+6
-      Frames:
-        All Enabled: false
-        camera:
-          Value: false
-        hunter:
-          Value: true
-        insect:
-          Value: true
-        pats_frame:
-          Value: false
-        world:
-          Value: false
-      Marker Scale: 0.5
-      Name: TF
-      Show Arrows: true
-      Show Axes: true
-      Show Names: true
-      Tree:
-        world:
-          pats_frame:
-            camera:
-              {}
-            hunter:
-              {}
-            insect:
-              {}
-      Update Interval: 0
+      Marker Topic: /drone_vel
+      Name: Drone velocity
+      Namespaces:
+        drone_vel: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /drone_acc
+      Name: Drone acceleration
+      Namespaces:
+        drone_acc: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /insect_vel
+      Name: Insect state
+      Namespaces:
+        insect_vel: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /flight_area
+      Name: Flightarea
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /optimization_flight_area
+      Name: Optimization flightarea
+      Namespaces:
+        optimization_flight_area: true
+      Queue Size: 100
       Value: true
     - Alpha: 1
-      Class: rviz_default_plugins/RobotModel
-      Collision Enabled: false
-      Description File: /home/ludwig/code/pats/config/3d-vizualization/drone.urdf
-      Description Source: Topic
-      Description Topic: /drone
-      Enabled: false
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-      Name: drone model
-      TF Prefix: ""
+      Class: rviz/PointStamped
+      Color: 254; 254; 254
+      Enabled: true
+      History Length: 1
+      Name: Drone position
+      Queue Size: 10
+      Radius: 0.03999999910593033
+      Topic: /drone_pos
       Unreliable: false
-      Update Interval: 0
-      Value: false
-      Visual Enabled: true
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 254; 254; 0
+      Enabled: true
+      History Length: 1
+      Name: Insect position
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /insect_pos
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 0; 0; 0
+      Enabled: true
+      History Length: 1
+      Name: Optimized drone stop  position
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /opti_drone_stop_pos
+      Unreliable: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 0; 0; 255
+      Class: rviz/Path
+      Color: 25; 255; 0
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: drone path
+      Name: Drone path
       Offset:
         X: 0
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
       Pose Style: None
+      Queue Size: 10
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
       Topic: /drone_path
       Unreliable: false
       Value: true
-    - Alpha: 0.009999999776482582
-      Buffer Length: 5
-      Class: rviz_default_plugins/Path
-      Color: 252; 233; 79
-      Enabled: false
-      Head Diameter: 0.30000001192092896
-      Head Length: 0.20000000298023224
-      Length: 0.30000001192092896
-      Line Style: Lines
-      Line Width: 0.029999999329447746
-      Name: proximity
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.029999999329447746
-      Shaft Diameter: 0.10000000149011612
-      Shaft Length: 0.10000000149011612
-      Topic: /proximity
-      Unreliable: false
-      Value: false
-    - Alpha: 1
-      Class: rviz_default_plugins/RobotModel
-      Collision Enabled: false
-      Description File: /home/ludwig/code/pats/config/3d-vizualization/insect.urdf
-      Description Source: Topic
-      Description Topic: /insect
-      Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-      Name: Insect
-      TF Prefix: ""
-      Unreliable: false
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
     - Alpha: 1
       Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 255; 0; 0
+      Class: rviz/Path
+      Color: 255; 255; 255
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: insect
+      Name: Insect path
       Offset:
         X: 0
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
       Pose Style: None
+      Queue Size: 10
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
@@ -182,109 +179,163 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 255; 255; 255
+      Class: rviz/Path
+      Color: 42; 170; 0
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: Flightarea
+      Name: Opti initial guess
       Offset:
         X: 0
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
       Pose Style: None
+      Queue Size: 10
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /flightarea
+      Topic: /opti_initial_guess
+      Unreliable: true
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 0; 126; 250
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Opti current guess
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /opti_current_guess
       Unreliable: false
       Value: true
     - Alpha: 1
       Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 0; 0; 255
+      Class: rviz/Path
+      Color: 249; 216; 1
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: Path
+      Name: Opti solution
       Offset:
         X: 0
         Y: 0
         Z: 0
       Pose Color: 255; 85; 255
       Pose Style: None
+      Queue Size: 10
       Radius: 0.029999999329447746
       Shaft Diameter: 0.10000000149011612
       Shaft Length: 0.10000000149011612
-      Topic: /optimized_trajectory
+      Topic: /opti_solution
       Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /drone_state_trajectory
+      Name: Drone state trajectory
+      Namespaces:
+        drone_state_trajectory: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /drone_input_trajectory
+      Name: Drone input trajectory
+      Namespaces:
+        drone_input_trajectory: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /drone_virtual_input_trajectory
+      Name: Drone virtual input trajectory
+      Namespaces:
+        drone_virtual_input_trajectory: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 136; 138; 133
+    Background Color: 48; 48; 48
+    Default Light: true
     Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
-    - Class: rviz_default_plugins/MoveCamera
-    - Class: rviz_default_plugins/Select
-    - Class: rviz_default_plugins/FocusCamera
-    - Class: rviz_default_plugins/Measure
-      Line color: 128; 128; 0
-    - Class: rviz_default_plugins/SetInitialPose
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+      Theta std deviation: 0.2617993950843811
       Topic: /initialpose
-    - Class: rviz_default_plugins/SetGoal
+      X std deviation: 0.5
+      Y std deviation: 0.5
+    - Class: rviz/SetGoal
       Topic: /move_base_simple/goal
-    - Class: rviz_default_plugins/PublishPoint
+    - Class: rviz/PublishPoint
       Single click: true
       Topic: /clicked_point
-  Transformation:
-    Current:
-      Class: rviz_default_plugins/TF
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/Orbit
-      Distance: 2.654416561126709
+      Class: rviz/Orbit
+      Distance: 7.470449447631836
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.19498148560523987
-        Y: -1.2702009677886963
-        Z: 1.4216281175613403
+        X: 1.2834408283233643
+        Y: -2.514620780944824
+        Z: -1.834005355834961
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.034796737134456635
+      Pitch: 0.2997986972332001
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz_default_plugins)
-      Yaw: 4.681786060333252
+      Yaw: 2.3598074913024902
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 969
+  Height: 1043
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd00000004000000000000029a00000396fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000001600000396000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c0000026100000001000001000000031dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d0000031d000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000004e00000039600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730000000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000023c00000375fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d00000375000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002b0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003d000002b0000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d0065010000000000000780000002eb00fffffffb0000000800540069006d006501000000000000045000000000000000000000053e0000037500000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
+    collapsed: false
+  Time:
     collapsed: false
   Tool Properties:
     collapsed: false
   Views:
     collapsed: true
   Width: 1920
-  X: 1920
-  Y: 147
+  X: 2560
+  Y: 0

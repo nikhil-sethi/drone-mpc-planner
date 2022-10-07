@@ -120,6 +120,10 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
     sigma = 0;
     // _qpsolver->print_eigenvector("X0", prob_param->X0.transpose());
 
+#if OPTI_ROSVIS
+    _ros_interface->path(_qpsolver->trajectory(qpsolution.Xopt, state_trajectory_t), opti_initial_guess);
+#endif
+
     for (int iteration = 0; iteration <= config.max_sqp_iterations; iteration++) {
 
         Eigen::VectorXd gLag = gradient_lagrangian(&qpsolution, prob_param);
@@ -170,7 +174,13 @@ Eigen::VectorXd SQPSolver::solve_line_search(problem_parameters *prob_param) {
             qpsolution = _qpsolver->solve(prob_param, &prev_qpsolution, false, cpu_time_remaining);
             backtracking_casadi(&prev_qpsolution, &qpsolution, prob_param);
         }
-
+#if OPTI_ROSVIS
+        _ros_interface->path(_qpsolver->trajectory(qpsolution.Xopt, state_trajectory_t), opti_current_guess);
+        _ros_interface->state_trajectory(_qpsolver->trajectory(qpsolution.Xopt, state_trajectory_t));
+        _ros_interface->input_trajectory(_qpsolver->trajectory(qpsolution.Xopt, state_trajectory_t), _qpsolver->trajectory(qpsolution.Xopt, input_trajectory_t), drone_input_trajectory);
+        _ros_interface->input_trajectory(_qpsolver->trajectory(qpsolution.Xopt, state_trajectory_t), _qpsolver->trajectory(qpsolution.Xopt, virtual_input_trajectory_t), drone_virtual_input_trajectory);
+        _ros_interface->publish();
+#endif
         // _qpsolver->print_eigenvector("X", qpsolution.Xopt);
 
 

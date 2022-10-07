@@ -1,6 +1,9 @@
 #include "ocptester.h"
 #include <limits>
 #include <stdlib.h>
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 
 
 bool OcpTester::is_tti_good(float optimizer_tti, float estimated_tti) {
@@ -99,6 +102,9 @@ void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp
     }
     std::cout << "- System under stress: " << enable_stress << std::endl;
     std::cout << "- Timing ensurance enabled: " << !disable_time_ensurance << std::endl;
+#ifdef ROSVIS
+    std::cout << "- Visualization enabled: " << 1 << std::endl;
+#endif
 }
 
 void OcpTester::cout_optmization_stats(range_data data, range_stats stats) {
@@ -166,6 +172,12 @@ void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casad
 }
 
 range_stats OcpTester::exec_range_test() {
+#ifdef OPTI_ROSVIS
+    RosVisualizerInterface ros_interface;
+    ros_interface.init();
+    iip.ros_interface(&ros_interface);
+    tti.ros_interface(&ros_interface);
+#endif
     tracking::TrackData drone;
     drone.pos_valid = true;
     drone.vel_valid = true;

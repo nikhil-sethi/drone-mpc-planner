@@ -7,6 +7,9 @@
 #else
 #include "tti_quad_opti_qpoases.h"
 #endif
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 
 struct tti_result {
     tti_result() {
@@ -41,6 +44,12 @@ public:
     };
 
     std::string quadratic_solver_library() { return qpsolver.quadratic_solver_library();};
+#ifdef OPTI_ROSVIS
+    void ros_interface(RosVisualizerInterface *interface) {
+        _ros_interface = interface;
+        sqpsolver.ros_interface(interface);
+    };
+#endif
 
 private:
     SQPSolver sqpsolver;

@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <sys/stat.h>
 #include <chrono>
+#include <cmath>
+#include <numeric>
 
 int sign(float x) {
     if (x < 0)
@@ -326,4 +328,31 @@ std::tuple<float, float, float> solve_quadratic_solution(float a, float b, float
 
 float optimization_thrust(float thrust) {
     return 0.6f * thrust;
+}
+
+void combination_sample_worker(std::vector<int> *combination, std::vector<int> *elements, uint n, uint i) {
+    if (n > 1) {
+        uint N = std::tgamma(n + 1);
+        uint index = i / (N / n);
+        combination->push_back(elements->at(index));
+        elements->erase(std::next(elements->begin(), index));
+        i %= (N / n);
+        n -= 1;
+        combination_sample_worker(combination, elements, n, i);
+
+    } else {
+        combination->push_back(elements->at(0));
+        return;
+    }
+}
+
+std::vector<int> combination_sample(uint n, uint i) {
+    uint N = std::tgamma(n + 1);
+    assert(i < N);
+    std::vector<int> combination = {};
+    std::vector<int> elements(n);
+    std::iota(std::begin(elements), std::end(elements), 0);  // Fill with 0, 1, ..., ni.size()
+
+    combination_sample_worker(&combination, &elements, n,  i);
+    return combination;
 }

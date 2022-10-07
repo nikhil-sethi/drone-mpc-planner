@@ -346,14 +346,26 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
     update_initial_guess(drone, insect);
     update_box_constraints(drone, insect);
     update_plane_parameters(planes);
-
+#ifdef OPTI_ROSVIS
+    _ros_interface->drone(drone);
+    _ros_interface->insect(insect);
+    _ros_interface->optimization_flightarea(_flight_area->flight_area_config(_safety_margin));
+    _ros_interface->path(qpsolver.trajectory(prob_params.X0, state_trajectory_t), opti_initial_guess);
+    _ros_interface->state_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t));
+    _ros_interface->input_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t), qpsolver.trajectory(prob_params.X0, input_trajectory_t), drone_input_trajectory);
+    _ros_interface->input_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t), qpsolver.trajectory(prob_params.X0, virtual_input_trajectory_t), drone_virtual_input_trajectory);
+    _ros_interface->optimized_drone_stop_pos(cv::Point3f(
+                prob_params.X0[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSX],
+                prob_params.X0[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSY],
+                prob_params.X0[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSZ]));
+    _ros_interface->publish();
+#endif
 #ifdef PATS_OCP_PROFILING
     t_now = std::chrono::high_resolution_clock::now();
     double cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
     std::cout << "IIP: cpu_time (build problem): " << cpu_time_passed << "us" << std::endl;
     t_start = std::chrono::high_resolution_clock::now();
 #endif
-
 
 #ifdef OCP_DEV
     if (use_casadi)
@@ -386,10 +398,23 @@ intercept_in_planes_result InterceptInPlanesOptimizerInterface::find_best_interc
         opti_res_valid = true;
         res.valid = true;
     }
-    // else
-    //     export_scenario(drone, insect, planes);
-    // report_scenario_result(drone, insect, res);
+// else
+//     export_scenario(drone, insect, planes);
+// report_scenario_result(drone, insect, res);
+//
 
+#ifdef OPTI_ROSVIS
+    _ros_interface->path(qpsolver.trajectory(opti_var, state_trajectory_t), opti_solution);
+    _ros_interface->state_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t));
+    _ros_interface->path(qpsolver.trajectory(opti_var, state_trajectory_t), opti_solution);
+    _ros_interface->input_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t), qpsolver.trajectory(opti_var, input_trajectory_t), drone_input_trajectory);
+    _ros_interface->input_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t), qpsolver.trajectory(opti_var, virtual_input_trajectory_t), drone_virtual_input_trajectory);
+    _ros_interface->optimized_drone_stop_pos(cv::Point3f(
+                opti_var[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSX],
+                opti_var[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSY],
+                opti_var[drone_states_breaking_first + N_STEPS_BREAKING * N_DRONE_STATES + DRONE_POSZ]));
+    _ros_interface->publish();
+#endif
 #ifdef PATS_OCP_PROFILING
     t_now = std::chrono::high_resolution_clock::now();
     cpu_time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count();
@@ -434,11 +459,6 @@ std::vector<cv::Point3f> InterceptInPlanesOptimizerInterface::interception_traje
     if (opti_res_valid) {
         for (uint k = 0; k < N_SAMPLES_INTERCEPTING; k++) {
             Eigen::VectorXd state_k = opti_var.segment(drone_states_intercepting_first + k * N_DRONE_STATES, 3);
-            intercept_trajectory.push_back(cv::Point3f(state_k[0], state_k[1], state_k[2]));
-        }
-
-        for (uint k = 1; k < N_SAMPLES_BREAKING; k++) {
-            Eigen::VectorXd state_k = opti_var.segment(drone_states_breaking_first + k * N_DRONE_STATES, 3);
             intercept_trajectory.push_back(cv::Point3f(state_k[0], state_k[1], state_k[2]));
         }
     }

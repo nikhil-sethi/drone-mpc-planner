@@ -140,6 +140,7 @@ tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData dro
     _ros_interface->path(qpsolver.trajectory(prob_params.X0, state_trajectory_t), opti_initial_guess);
     _ros_interface->state_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t));
     _ros_interface->input_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t), qpsolver.trajectory(prob_params.X0, input_trajectory_t), drone_input_trajectory);
+    _ros_interface->input_trajectory(qpsolver.trajectory(prob_params.X0, state_trajectory_t), qpsolver.trajectory(prob_params.X0, virtual_input_trajectory_t), drone_virtual_input_trajectory);
     _ros_interface->publish();
 #endif
 #ifdef PATS_OCP_PROFILING
@@ -166,6 +167,17 @@ tti_result TTIOptimizerInterface::find_best_interception(tracking::TrackData dro
 
     if (feasible_solution(opti_var))
         res.valid = true;
+
+#ifdef OPTI_ROSVIS
+    _ros_interface->drone(drone);
+    _ros_interface->insect(insect);
+    _ros_interface->path(qpsolver.trajectory(opti_var, state_trajectory_t), opti_solution);
+    _ros_interface->state_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t));
+    _ros_interface->input_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t), qpsolver.trajectory(opti_var, input_trajectory_t), drone_input_trajectory);
+    _ros_interface->input_trajectory(qpsolver.trajectory(opti_var, state_trajectory_t), qpsolver.trajectory(opti_var, virtual_input_trajectory_t), drone_virtual_input_trajectory);
+    _ros_interface->publish();
+#endif
+
     return res;
 }
 

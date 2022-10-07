@@ -1,5 +1,7 @@
 #include "flightareaconfig.h"
 #include "linalg.h"
+#include <opencv2/core/types.hpp>
+#include <vector>
 
 #ifndef UNIT_TESTING
 void FlightAreaConfig::create_camera_planes() {
@@ -313,6 +315,17 @@ void FlightAreaConfig::mark_active_planes(Plane plane1, Plane plane2, Plane plan
 
     if (!plane_in_active_planes(plane3))
         _active_planes.push_back(_planes.at(plane3.id));
+}
+
+std::vector<cv::Point3f> FlightAreaConfig::find_corner_points_of_plane(uint plane_id) {
+    std::vector<cv::Point3f> corner_pnts = {};
+    for (auto cp : corner_points()) {
+        for (auto planei_id : cp.intersecting_planes) {
+            if (planei_id == plane_id)
+                corner_pnts.push_back(cp.pos);
+        }
+    }
+    return corner_pnts;
 }
 
 void FlightAreaConfig::cout_debug_info() {

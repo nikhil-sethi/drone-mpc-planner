@@ -34,7 +34,6 @@
 #include "trackermanager.h"
 #include "logreader.h"
 #include "visiondata.h"
-#include "3dviz/visualizer3d.h"
 #include "commandcenterlink.h"
 #include "filecam.h"
 #include "generatorcam.h"
@@ -44,6 +43,9 @@
 #include "interceptor.h"
 #include "baseboardlink.h"
 #include "daemonlink.h"
+#if ROSVIS
+#include "rosvisualizerdatacollector.h"
+#endif
 
 
 using namespace cv;
@@ -100,7 +102,9 @@ std::ofstream logger_video_ids;
 std::unique_ptr<RC> rc;
 
 Visualizer visualizer;
-Visualizer3D visualizer_3d;
+#if ROSVIS
+RosVisualizerDataCollector rosvis;
+#endif
 logging::LogReader logreader;
 CommandCenterLink cmdcenter;
 BaseboardLink baseboard_link;
@@ -157,7 +161,9 @@ void process_video() {
         if (pparams.has_screen || render_mode) {
             static int speed_div;
             if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode) && (!cam->turbo || render_mode)) || cam->frame_by_frame)) {
-                visualizer_3d.run();
+#if ROSVIS
+                rosvis.update();
+#endif
                 if (pparams.has_screen) {
                     visualizer.paint();
                     escape_key_pressed = handle_key(frame->time);
@@ -924,7 +930,9 @@ void init() {
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
         }
-        visualizer_3d.init(&patser);
+#if ROSVIS
+        rosvis.init(&patser);
+#endif
     }
 
     init_thread_pool();

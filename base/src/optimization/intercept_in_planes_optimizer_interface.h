@@ -12,7 +12,9 @@
 #else
 #include "intercept_in_planes_quad_opti_qpoases.h"
 #endif
-
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 #define COLORED_RESET   "\033[0m"
 #define COLORED_RED     "\033[31m"
 #define COLORED_YELLOW  "\033[33m"
@@ -46,12 +48,6 @@ public:
     void sqp_setup(sqp_solver_configuration config) {
         sqpsolver.setup(config);
     };
-#ifdef OCP_DEV
-    void init_casadi(std::string problem_solver_path) {
-        use_casadi = true;
-        sqpsolver.init_casadi(problem_solver_path);
-    };
-#endif
     sqp_solver_configuration sqp_convergence_parameter() {
         return sqpsolver.convergence_parameter();
     };
@@ -61,6 +57,18 @@ public:
     };
 
     std::string quadratic_solver_library() { return qpsolver.quadratic_solver_library();};
+#ifdef OCP_DEV
+    void init_casadi(std::string problem_solver_path) {
+        use_casadi = true;
+        sqpsolver.init_casadi(problem_solver_path);
+    };
+#endif
+#ifdef OPTI_ROSVIS
+    void ros_interface(RosVisualizerInterface *interface) {
+        _ros_interface = interface;
+        sqpsolver.ros_interface(interface);
+    };
+#endif
 
 private:
     const double interception_error_threshold = 0.05;
@@ -100,4 +108,7 @@ private:
         std::cout << COLORED_RED << error << COLORED_RESET << std::endl;
     }
 
+#ifdef OPTI_ROSVIS
+    RosVisualizerInterface *_ros_interface;
+#endif
 };

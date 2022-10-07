@@ -5,6 +5,9 @@
 #include "visiondata.h"
 #include "trackermanager.h"
 
+#ifdef OPTI_ROSVIS
+#include "rosvisualizerinterface.h"
+#endif
 
 static const char *patser_states_names[] = {
     "Pats_init",
@@ -35,6 +38,9 @@ private:
 
     void maintain_motion_map(double time);
 public:
+#ifdef OPTI_ROSVIS
+    void ros_interface(RosVisualizerInterface *interface) {interceptor.ros_interface(interface);};
+#endif
 
     tracking::TrackerManager trackers;
     Drone drone;
