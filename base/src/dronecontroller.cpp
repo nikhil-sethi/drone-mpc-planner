@@ -199,6 +199,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     _flight_mode = fm_flying_pid_init;
                 }
                 else if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration) {
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, GRAVITY, 0});
                     _flight_mode = fm_1g;
                 } else {
                     cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 2.f * GRAVITY);
@@ -653,6 +654,9 @@ float DroneController::thrust_to_throttle(float thrust) {
 }
 
 cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y) {
+    if (target_acceleration_y >= calibration.max_thrust)
+        return cv::Point3f(0, calibration.max_thrust, 0);
+
     StateData state_drone_takeoff;
     state_drone_takeoff.pos = _dtrk->pad_location() + cv::Point3f(0, lift_off_dist_take_off_aim, 0);
     state_drone_takeoff.vel = {0};
@@ -661,7 +665,7 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
     cv::Point3f takeoff_accel = target_acceleration_y / burn_direction.y * burn_direction;
 
     if (normf(takeoff_accel) > calibration.max_thrust) {
-        float modified_takeoff_angle = asinf(GRAVITY / calibration.max_thrust);
+        float modified_takeoff_angle = asinf(target_acceleration_y / calibration.max_thrust);
         burn_direction = lowest_direction_to_horizontal(burn_direction, modified_takeoff_angle);
         takeoff_accel = burn_direction * calibration.max_thrust;
     }
@@ -670,6 +674,9 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
 
 
 std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_acc) {
+
+    if (normf(desired_acc) < 0.001f) //if no drone acceleration required, put the drone in an upright orientation
+        desired_acc = {0, 0.001, 0};
 
     if (normf(desired_acc) > calibration.max_thrust)
         desired_acc *= calibration.max_thrust / normf(desired_acc);
