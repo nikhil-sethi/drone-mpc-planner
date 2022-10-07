@@ -115,7 +115,13 @@ def export_casadi_defines(optvars, constraints):
                 f.write("    " + name + "_first = " + str(constraints["idxs"][idxs_key][0]) + ",\n")
                 f.write("    " + name + "_last = " + str(constraints["idxs"][idxs_key][-1]) + ",\n")
         f.write("};\n")
-
+        f.write("\n")
+        f.write("enum trjactory_parameter {\n")
+        f.write("    n_steps = " + str(n_steps_intercepting + n_steps_breaking) + ",\n")
+        f.write("    state_trajectory_first = " + str(optvars["idxs"]["drone_states_intercepting"][0,0]) + ",\n")
+        f.write("    input_trajectory_first = " + str(optvars["idxs"]["drone_inputs_intercepting"][0,0]) + ",\n")
+        f.write("    virtual_input_trajectory_first = " + str(optvars["idxs"]["drone_virtual_inputs_intercepting"][0,0]) + ",\n")
+        f.write("};\n")
 
 def def_optimization():
     """Set optimization costfunction and inequalitiy constraints."""

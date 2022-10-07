@@ -83,6 +83,13 @@ def export_casadi_defines(optvars, constraints):
                 f.write("    " + name + "_first = " + str(constraints["idxs"][idxs_key][0]) + ",\n")
                 f.write("    " + name + "_last = " + str(constraints["idxs"][idxs_key][-1]) + ",\n")
         f.write("};\n")
+        f.write("\n")
+        f.write("enum trjactory_parameter {\n")
+        f.write("    n_steps = " + str(n_timestepsI-1) + ",\n")
+        f.write("    state_trajectory_first = " + str(optvars["idxs"]["statesI"][0,0]) + ",\n")
+        f.write("    input_trajectory_first = " + str(optvars["idxs"]["inputsI"][0,0]) + ",\n")
+        f.write("    virtual_input_trajectory_first = " + str(optvars["idxs"]["virtual_inputsI"][0,0]) + ",\n")
+        f.write("};\n")
 
 def def_optimization():
     ineq_idxs = {}

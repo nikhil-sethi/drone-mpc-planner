@@ -196,3 +196,37 @@ problem_solution SolverTemplate::solve(problem_parameters *prob_params, problem_
 
     return ret;
 }
+
+
+std::vector<Eigen::VectorXd> SolverTemplate::trajectory(Eigen::VectorXd xopt, trajectory_type traj_type) {
+
+    std::vector<Eigen::VectorXd> traj;
+
+    if (traj_type == state_trajectory_t) {
+        for (uint k = 0; k <= n_steps; k++) {
+            Eigen::VectorXd sample = Eigen::VectorXd(N_DRONE_STATES);
+            for (uint i = 0; i < N_DRONE_STATES; i++) {
+                sample[i] = xopt[state_trajectory_first + k * N_DRONE_STATES + i];
+            }
+            traj.push_back(sample);
+        }
+    } else if (traj_type == input_trajectory_t) {
+        for (uint k = 0; k < n_steps; k++) {
+            Eigen::VectorXd sample = Eigen::VectorXd(N_DRONE_INPUTS);
+            for (uint i = 0; i < N_DRONE_INPUTS; i++) {
+                sample[i] = xopt[input_trajectory_first + k * N_DRONE_INPUTS + i];
+            }
+            traj.push_back(sample);
+        }
+    } else if (traj_type == virtual_input_trajectory_t) {
+        for (uint k = 0; k <= n_steps; k++) {
+            Eigen::VectorXd sample = Eigen::VectorXd(N_DRONE_INPUTS);
+            for (uint i = 0; i < N_DRONE_INPUTS; i++) {
+                sample[i] = xopt[virtual_input_trajectory_first + k * N_DRONE_STATES + i];
+            }
+            traj.push_back(sample);
+        }
+    }
+
+    return traj;
+}

@@ -69,6 +69,12 @@ struct problem_solution {
     };
 };
 
+enum trajectory_type {
+    state_trajectory_t,
+    input_trajectory_t,
+    virtual_input_trajectory_t,
+};
+
 class QuadraticOptimizer {
 public:
     virtual void init() = 0;
@@ -78,6 +84,7 @@ public:
     virtual problem_solution solve(problem_parameters *prob_params, bool init, double cpu_time) = 0;
     virtual problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time) = 0;
     virtual std::string quadratic_solver_library() = 0;
+    virtual std::vector <Eigen::VectorXd>trajectory(Eigen::VectorXd xopt, trajectory_type traj_type) = 0;
 
     double costs(Eigen::VectorXd X) {
         auto ret = 0.5 * X.transpose() * _H * X + X.transpose() * _g;
