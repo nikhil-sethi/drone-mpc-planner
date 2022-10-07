@@ -143,6 +143,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 joy_control = true;
                 break;
         } case fm_spinup: {
+                mode += bf_airmode;
                 _rc->arm(bf_armed);
 #if ENABLE_SPINUP==true
                 start_takeoff_burn_time = 0;
@@ -159,6 +160,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_yaw = RC_MIDDLE;
                 break;
         } case fm_start_takeoff: {
+                mode += bf_airmode;
                 take_off_start_time = time;
                 remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(time));
                 _flight_mode = fm_take_off_aim;
@@ -174,6 +176,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 [[fallthrough]];
         } case fm_take_off_aim: {
+                mode += bf_airmode;
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
 
@@ -190,6 +193,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 break;
         } case fm_max_burn: {
+                mode += bf_airmode;
                 auto_throttle = RC_BOUND_MAX;
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad()) {
                     _flight_mode = fm_flying_pid_init;
@@ -202,11 +206,13 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 break;
         } case fm_max_burn_spin_down: {
+                mode += bf_airmode;
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, 0, 0});
                 if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
                     _flight_mode = fm_1g;
                 break;
         }  case fm_1g: {
+                mode += bf_airmode;
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad())
