@@ -41,3 +41,10 @@ enum inequality_constraint_idx {
     intercepting_first = 12,
     intercepting_last = 14,
 };
+
+enum trjactory_parameter {
+    n_steps = 1,
+    state_trajectory_first = 1,
+    input_trajectory_first = 13,
+    virtual_input_trajectory_first = 16,
+};

@@ -23,6 +23,8 @@ public:
     problem_solution solve(problem_parameters *prob_params, bool init, double cpu_time);
     problem_solution solve(problem_parameters *prob_params, problem_solution *prev_qpsolution, bool init, double cpu_time);
 
+    std::vector<Eigen::VectorXd> trajectory(Eigen::VectorXd xopt, trajectory_type traj_type);
+
     double costs(Eigen::VectorXd X);
 
     std::string quadratic_solver_library() { return "qpOases";};
