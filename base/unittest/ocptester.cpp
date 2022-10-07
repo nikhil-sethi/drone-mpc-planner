@@ -98,7 +98,7 @@ void OcpTester::cout_setup(optimizer_test optimizer_select, bool use_casadi, sqp
         std::cout << "- N planes: " << n_planes << std::endl;
     }
     std::cout << "- System under stress: " << enable_stress << std::endl;
-    std::cout << "- Disable timing ensurance: " << disable_time_ensurance << std::endl;
+    std::cout << "- Timing ensurance enabled: " << !disable_time_ensurance << std::endl;
 }
 
 void OcpTester::cout_optmization_stats(range_data data, range_stats stats) {
@@ -119,17 +119,21 @@ void OcpTester::cout_optmization_stats(range_data data, range_stats stats) {
 
 void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casadi, sqp_solver_configuration sqp_config, QPSettings *qp_settings) {
     enable_stress = false;
-    disable_time_ensurance = false;
-    std::vector<Plane> planes = cube_planes(3.f, 6);
+    disable_time_ensurance = true;
+    float cube_size = 2.f;
+    std::vector<Plane> planes = cube_planes(cube_size, 6);
     range_test_config = range_test_configuration(optimizer_select, use_casadi, sqp_config, *qp_settings);
 
     flightarea.init(planes);
+    flightarea.update_bottom_plane_based_on_blink(-cube_size / 2); //For update flight area config
     switch (optimizer_select) {
         case time_to_intercept: {
                 // tti = TTIOptimizerInterface();
                 tti.init(&thrust);
                 tti.sqp_setup(sqp_config);
                 tti.qp_setup(*qp_settings);
+                if (disable_time_ensurance)
+                    tti.max_cpu_time(0);
                 if (disable_time_ensurance)
                     tti.max_cpu_time(0);
 #ifdef OCP_DEV
@@ -163,7 +167,11 @@ void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casad
 
 range_stats OcpTester::exec_range_test() {
     tracking::TrackData drone;
+    drone.pos_valid = true;
+    drone.vel_valid = true;
     tracking::TrackData insect;
+    insect.pos_valid = true;
+    insect.vel_valid = true;
     std::chrono::_V2::system_clock::time_point t_start, t_end;
     range_data range_dat;
 
