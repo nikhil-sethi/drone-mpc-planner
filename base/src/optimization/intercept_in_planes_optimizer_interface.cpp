@@ -100,7 +100,7 @@ void InterceptInPlanesOptimizerInterface::update_initial_guess(tracking::TrackDa
     Eigen::Vector3d insect_pos0(static_cast<double>(insect.state.pos.x), static_cast<double>(insect.state.pos.y), static_cast<double>(insect.state.pos.z));
     Eigen::Vector3d insect_vel0(static_cast<double>(insect.state.vel.x), static_cast<double>(insect.state.vel.y), static_cast<double>(insect.state.vel.z));
 
-    float thrust = optimization_thrust(*_thrust) / sqrt(3.);
+    float thrust = optimization_thrust(*_thrust) / sqrtf(3.);
 
     float pos_err = (insect_pos0 - drone_pos0).norm();
     float vel_err = (insect_vel0 - drone_vel0).norm();
