@@ -186,6 +186,17 @@ public:
         return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
     }
 
+    cv::Mat edge_detector(cv::Mat im) {
+        cv::Mat grad_x, grad_y, abs_grad_x, abs_grad_y, edge_im;
+        cv::Sobel(im, grad_x, CV_16S, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
+        cv::Sobel(im, grad_y, CV_16S, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT);
+        // converting back to CV_8U
+        convertScaleAbs(grad_x, abs_grad_x);
+        convertScaleAbs(grad_y, abs_grad_y);
+        addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edge_im);
+        return edge_im;
+    }
+
 };
 
 }

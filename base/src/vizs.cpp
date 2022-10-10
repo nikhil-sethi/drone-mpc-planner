@@ -479,9 +479,10 @@ void Visualizer::draw_tracker_viz() {
     cv::Size size(frameL.cols, frameL.rows);
 
     if (_patser->drone.tracker.taking_off()) {
-        cv::Point2f template_matching_im_location = _patser->drone.tracker.template_matching_tracking_pos;
-        cv::Point2f template_size = _patser->drone.tracker.drone_im_size();
-        cv::Rect template_match(static_cast<int>(template_matching_im_location.x - template_size.x / 2.f), static_cast<int>(template_matching_im_location.y - template_size.y / 2.f), static_cast<int>(template_size.x), static_cast<int>(template_size.y));
+        cv::Point2f template_matching_im_location = _patser->drone.tracker.image_template_item().pt();
+        float template_size = _patser->drone.tracker.image_template_item().size;
+        cv::Rect template_match(static_cast<int>(template_matching_im_location.x - template_size / 2.f), static_cast<int>(template_matching_im_location.y - template_size / 2.f), static_cast<int>(template_size), static_cast<int>(template_size));
+        template_match = clamp_rect(template_match, IMG_W, IMG_H);
         cv::rectangle(frameL_color, template_match, cv::Scalar(255, 0, 255), 1);
     }
 

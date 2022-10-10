@@ -104,8 +104,11 @@ private:
     cv::Point3f takeoff_prediction_vel;
     cv::Point2f _takeoff_direction_predicted;
 
-    cv::Mat _template_drone;
-    cv::Size2f _drone_im_size;
+    cv::Mat template_drone;
+    bool template_deviation_detected;
+    ImageItem _image_template_item;
+
+    const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
     void calc_takeoff_prediction(double time);
     void reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff);
@@ -117,11 +120,11 @@ private:
     void detect_deviation_yaw_angle();
     void update_drone_prediction(double time);
     void clean_ignore_blobs(double time);
-    cv::Point2f template_matching_tracking(cv::Mat img_l, cv::Point2f previous_im_pos, double time);
+    void match_template();
+    void recenter_template();
 
 public:
     cv::Mat diff_viz;
-    cv::Point2f template_matching_tracking_pos;
 
     bool init(VisionData *_visdat, int motion_thresh, int16_t viz_id);
     void init_flight(std::ofstream *logger, double time);
@@ -167,12 +170,7 @@ public:
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}
     bool bowl_nudge_needed(cv::Point3f setpoint_pos) {return normf(last_track_data().pos() - setpoint_pos) < min_deviate_vec_length;}
     void commanded_acceleration(cv::Point3f *commanded_acceleration) {_commanded_acceleration = commanded_acceleration;}
-    cv::Point2f drone_im_size() {return _drone_im_size;}
-    cv::Rect return_valid_crop_region(cv::Rect crop_region) {
-        crop_region.x = std::clamp(crop_region.x, 0, IMG_W - 1 - crop_region.width);
-        crop_region.y = std::clamp(crop_region.y, 0, IMG_H - 1 - crop_region.height);
-        return crop_region;
-    }
+    ImageItem image_template_item() {return _image_template_item;}
 
 };
 
