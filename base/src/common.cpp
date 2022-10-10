@@ -347,7 +347,7 @@ void combination_sample_worker(std::vector<int> *combination, std::vector<int> *
 }
 
 std::vector<int> combination_sample(uint n, uint i) {
-    uint N = std::tgamma(n + 1);
+    [[maybe_unused]] uint N = std::tgamma(n + 1);
     assert(i < N);
     std::vector<int> combination = {};
     std::vector<int> elements(n);
