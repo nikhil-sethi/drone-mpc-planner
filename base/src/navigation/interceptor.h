@@ -1,4 +1,7 @@
 #pragma once
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 #include "flightarea/flightarea.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
@@ -43,6 +46,7 @@ private:
     bool initialized = false;
     interceptor_states _interceptor_state = is_init;
     intercepting_states _intercepting_state = is_approaching;
+    double _time = -1;
 
     cv::Point3f interception_center;
     control_modes _control_mode = position_control;
@@ -87,6 +91,20 @@ private:
         return norm(time - time_start_intercept_maneuver) > duration_intercept_maneuver;
     };
 
+    std::thread iip_thread;
+    std::mutex _mutex;
+    std::condition_variable cond_var_iip;
+    bool iip_thread_exit = false;
+    bool iip_thread_ready = true;;
+    bool iip_thread_finished = false;
+    double time_iip_started = -1;
+    double time_prev_iip_started = -1;
+    const float delay_iip_valid = 0.023f; // 2./fps: optimization result must be ready in next frame
+    intercept_in_planes_result iip_res;
+    intercept_in_planes_result update_iip_thread(float cpu_time);
+    void iip_worker();
+
+
 public:
     TTIOptimizerInterface tti_optimizer;
     InterceptInPlanesOptimizerInterface intercept_in_planes_optimizer;
@@ -98,6 +116,7 @@ public:
     }
 #endif
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
+    void close();
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);
     void update(bool drone_at_base, double time);

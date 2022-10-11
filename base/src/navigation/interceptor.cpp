@@ -18,6 +18,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     // intercept_in_planes_optimizer.init_casadi("../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");
 #endif
     intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
+    iip_thread = std::thread(&Interceptor::iip_worker, this);
 
     initialized = true;
 }
@@ -52,10 +53,65 @@ void Interceptor::log(std::ostream *logger) {
               _aim_acc.z << ";";
 }
 
+void Interceptor::close() {
+    iip_thread_exit = true;
+    cond_var_iip.notify_one();
+    if (initialized) {
+        std::cout << "Closing Interceptor" << std::endl;
+        iip_thread.join();
+
+    }
+}
+
+intercept_in_planes_result Interceptor::update_iip_thread(float cpu_time) {
+    if (iip_thread_finished) {
+        time_prev_iip_started = time_iip_started;
+        iip_thread_ready = true;
+        iip_thread_finished = false;
+    }
+
+    if (iip_thread_ready && !iip_thread_exit) {
+        time_iip_started = _time;
+        intercept_in_planes_optimizer.max_cpu_time(static_cast<double>(cpu_time));
+        iip_thread_ready = false;
+        cond_var_iip.notify_one();
+    }
+
+    intercept_in_planes_result res = intercept_in_planes_result();
+    if (static_cast<float>(_time - time_prev_iip_started) < delay_iip_valid && time_prev_iip_started > 0) {
+        std::lock_guard lk(_mutex);
+        res = iip_res;
+    }
+    return res;
+}
+
+void Interceptor::iip_worker() {
+    while (!iip_thread_exit) {
+        std::unique_lock lk(_mutex);
+        cond_var_iip.wait(lk, [this] {return !iip_thread_ready || iip_thread_exit;});
+        lk.unlock();
+
+        auto drone = _drone->tracker.last_track_data();
+        auto target_tracker = update_target_insecttracker();
+        tracking::TrackData target;
+        if (target_tracker)
+            target = target_tracker->last_track_data();
+        if (drone.pos_valid && target_tracker && target.pos_valid) {
+            auto res = intercept_in_planes_optimizer.find_best_interception(drone, target);
+            std::lock_guard lg(_mutex);
+            iip_res = res;
+            iip_thread_finished = true;
+        } else {
+            iip_thread_ready = true;
+        }
+    }
+}
+
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 #ifdef PATS_PROFILING
     std::chrono::_V2::system_clock::time_point t_start_interceptor = std::chrono::high_resolution_clock::now();
 #endif
+    _time = time;
     _tti = -1;
     _tti_iip = -1;
     aim_in_flightarea = false;
@@ -121,7 +177,6 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 [[fallthrough]];
 
         } case is_intercepting: {
-                std::cout << "intercepting_state: " << _intercepting_state << std::endl;
                 if (_intercepting_state == is_intercept_maneuvering && exit_is_intercept_maneuvering(time)) {
                     _intercepting_state = is_approaching;
                     _interceptor_state = is_waiting_for_target;
@@ -193,9 +248,6 @@ void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos
 
 void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time) {
 
-    std::chrono::_V2::system_clock::time_point t_start, t_now;
-    t_start = std::chrono::high_resolution_clock::now();
-
     switch (_intercepting_state) {
         case is_approaching: {
 
@@ -217,22 +269,13 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
                     _control_mode = position_control;
 
-                    t_now = std::chrono::high_resolution_clock::now();
-                    double time_passed = std::chrono::duration_cast<std::chrono::microseconds>(t_now - t_start).count() * 1e-6;
-                    double remaining_time = optimization_time - time_passed;
-                    if (!realtime_check || remaining_time > 0.002) { // see iip timing statistics in interceptinplanes.cpp run
-                        if (realtime_check)
-                            intercept_in_planes_optimizer.max_cpu_time(remaining_time);
-                        auto res = intercept_in_planes_optimizer.find_best_interception(drone, target);
+                    auto res = update_iip_thread(delay_iip_valid);
 
-                        if (res.valid) {
-                            _tti_iip = res.time_to_intercept;
-                            _control_mode = acceleration_feedforward;
-                            _aim_acc = res.acceleration_to_intercept;
-                            _aim_pos = res.position_to_intercept;
-                        }
-                    } else {
-                        // std::cout << "Don't call iip since no time. " << remaining_time << "s"  << std::endl;
+                    if (res.valid) {
+                        _tti_iip = res.time_to_intercept;
+                        _control_mode = acceleration_feedforward;
+                        _aim_acc = res.acceleration_to_intercept;
+                        _aim_pos = res.position_to_intercept;
                     }
                 }
 
