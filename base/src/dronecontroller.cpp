@@ -100,7 +100,7 @@ void DroneController::led_strength(float light_level) {
         dparams.drone_led_strength = 100;
     else {
         const float max_light_level = 0.7f;
-        const float mid_light_level = 0.55f;
+        const float mid_light_level = 0.4f;
 
         if (light_level > max_light_level)
             dparams.drone_led_strength = 100;
