@@ -324,8 +324,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 const double shake_period = 0.2;
                 const double shake_pause_period = 0.2;
                 const int spin_value_static = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust)), dparams.spinup_throttle_non3d);
-                const int spin_value_shake = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 1.5)), dparams.spinup_throttle_non3d);
-                const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 2.f)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 1.8)), dparams.spinup_throttle_non3d);
+                const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 2.3f)), dparams.spinup_throttle_non3d);
 
                 //defaults:
                 mode += bf_spin_motor;
