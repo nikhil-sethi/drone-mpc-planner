@@ -166,7 +166,7 @@ void VisionData::maintain_noise_maps() {
         overexposed_bufferL16 = (overexposed_bufferL16 * 7 + frameL16) / 8;
         overexposed_bufferR16 = (overexposed_bufferR16 * 7 + frameR16) / 8;
         overexposed_mapL = overexposed_bufferL16 > 200;
-        overexposed_mapR = overexposed_bufferL16 > 200;
+        overexposed_mapR = overexposed_bufferR16 > 200;
     }
 
     if (_calibrating_motion_noise_map) {
