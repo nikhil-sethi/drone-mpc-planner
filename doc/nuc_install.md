@@ -63,6 +63,9 @@ All done!
     - **Update the image version number in `~/dependencies/image_version`**
     - Set the disable flag
     - Delete all pats data, json and logs
+    - Clean up the `~/.bash_history'
+    - Make sure the correct branch is selected. (e.g. monitoring for `~/code/pats/`)
+    - Make sure pats is build
     - Make sure `/home/pats/dependencies/hostname_set` and `/home/pats/dependencies/timezone_set` do not exist
 3. Create the image with clonezilla
     - Power up and press F10 during boot
