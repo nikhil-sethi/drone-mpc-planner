@@ -88,6 +88,12 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 	touch $DEPENDENCIES_FLAG
 }
 
+TRAPEYE_FLAG=trapeye-v1.0.done
+[ -f $TRAPEYE_FLAG ] || {
+	sudo apt install -y hostapd isc-dhcp-server rfkill
+	touch $TRAPEYE_FLAG
+}
+
 # Add librealsense repository
 [ -f librealsense-packages_v1.1.done ] || {
 
