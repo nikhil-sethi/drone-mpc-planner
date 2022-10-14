@@ -55,11 +55,12 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     takeoff_prediction_vel = cv::Point3f(0.f, 0.f, 0.f);
     _takeoff_direction_predicted = cv::Point2f(0.f, -1.f);
 
+    template_matching_tracking_pos = pad_im_location();
 }
 
 void DroneTracker::update(double time) {
     _time = time;
-
+    template_matching_tracking_pos = template_matching_tracking(_visdat->frameL, template_matching_tracking_pos, time);
     if (enable_viz_motion)
         cv::cvtColor(_visdat->diffL * 10, diff_viz, cv::COLOR_GRAY2BGR);
 
@@ -548,6 +549,77 @@ cv::Point3f DroneTracker::pad_location(bool landing_hack) {
         hack = cv::Point3f(0, 0, 0.02); //Landing in the back rather then landing to the front seems to work better
 
     return _pad_world_location + hack;
+}
+
+cv::Point2f DroneTracker::template_matching_tracking(cv::Mat img_l, cv::Point2f previous_im_pos, double time) {
+    if (_template_drone.empty()) {//Drone is on pad in the first frame
+        float size = _drone_on_pad_im_size;
+        cv::Size2f drone_im_size = cv::Size2f(size, size);
+        _drone_im_size = drone_im_size;
+        cv::Rect crop_template(static_cast<int>(previous_im_pos.x - drone_im_size.width / 2.f), static_cast<int>(previous_im_pos.y - drone_im_size.height / 2.f), drone_im_size.width, drone_im_size.height);
+        crop_template = return_valid_crop_region(crop_template);
+        _template_drone = img_l(crop_template);
+        return previous_im_pos;
+    }
+    else {
+        cv::Size2f ROI_size = cv::Size2f(_drone_im_size.width * 2.f, _drone_im_size.height * 2.f);//Twice the size of the template for now
+        cv::Rect crop_region(static_cast<int>(previous_im_pos.x - ROI_size.width / 2.f), static_cast<int>(previous_im_pos.y - ROI_size.height / 2.f), ROI_size.width, ROI_size.height);
+        //Check if crop_region does not exceed image size, if so, adjust
+        cv::Rect new_crop_region = return_valid_crop_region(crop_region);
+        cv::Point crop_shift = new_crop_region.tl() - crop_region.tl();
+        cv::Mat ROI = img_l(new_crop_region);
+        cv::Mat result_template_match;
+        cv::matchTemplate(ROI, _template_drone, result_template_match, 2);//2 stands for the method, which is TM_SQDIFF_NORMED
+        double minVal;//todo unused
+        double maxVal;
+        cv::Point minLoc;//todo unused
+        cv::Point maxLoc;
+        cv::minMaxLoc(result_template_match, &minVal, &maxVal, &minLoc, &maxLoc);
+        maxLoc += crop_shift;
+        cv::Point2f template_current_im_pos = -cv::Point2f(ROI_size.width / 2.f - maxLoc.x - _drone_im_size.width / 2.f, ROI_size.height / 2.f - maxLoc.y - _drone_im_size.height / 2.f) + previous_im_pos;
+        WorldItem world_item_drone = world_item();
+        //Since the template matching has no 'knowledge' of what the drone looks like, the template can be prone to gradually shift of center of the drone
+        //The blob tracking method does not have this issue, since it tracks the movement of the drone and therefor the center of the blob will (almost) be the center of the drone
+        //To counteract this we can check if the template tracking and blob tracking are (almost) tracking the same image coordinates, and if so, shift the template coordinates slightly towards the blob center.
+        //This will cause the template coordinates to converge towards the center of the drone, and stay there, while still being able to track the right template when the blob tracking suddenly fails
+        if (world_item_drone.valid) {
+            cv::Point2f current_im_pos_blob = world_item_drone.image_coordinates();
+            cv::Point2f current_im_pos = template_current_im_pos;
+            if (normf(current_im_pos_blob - template_current_im_pos) < 10.f) {
+                cv::Point2f move_direction = (current_im_pos_blob - template_current_im_pos) / normf(current_im_pos_blob - template_current_im_pos);
+                float stepsize = 2.f;
+                current_im_pos += move_direction * stepsize;
+                float size = world_item_drone.size_in_image();
+                _drone_im_size = cv::Point2f(size, size);
+            }
+            cv::Rect crop_template(static_cast<int>(current_im_pos.x - _drone_im_size.width / 2.f), static_cast<int>(current_im_pos.y - _drone_im_size.height / 2.f), _drone_im_size.width, _drone_im_size.height);
+            crop_template = return_valid_crop_region(crop_template);
+            _template_drone = img_l(crop_template);//set for next frame
+            if (_drone_tracking_status == dts_detecting_takeoff) {
+                cv::Point3f acc = *_commanded_acceleration;
+                if (acc.y != 0.0f) {//Only compensate when the drone is flying, i.e having non-zero acc
+                    acc.y -= GRAVITY;//Compensate for gravity
+                }
+                update_prediction(time);
+            }
+            return current_im_pos;
+
+        } else {
+            cv::Point2f current_im_pos = template_current_im_pos;
+            if (_drone_tracking_status == dts_detecting_takeoff) {
+                _image_predict_item = ImagePredictItem(cv::Point3f(current_im_pos.x, current_im_pos.y, pad_disparity()), _drone_im_size.width, 255, _visdat->frame_id);
+                TrackData data;
+                data.predicted_image_item = _image_predict_item;
+                data.time = time;
+                data.using_prediction = true;
+                _track.push_back(data);
+            }
+            cv::Rect crop_template(static_cast<int>(current_im_pos.x - _drone_im_size.width / 2.f), static_cast<int>(current_im_pos.y - _drone_im_size.height / 2.f), _drone_im_size.width, _drone_im_size.height);
+            crop_template = return_valid_crop_region(crop_template);
+            _template_drone = img_l(crop_template);//set for next frame
+            return current_im_pos;
+        }
+    }
 }
 
 }

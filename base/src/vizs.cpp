@@ -479,6 +479,13 @@ void Visualizer::draw_tracker_viz() {
     cv::Size size(frameL.cols, frameL.rows);
 
     if (_patser->drone.tracker.taking_off()) {
+        cv::Point2f template_matching_im_location = _patser->drone.tracker.template_matching_tracking_pos;
+        cv::Point2f template_size = _patser->drone.tracker.drone_im_size();
+        cv::Rect template_match(static_cast<int>(template_matching_im_location.x - template_size.x / 2.f), static_cast<int>(template_matching_im_location.y - template_size.y / 2.f), static_cast<int>(template_size.x), static_cast<int>(template_size.y));
+        cv::rectangle(frameL_color, template_match, cv::Scalar(255, 0, 255), 1);
+    }
+
+    if (_patser->drone.tracker.taking_off()) {
         float pad_im_size = _patser->drone.tracker.pad_im_size();
         cv::Point2f takeoff_im_direction = _patser->drone.tracker.takeoff_direction_predicted();
         cv::Point2f pad_im_location = _patser->drone.tracker.pad_im_location();
@@ -488,7 +495,7 @@ void Visualizer::draw_tracker_viz() {
     if (last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color, pred.pt, pred.size / 2, cv::Scalar(0, 255, 0));
-    } else if (_patser->drone.tracker.pad_location_valid()) {
+    } else if (_patser->drone.tracker.pad_location_valid() && !drn_path.size()) {
         cv::circle(frameL_color, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
     }
     if (last_drone_detection.world_item.image_item.valid) {
