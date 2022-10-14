@@ -18,6 +18,7 @@ public:
     void flightarea(FlightAreaConfig *flightareaconf);
     void optimization_flightarea(FlightAreaConfig *flightareaconf);
     void flightarea(FlightAreaConfig *flightareaconf, line_list_ids line_list_id);
+    void drone_position_setpoint(cv::Point3f setpoint);
 
     void path(std::vector<Eigen::VectorXd> traj, path_ids path_id);
     void state_trajectory(std::vector<Eigen::VectorXd> traj);

@@ -13,6 +13,7 @@ enum point_ids {
     drone_pos,
     insect_pos,
     opti_drone_stop_pos,
+    drone_pos_setpoint,
     number_point_ids,
 };
 
@@ -20,6 +21,7 @@ enum point_ids {
     "drone_pos",
     "insect_pos",
     "opti_drone_stop_pos",
+    "drone_pos_setpoint",
 };
 
 struct PointPublish {

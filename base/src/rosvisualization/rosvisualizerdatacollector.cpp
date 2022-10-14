@@ -26,6 +26,8 @@ void RosVisualizerDataCollector::update() {
 
     ros_interface.flightarea(_flight_area->flight_area_config(relaxed));
 
+    ros_interface.drone_position_setpoint(_dnav->setpoint().pos());
+
     ros_interface.publish();
 
 }

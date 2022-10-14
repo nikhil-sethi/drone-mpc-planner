@@ -54,6 +54,15 @@ void RosVisualizerInterface::optimized_drone_stop_pos(cv::Point3f pos) {
 }
 
 
+void RosVisualizerInterface::drone_position_setpoint(cv::Point3f setpoint) {
+    geometry_msgs::Point point;
+    point.x = setpoint.x;
+    point.y = setpoint.y;
+    point.z = setpoint.z;
+    ros_publisher.update_point_mesage(point, drone_pos_setpoint);
+}
+
+
 void RosVisualizerInterface::insect(tracking::TrackData insect) {
     geometry_msgs::Pose pose = build_velocity_pose(insect);
     ros_publisher.update_arrow_mesage(pose, normf(insect.vel()), insect_vel);
