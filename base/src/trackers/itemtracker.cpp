@@ -557,10 +557,12 @@ float ItemTracker::estimate_sub_disparity(int disparity, float *err) {
 }
 
 void ItemTracker::update_prediction(double time) {
-    if (_track.back().pos_valid) {
-        last_valid_trackdata_for_prediction = _track.back();
-        if (_track.back().vel_valid)
-            last_vel_valid_trackdata_for_prediction = _track.back();
+    if (_track.size()) {
+        if (_track.back().pos_valid) {
+            last_valid_trackdata_for_prediction = _track.back();
+            if (_track.back().vel_valid)
+                last_vel_valid_trackdata_for_prediction = _track.back();
+        }
     }
 
     if (!last_valid_trackdata_for_prediction.pos_valid) {
