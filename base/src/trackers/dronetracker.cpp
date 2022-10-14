@@ -1,6 +1,8 @@
 #include "dronetracker.h"
 #include "multimodule.h"
 #include <numeric>
+#include "common.h"
+#include <math.h>
 
 namespace tracking {
 
@@ -48,6 +50,11 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     take_off_frame_cnt = 0;
     min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
     max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
+
+    takeoff_prediction_pos = pad_location();
+    takeoff_prediction_vel = cv::Point3f(0.f, 0.f, 0.f);
+    _takeoff_direction_predicted = cv::Point2f(0.f, -1.f);
+
 }
 
 void DroneTracker::update(double time) {
@@ -62,11 +69,17 @@ void DroneTracker::update(double time) {
                 max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->disable_cloud_rejection = true;
                 ItemTracker::update(time);
-                if (!_world_item.valid) {
-                    calc_takeoff_prediction(time);
-                } else {
+                if (_world_item.valid) {
                     update_prediction(time);
+                } else if (!_tracking) {
+                    TrackData data;
+                    data.predicted_image_item = _image_predict_item;
+                    data.time = time;
+                    if (!_track.empty())
+                        data.dt = static_cast<float>(time - _track.back().time);
+                    _track.push_back(data);
                 }
+                calc_takeoff_prediction(time);
 
                 if (enable_viz_motion) {
                     cv::Point2f tmpp = _pad_im_location;
@@ -199,9 +212,24 @@ float DroneTracker::score(BlobProps *blob) {
             score *= 1.25f;
 
         return score;
-    } else
-        return ItemTracker::score(blob, &_image_item);
+    } else {
+        float angle_diff = 1;
+        float score = ItemTracker::score(blob, &_image_item);
+        if (_image_item.valid && _world_item.valid && _drone_tracking_status == dts_detecting_takeoff) {
+            cv::Point2f pad_to_blob = blob->pt_unscaled() - _pad_im_location;
+            cv::Point2f pad_to_drone = _image_item.pt() - _pad_im_location;
+            angle_diff = acosf((pad_to_blob.dot(pad_to_drone)) / (normf(pad_to_blob) * normf(pad_to_drone)));
+            angle_diff = angle_diff / M_PIf32 + 0.5f;
+        } else if (_image_predict_item.valid && _drone_tracking_status == dts_detecting_takeoff) {
+            cv::Point2f pad_to_blob = blob->pt_unscaled() - _pad_im_location;
+            cv::Point2f pad_to_drone = _image_predict_item.pt - _pad_im_location;
+            angle_diff = acosf((pad_to_blob.dot(pad_to_drone)) / (normf(pad_to_blob) * normf(pad_to_drone)));
+            angle_diff = angle_diff / M_PIf32 + 0.5f;
+        }
+        return score * angle_diff;
+    }
 }
+
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
     if (enable_motion_shadow_delete) {
         cv::Point3f vel = last_vel_valid_trackdata_for_prediction.vel();
@@ -291,16 +319,55 @@ void DroneTracker::delete_landing_motion(float duration) {
 }
 
 void DroneTracker::calc_takeoff_prediction(double time) {
+    std::vector<tracking::TrackData> drone_path = track();
+    tracking::TrackData last_drone_detection;
+    if (drone_path.size())
+        last_drone_detection = drone_path.back();
 
-    cv::Point3f acc = _target - _pad_world_location;
-    acc = acc / (normf(acc));
-    acc = acc * dparams.max_thrust;
-    float dt = std::clamp(static_cast<float>(time - (spinup_detect_time + 0.3)), 0.f, 1.f);
-    if (spinup_detected < 3)
-        dt = 0;
-    cv::Point3f expected_drone_location = pad_location() + 0.5 * acc * powf(dt, 2);
-    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()), _drone_on_pad_im_size, 255, _visdat->frame_id);
+    if (last_drone_detection.pos_valid) {
+        last_valid_trackdata_for_prediction = last_drone_detection;
+        if (last_drone_detection.vel_valid)
+            last_vel_valid_trackdata_for_prediction = last_drone_detection;
+    }
+    cv::Point3f acc = *_commanded_acceleration;
+    acc.y = std::max(0.f, acc.y - GRAVITY);//Compensate for gravity, but never having a negative acceleration
+    if ((normf(acc) < 0.01f && takeoff_prediction_pos == pad_location()) || time < start_take_off_time + 0.2)
+        return;
+    float dt;
+    if (last_drone_detection.time)
+        dt = static_cast<float>(time - last_drone_detection.time) + 1.f / pparams.fps;
+    else
+        dt = 1.f / pparams.fps;
+    cv::Point3f dv = acc * dt;
+    takeoff_prediction_vel += dv;
+    takeoff_prediction_pos += takeoff_prediction_vel * dt;
+    cv::Point2f expected_drone_location_image = world2im_2d(takeoff_prediction_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+    _takeoff_direction_predicted = (expected_drone_location_image - pad_im_location()) / normf(expected_drone_location_image - pad_im_location());
+    cv::Point2f takeoff_direction_measured;
+    float measured_versus_predicted_angle_diff = -1;
+    if (_image_item.valid)
+        takeoff_direction_measured = _image_item.pt() - pad_im_location();
+    else if (last_valid_trackdata_for_prediction.pos_valid)
+        takeoff_direction_measured = last_valid_trackdata_for_prediction.world_item.image_coordinates() - pad_im_location();
+    else {
+        takeoff_direction_measured = {0.f};
+    }
+    if (takeoff_direction_measured != cv::Point2f(0.f, 0.f))
+        measured_versus_predicted_angle_diff = acosf((takeoff_direction_measured.dot(_takeoff_direction_predicted)) / (normf(takeoff_direction_measured) * normf(_takeoff_direction_predicted)));
+    reset_takeoff_im_prediction_if_direction_bad(takeoff_direction_measured, measured_versus_predicted_angle_diff);
 }
+
+void DroneTracker::reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff) {
+    if (measured_versus_predicted_angle_diff > M_PIf32 / 4.f) {
+        cv::Point2f reset_prediction_pos_im;
+        reset_prediction_pos_im = pad_im_location() + _takeoff_direction_predicted * normf(takeoff_direction_measured);
+        _image_predict_item.pt = reset_prediction_pos_im;
+        cv::Point3f reset_prediction_pos = im2world(reset_prediction_pos_im, _pad_disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
+        float size = world2im_size(reset_prediction_pos + cv::Point3f(expected_radius, 0, 0), reset_prediction_pos - cv::Point3f(expected_radius, 0, 0), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+        _image_predict_item.size = size;
+    }
+}
+
 bool DroneTracker::detect_lift_off() {
     float dist2takeoff = normf(_world_item.pt - pad_location());
     float takeoff_y =  _world_item.pt.y - pad_location().y;

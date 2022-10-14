@@ -478,6 +478,13 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat roi = resFrame(rect);
     cv::Size size(frameL.cols, frameL.rows);
 
+    if (_patser->drone.tracker.taking_off()) {
+        float pad_im_size = _patser->drone.tracker.pad_im_size();
+        cv::Point2f takeoff_im_direction = _patser->drone.tracker.takeoff_direction_predicted();
+        cv::Point2f pad_im_location = _patser->drone.tracker.pad_im_location();
+        cv::line(frameL_color, pad_im_location, pad_im_location + (pad_im_size / 2.f) *takeoff_im_direction, cv::Scalar(0, 255, 255));
+    }
+
     if (last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color, pred.pt, pred.size / 2, cv::Scalar(0, 255, 0));

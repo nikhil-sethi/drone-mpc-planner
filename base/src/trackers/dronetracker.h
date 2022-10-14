@@ -99,7 +99,13 @@ private:
     bool enable_viz_motion = false;
     bool drone_on_pad = true;
 
+    cv::Point3f *_commanded_acceleration;
+    cv::Point3f takeoff_prediction_pos;
+    cv::Point3f takeoff_prediction_vel;
+    cv::Point2f _takeoff_direction_predicted;
+
     void calc_takeoff_prediction(double time);
+    void reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff);
     void handle_brightness_change(double time);
     void delete_motion_shadow(cv::Point2f im_location, float im_size, float disparity);
     void delete_motion_shadow_run();
@@ -139,6 +145,7 @@ public:
     double time_since_take_off() {return start_take_off_time - _time;}
     cv::Point3f pad_location(bool landing_hack);
     cv::Point3f pad_location() { return _pad_world_location; };
+    cv::Point2f takeoff_direction_predicted() { return _takeoff_direction_predicted; };
     void set_pad_location_from_blink(cv::Point3f);
     void set_pad_location(cv::Point3f pad_world);
     cv::Point2f pad_im_location() { return _pad_im_location; }
@@ -153,6 +160,7 @@ public:
     bool drone_on_landing_pad() {return drone_on_pad;}
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}
     bool bowl_nudge_needed(cv::Point3f setpoint_pos) {return normf(last_track_data().pos() - setpoint_pos) < min_deviate_vec_length;}
+    void commanded_acceleration(cv::Point3f *commanded_acceleration) {_commanded_acceleration = commanded_acceleration;}
 };
 
 }

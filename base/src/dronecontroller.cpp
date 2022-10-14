@@ -38,7 +38,7 @@ void DroneController::init_flight(std::ofstream *logger, int flight_id) {
                "tracking_valid;" <<
                "posX_target;posY_target;posZ_target;" <<
                "accX_target;accY_target;accZ_target;" <<
-               "accX_applied;accY_applied;accZ_applied;" <<
+               "accX_commanded;accY_commanded;accZ_commanded;" <<
                "auto_throttle;auto_roll;auto_pitch;auto_yaw;" <<
                "joy_throttle;joy_roll;joy_pitch;joy_yaw; " <<
                "joy_arm_switch;joy_mode_switch;joy_takeoff_switch;" <<
@@ -523,7 +523,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                    static_cast<int>(data_drone.pos_valid)  << ";" <<
                    data_target.pos().x << ";" << data_target.pos().y  << ";" << data_target.pos().z << ";" <<
                    _target_acceleration.x << ";" << _target_acceleration.y << ";" << _target_acceleration.z << ";" <<
-                   applied_acceleration.x << ";" << applied_acceleration.y << ";"  << applied_acceleration.z << ";" <<
+                   commanded_acceleration.x << ";" << commanded_acceleration.y << ";"  << commanded_acceleration.z << ";" <<
                    auto_throttle << ";" <<
                    auto_roll << ";" <<
                    auto_pitch << ";" <<
@@ -686,7 +686,7 @@ std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_ac
 
     if (normf(desired_acc) > calibration.max_thrust)
         desired_acc *= calibration.max_thrust / normf(desired_acc);
-    applied_acceleration = desired_acc;
+    commanded_acceleration = desired_acc;
 
     cv::Point3f direction = desired_acc / normf(desired_acc);
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(desired_acc))));

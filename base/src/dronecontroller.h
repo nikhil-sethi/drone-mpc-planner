@@ -229,7 +229,7 @@ public:
     KeepInViewController kiv_ctrl;
     AccelerometerTrim accelerometer_trim;
 
-    cv::Point3f applied_acceleration;
+    cv::Point3f commanded_acceleration;
     cv::Point3f _target_acceleration;
 
     tracking::DroneTracker *dronetracker() {

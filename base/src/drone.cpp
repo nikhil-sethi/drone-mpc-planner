@@ -16,6 +16,7 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
     tracker.init(visdat, _trackers->motion_thresh(), 1);
     nav.init(&tracker, &control, visdat, flight_area, interceptor, baseboard_link);
     control.init(_rc, &tracker, flight_area);
+    tracker.commanded_acceleration(&control.commanded_acceleration);
 
     (*main_logger) << "drone_state_str;";
     initialized = true;
