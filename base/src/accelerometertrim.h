@@ -24,6 +24,8 @@ public:
         integrator_hovering_pitch = integrator_pitch;
     }
 
+    bool ready() {return integrator_hovering_roll || integrator_hovering_pitch;};
+
 private:
     bool finished = true;
     trim_states trim_state = init_trim_roll;
