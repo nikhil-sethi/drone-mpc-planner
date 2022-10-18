@@ -7,6 +7,7 @@ import json
 import math
 import argparse
 import logging
+import logging.handlers
 import subprocess
 import sys
 # import matplotlib.pyplot as plt
@@ -693,10 +694,8 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
         os.remove(video_in_fn)
 
 
-def process_session(folder: str, dry_run: bool = False):
-    logging.basicConfig()
-    logger = logging.getLogger('process_session')
-    logger.setLevel(logging.DEBUG)
+def process_session(folder: str, logger: logging.Logger, dry_run: bool = False):
+
     logger.info("Processing " + folder)
     statuss = []
     detections = []
@@ -792,8 +791,14 @@ if __name__ == "__main__":
     logging.basicConfig()
     logger = logging.getLogger('process_session')
     logger.setLevel(logging.DEBUG)
+    file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    fh = logging.FileHandler(filename=args.i + '/process_session.log')
+    fh.setFormatter(file_format)
+    fh.level = logging.DEBUG
+    logger.addHandler(fh)
+    logger.addHandler(logging.StreamHandler(sys.stdout))
 
     if os.path.exists(args.i):
-        process_session(args.i, args.dry_run)
+        process_session(args.i, logger, args.dry_run)
     else:
         logger.warning("Folder does not exist: " + args.i)
