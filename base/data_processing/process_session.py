@@ -666,29 +666,28 @@ def filter_cuts(cuts, events):
 
 
 def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.Logger):
-    if not len(detections) and not len(flights):
-        return detections, flights
     video_in_fn = folder + '/videoRawLR.mkv'
+    frames_fn = folder + '/frames.csv'
     if not os.path.exists(video_in_fn):
         logger.warning(video_in_fn + ' did not exists')
-        return detections, flights
-    frames_fn = folder + '/frames.csv'
-    if not os.path.exists(frames_fn):
+        return
+    if not len(detections) and not len(flights):
+        pass
+    elif not os.path.exists(frames_fn):
         logger.warning(frames_fn + ' not found')
-        return detections, flights
+    else:
+        hunt_cuts = create_and_associate_hunt_videos(flights, detections)
+        monsters = [d for d in detections if d['monster'] == 1 and d['hunt_id'] < 0]
+        monster_cuts = create_concated_cuts(monsters, 5, 'anomoly')
+        cuts = sorted(monster_cuts + hunt_cuts, key=lambda d: d['rs_id'])
+        insects = [d for d in detections if not d['monster'] and d['hunt_id'] < 0]
+        associate_insects_to_monsters_cuts(monster_cuts, insects, 5)
+        insects_cuts = create_concated_cuts(insects, 1, 'insect')
+        cuts = sorted(insects_cuts + monster_cuts + hunt_cuts, key=lambda d: d['rs_id'])
+        cuts = associate_detections_to_flight_cuts(cuts, detections)
+        cuts = filter_cuts(cuts, detections + flights)
 
-    hunt_cuts = create_and_associate_hunt_videos(flights, detections)
-    monsters = [d for d in detections if d['monster'] == 1 and d['hunt_id'] < 0]
-    monster_cuts = create_concated_cuts(monsters, 5, 'anomoly')
-    cuts = sorted(monster_cuts + hunt_cuts, key=lambda d: d['rs_id'])
-    insects = [d for d in detections if not d['monster'] and d['hunt_id'] < 0]
-    associate_insects_to_monsters_cuts(monster_cuts, insects, 5)
-    insects_cuts = create_concated_cuts(insects, 1, 'insect')
-    cuts = sorted(insects_cuts + monster_cuts + hunt_cuts, key=lambda d: d['rs_id'])
-    cuts = associate_detections_to_flight_cuts(cuts, detections)
-    cuts = filter_cuts(cuts, detections + flights)
-
-    run_ffmpeg(cuts, frames_fn, folder, video_in_fn)
+        run_ffmpeg(cuts, frames_fn, folder, video_in_fn)
 
     if not os.path.exists(lb.keep_videoraw_flag):
         os.remove(video_in_fn)
