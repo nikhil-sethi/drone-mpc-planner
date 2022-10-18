@@ -2,6 +2,7 @@
 from cmath import isinf
 from genericpath import exists
 import os
+import re
 import glob
 import json
 import math
@@ -787,14 +788,22 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', help="Do not permanentely change anything", required=False)
     args = parser.parse_args()
 
+    rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
+    file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+    error_file_handler.setFormatter(file_format)
+    error_file_handler.level = logging.ERROR
+    error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
+    error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
+
     logging.basicConfig()
     logger = logging.getLogger('process_session')
     logger.setLevel(logging.DEBUG)
-    file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     fh = logging.FileHandler(filename=args.i + '/process_session.log')
     fh.setFormatter(file_format)
     fh.level = logging.DEBUG
     logger.addHandler(fh)
+    logger.addHandler(error_file_handler)
     logger.addHandler(logging.StreamHandler(sys.stdout))
 
     if os.path.exists(args.i):
