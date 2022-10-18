@@ -518,7 +518,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                    flight_mode_names[_flight_mode] << ";" <<
                    static_cast<int>(data_drone.pos_valid)  << ";" <<
                    data_target.pos().x << ";" << data_target.pos().y  << ";" << data_target.pos().z << ";" <<
-                   target_acceleration.x << ";" << target_acceleration.y << ";" << target_acceleration.z << ";" <<
+                   _target_acceleration.x << ";" << _target_acceleration.y << ";" << _target_acceleration.z << ";" <<
                    applied_acceleration.x << ";" << applied_acceleration.y << ";"  << applied_acceleration.z << ";" <<
                    auto_throttle << ";" <<
                    auto_roll << ";" <<
@@ -669,6 +669,8 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
         burn_direction = lowest_direction_to_horizontal(burn_direction, modified_takeoff_angle);
         takeoff_accel = burn_direction * calibration.max_thrust;
     }
+
+    _target_acceleration = takeoff_accel;
     return takeoff_accel;
 }
 
@@ -741,6 +743,7 @@ cv::Point3f DroneController::combine_drone_accelerations_with_priority(cv::Point
 }
 
 void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f target_acc) {
+    _target_acceleration = target_acc;
     if (_dtrk->image_predict_item().out_of_image) {
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
