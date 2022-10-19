@@ -17,7 +17,7 @@ void RosVisualizerDataCollector::init(Patser *patser) {
 void RosVisualizerDataCollector::update() {
     tracking::TrackData drone = _dtrkr->last_track_data();
     ros_interface.drone(drone);
-    ros_interface.drone_input(drone, _dctrl->applied_acceleration);
+    ros_interface.drone_input(drone, _dctrl->commanded_acceleration);
     ros_interface.update_drone_path(drone);
 
     _itrkr = _patser->interceptor.target_insecttracker();
