@@ -109,7 +109,7 @@ void DroneTracker::update(double time) {
                         _drone_tracking_status = dts_tracking;
                     }
                 } else if (spinup_detected < 3) {
-                    spinup_detected = 0;
+                    spinup_detected = std::max(0, spinup_detected - 1);
                 }
 
                 if (spinup_detected < 3 && takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.3f) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
