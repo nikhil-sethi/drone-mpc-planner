@@ -5,7 +5,6 @@
 #include "dronenavigation.h"
 #include "baseboardlink.h"
 #include "interceptor.h"
-#include "dronereader.h"
 
 static const char *drone_state_names[] = {
     "pre_flight",

@@ -758,6 +758,8 @@ void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f 
     if (normf(kiv_acc) > 0) {
         acceleration_mix = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
         acceleration_mix = combine_drone_accelerations_with_priority(acceleration_mix, component_a_perpendicular_to_b(target_acc, kiv_acc));
+        if (target_acc.dot(kiv_acc) > 0)
+            acceleration_mix = combine_drone_accelerations_with_priority(acceleration_mix, component_a_parallel_to_b(target_acc, kiv_acc));
     } else {
         acceleration_mix = combine_drone_accelerations_with_priority(gravity_compensation, target_acc);
     }
