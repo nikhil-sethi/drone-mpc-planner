@@ -262,10 +262,32 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
     if (taking_off() && !_manual_flight_mode) {
+        if (std::isnan(props->world_props.disparity) && _image_template_item.disparity > params.min_disparity.value() && _image_template_item.disparity < params.max_disparity.value()) {
+            props->world_props.disparity = _image_template_item.disparity;
+            props->x = _image_template_item.x / im_scaler;
+            props->y = _image_template_item.y / im_scaler;
+            props->size = _image_template_item.size / im_scaler;
+            props->world_props.disparity_in_range = true;
+            cv::Point2f p = props->pt_unscaled();
+            cv::Point3f world_coordinates = im2world(p, _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
+            props->world_props.x = world_coordinates.x;
+            props->world_props.y = world_coordinates.y;
+            props->world_props.z = world_coordinates.z;
+            props->world_props.radius = normf(im2world((p + cv::Point2f(props->size_unscaled(), 0.f)), _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch())) / 2.f;
+            props->world_props.radius_in_range = (min_radius <= props->world_props.radius) && (props->world_props.radius < max_radius);
+            props->world_props.distance_bkg = _visdat->depth_background_mm.at<float>(p.y, p.x);
+            props->world_props.distance = sqrtf(powf(world_coordinates.x, 2) + powf(world_coordinates.y, 2) + powf(world_coordinates.z, 2));
+            if ((props->world_props.distance > props->world_props.distance_bkg * (static_cast<float>(background_subtract_zone_factor) / 100.f)))
+                props->world_props.bkg_check_ok = false;
+            else
+                props->world_props.bkg_check_ok = true;
+            props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.radius_in_range;
+
+        }
         float dist2takeoff = normf(props->world_props.pt() - _pad_world_location);
         float takeoff_y = props->world_props.y - _pad_world_location.y;
-        if (dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
-            props->world_props.valid =  props->world_props.disparity_in_range && props->world_props.radius_in_range;
+        if (dist2takeoff < dparams.pad_radius * 2.f && !props->world_props.bkg_check_ok)
+            props->world_props.valid = props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
         // std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
         //           << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
