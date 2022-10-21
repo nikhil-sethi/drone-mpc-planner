@@ -134,8 +134,10 @@ private:
 
     const float lift_off_dist_take_off_aim = 0.02f;
     const float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI); //A takeoff angle of ~45 is possible if the ir-led is just above the pad (such that the drone enters the light beam even with a "horizontal" takeoff)
+    const float takeoff_aim_acceleration_factor = 0.05f;
 
     const float min_yaw_deviation = 0.5f;
+
 
     double take_off_start_time = 0;
     double state_start_time = 0;
