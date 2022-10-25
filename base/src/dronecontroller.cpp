@@ -694,8 +694,8 @@ std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_ac
     cv::Point3f direction = desired_acc / normf(desired_acc);
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(normf(desired_acc))));
 
-    if (throttle_cmd < dparams.min_throttle)
-        throttle_cmd = dparams.min_throttle;
+    if (throttle_cmd < dparams.spinup_throttle_non3d)
+        throttle_cmd = dparams.spinup_throttle_non3d;
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(direction);
     int roll_cmd =  roundf((roll_quat * RC_BOUND_RANGE / 2.f) + RC_MIDDLE); // convert to RC commands range
