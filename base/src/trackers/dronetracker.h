@@ -109,6 +109,7 @@ private:
     ImageItem _image_template_item;
 
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
+    float min_radius;
 
     void calc_takeoff_prediction(double time);
     void reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff);

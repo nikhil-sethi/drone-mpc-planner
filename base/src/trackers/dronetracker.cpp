@@ -10,6 +10,7 @@ bool DroneTracker::init(VisionData *visdat, int motion_thresh, int16_t viz_id) {
     enable_viz_motion = false;
     ItemTracker::init(visdat, motion_thresh, "drone", viz_id);
     max_radius = dparams.radius * 3;
+    min_radius = dparams.radius / 6;
     expected_radius = dparams.radius;
 
     return false;
@@ -259,6 +260,7 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
 
     calc_world_props_blob_generic(props);
     props->world_props.im_pos_ok = true;
+    props->world_props.radius_in_range = min_radius <= props->world_props.radius && props->world_props.radius < max_radius;
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
     if (taking_off() && !_manual_flight_mode) {
