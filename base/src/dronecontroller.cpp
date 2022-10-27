@@ -176,17 +176,14 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         } case fm_take_off_aim: {
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, takeoff_aim_acceleration_factor * GRAVITY);
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
+                auto_throttle = spinup_throttle();
 
-                float remaining_aim_duration = remaining_spinup_duration_t0 + aim_duration - static_cast<float>(time - take_off_start_time);
-                if (!(remaining_aim_duration <= aim_duration))
-                    auto_throttle = spinup_throttle();
-
-                if (((remaining_spinup_duration_t0 + aim_duration) / 2 - static_cast<float>(time - take_off_start_time)) < 0)
+                float aim_time = static_cast<float>(time - take_off_start_time);
+                if (aim_time > (aim_duration + remaining_spinup_duration_t0) / 2)
                     mode += bf_airmode;
 
-                if (remaining_aim_duration <= 0) {
+                if (aim_time > aim_duration + remaining_spinup_duration_t0) {
                     auto_burn_duration = dparams.target_takeoff_velocity / calibration.max_thrust;
-                    remaining_aim_duration = 0;
                     spin_up_start_time = 0;
                     _flight_mode = fm_max_burn;
                     start_takeoff_burn_time = time;
