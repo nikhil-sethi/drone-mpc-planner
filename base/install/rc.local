@@ -15,6 +15,6 @@ exec 1>/tmp/rc.local.log 2>&1
 set -x
 
 
-/home/pats/code/pats/base/install/daemon.sh
+/home/pats/pats/release/scripts/init.sh
 
 exit 0

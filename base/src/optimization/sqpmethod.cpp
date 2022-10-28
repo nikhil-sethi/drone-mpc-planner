@@ -1,7 +1,7 @@
 #include "sqpmethod.h"
 #include <chrono>
 #include <iostream>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 //#define PATS_OCP_PROFILING
 
 void SQPSolver::init(QuadraticOptimizer *qpsolver) {

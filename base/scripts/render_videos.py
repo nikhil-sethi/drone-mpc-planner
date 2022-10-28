@@ -116,8 +116,8 @@ def render_all(start_datetime, end_datetime, data_folder, abort_deadline=datetim
     logger.info("Number of flight renders: " + str(len(flights)))
     logger.info("Number of monitor renders: " + str(len(monitor_detections)))
 
-    original_process_dir = os.path.expanduser('~/code/pats/base/build/')
-    render_process_dir = os.path.expanduser('~/code/pats/base/build-render/')
+    original_process_dir = os.path.expanduser('~/pats/release/build/')
+    render_process_dir = os.path.expanduser('~/pats/release/build-render/')
     if os.path.exists(render_process_dir):
         shutil.rmtree(render_process_dir)
     shutil.copytree(original_process_dir, render_process_dir, ignore=shutil.ignore_patterns('*logging*'))

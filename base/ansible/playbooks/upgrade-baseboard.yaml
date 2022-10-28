@@ -29,7 +29,7 @@
         force: yes
         clone: no
     - name: Flash the baseboard
-      shell: "cd ~/code/pats/config/firmwares/baseboard && ./flash_baseboard.sh"
+      shell: "cd ~/code/pats/config/firmwares/baseboard && ./flash.sh"
     - name: Remove disable flag
       ansible.builtin.file:
         path: ~/pats/flags/disable

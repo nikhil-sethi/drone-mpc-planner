@@ -77,7 +77,8 @@ add_executable(${PROJECT_NAME} ${SRCS} ${THIRD_PARTY_SRCS} ${ROS_SRCS} ${QT_RESO
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(realsense2 REQUIRED)
-find_package( OpenCV 4.3.0 REQUIRED )
+find_package(OpenCV 4.3.0 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 if(OCP_DEV)
   find_package(osqp REQUIRED)
@@ -90,15 +91,9 @@ if(ROSVIS)
   find_package(tf2_ros REQUIRED)
 endif()
 
-MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
-MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
-MESSAGE( STATUS "OpenCV_LIB_DIR: " ${OpenCV_LIB_DIR} )
-MESSAGE( STATUS "OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS} )
-MESSAGE( STATUS "OpenCV_COMPUTE_CAPABILITIES: " ${OpenCV_COMPUTE_CAPABILITIES} )
-MESSAGE( STATUS "OpenCV_SHARED: " ${OpenCV_SHARED} )
-MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
-MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
-MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
+MESSAGE( STATUS "OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})
+MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION})
+MESSAGE( STATUS "EIGEN3_INCLUDE_DIRS: " ${EIGEN3_INCLUDE_DIRS})
 
 if(OCP_DEV)
   add_definitions(-DOCP_DEV)
@@ -163,7 +158,8 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_part
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/intercept_in_planes")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/tti")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GST_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ~/dependencies/qpOASES/include)
+#target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ~/dependencies/qpOASES/include)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 if(ROSVIS)
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/rosvisualization")
@@ -178,6 +174,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} ${EIGEN3_LIBS})
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} stdc++fs) #until we upgrade to gcc 8
@@ -194,3 +191,9 @@ endif()
 if(WITH_AIRSIM)
     target_link_libraries(${PROJECT_NAME} AirLib)
 endif()
+
+set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation prefix")
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/static)

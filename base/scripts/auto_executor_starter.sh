@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -ex
-cd /home/pats/code/pats/base/build/
+cd /home/pats/pats/release/build/
 
 mkdir -p /home/pats/pats/xml
 mkdir -p /home/pats/pats/flags
@@ -46,7 +46,7 @@ while [ 1 ]; do
 	/bin/mv logging/ ${OUTDIR_LOG}/ || true
 	/bin/mv terminal.log ${OUTDIR_LOG}/ || true
 
-	(cd ../data_processing/ && ./process_session.py -i ${OUTDIR_LOG} || true)
+	(cd ../scripts/ && ./process_session.py -i ${OUTDIR_LOG} || true)
 
 	sleep 5
 

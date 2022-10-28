@@ -112,7 +112,7 @@ private:
     std::ofstream *_logger;
 
     const std::string calib_fn = "drone_calibration.xml";
-    std::string calib_rfn = "../../../../pats/xml/" + calib_fn;
+    std::string calib_rfn = pats_folder + "xml/" + calib_fn;
 
     xmls::DroneCalibration calibration;
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <iostream>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <limits>
 
 

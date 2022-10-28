@@ -7,7 +7,7 @@
 #include <csignal>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h> //usleep
+#include <unistd.h>
 #include <ctime>
 #include <sys/stat.h>
 #include <condition_variable>
@@ -832,8 +832,8 @@ void process_arg(int argc, char **argv) {
     }
 
     if (pats_xml_fn.size() == 0) {
-        if (file_exist("../../../../pats/xml/pats.xml"))
-            pats_xml_fn = "../../../../pats/xml/pats.xml"; // ~/pats/xml/pats.xml
+        if (file_exist("/home/pats/pats/xml/pats.xml"))
+            pats_xml_fn = pats_folder + "xml/pats.xml";
         else
             pats_xml_fn = "../xml/pats.xml"; // default on git repo
     }
@@ -1102,7 +1102,7 @@ void write_live_status_image(cv::Mat frame, string state_str) {
 
         if (pparams.op_mode == op_mode_x)
             cv::circle(out_rgb, patser.drone.tracker.pad_im_location(), patser.drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
-        cv::imwrite("../../../../pats/status/live.jpg", out_rgb);
+        cv::imwrite(pats_folder + "status/live.jpg", out_rgb);
     }
 }
 

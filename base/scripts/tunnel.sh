@@ -29,6 +29,6 @@ while [ 1 ]; do
  	sleep 10s # sleep first so that if the wifi is still being conencted, that happens before the tunnel is created
 	route -n
 
- 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 180" -o "ServerAliveCountMax 3" -C4NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT 2>&1 | ts
+ 	/usr/bin/autossh -M 0 -o "StrictHostKeyChecking=no" -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 180" -o "ServerAliveCountMax 3" -C4NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT 2>&1 | ts
 
 done

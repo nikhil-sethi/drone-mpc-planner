@@ -1,5 +1,5 @@
 #pragma once
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include "tracking.h"
 #include "sqpmethod.h"
 #ifdef USE_OSQP

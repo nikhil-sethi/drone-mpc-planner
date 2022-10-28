@@ -2,15 +2,19 @@
 
 set -ex
 
-
 if [[ $HOSTNAME != pats* ]]; then
 	echo "Change hostname before running this script!"
 	echo "!!! Note: this script is no longer ment to run on your personal laptop !!!"
 	exit 1
 fi
 
+PRE_COMPILED_BINARIES_PATH=/usr/local #in case of a non-standard build target, add it to /etc/ld.conf.d
+KERNEL=$(uname -r)
+ubuntu_str=$(lsb_release -a | grep Release)
+
 mkdir -p ~/dependencies
-mkdir -p ~/code
+sudo mkdir -p $PRE_COMPILED_BINARIES_PATH
+sudo chown $USER $PRE_COMPILED_BINARIES_PATH
 mkdir -p ~/pats/sockets
 mkdir -p ~/pats/xml
 mkdir -p ~/pats/data
@@ -21,10 +25,10 @@ mkdir -p ~/pats/flags
 mkdir -p ~/pats/status
 mkdir -p ~/pats/images
 
-KERNEL=$(uname -r)
-ubuntu_str=$(lsb_release -a | grep Release)
+pushd ~/dependencies
 
-if [ ! -f ~/dependencies/ssh_keys.done ] ; then
+SSH_KEYS_FLAG=ssh_keys.done
+[ -f $SSH_KEYS_FLAG ] || {
 
 	#Change hostname:
 	#Update: sudo nano /etc/hosts
@@ -37,12 +41,12 @@ if [ ! -f ~/dependencies/ssh_keys.done ] ; then
 		exit 1
 	fi
 
-	[ -f ~/dependencies/pats_ssh_files_v4.tar.xz ] || {
+	[ -f pats_ssh_files_v5.tar.xz ] || {
 		mkdir -p ~/.ssh
-		cp pats_ssh_files_v4.tar.xz ~/.ssh
-		pushd ~/.ssh
+		cp pats_ssh_files_v5.tar.xz ~/.ssh
+		pushd ../.ssh
 
-		tar -xf pats_ssh_files_v4.tar.xz
+		tar -xf pats_ssh_files_v5.tar.xz
 		eval `ssh-agent -s`
 
 		# this is not necessary if the ssh keys from the tar package are correct already
@@ -56,18 +60,17 @@ if [ ! -f ~/dependencies/ssh_keys.done ] ; then
 		popd
 	}
 
-	touch ~/dependencies/ssh_keys.done
-fi
-pushd ~/dependencies
+	touch $SSH_KEYS_FLAG
+}
 
-# Install pats dependency packages
-DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
+
+DEPENDENCIES_FLAG=dependencies-packages-v1.21.done
 [ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv
 	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
-		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
+		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]] || [[ $KERNEL == "5.15."* ]]; then
 			sudo apt remove -y intel-media-va-driver
 			sudo apt install -y intel-media-va-driver-non-free
 		else
@@ -85,6 +88,13 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.20.done
 	sudo apt-get remove -y modemmanager	
 	sudo apt purge -y snapd # remove snap, because it uses data
 
+	#for ffmpeg compilation
+	sudo apt remove -y ffmpeg libavfilter-dev
+	sudo apt install -y autoconf automake libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget yasm zlib1g-dev libunistring-dev libx264-dev nasm libx265-dev libnuma-dev libvpx-dev 
+	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		sudo apt install -y libaom-dev
+	fi
+
 	touch $DEPENDENCIES_FLAG
 }
 
@@ -94,8 +104,8 @@ TRAPEYE_FLAG=trapeye-v1.0.done
 	touch $TRAPEYE_FLAG
 }
 
-# Add librealsense repository
-[ -f librealsense-packages_v1.1.done ] || {
+REALSENSE_FLAG=librealsense-packages_v1.1.done
+[ -f $REALSENSE_FLAG ] || {
 
 	sudo apt install -y software-properties-common
 	sudo apt-key adv --keyserver keys.gnupg.net --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
@@ -111,7 +121,7 @@ TRAPEYE_FLAG=trapeye-v1.0.done
 		rm librealsense-packages.done
 	}
 
-	if ([[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]) && [ ! -f librealsense-kernel-patch_v1.2.done ]; then
+	if ([[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]] || [[ $KERNEL == "5.15."* ]]) && [ ! -f librealsense-kernel-patch_v1.2.done ]; then
 		[ -d ./librealsense ] || {
 			git clone git@github.com:IntelRealSense/librealsense.git
 		}
@@ -122,14 +132,16 @@ TRAPEYE_FLAG=trapeye-v1.0.done
 		touch librealsense-kernel-patch_v1.2.done
 	fi
 
-	touch librealsense-packages_v1.1.done
+	touch $REALSENSE_FLAG
 }
 
-[ -f python-packages-v1.3.done ] || {
+PYTHON_PACKAGES_FLAG=python-packages-v1.3.done
+[ -f $PYTHON_PACKAGES_FLAG ] || {
 	pip3 install cython pyserial types-pytz
 	pip3 install numpy pandas scipy sklearn tqdm pause
 	pip3 install xmltodict requests # for huawei-hilink-status
 	pip3 install torch torchvision umap bioinfokit # deep learning
+	pip3 install matplotlib
 
 	#vscode linting and formatting:
 	pip3 install pylint flake8 mypy autopep8
@@ -139,94 +151,43 @@ TRAPEYE_FLAG=trapeye-v1.0.done
 
 	pip3 install types-python-dateutil types-requests tzupdate
 
-	touch python-packages-v1.3.done
+	touch $PYTHON_PACKAGES_FLAG
 }
 
-[ -f dnn-dependencies-packages-v1.0.done ] || {
-	pip3 install matplotlib
+PATS_RELEASE_FLAG=pats_release_v1.0.done
+[ -f $PATS_RELEASE_FLAG ] || {
+		touch ~/pats/flags/disable
+		touch ~/pats/flags/disable_baseboard
+		pushd ../pats
+	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		[ -d pats ] || {
+			git clone git@github-release-20:pats-drones/release-20.git
+			ln -s release-20 release
+		}
+	else
+		[ -d pats ] || {
+			git clone git@github-release-18:pats-drones/release-18.git
+			ln -s release-18 release
+		}
+	fi
+	popd
+	if [ ! ~/.ssh/config ] && [ ! ~/.ssh/config_tmp ]; then
+		mv ~/.ssh/config_tmp ~/.ssh/config
+	fi
+	touch $PATS_RELEASE_FLAG
 }
 
-# Install command center packages
-[ -f cc-dependencies-packages-v1.1.done ] || {
-	sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
-	sudo apt install -y ansible ansible-lint
-	touch cc-dependencies-packages-v1.1.done
-}
 
-if [[ $ubuntu_str != *"18.04"* ]] && [[ ! -f gstreamer-v1.18.5.done ]]; then
-	pushd ~/code/
-	[ -d pats ] || {
-		git clone git@github-pats:pats-drones/pats.git # needed for the patch
-		pushd pats
-		popd
-	}
-	popd
-	git clone https://gitlab.freedesktop.org/gstreamer/gst-build.git
-	pushd gst-build/
-	git checkout 1.18.5
-	meson builddir -Dvaapi=enabled -Dgst_debug=false -Dgstreamer-vaapi:with_x11=no --buildtype=release --prefix=/usr/local
-	ninja -C builddir
-	sudo ninja install -C builddir
-	sudo ldconfig
-	popd
-	touch gstreamer-v1.18.5.done
-fi
-
-FFMPEG_FLAG=ffmpeg-v1.done
-if [[ $ubuntu_str != *"18.04"* ]] && [[ ! -f $FFMPEG_FLAG ]]; then
-	sudo apt-get update -qq && sudo apt install -y autoconf automake build-essential cmake git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget yasm zlib1g-dev libunistring-dev libaom-dev libunistring-dev libaom-dev libx264-dev nasm libx265-dev libnuma-dev libvpx-dev
-	wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
-	tar -xf ffmpeg-snapshot.tar.bz2
-	pushd ffmpeg
-	./configure --extra-libs="-lpthread -lm" --ld="g++" --enable-gpl --enable-gnutls --enable-libaom --enable-libass --enable-libfreetype --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 --enable-nonfree 
-	time make -j$(nproc)
-	sudo make install
-	sudo ldconfig
-	popd
-	touch $FFMPEG_FLAG
-fi
-
-# Uninstall openCV 3
-[ ! -f opencv-3.4.2.done ] || {
-	pushd opencv-3.4.2
-	pushd build
-	sudo make uninstall
-	sudo ldconfig
-	popd
-	popd
-	rm opencv-3.4.2* -rf
-}
-
-# Install openCV
-if [ ! -f opencv-4.5.2.done ] && [ ! -f opencv-4.3.0.done ] ; then
-	[ -d opencv-4.5.2 ] || {
-		wget https://github.com/opencv/opencv/archive/4.5.2.tar.gz
-		mv 4.5.2.tar.gz opencv-4.5.2.tar.gz
-		tar -xf opencv-4.5.2.tar.gz
-	}
-	pushd opencv-4.5.2
-	mkdir -p build
-	pushd build
-	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON -DWITH_FFMPEG=OFF ..
-	[ -h ~/dependencies/gst-build/ ] || { #gstreamer 1.18.4 seems to cause some ffmpeg compile problem with opencv
-		cmake -DWITH_FFMPEG=OFF ..
-	}
-	time make -j$(nproc)
-	sudo make install
-	sudo ldconfig
-	popd
-	popd
-	touch opencv-4.5.2.done
-fi
-
-[ -f git.done ] || {
+GIT_FLAG=git.done
+[ -f $GIT_FLAG ] || {
 	git config --global push.default simple
 	git config --global user.email "${HOSTNAME}@pats.com"
 	git config --global user.name $HOSTNAME
-	touch git.done
+	touch $GIT_FLAG
 }
 
-[ -f git_aliases_v1.0.done ] || {
+GIT_ALIASES_FLAG=git_aliases_v1.0.done
+[ -f $GIT_ALIASES_FLAG ] || {
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
@@ -240,124 +201,67 @@ fi
 	git config --global alias.pr "pull --rebase"
 	git config --global alias.cp "cherry-pick"
 
-	touch git_aliases_v1.0.done
+	touch $GIT_ALIASES_FLAG
+}
+VPN_FLAG=vpn-v1.done
+# Create nice symlinks
+[ -f $VPN_FLAG ] || {
+	sudo mkdir -p /etc/wireguard/
+	#wg genkey | tee /etc/wireguard/privatekey | wg /etc/wireguard/pubkey > /etc/wireguard/publickey
+	sudo systemctl enable wg-quick@wg0.service
+    touch $VPN_FLAG
 }
 
-QPOASES_FLAG=qpOASES-v1.done
-[ -f $QPOASES_FLAG ] || {
-	[ -d qpoases ] || {
-		git clone git@github.com:coin-or/qpOASES.git
-	}
-	pushd qpOASES
-	mkdir -p build
-	pushd build
-	cmake -DBUILD_SHARED_LIBS=1 ..
-	make -j4
-	sudo make install
-	sudo ldconfig
-	popd
-	popd
-	touch $QPOASES_FLAG
-}
-EIGEN_FLAG=Eigen-v1.done
-[ -f $EIGEN_FLAG ] || {
-	[ -d eigen ] || {
-		git clone https://gitlab.com/libeigen/eigen.git
-	}
-	pushd eigen
-	git checkout 3.4
-	mkdir -p build
-	pushd build
-	cmake -DBUILD_SHARED_LIBS=1 ..
-	make -j4
-	sudo make install
-	sudo ldconfig
-	popd
-	popd
-	touch $EIGEN_FLAG
-}
-
-[ -f pats_code_v1.1.done ] || {
-	echo Warning: manual config change required!
-	exit
-}
-
-# Install the Pats code
-PATS_CODE_FLAG=pats_code_v1.2.done
-[ -f $PATS_CODE_FLAG ] || {
-	touch ~/pats/flags/disable
-	touch ~/pats/flags/disable_baseboard
-
-	pushd ../code/
-	[ -d ../code/pats ] || {
-		git clone git@github-pats:pats-drones/pats.git
-	}
-	pushd pats
-	mkdir -p base/build
-	pushd base/build
-	cmake -DCMAKE_BUILD_TYPE=Release ..
-	make -j$(nproc)
-	popd
-	popd
-	popd
-
-	if [ ! ~/.ssh/config ] && [ ! ~/.ssh/config_tmp ]; then
-		mv ~/.ssh/config_tmp ~/.ssh/config
-	fi
-
-	touch $PATS_CODE_FLAG
-}
-
-SYMLINK_FLAG=symlinks-v1.6.done
+SYMLINK_FLAG=symlinks-v2.2.done
 # Create nice symlinks
 [ -f $SYMLINK_FLAG ] || {
 	[ -f ~/.screenrc ] && {
 		cp ~/.screenrc{,.bak} --backup=numbered
 		rm ~/.screenrc
 	}
-	ln -s ~/code/pats/base/install/.screenrc ~/
+	ln -s ~/pats/release/install/.screenrc ~/
 
 	[ -f ~/.bashrc ] && {
 		cp ~/.bashrc{,.bak} --backup=numbered
 		rm ~/.bashrc
 	}
-	ln -s ~/code/pats/base/install/.bashrc ~/
+	ln -s ~/pats/release/install/.bashrc ~/
 
 	[ -f /etc/ssh/sshd_config ] && {
 		sudo cp /etc/ssh/sshd_config{,.bak} --backup=numbered
 		sudo rm /etc/ssh/sshd_config
 	}
-	sudo ln -s ~/code/pats/base/install/sshd_config /etc/ssh/
+	sudo ln -s ~/pats/release/install/sshd_config /etc/ssh/
 
 	[ -f /etc/network/interfaces ] && {
 			sudo cp /etc/network/interfaces{,.bak} --backup=numbered
 			sudo rm /etc/network/interfaces
 	}
-	sudo ln -s ~/code/pats/base/install/interfaces /etc/network/interfaces
+	sudo ln -s ~/pats/release/install/interfaces /etc/network/interfaces
 
 	[ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && {
 			sudo rm /etc/apt/apt.conf.d/50unattended-upgrades
 	}
-	sudo ln -s ~/code/pats/base/install/50unattended-upgrades /etc/apt/apt.conf.d/
+	sudo ln -s ~/pats/release/install/50unattended-upgrades /etc/apt/apt.conf.d/
 
 
 	[ -f /etc/apt/apt.conf.d/10periodic ] && {
 			sudo rm /etc/apt/apt.conf.d/10periodic
 	}
-	sudo ln -s ~/code/pats/base/install/10periodic /etc/apt/apt.conf.d/
+	sudo ln -s ~/pats/release/install/10periodic /etc/apt/apt.conf.d/
 
 
 	[ -f /etc/apt/apt.conf.d/20auto-upgrades ] && {
 			sudo rm /etc/apt/apt.conf.d/20auto-upgrades
 	}
-	sudo ln -s ~/code/pats/base/install/20auto-upgrades /etc/apt/apt.conf.d/
+	sudo ln -s ~/pats/release/install/20auto-upgrades /etc/apt/apt.conf.d/
 
 
 	[ -f /etc/rc.local ] && {
 		sudo cp /etc/rc.local{,.bak} --backup=numbered
 		sudo rm /etc/rc.local
 	}
-	sudo ln -s ~/code/pats/base/install/rc.local /etc/rc.local
+	sudo ln -s ~/pats/release/install/rc.local /etc/rc.local
 
 	[ -f /etc/environment ] && {
 		sudo cp /etc/environment{,.bak} --backup=numbered
@@ -365,35 +269,36 @@ SYMLINK_FLAG=symlinks-v1.6.done
 	}
 	ubuntu_str=$(lsb_release -a | grep Release)
 	if [[ $ubuntu_str == *"18.04"* ]] ; then
-		sudo ln -s ~/code/pats/base/install/environment_18.04 /etc/environment
+		sudo ln -s ~/pats/release/install/environment_18.04 /etc/environment
 	else
-		sudo ln -s ~/code/pats/base/install/environment_20.04 /etc/environment
+		sudo ln -s ~/pats/release/install/environment_20.04 /etc/environment
 	fi
 
 	rm ~/.ssh/config -f
-	ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config
+	ln -s ~/pats/release/install/sshconfig ~/.ssh/config
+	rm ~/.ssh/pats_ssh_config -f
 
 	[ -f ~/.gdbinit ] && {
 		sudo cp ~/.gdbinit{,.bak} --backup=numbered
 		sudo rm ~/.gdbinit
 	}
-	sudo ln -s ~/code/pats/base/install/.gdbinit ~/.gdbinit
+	sudo ln -s ~/pats/release/install/.gdbinit ~/.gdbinit
 
 	sudo cp /etc/sudoers{,.bak} --backup=numbered
-	sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
+	sudo cp ~/pats/release/install/sudoers /etc/sudoers
 
 
 	[ -f /etc/NetworkManager/NetworkManager.conf ] && {
 		sudo cp /etc/NetworkManager/NetworkManager.conf{,.bak} --backup=numbered
 		sudo rm /etc/NetworkManager/NetworkManager.conf
 	}
-	sudo ln -s ~/code/pats/base/install/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf
+	sudo ln -s ~/pats/release/install/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf
 
 	[ -f /etc/netplan/networkmanager.yaml ] && {
 		sudo cp /etc/netplan/networkmanager.yaml{,.bak} --backup=numbered
 		sudo rm /etc/netplan/networkmanager.yaml
 	}
-	sudo ln -s ~/code/pats/base/install/networkmanager.yaml /etc/netplan/networkmanager.yaml
+	sudo ln -s ~/pats/release/install/networkmanager.yaml /etc/netplan/networkmanager.yaml
 	sudo netplan generate
 	sudo netplan apply
 	sudo service NetworkManager restart
@@ -402,50 +307,62 @@ SYMLINK_FLAG=symlinks-v1.6.done
 		sudo cp /etc/systemd/system.conf{,.bak} --backup=numbered
 		sudo rm /etc/systemd/system.conf
 	}
-	sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
+	sudo ln -s ~/pats/release/install/system.conf /etc/systemd/system.conf
+
+	sudo chown $USER $PRE_COMPILED_BINARIES_PATH -R
+	sudo touch /etc/cloud/cloud-init.disabled
 
 	sudo systemctl restart ssh.service
-
-	mkdir -p ~/Arduino
-	[ -d ~/Arduino/libraries ] && {
-		cp -r ~/Arduino/libraries{,.bak} --backup=numbered
-		rm -r ~/Arduino/libraries
-	}
-	ln -s ~/code/pats/Arduino/libraries ~/Arduino/libraries
 
 	touch $SYMLINK_FLAG
 }
 
-[ -f pats_sys_config-v1.0.done ] || {
+PATS_SYS_FLAG=pats_sys_config-v1.0.done
+[ -f $PATS_SYS_FLAG ] || {
 	# Add to groups
 	sudo usermod -a -G dialout $USER
 	sudo usermod -a -G video $USER
 	echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases
 
-	touch pats_sys_config-v1.0.done
+	touch $PATS_SYS_FLAG
 }
 
-#install driver for multi module:
-[ -f mm_install_v1.1.done ] || {
+MM_FLAG=mm_install_v2.0.done
+[ -f $MM_FLAG ] || {
 	[ -f /lib/udev/rules.d/45-pats_mm.rules ] && {
 		sudo rm /lib/udev/rules.d/45-pats_mm.rules
 	}
-	sudo ln -s ~/code/pats/base/install/45-pats_mm.rules /lib/udev/rules.d/
+	sudo ln -s ~/pats/release/install/45-pats_mm.rules /lib/udev/rules.d/
 	sudo udevadm control --reload-rules && udevadm trigger
-	touch mm_install_v1.1.done
+	touch $MM_FLAG
 }
 
-#install driver for baseboard:
-[ -f baseboard_install_v1.1.done ] || {
+BB_FLAG=baseboard_install_v2.0.done
+[ -f $BB_FLAG ] || {
 	[ -f /lib/udev/rules.d/99-charging-pads.rules ] && {
 		sudo rm /lib/udev/rules.d/99-charging-pads.rules
 	}
-	sudo ln -s ~/code/pats/base/install/99-charging-pads.rules /lib/udev/rules.d/
+	sudo ln -s ~/pats/release/install/99-charging-pads.rules /lib/udev/rules.d/
 	sudo udevadm control --reload-rules && udevadm trigger
-	touch baseboard_install_v1.1.done
+	touch $BB_FLAG
+}
+
+
+PATS_BIN_FLAG=pats_bin-v1.done
+[ -f $PATS_BIN_FLAG ] || {
+	tar -xf ~/pats/release/binaries.tar.xz
+	rm /usr/local/* -rf
+	mv ./usr/local/* /usr/local/
+	sudo ldconfig
+	sudo apt-get install -y $(cat ~/pats/release/package_list.txt | awk '{print $1"=" $2}')
+	pip install -r ~/pats/release/requirements.txt
+	touch $PATS_BIN_FLAG
 }
 
 popd
+
+
+
 sudo apt-get autoremove -y
 sudo apt-get clean -y
 
@@ -456,41 +373,4 @@ echo 1. Set bios to startup always at power on
 echo 2. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
 echo 3. Change hostname stuff
 echo "***********************************************************"
-
-
-
-# Install pats-c dev packages
-# # Install the Dash code
-# PATSC_CODE_FLAG=patsc_code_v1.0.done
-# [ -f $PATSC_CODE_FLAG ] || {
-	
-
-# 	pushd ./code/
-# 	[ -d ../code/dash ] || {
-# 		git clone git@github-dash:pats-drones/dash.git
-# 	}
-# 	popd
-
-# 	touch $PATSC_CODE_FLAG
-# }
-
-
-# [ -f patsc-dependencies-packages-v1.1.done ] || {
-# 	pip3 install -r ~/code/dash/patsc/requirements.txt
-# 	touch patsc-dependencies-packages-v1.1.done
-# }
-
-# # Install dev packages
-# [ -f dev-dependencies-packages-v1.1.done ] || {
-# 	wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-# 	sudo apt-get -y install apt-transport-https
-# 	#to install sublime
-# 	#echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-# 	#sudo snap install sublime-text --classic
-# 	sudo snap install code --classic
-# 	sudo apt update
-# 	sudo apt install -y libqt5opengl5 libqt5opengl5-dev meld gitk git-gui terminator jstest-gtk
-# 	#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1 libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev libgtk2.0-dev libgtk-3-dev gnome-devel
-# 	touch dev-dependencies-packages-v1.1.done
-# }
 

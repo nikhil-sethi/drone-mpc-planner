@@ -1089,7 +1089,7 @@ void DroneController::load_calibration() {
 
 void DroneController::save_calibration() {
     if (!log_replay_mode)
-        calibration.serialize("../../../../pats/xml/" + calib_fn);
+        calibration.serialize(pats_folder + "xml/" + calib_fn);
 }
 void DroneController::save_calibration_before_flight(int flight_id) {
     calibration.serialize(data_output_dir + "/drone_calibration_flight" + to_string(flight_id) + ".xml");

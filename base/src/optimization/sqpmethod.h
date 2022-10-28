@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include "quadraticoptimizer.h"
 #ifdef OCP_DEV
 #include <casadi/casadi.hpp>

@@ -19,6 +19,7 @@
         "**/replay_insects/**": true,
         "**/install/**": true,
         "**/data_processing/**": true,
+        "**/scripts/**": true,
         "**/third_party/**": true,
         "/usr/**": true,
     },

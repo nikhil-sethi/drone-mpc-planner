@@ -6,6 +6,9 @@
 #include <iostream>
 #include <fstream>
 #include <mutex>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #define IMG_W 848
 #define IMG_H 480
@@ -47,9 +50,10 @@ float optimization_thrust(float thrust);
 std::tuple<float, float, float> solve_quadratic_solution(float a, float b, float c);
 std::vector<int> combination_sample(uint n, uint i); // Find the ith combination of n elements
 void combination_sample_worker(std::vector<int> *combination, std::vector<int> *elements, uint n, uint i);
-inline float make_even(float n){
-    return roundf((n /2.f) * 2);
+inline float make_even(float n) {
+    return roundf((n / 2.f) * 2);
 }
+const string pats_folder = string(getpwuid(getuid())->pw_dir) + "/pats/";
 
 const float rad2deg = 180.f / M_PIf32;
 const float deg2rad = M_PIf32 / 180.f;

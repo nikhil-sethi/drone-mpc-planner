@@ -1,11 +1,12 @@
 ## NUC installation instructions
-1. Bios Power state:
+1. Scan / copy the NUC serial code, and update id_db.txt on dash
+2. Bios Power state:
     - Boot NUC with screen and keyboard
     - Press F2 during boot
     - Go to power tab, select Power state: always on
     - Go to the boot tab, disable secure boot
     - Save and shut down
-2. Install image:
+3. Install image:
     - Connect NUC install usb stick
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
@@ -13,14 +14,15 @@
     - After a minute, select the *correct image* for the *correct NUC*
     - Say y
     - Wait a few minutes until it powers off.
-3. Physically label the NUC
-4. Remove USB dongle, boot up NUC
-5. Change hostname:
+4. Physically label the NUC
+5. Remove USB dongle, boot up NUC
+6. If the config is not automatically downloaded from id_db.txt, change hostname:
     - `sudo nano /etc/hosts`     Change `127.0.1.1 pats0` to reflect number on the label from step 3
     - Again for: `sudo nano /etc/hostname`
+    - Download the wireguard config from `dash:wireguard_config/peers/patsID` and put and rename it into `/etc/wireguard/wg0.conf`
     - Reboot
-6. Remove the `~/pats/flags/disable` file to enable the pats process in the background (preferably after the camera etc is connected)
-7. Idem for the `disable_baseboard` and `disable_charging` flags, if required
+7. Remove the `~/pats/flags/disable` file to enable the pats process in the background (preferably after the camera etc is connected)
+8. Idem for the `disable_baseboard` and `disable_charging` flags, if required
 
 All done!
 
@@ -64,9 +66,11 @@ All done!
     - Set the disable flag
     - Delete all pats data, json and logs
     - Clean up the `~/.bash_history'
-    - Make sure the correct branch is selected. (e.g. monitoring for `~/code/pats/`)
-    - Make sure pats is build
-    - Make sure `/home/pats/dependencies/hostname_set` and `/home/pats/dependencies/timezone_set` do not exist
+    - Make sure the correct branch is selected.
+    - Make sure the following files are removed:
+        - `/home/pats/dependencies/hostname_set`
+        - `/home/pats/dependencies/timezone_set` 
+        - `/etc/wireguard/wg0.conf`
 3. Create the image with clonezilla
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
@@ -83,6 +87,5 @@ All done!
 ## Tools used to make the install stick:
 1. YUMI
 2. CloneZilla iso
-3. Ubuntu 18.04.* LTS iso
-4. Pats install script and ssh key files
+
 

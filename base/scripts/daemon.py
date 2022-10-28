@@ -145,7 +145,7 @@ class wp_demo_task(pats_task):
 
     def task_func(self):
         if os.path.exists(lb.enable_wp_demo_flag):
-            shutil.copyfile(os.path.expanduser('~/code/pats/base/xml/flightplans/simple-demo-floriade.xml'), os.path.expanduser('~/pats/flags/pats_demo.xml'))
+            shutil.copyfile(os.path.expanduser('~/pats/release/xml/flightplans/simple-demo-floriade.xml'), os.path.expanduser('~/pats/flags/pats_demo.xml'))
 
 
 class baseboard_task(pats_task):
@@ -406,7 +406,7 @@ logger.setLevel(logging.DEBUG)
 start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
 logger.info('Daemon reporting in!')
 print(start_time)
-start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+start_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode(sys.stdout.encoding).strip()
 logger.info('sha: ' + start_sha)
 
 baseboard_comm = socket_communication('baseboard', 'daemon', lb.socket_baseboard2daemon, False)
@@ -447,7 +447,7 @@ while True:
     for task in tasks:
         print(task.name + ': ' + task.status_str + ' #Errors:' + str(task.error_cnt))
 
-    current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+    current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode(sys.stdout.encoding).strip()
     if start_sha != current_sha:
         logger.warning("SHA discrepancy detected!")
 

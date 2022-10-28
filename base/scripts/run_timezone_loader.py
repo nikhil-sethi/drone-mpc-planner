@@ -5,5 +5,5 @@ parser = argparse.ArgumentParser(description='Script that loads the timezone for
 parser.add_argument('--system', help="system that needs it timezone", required=True)
 args = parser.parse_args()
 
-cmd = ['/usr/bin/python3','/home/pats/code/dash/timezone_loader.py','--system',args.system]
+cmd = ['/usr/bin/python3', '/home/pats/pats/dash/timezone_loader.py', '--system', args.system]
 subprocess.run(cmd)

@@ -147,3 +147,4 @@ then
   echo "Screen failed! continuing with normal bash startup"
 fi
 # [end of auto-screen snippet]
+

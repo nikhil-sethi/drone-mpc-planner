@@ -3,7 +3,7 @@
 #include "tracking.h"
 #include "flightareaconfig.h"
 #include "rosvisualizerdatapublisher.h"
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <opencv2/core/types.hpp>
 
 class RosVisualizerInterface {

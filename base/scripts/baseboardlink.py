@@ -13,7 +13,7 @@ from lib_socket import socket_communication
 import lib_base as lb
 import lib_serialization as ls
 
-start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+start_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode(sys.stdout.encoding).strip()
 logging.basicConfig()
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger('baseboard')
@@ -189,7 +189,7 @@ while True:
 
             if (datetime.now() - prev_sha_check_time).seconds > 10:
                 prev_sha_check_time = datetime.now()
-                current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+                current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode(sys.stdout.encoding).strip()
                 if start_sha != current_sha:
                     logger.warning("SHA discrepancy detected!")
 

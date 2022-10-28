@@ -2,10 +2,6 @@
 #include "commandcenterlink.h"
 #include "trackermanager.h"
 
-#include <thread>
-#include <unistd.h> //usleep
-#include<iostream>
-
 void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *visdat) {
     _log_replay_mode = log_replay_mode;
     _visdat = visdat;
@@ -108,8 +104,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_update_needed = true;
     }
     if (status_update_needed) {
-        std::ofstream status_file;
-        status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
+        ofstream status_file(pats_folder + "status/status.txt", std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
         status_file << "Runtime: " << to_string_with_precision(_time_since_start, 1) << "s" << '\n';
@@ -130,8 +125,7 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, 
         _never_overwrite = never_overwrite;
 
         reset_cnt = pparams.fps * 3;
-        std::ofstream status_file;
-        status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
+        ofstream status_file(pats_folder + "status/status.txt", std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
         status_file << "Runtime: " << 0 << "s" << '\n';
@@ -156,7 +150,7 @@ void CommandCenterLink::write_commandcenter_status_image() {
 
                     if (pparams.op_mode == op_mode_x)
                         cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
-                    cv::imwrite("../../../../pats/status/live.jpg", out_rgb);
+                    cv::imwrite(pats_folder + "status/live.jpg", out_rgb);
                 }
                 new_frame_request = 1;
             }

@@ -2,7 +2,7 @@
 #ifdef OCP_DEV
 #include <casadi/casadi.hpp>
 #endif
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include "tracking.h"
 #include "plane.h"
 #include "flightarea.h"

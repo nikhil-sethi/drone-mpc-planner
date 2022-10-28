@@ -14,7 +14,7 @@ socket_dir = os.path.expanduser('~/pats/sockets/')
 data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
-executor_log_dir = os.path.expanduser('~/code/pats/base/build/logging/')
+executor_log_dir = os.path.expanduser('~/pats/release/build/logging/')
 
 daily_errs_log = log_dir + 'all_errors.log'
 term_log_path = log_dir + 'term.log'
@@ -40,7 +40,7 @@ socket_executor2daemon = socket_dir + 'executor2daemon.socket'
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')
 local_status_im_file = os.path.expanduser('~/pats/status/monitor_tmp.jpg')
-local_xml_folder = os.path.expanduser('~/code/pats/base/xml/')
+local_xml_folder = os.path.expanduser('~/pats/release/xml/')
 local_pats_xml_override = os.path.expanduser('~/pats/pats.xml')
 
 remote_status_txt_file = 'status/' + socket.gethostname() + '/status.txt'

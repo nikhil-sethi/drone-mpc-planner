@@ -1,7 +1,7 @@
 #pragma once
 #include <math.h>
 #include <vector>
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <qpOASES.hpp>
 #include "quadraticoptimizer.h"
 
