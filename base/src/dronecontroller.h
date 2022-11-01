@@ -432,7 +432,7 @@ public:
         }
     }
 
-    bool att_somewhere_on_pad() { return att_somewhere_on_pad_cnt > 3;}
+    bool att_somewhere_on_pad() { return att_somewhere_on_pad_cnt > 1;}
     bool att_precisely_on_pad() { return att_precisely_on_pad_cnt > 3;}
     bool att_ok_for_pad_calibration() {return att_pad_calibration_ok_cnt > 3;}
     bool att_telemetry_valid() {return _att_telemetry_samples_cnt > 6;}

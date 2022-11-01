@@ -41,12 +41,12 @@ private:
     double time_drone_problem = -1;
     double time_take_off = 0;
     float time_out_after_landing = 10;
-    double time_start_wait_for_second_telemetry = -1;
+    double time_start_wait_expected_attitude = -1;
     const float duration_correct_yaw = 6;
     const float duration_trigger_bowling = 2.4f;
     const float duration_reset_headless_yaw = 2;
     const float duration_wait_after_landing = 0.8;
-    const float duration_wait_second_telemetry = 2.;
+    const float duration_wait_expected_attitude = 10.;
 
     std::ofstream *_logger;
     DroneController *_control;

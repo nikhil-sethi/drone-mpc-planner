@@ -300,11 +300,11 @@ void DroneNavigation::update(double time) {
                     if (_control->att_somewhere_on_pad()) {
                         _navigation_status = ns_flight_done;
                         time_start_wait_after_landing = -1;
-                        time_start_wait_for_second_telemetry = -1;
+                        time_start_wait_expected_attitude = -1;
                     } else {
-                        if (time_start_wait_for_second_telemetry < -1)
-                            time_start_wait_for_second_telemetry = time;
-                        else if (static_cast<float>(time - time_start_wait_for_second_telemetry) > duration_wait_second_telemetry) {
+                        if (time_start_wait_expected_attitude < -1)
+                            time_start_wait_expected_attitude = time;
+                        else if (static_cast<float>(time - time_start_wait_expected_attitude) > duration_wait_expected_attitude) {
                             _navigation_status = ns_landing_failure;
                         }
 
