@@ -25,6 +25,7 @@ public:
 #endif
     void update_bottom_plane_based_on_blink(float pad_height);
     void set_vertical_camera_plane(float z);
+    void remove_plane(plane_types plane);
     bool inside(cv::Point3f point, safety_margin_types margin);
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin);
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin, cv::Point3f drone_pos);

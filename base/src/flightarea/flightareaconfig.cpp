@@ -24,6 +24,10 @@ void FlightAreaConfig::add_plane(Plane plane) {
     _planes.push_back(plane);
 }
 
+void FlightAreaConfig::remove_plane(plane_types type) {
+    _planes.erase(std::remove_if(_planes.begin(), _planes.end(), [type](const Plane & x) { return x.type == type;}), _planes.end());
+}
+
 void FlightAreaConfig::reindex_planes() {
     uint id = 0;
     for (auto &plane : _planes) {

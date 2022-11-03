@@ -2,6 +2,7 @@
 #include "common.h"
 #include "itemtracker.h"
 #include "insecttracker.h"
+#include "../flightarea/flightarea.h"
 
 namespace tracking {
 static const char *drone_tracking_state_names[] = {
@@ -70,8 +71,10 @@ private:
 
     double start_take_off_time = 0;
     double spinup_detect_time = 0;
+    double takeoff_is_aborted_time = 0;
     double _time = 0;
     double time_yaw_not_ok = -1;
+    const float max_allowed_takeoff_duration = 3.f;
 
     double takeoff_location_ignore_timeout = 1;
     double landing_ignore_timeout = 5;
@@ -110,6 +113,7 @@ private:
 
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
     float min_radius;
+    FlightArea _takeoff_area;
 
     void calc_takeoff_prediction(double time);
     void reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff);
@@ -118,6 +122,7 @@ private:
     void delete_motion_shadow_run();
     bool detect_lift_off();
     bool detect_takeoff();
+    bool takeoff_is_aborted(double time);
     void detect_deviation_yaw_angle();
     void update_drone_prediction(double time);
     void clean_ignore_blobs(double time);
@@ -172,6 +177,11 @@ public:
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}
     bool bowl_nudge_needed(cv::Point3f setpoint_pos) {return normf(last_track_data().pos() - setpoint_pos) < min_deviate_vec_length;}
     void commanded_acceleration(cv::Point3f *commanded_acceleration) {_commanded_acceleration = commanded_acceleration;}
+    void takeoff_area(FlightArea *takeoff_area) {
+        _takeoff_area = *takeoff_area;
+        _takeoff_area.remove_plane(vertical_camera_plane);
+        _takeoff_area.remove_plane(bottom_plane);
+    }
     ImageItem image_template_item() {return _image_template_item;}
 
 };

@@ -13,6 +13,7 @@ enum plane_types {
     lower_plane,
     right_plane,
     camera_protector_plane,
+    vertical_camera_plane
 };
 
 inline const char *plane_types_str[] = {
@@ -24,6 +25,7 @@ inline const char *plane_types_str[] = {
     "lower_plane",
     "right_plane",
     "camera_protector_plane",
+    "vertical_camera_plane",
     "" // must be the last entry! (check in serializer)
 };
 

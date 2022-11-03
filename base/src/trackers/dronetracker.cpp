@@ -42,6 +42,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
 
     _drone_tracking_status = dts_detecting_takeoff;
     start_take_off_time = time;
+    takeoff_is_aborted_time = 0;
     _tracking = false;
     delete_motion_shadow(_pad_im_location, _pad_im_size, _pad_disparity);
     ignores_for_other_trkrs.clear();
@@ -113,11 +114,11 @@ void DroneTracker::update(double time) {
                     spinup_detected = std::max(0, spinup_detected - 1);
                 }
 
-                if (spinup_detected < 3 && takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.3f) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
+                if (spinup_detected < 3 && (takeoff_duration > max_allowed_takeoff_duration || takeoff_is_aborted(time))) {
                     _drone_tracking_status = dts_detecting_takeoff_failure;
                     _visdat->disable_cloud_rejection = false;
                     std::cout << "No spin up detected in time!" << std::endl;
-                } else if (takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.35f) {
+                } else if (takeoff_duration > max_allowed_takeoff_duration || takeoff_is_aborted(time)) {
                     _visdat->disable_cloud_rejection = false;
                     _drone_tracking_status = dts_detecting_takeoff_failure;
                     if (liftoff_detected)
@@ -361,7 +362,7 @@ void DroneTracker::calc_takeoff_prediction(double time) {
     }
     cv::Point3f acc = *_commanded_acceleration;
     acc.y = std::max(0.f, acc.y - GRAVITY);//Compensate for gravity, but never having a negative acceleration
-    if ((normf(acc) < 0.01f && takeoff_prediction_pos == pad_location()) || time < start_take_off_time + 0.2)
+    if ((normf(acc) < 0.1f && takeoff_prediction_pos == pad_location()) || time < start_take_off_time + 0.2)
         return;
     float dt;
     if (last_drone_detection.time)
@@ -412,6 +413,17 @@ bool DroneTracker::detect_lift_off() {
         take_off_frame_cnt = std::max(0, take_off_frame_cnt - 1);
     }
     return false;
+}
+
+bool DroneTracker::takeoff_is_aborted(double time) {
+    bool inside_takeoff_area = _takeoff_area.inside(takeoff_prediction_pos, bare);
+    if (!inside_takeoff_area && !takeoff_is_aborted_time) {
+        takeoff_is_aborted_time = time;
+        return false;
+    } else if (!inside_takeoff_area && time > takeoff_is_aborted_time + 1.0)
+        return true;
+    else
+        return false;
 }
 
 bool DroneTracker::check_ignore_blobs(BlobProps *pbs) {

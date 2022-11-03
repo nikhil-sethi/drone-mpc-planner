@@ -85,6 +85,7 @@ public:
 
     void add_plane(Plane plane);
     void add_plane(cv::Point3f support_vector, cv::Point3f normal_vector, plane_types type);
+    void remove_plane(plane_types type);
     void reindex_planes();
     void update_bottom_plane_based_on_blink(float pad_height);
     void apply_safety_margin(safety_margin_types safety_margin_type);
