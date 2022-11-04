@@ -53,6 +53,7 @@ using namespace std;
 
 /***********Variables****************/
 bool exit_now = false;
+bool exit_watchdog_thread = false;
 bool watchdog = true;
 volatile std::sig_atomic_t term_sig_fired;
 int received_img_count;
@@ -961,6 +962,7 @@ void close_before_running() {
     std::this_thread::sleep_for(1s);
     baseboard_link.close_link();
     daemon_link.close_link();
+    exit_watchdog_thread = true;
     std::cout << "Wait for watchdog thread..." << std::endl;
     cv_watchdog.notify_one();
     thread_watchdog.join();
@@ -1018,6 +1020,7 @@ void close(bool sig_kill) {
     std::cout << "Releasing rc..." << std::endl;
     if (rc)
         rc.release();
+    exit_watchdog_thread = true;
     std::cout << "Watchdog thread join..." << std::endl;
     if (!pparams.has_screen) {
         cv_watchdog.notify_one();
@@ -1169,17 +1172,17 @@ void watchdog_worker(void) {
     std::cout << "Watchdog thread started" << std::endl;
     std::unique_lock<std::mutex> lk(cv_m_watchdog);
 
-    while (!exit_now) {
+    while (!exit_watchdog_thread) {
         cv_watchdog.wait_until(lk, std::chrono::system_clock::now() + wdt_timeout);
-        if (watchdog_skip_video_delay_override && !exit_now) {
+        if (watchdog_skip_video_delay_override && !exit_watchdog_thread) {
             for (int i = 0; i < 20; i++) {
-                if (exit_now)
+                if (exit_watchdog_thread)
                     break;
                 usleep(1e6);
             }
             watchdog_skip_video_delay_override = false;
         }
-        if (!watchdog && !exit_now) {
+        if (!watchdog && !exit_watchdog_thread) {
             std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
             communicate_state(es_watchdog_restart);
             cam.get()->stop();
@@ -1209,6 +1212,7 @@ void watchdog_worker(void) {
             pid_t pid = getpid();
             std::cout << "pid: " << pid << std::endl;
             exit_now = true;
+            exit_watchdog_thread = true;
             usleep(5e5);
             string kill_cmd = "kill -9 " + std::to_string(pid);
             auto res [[maybe_unused]] = std::system(kill_cmd.c_str());
