@@ -26,7 +26,7 @@ void BaseboardLink::init(bool replay_mode) {
             exit(1);
         }
 
-        // can be tested with running "socket -s /home/pats/pats/sockets/baseboard2executor.socket"
+        // can be tested with running "socket -s /home/pats/pats/sockets/baseboard2executor.socket" (must be a full path!)
         std::cout << "Connected to baseboard socket" << std::endl;
         thread_receive = std::thread(&BaseboardLink::worker_receive, this);
         thread_send = std::thread(&BaseboardLink::worker_send, this);
