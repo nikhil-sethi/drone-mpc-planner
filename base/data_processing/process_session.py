@@ -175,7 +175,7 @@ def process_flight_status_in_folder(folder: str, operational_log_start: str, mod
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
 
-    if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=60):
+    if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=15):
         return {}
 
     session = {"start_datetime": operational_log_start,
