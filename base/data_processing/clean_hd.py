@@ -22,7 +22,7 @@ def disk_space(logger):
     return free_space / total_used_space > 0.2
 
 
-def strip_dir(dir_name, logger):
+def strip_dir(dir_name: str, logger):
     logger.info('stripping: ' + dir_name)
 
     if os.path.isfile(dir_name + '/terminal.log'):
@@ -47,6 +47,7 @@ def strip_dir(dir_name, logger):
         if Path(log).stat().st_size > 5 * 1024 * 1024:  # 5 MB
             logger.info('removing: ' + log)
             os.remove(log)
+    dir_name = dir_name.replace('/logging', '')
     Path(dir_name + '/STRIPPED').touch()
 
 
