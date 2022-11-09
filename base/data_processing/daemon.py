@@ -150,7 +150,7 @@ class wp_demo_task(pats_task):
 
 class baseboard_task(pats_task):
     def __init__(self, error_file_handler):
-        super(baseboard_task, self).__init__('baseboard', timedelta(), timedelta(seconds=3), False, error_file_handler)
+        super(baseboard_task, self).__init__('baseboard_comm', timedelta(), timedelta(seconds=3), False, error_file_handler)
 
     def task_func(self):
         if not os.path.exists(lb.disable_baseboard_flag):
