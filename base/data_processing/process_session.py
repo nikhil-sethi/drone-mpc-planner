@@ -493,7 +493,7 @@ def create_and_associate_hunt_videos(flights, detections):
     for flight in flights:
         start_rs_id = flight['rs_id']
         duration = flight['duration']
-        if len(flight['detection_ids'][0]):
+        if len(flight['detection_ids']) and len(flight['detection_ids'][0]):
             trigger_insect_id = int(flight['detection_ids'].split(',')[0])
             for detection in detections:
                 if detection['folder_detection_id'] == trigger_insect_id:
