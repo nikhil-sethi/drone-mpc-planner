@@ -289,7 +289,7 @@ void DroneNavigation::update(double time) {
                 _control->hover_mode(false);
                 _control->kiv_ctrl.enable();
                 _control->reset_attitude_pad_state();
-                _flight_time += static_cast<float>(time - time_take_off);
+                _flight_time = static_cast<float>(time - time_take_off);
                 [[fallthrough]];
         } case ns_wait_after_landed: {
                 if (time_start_wait_after_landing < 0)
@@ -320,7 +320,7 @@ void DroneNavigation::update(double time) {
                 if (time_drone_problem < 0)
                     time_drone_problem = time;
                 if (_flight_time < 0)
-                    _flight_time += static_cast<float>(time - time_take_off);
+                    _flight_time = static_cast<float>(time - time_take_off);
                 _control->flight_mode(DroneController::fm_abort);
                 _control->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 100); // blink every half second
                 break;
