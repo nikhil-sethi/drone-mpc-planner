@@ -505,6 +505,10 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                         float tmpf = normf(drone->image_item().pt() - props->pt_unscaled());
                         if (tmpf < im_dist_to_drone)
                             im_dist_to_drone = tmpf;
+                    } else if (drone->image_predict_item().valid && drone->in_flight()) {
+                        float tmpf = normf(drone->image_predict_item().pt - props->pt_unscaled());
+                        if (tmpf < im_dist_to_drone)
+                            im_dist_to_drone = tmpf;
                     }
                 }
 

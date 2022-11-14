@@ -166,6 +166,7 @@ public:
     bool taking_off() { return  _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
     bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps * 2);}
+    bool in_flight() { return  _drone_tracking_status != dts_landed && _drone_tracking_status != dts_detecting_takeoff_failure && !(_drone_tracking_status == dts_detecting && lost());}
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     bool drone_on_landing_pad() {return drone_on_pad;}
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}
