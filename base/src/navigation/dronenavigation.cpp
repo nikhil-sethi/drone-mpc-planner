@@ -27,6 +27,7 @@ void DroneNavigation::init_flight(bool hunt, std::ofstream *logger) {
     time_start_reset_headless_yaw = 0;
     time_start_thrust_calibration = 0;
     time_start_wait_after_landing = -1;
+    time_start_wait_expected_attitude = -1;
     time_prev_wp_reached = -1;
     time_wp_reached = -1;
     time_start_landing = -1;
