@@ -34,7 +34,7 @@ cd ~/code/pats/config/firmwares/multimodule/flash-multi-0.6.0/
 ```
 Then you need to replug the module (5s after the led has died) and flash it once with:
 ```
-./flash-multi -s -f ./multi-stm-6.0.0.20.bin && sleep 1 && (cd .. && ./flash.py
+./flash-multi -s -f ./multi-stm-6.0.0.20.bin && sleep 1 && cd .. && ./flash.py
 ```
 From then on you can use old bootloader style flashing.
 
