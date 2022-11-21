@@ -303,7 +303,7 @@ void DroneNavigation::update(double time) {
                         time_start_wait_after_landing = -1;
                         time_start_wait_expected_attitude = -1;
                     } else {
-                        if (time_start_wait_expected_attitude < -1)
+                        if (time_start_wait_expected_attitude < 0)
                             time_start_wait_expected_attitude = time;
                         else if (static_cast<float>(time - time_start_wait_expected_attitude) > duration_wait_expected_attitude) {
                             _navigation_status = ns_landing_failure;
