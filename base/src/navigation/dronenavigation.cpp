@@ -74,13 +74,12 @@ void DroneNavigation::update(double time) {
                     break;
                 } else if (!_tracker->taking_off())
                     _navigation_status = ns_take_off_completed;
-
-                if (_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt) {
-                    setpoint_pos_world = _iceptor->aim_pos();
-                    setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->pad_location(false));
-                } else if (!_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt && _tracker->drone_on_landing_pad()) {
+                if ((!_iceptor->target_acquired(time) || _iceptor->insect_in_pad_area()) && _nav_flight_mode == nfm_hunt && _tracker->drone_on_landing_pad()) {
                     if (_control->abort_take_off())
                         _navigation_status = ns_flight_aborted;
+                } else if (_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt) {
+                    setpoint_pos_world = _iceptor->aim_pos();
+                    setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->pad_location(false));
                 }
                 break;
         } case ns_take_off_completed: {

@@ -153,4 +153,6 @@ public:
     }
 
     std::string Interceptor_State() {return interceptor_state_names[_interceptor_state];}
+
+    bool insect_in_pad_area();
 };
