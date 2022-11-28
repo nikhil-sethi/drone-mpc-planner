@@ -273,7 +273,7 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
         COG = seed_max_pos;
     else
         COG /= npixels;
-    float size = normf(bound_max_size - bound_min_size);
+    float size = normf(bound_max_size - bound_min_size) + 1.f;
     _blobs.push_back(tracking::BlobProps(COG, size, npixels, motion_sum, seed_max_val, motion_noise, _visdat->overexposed(COG), _visdat->frame_id));
 
     if (_enable_viz_blob) {
