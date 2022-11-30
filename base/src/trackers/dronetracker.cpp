@@ -58,7 +58,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     _takeoff_direction_predicted = cv::Point2f(0.f, -1.f);
 
     _image_template_item = ImageItem(roundf(pad_im_location().x), roundf(pad_im_location().y), roundf(pad_disparity()), _visdat->frame_id);
-    _image_template_item.size = roundf(_drone_on_pad_im_size / 2.f) * 2;//must be even
+    _image_template_item.size = make_even(_drone_on_pad_im_size);
     cv::Rect crop_template(_image_template_item.x - _image_template_item.size / 2, _image_template_item.y - _image_template_item.size / 2, _image_template_item.size, _image_template_item.size);
     crop_template = clamp_rect(crop_template, IMG_W, IMG_H);
     template_drone = _visdat->frameL(crop_template);
@@ -613,9 +613,10 @@ void DroneTracker::match_template() {
     _image_template_item = ImageItem(last_im_pos.x - crop_L.width / 2 + max_loc_L.x + template_drone.cols / 2, last_im_pos.y - crop_L.height / 2 + max_loc_L.y + template_drone.rows / 2, last_im_pos.z, _visdat->frame_id);
     _image_template_item.size = temp_size;
     _image_template_item.disparity += (crop_R.width / 2 - max_loc_R.x - template_drone.cols / 2);
-    recenter_template();
-    if (taking_off()) {
-        _image_template_item.size = roundf(_drone_on_pad_im_size / 2.f) * 2;//must be even
+    if (!taking_off()) {
+        recenter_template();
+    } else {
+        _image_template_item.size = make_even(_drone_on_pad_im_size);
         _image_predict_item = ImagePredictItem(_image_template_item.ptd(), _image_template_item.size, 255, _visdat->frame_id);
     }
     cv::Rect crop_template(_image_template_item.x - _image_template_item.size / 2, _image_template_item.y - _image_template_item.size / 2, _image_template_item.size, _image_template_item.size);
@@ -629,20 +630,36 @@ void DroneTracker::recenter_template() {
         cv::Point2f image_item_pos = _image_item.pt();
         cv::Point2f image_template_item_pos = _image_template_item.pt();
         if (normf(image_item_pos - image_template_item_pos) <= template_drone.cols) {
-            int stepsize = 1;
-            if (normf(image_item_pos - image_template_item_pos) > stepsize) {
-                cv::Point2f move_direction = (image_item_pos - image_template_item_pos) / normf(image_item_pos - image_template_item_pos);
-                _image_template_item.x += roundf(move_direction.x * stepsize);
-                _image_template_item.y += roundf(move_direction.y * stepsize);
+            if (normf(image_item_pos - image_template_item_pos) > 1) {
+                cv::Point2i move_direction = (image_item_pos - image_template_item_pos) / normf(image_item_pos - image_template_item_pos);
+                _image_template_item.x += move_direction.x;
+                _image_template_item.y += move_direction.y;
+                bool template_size_larger_than_blob = _image_template_item.size > _image_item.size;
+                _image_template_item.size += (-1 + 2 * template_size_larger_than_blob);//converge to blob size
+                _image_template_item.size = std::max(_image_template_item.size, 2.f);// >0
             }
         } else if (template_deviation_detected) {
             _image_template_item = ImageItem(roundf(_image_item.x), roundf(_image_item.y), roundf(_image_item.disparity), _visdat->frame_id);
+            _image_template_item.size = make_even(_image_item.size);
+            _image_template_item.size = std::max(_image_template_item.size, 2.f);// >0
             template_deviation_detected = false;
         } else
             template_deviation_detected = true;
     } else {
+        const uint8_t minimal_drone_brightness = 200;
+        if (template_drone.at<uint8_t>(template_drone.cols / 2, template_drone.cols / 2) > minimal_drone_brightness) {
+            cv::Moments template_drone_moments = cv::moments(template_drone);
+            cv::Point2i center_of_mass(template_drone_moments.m10 / template_drone_moments.m00, template_drone_moments.m01 / template_drone_moments.m00);
+            if (normf(center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2)) > 1) {
+                cv::Point2i move_direction = (center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2)) / normf(center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2));
+                _image_template_item.x += move_direction.x;
+                _image_template_item.y += move_direction.y;
+            }
+        }
         cv::Point3f current_world_pos = im2world(_image_template_item.pt(), _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
-        _image_template_item.size = roundf(world2im_size(current_world_pos + cv::Point3f(expected_radius, 0, 0), current_world_pos - cv::Point3f(expected_radius, 0, 0), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()) / 2.f) * 2;//must be even
+        float expected_drone_im_size = world2im_size(current_world_pos + cv::Point3f(expected_radius, 0, 0), current_world_pos - cv::Point3f(expected_radius, 0, 0), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+        _image_template_item.size = make_even(expected_drone_im_size);
+        _image_template_item.size = std::max(_image_template_item.size, 2.f);//and >0
     }
 }
 }
