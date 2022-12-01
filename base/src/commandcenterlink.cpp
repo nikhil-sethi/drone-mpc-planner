@@ -58,25 +58,25 @@ void CommandCenterLink::check_commandcenter_triggers() {
             }
             if (file_exist(shake_fn)) {
                 std::cout << "Shaking_drone!" << std::endl;
-                if (!_patser->drone.drone_flying())
+                if (!_patser->drone.in_flight())
                     _patser->drone.shake_drone();
                 remove(shake_fn.c_str());
             }
             if (file_exist(calib_fn)) {
                 std::cout << "Calibrating_drone!" << std::endl;
-                if (!_patser->drone.drone_flying())
+                if (!_patser->drone.in_flight())
                     _patser->rc()->calibrate_acc();
                 remove(calib_fn.c_str());
             }
             if (file_exist(beep_fn)) {
                 std::cout << "Beeping_drone!" << std::endl;
-                if (!_patser->drone.drone_flying())
+                if (!_patser->drone.in_flight())
                     _patser->drone.beep_drone();
                 remove(beep_fn.c_str());
             }
             if (file_exist(blink_fn)) {
                 std::cout << "Redetecting_drone location!" << std::endl;
-                if (!_patser->drone.drone_flying())
+                if (!_patser->drone.in_flight())
                     _patser->drone.redetect_drone_location();
                 remove(blink_fn.c_str());
             }

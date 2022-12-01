@@ -543,7 +543,7 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
                     pparams.drone = drone_quto;
                     pparams.serialize(pats_xml_fn);
                 }
-                if (!patser.drone.drone_flying()) {
+                if (!patser.drone.in_flight()) {
                     exit_now = true;
                     communicate_state(es_drone_config_restart);
                     cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
@@ -1259,6 +1259,7 @@ void update_enable_window() {
 
 int main(int argc, char **argv)
 {
+
     try {
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);

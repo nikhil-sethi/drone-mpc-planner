@@ -155,9 +155,6 @@ public:
     navigation::DroneNavigation nav;
     tracking::DroneTracker tracker;
 
-    bool in_flight() {return _state == ds_flight;}
-    bool has_been_ready() {return _has_been_ready;}
-
     std::string drone_state_str() {
         if (_state == ds_pre_flight)
             return std::string(drone_state_names[_state]) + " " + std::string(pre_flight_state_names[pre_flight_state]);
@@ -198,11 +195,12 @@ public:
     }
 
     void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
-    bool drone_flying() {return _state == ds_flight;}
+    bool in_flight() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
     bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost);}
     bool crashed() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost);}
     bool locate_fail() {return _state == ds_pre_flight && (pre_flight_state == pre_locate_time_out);}
+    bool has_been_ready() {return _has_been_ready;}
     void beep_drone() {_state = ds_beep;}
     void redetect_drone_location() {
         control.invalidize_blink();

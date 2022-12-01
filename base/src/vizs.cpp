@@ -356,7 +356,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
         if (pparams.joystick != rc_none)
             putText(resFrame, _patser->drone.control.Joy_State_str(), cv::Point(220, 118), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
 
-        if (_patser->drone.drone_flying()) {
+        if (_patser->drone.in_flight()) {
             putText(resFrame, _patser->drone.tracker.drone_tracking_state(), cv::Point(450, 106), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
             putText(resFrame, _patser->drone.control.flight_mode_str(), cv::Point(450, 94), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
         }
@@ -575,7 +575,7 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color, ss.str(), drone_pos, cv::FONT_HERSHEY_SIMPLEX, 0.5, c);
         cv::line(frameL_color, drone_pos, drone_pos, c, 2);
 
-        if (_patser->drone.drone_flying() && !_patser->drone.control.ff_interception()) { //draw line from drone to target setpoint
+        if (_patser->drone.in_flight() && !_patser->drone.control.ff_interception()) { //draw line from drone to target setpoint
             cv::Point2i target = _patser->drone.tracker.image_item().pt();
             cv::Scalar c2;
             if (_patser->drone.nav.drone_hunting() && target.x + target.y > 0) {
