@@ -330,7 +330,7 @@ void DroneTracker::delete_motion_shadow_run() {
         if (_world_item.valid && normf(_world_item.image_item.pt() - motion_shadow_im_location) > motion_shadow_im_size + 0.6f * _world_item.image_item.size) {
             enable_motion_shadow_delete = false;
             for (auto blob : _all_blobs) {
-                if (normf(blob.pt_unscaled() - _pad_im_location) < (_pad_im_size + blob.size_unscaled()) / 2.f) {
+                if (normf(blob.pt_unscaled() - motion_shadow_im_location) < (motion_shadow_im_size + blob.size_unscaled()) / 2.f) {
                     enable_motion_shadow_delete = true;
                     break;
                 }
