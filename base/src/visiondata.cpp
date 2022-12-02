@@ -74,7 +74,7 @@ void VisionData::update(StereoPair *data) {
         reset_motion_integration_prev = false;
         if (motion_spot_to_be_reset.cnt_active) {
             cv::circle(diffL16, motion_spot_to_be_reset.pt, motion_spot_to_be_reset.r, 0, cv::FILLED);
-            cv::circle(diffR16, motion_spot_to_be_reset.pt + cv::Point(motion_spot_to_be_reset.disparity, 0), motion_spot_to_be_reset.r, 0, cv::FILLED);
+            cv::circle(diffR16, motion_spot_to_be_reset.pt - cv::Point(motion_spot_to_be_reset.disparity, 0), motion_spot_to_be_reset.r, 0, cv::FILLED);
             motion_spot_to_be_reset.cnt_active--;
         }
 
