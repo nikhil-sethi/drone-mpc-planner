@@ -179,7 +179,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_throttle = spinup_throttle();
 
                 float aim_time = static_cast<float>(time - take_off_start_time);
-                if (aim_time > (aim_duration + remaining_spinup_duration_t0) / 2)
+                if (aim_time > (aim_duration + remaining_spinup_duration_t0) / 4)
                     mode += bf_airmode;
 
                 if (aim_time > aim_duration + remaining_spinup_duration_t0) {
