@@ -37,7 +37,8 @@ enum betaflight_mode {
     bf_angle = RC_BOUND_MIN,
     bf_acro = (RC_MIDDLE + RC_BOUND_MIN)
 };
-enum betaflight_headless_mode {
+enum betaflight_headless_mode { // value_betaflight = 1000/1600 * value_here + 1000
+                                // value_here = 1600/1000 * (value_betaflight - 1000)
     bf_headless_enabled = 0,
     bf_headless_disabled = 50, // semi random number that gives a nice detectable change in the mode switch (1030 in BF), but is small enough to not interfere with the normal modes (can be made smaller prolly if necessary)
     bf_yaw_reset = 100,
