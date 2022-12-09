@@ -130,7 +130,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target.state.pos);
 
-    int throttle = 0, roll = 0, pitch = 0, yaw = 0, mode = bf_angle;
+    int throttle = 0, roll = 0, pitch = 0, yaw = 0, mode = RC_BOUND_MIN;
     bool joy_control = false;
     switch (_flight_mode) {
         case fm_manual: {
