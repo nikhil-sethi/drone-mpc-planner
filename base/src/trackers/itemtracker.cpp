@@ -673,6 +673,9 @@ float ItemTracker::score(BlobProps *blob, ImageItem *ref) {
     float im_dist_err_ratio, im_size_pred_err_ratio;
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
     float size = blob->size_unscaled();
+    if (size < 1)
+        size = 1;
+
 
     if (_image_item.valid && _world_item.valid) {
         cv::Point3f last_world_pos = im2world(_image_item.pt(), _image_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
