@@ -75,6 +75,8 @@ private:
 
     double optimization_time = 0.008; // @ 90fps optimization time max is 0.011
 
+    float tti_running_avg = -1;
+
     bool realtime_check = true;
     std::ofstream *_logger;
 
@@ -85,7 +87,7 @@ private:
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time);
-    bool delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker);
+    bool delay_takeoff_for_better_interception();
     void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
         _intercepting_state = is_intercept_maneuvering;
         time_start_intercept_maneuver = time;

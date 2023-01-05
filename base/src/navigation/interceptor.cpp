@@ -171,8 +171,9 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 }
 
                 update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
-                if ((!delay_takeoff_for_better_interception(target_trkr)) && !_n_frames_aim_not_in_range)
+                if ((!delay_takeoff_for_better_interception()) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
+                }
                 else
                     break;
                 [[fallthrough]];
@@ -345,21 +346,23 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
 }
 
 
-bool Interceptor::delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker) {
-    tracking::TrackData insect = target_tracker->last_track_data();
-    cv::Point3f lurk_distance = interception_center - insect.pos();
-    bool interceptability_is_improving = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
-
+bool Interceptor::delay_takeoff_for_better_interception() {
     float tti = _tti;
     if (_tti_iip > 0)
         tti = _tti_iip;
 
-    float est_takeoff_time = 0.3f;
-    cv::Point3f prediceted_insect_position = insect.pos() + (tti + est_takeoff_time) * insect.vel();
-    lurk_distance = interception_center - prediceted_insect_position;
-    bool interceptability_will_improve = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
+    if (tti > 0 && tti_running_avg > 0) {
+        if ((1.f / 2 * tti_running_avg + 1.f / 2 * tti) >= (1.f - 1e-6f) * tti_running_avg) {
+            tti_running_avg = -1;
+            return false;
+        }
+    }
+    if (tti_running_avg == -1)
+        tti_running_avg = tti;
+    else
+        tti_running_avg = 1.f / 2 * tti_running_avg + 1.f / 2 * tti;
 
-    return interceptability_is_improving && interceptability_will_improve;
+    return true;
 }
 
 tracking::TrackData Interceptor::target_last_trackdata() {
