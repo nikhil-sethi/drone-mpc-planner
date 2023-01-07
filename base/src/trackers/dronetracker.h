@@ -109,7 +109,6 @@ private:
 
     cv::Mat template_drone;
     bool template_deviation_detected;
-    ImageItem _image_template_item;
 
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
     float min_radius;

@@ -68,6 +68,7 @@ public:
     void init_logger();
     void update(double time);
     void calc_world_item(tracking::BlobProps *pbs, double time);
+    [[maybe_unused]] void match_template() {};
     bool check_ignore_blobs(tracking::BlobProps *pbs);
 
     bool delete_me();

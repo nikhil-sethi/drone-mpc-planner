@@ -25,6 +25,7 @@ public:
     void init_logger();
     void append_log(double time, unsigned long long frame_number);
     void calc_world_item(tracking::BlobProps *pbs, double time);
+    [[maybe_unused]] void match_template() {};
     bool check_ignore_blobs(tracking::BlobProps *pbs);
     void update(double time);
     bool delete_me();

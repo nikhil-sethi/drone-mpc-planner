@@ -63,6 +63,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     crop_template = clamp_rect(crop_template, IMG_W, IMG_H);
     template_drone = _visdat->frameL(crop_template);
     template_deviation_detected = false;
+    _template_tracking = false;
 }
 
 void DroneTracker::update(double time) {
@@ -138,6 +139,7 @@ void DroneTracker::update(double time) {
                 data.time = time;
                 _track.push_back(data);
                 update_drone_prediction(time);
+                match_template();
                 handle_brightness_change(time);
                 if (_n_frames_lost > 3  && _drone_tracking_status_before_tracking_loss == dts_landing)
                     _drone_tracking_status = dts_landed;
@@ -147,6 +149,7 @@ void DroneTracker::update(double time) {
         } case dts_tracking: {
                 ItemTracker::update(time);
                 update_drone_prediction(time);
+                match_template();
                 handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
@@ -159,6 +162,7 @@ void DroneTracker::update(double time) {
         } case dts_detect_yaw: {
                 ItemTracker::update(time);
                 update_drone_prediction(time);
+                match_template();
                 handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
@@ -176,6 +180,7 @@ void DroneTracker::update(double time) {
         } case dts_landing: {
                 ItemTracker::update(time);
                 update_prediction(time);
+                match_template();
                 handle_brightness_change(time);
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
@@ -192,6 +197,7 @@ void DroneTracker::update(double time) {
                 data.time = time;
                 _track.push_back(data);
                 update_drone_prediction(time);
+                match_template();
                 if (_n_frames_lost == 0)
                     _drone_tracking_status = dts_landing;
                 break;
@@ -240,15 +246,9 @@ float DroneTracker::score(BlobProps *blob) {
 
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
     if (enable_motion_shadow_delete) {
-        cv::Point3f vel = last_vel_valid_trackdata_for_prediction.vel();
-        if (!last_vel_valid_trackdata_for_prediction.vel_valid)
-            vel = {0};
-        if (normf(vel) < 0.1f) {
-            _image_predict_item.frame_id = _visdat->frame_id;
-            return;
-        }
+        _image_predict_item = ImagePredictItem(_image_template_item.ptd(), _image_template_item.size, 255, _visdat->frame_id);
+        return;
     }
-
     if (_tracking)
         update_prediction(time);
     else if (lost()) {
@@ -305,6 +305,7 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
 
 void DroneTracker::handle_brightness_change(double time) {
     if (_visdat->brightness_change_event(time)) {
+        _template_tracking = true;
         if (_image_item.valid)
             delete_motion_shadow(_image_item.pt(), _image_item.size, _image_item.disparity);
         else if (_image_predict_item.valid)
@@ -337,9 +338,10 @@ void DroneTracker::delete_motion_shadow_run() {
                 }
             }
         }
-        if (!enable_motion_shadow_delete)
+        if (!enable_motion_shadow_delete) {
             n_frames_lost_threshold = pparams.fps / 5;
-
+            _template_tracking = false;
+        }
     }
 }
 void DroneTracker::delete_landing_motion(float duration) {
@@ -592,6 +594,8 @@ cv::Point3f DroneTracker::pad_location(bool landing_hack) {
 }
 
 void DroneTracker::match_template() {
+    if (_image_template_item.frame_id == _visdat->frame_id)
+        return;
     cv::Point3f last_world_pos = im2world(_image_template_item.pt(), _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
     int max_im_dist = static_cast<int>(world2im_dist(last_world_pos, max_world_dist, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()) + _image_template_item.size / 2);
     int roi_size = std::clamp(max_im_dist, template_drone.cols * 2, template_drone.cols * 10);
@@ -626,7 +630,7 @@ void DroneTracker::match_template() {
 }
 
 void DroneTracker::recenter_template() {
-    if (_image_item.valid) {
+    if (_image_item.valid && !template_tracking()) {
         cv::Point2f image_item_pos = _image_item.pt();
         cv::Point2f image_template_item_pos = _image_template_item.pt();
         if (normf(image_item_pos - image_template_item_pos) <= template_drone.cols) {
