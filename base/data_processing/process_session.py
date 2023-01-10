@@ -175,8 +175,9 @@ def process_flight_status_in_folder(folder: str, operational_log_start: str, mod
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
 
-    if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=2):
-        return {}
+    if not n_takeoffs:
+        if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=2):
+            return {}
 
     session = {"start_datetime": operational_log_start,
                "end_datetime": os.path.basename(folder),
@@ -242,9 +243,6 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
     elapsed_time = log["elapsed"].values
     lost = log['n_frames_lost_drone'].values > 0
     remove_ids = [i for i, x in enumerate(lost) if x]
-    if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
-        logger.info('Flight log too short')
-        return {}
 
     vxs = log['svelX_drone'].values
     inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
