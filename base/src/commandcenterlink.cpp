@@ -80,6 +80,12 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     _patser->drone.redetect_drone_location();
                 remove(blink_fn.c_str());
             }
+            if (file_exist(benchmark_fn)) {
+                std::cout << "Start benchmarking!" << std::endl;
+                rename(benchmark_fn.c_str(), (data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                // TODO: start benchmarking
+                remove(benchmark_fn.c_str());
+            }
         }
         if (file_exist(demo_insect_fn)) {
             _n_replay_moth++;

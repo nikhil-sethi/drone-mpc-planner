@@ -23,6 +23,7 @@ private:
     std::string beep_fn = "/home/pats/pats/flags/beep_now";
     std::string shake_fn = "/home/pats/pats/flags/shake_now";
     std::string blink_fn = "/home/pats/pats/flags/blink_now";
+    std::string benchmark_fn = "/home/pats/pats/flags/benchmark.csv";
     std::thread thread;
     bool initialized = false;
     bool _never_overwrite = false;
