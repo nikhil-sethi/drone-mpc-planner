@@ -47,7 +47,10 @@ private:
 
 
 public:
-    moth_behavior_type init(int id, moth_behavior_type mothbehavior, VisionData *visdat, DroneController *dctrl);
+    moth_behavior_type init(int id, moth_behavior_type mothbehavior, VisionData *visdat, DroneController *dctrl, cv::Point3f insectPos, cv::Point3f insectVel);
+    inline moth_behavior_type init(int id, moth_behavior_type mothbehavior, VisionData *visdat, DroneController *dctrl) {
+        return init(id, mothbehavior, visdat, dctrl, cv::Point3f(1.2, -0.7, -1.45), cv::Point3f(-0.5, 0, 0));
+    }
     void init_logger();
     bool check_ignore_blobs(BlobProps *pbs [[maybe_unused]]) {return false;}
     [[maybe_unused]] void match_template() {};

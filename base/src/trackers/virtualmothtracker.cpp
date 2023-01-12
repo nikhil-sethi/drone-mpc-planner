@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-tracking::VirtualMothTracker::moth_behavior_type VirtualMothTracker::init(int id, moth_behavior_type moth_behavior, VisionData *visdat, DroneController *dctrl) {
+tracking::VirtualMothTracker::moth_behavior_type VirtualMothTracker::init(int id, moth_behavior_type moth_behavior, VisionData *visdat, DroneController *dctrl, cv::Point3f insectPos, cv::Point3f insectVel) {
     std::cout << "Virtualmoth: trigger: " << moth_behavior.trigger << " evasion: " << moth_behavior.evasion << std::endl;
     _id = id;
     _visdat = visdat;
@@ -16,8 +16,8 @@ tracking::VirtualMothTracker::moth_behavior_type VirtualMothTracker::init(int id
     init_logger();
     initialized = true;
     max_radius = 0.03;
-    insect_pos = {1.2, -0.7, -1.45};
-    insect_vel = {-0.5, 0, 0};
+    insect_pos = insectPos;
+    insect_vel = insectVel;
     _moth_behavior = moth_behavior;
     moth_behavior_type new_moth_behavior(moth_behavior.trigger, moth_behavior.evasion);
     new_moth_behavior.trigger = static_cast<trigger_type>((static_cast<int>(moth_behavior.trigger) + 1) % number_trigger_types);
