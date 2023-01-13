@@ -1,6 +1,7 @@
 #include "common.h"
 #include "commandcenterlink.h"
 #include "trackermanager.h"
+#include "benchmarkreader.h"
 
 #include <thread>
 #include <unistd.h> //usleep
@@ -81,10 +82,25 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 remove(blink_fn.c_str());
             }
             if (file_exist(benchmark_fn)) {
-                std::cout << "Start benchmarking!" << std::endl;
+                std::cout << "Parsing benchmark!" << std::endl;
                 rename(benchmark_fn.c_str(), (data_output_dir + "pats_benchmark_trigger.csv").c_str());
-                // TODO: start benchmarking
+                BenchmarkReader benchmark_reader;
+                benchmark_reader.ParseBenchmarkCSV(data_output_dir + "pats_benchmark_trigger.csv");
+                _benchmark_size = benchmark_entries.size();
                 remove(benchmark_fn.c_str());
+            }
+            if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
+                std::cout << "Start benchmarking!" << std::endl;
+                BenchmarkReader benchmark_reader;
+                benchmark_reader.ParseBenchmarkCSV(data_output_dir + "pats_benchmark_trigger.csv");
+                std::cout << benchmark_entries[0].id << std::endl;
+                if (_patser->drone.drone_ready_and_waiting()) {
+                    if (benchmark_entries[0].type == "replay") {
+                        _patser->trackers.init_replay_moth(benchmark_entries[0].id);
+                    }
+                }
+                _n_benchmark_entry++;
+                remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
             }
         }
         if (file_exist(demo_insect_fn)) {
