@@ -58,7 +58,7 @@ MESSAGE( STATUS "CMAKE BUILD TYPE: " ${CMAKE_BUILD_TYPE} )
 
 
 # sources
-FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h" "${SRC_DIR}/flightarea/*.cpp" "${SRC_DIR}/flightarea/*.h")
+FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h" "${SRC_DIR}/flightarea/*.cpp" "${SRC_DIR}/flightarea/*.h", "${SRC_DIR}/benchmark/*.cpp" "${SRC_DIR}/benchmark/*.h")
 FILE(GLOB THIRD_PARTY_SRCS "${SRC_DIR}third_party/*.h" "${SRC_DIR}third_party/*.hpp" "${SRC_DIR}third_party/*.cpp" "${SRC_DIR}third_party/*.c" "${SRC_DIR}third_party/cereal/*.hpp" "${SRC_DIR}third_party/tinyxml/*.h" "${SRC_DIR}third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "${SRC_DIR}third_party/3dviz/*.cpp" "${SRC_DIR}third_party/3dviz/*.h")
 FILE(GLOB OPTI_SRCS "${SRC_DIR}/optimization/sqpmethod.*"
   "${SRC_DIR}/optimization/qpoasesconfig.*"
@@ -153,6 +153,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/airsim")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/navigation")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/flightarea")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/optimization")
+target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/benchmark")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/third_party/ros_msgs/")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_party")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/intercept_in_planes")
