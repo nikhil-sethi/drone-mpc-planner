@@ -90,17 +90,29 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 remove(benchmark_fn.c_str());
             }
             if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
-                std::cout << "Start benchmarking!" << std::endl;
-                BenchmarkReader benchmark_reader;
-                benchmark_reader.ParseBenchmarkCSV(data_output_dir + "pats_benchmark_trigger.csv");
-                std::cout << benchmark_entries[0].id << std::endl;
-                if (_patser->drone.drone_ready_and_waiting()) {
-                    if (benchmark_entries[0].type == "replay") {
-                        _patser->trackers.init_replay_moth(benchmark_entries[0].id);
+                if (_n_benchmark_entry < _benchmark_size) {
+                    static int _ready_cnt = 0;
+                    _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, not that demo_div_cnt is 1 second
+                    if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
+                        if (benchmark_entries[_n_benchmark_entry].type == "replay") {
+                            _patser->trackers.init_replay_moth(benchmark_entries[_n_benchmark_entry].id);
+                        }
+                        else if (benchmark_entries[_n_benchmark_entry].type == "virtual") {
+                            _patser->trackers.init_virtual_moth(&(_patser->drone.control));
+                        }
+                        else {
+                            std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
+                        }
+                        _n_benchmark_entry++;
                     }
                 }
-                _n_benchmark_entry++;
-                remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                else {
+                    _n_benchmark_entry = 0;
+                    remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                }
+
+
+
             }
         }
         if (file_exist(demo_insect_fn)) {
