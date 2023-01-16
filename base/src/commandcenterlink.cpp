@@ -14,6 +14,7 @@ void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *v
         remove(calib_fn.c_str());
         remove(beep_fn.c_str());
         remove(shake_fn.c_str());
+        remove(benchmark_fn.c_str());
         thread = std::thread(&CommandCenterLink::background_worker, this);
         std::cout << "Commandcenter link initialized" << std::endl;
         initialized = true;
