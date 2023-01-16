@@ -92,7 +92,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
             if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
                 if (_n_benchmark_entry < _benchmark_size) {
                     static int _ready_cnt = 0;
-                    _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, not that demo_div_cnt is 1 second
+                    _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
                         if (benchmark_entries[_n_benchmark_entry].type == "replay") {
                             _patser->trackers.init_replay_moth(benchmark_entries[_n_benchmark_entry].id);
