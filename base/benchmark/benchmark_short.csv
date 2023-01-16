@@ -1,4 +1,4 @@
 type;id;pos_x;pos_y;pos_z;vel_x;vel_y;vel_z;
 virtual;0;1.2;-0.7;-1.45;-0.5;0;0;
-replay;15;0;0;0;0;0;0;
+replay;replay_opogona_001;0;0;0;0;0;0;
 virtual;0;-1.2;-0.7;-1.45;0.5;0;0;
