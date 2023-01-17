@@ -9,6 +9,8 @@
 #include "blinktracker.h"
 #include "visiondata.h"
 #include "common.h"
+#include <sstream>
+#include <iomanip>
 
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
@@ -226,9 +228,12 @@ public:
         next_insecttrkr_id++;
     }
     void init_replay_moth(int id) {
+        std::stringstream ss;
+        ss << std::setw(3) << std::setfill('0') << id;
+        std::string padded_id = ss.str();
         ReplayTracker *rt;
         rt = new ReplayTracker();
-        rt->init(next_insecttrkr_id, "../replay_insects/" + std::to_string(id) + ".csv", _visdat);
+        rt->init(next_insecttrkr_id, "../replay_insects/" + padded_id + ".csv", _visdat);
         _trackers.push_back(rt);
         next_insecttrkr_id++;
     }

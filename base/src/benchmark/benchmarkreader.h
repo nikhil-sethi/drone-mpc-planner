@@ -4,7 +4,7 @@
 
 struct BenchmarkEntry {
     std::string type;
-    std::string id;
+    int id;
 
     double pos_x;
     double pos_y;
