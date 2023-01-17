@@ -27,7 +27,7 @@ void BenchmarkReader::ParseBenchmarkCSV(std::string file) {
         BenchmarkEntry entry;
         entry = (BenchmarkEntry) {
             .type = result[0],
-            .id = result[1],
+            .id = std::stoi(result[1]),
             .pos_x = std::stod(result[2]),
             .pos_y = std::stod(result[3]),
             .pos_z = std::stod(result[4]),
