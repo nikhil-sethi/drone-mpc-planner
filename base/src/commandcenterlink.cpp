@@ -97,9 +97,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
                         if (benchmark_entries[_n_benchmark_entry].type == "replay") {
                             _patser->trackers.init_replay_moth(benchmark_entries[_n_benchmark_entry].id);
+                            _n_replay_moth++;
                         }
                         else if (benchmark_entries[_n_benchmark_entry].type == "virtual") {
                             _patser->trackers.init_virtual_moth(&(_patser->drone.control));
+                            _n_replay_moth++;
                         }
                         else {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
