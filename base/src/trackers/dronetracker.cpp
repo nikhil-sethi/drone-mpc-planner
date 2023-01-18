@@ -598,7 +598,7 @@ void DroneTracker::match_template() {
         return;
     cv::Point3f last_world_pos = im2world(_image_template_item.pt(), _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
     int max_im_dist = static_cast<int>(world2im_dist(last_world_pos, max_world_dist, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()) + _image_template_item.size / 2);
-    int roi_size = std::clamp(max_im_dist, template_drone.cols * 2, template_drone.cols * 10);
+    int roi_size = std::clamp(max_im_dist, max(template_drone.cols, template_drone.rows) * 2, min(template_drone.cols, template_drone.rows) * 10);
     double min_val_L, min_val_R, max_val_L, max_val_R;
     cv::Point min_loc_L, min_loc_R, max_loc_L, max_loc_R;
     cv::Point3i last_im_pos = _image_template_item.ptd();
