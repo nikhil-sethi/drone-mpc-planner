@@ -384,11 +384,24 @@ void Drone::pre_flight(double time) {
                 if (((_baseboard_link->charging() && _baseboard_link->charging_duration() < 1) || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
                     pre_flight_state =  pre_locate_drone_init;
                     time_start_locating_drone = time;
+                    time_low_voltage = 0;
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
                     communicate_state(es_pats_x);
-                }
+                    time_low_voltage = 0;
+                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK()) {
+                    if (!time_low_voltage) {
+                        time_low_voltage = time;
+                    }
+                    if (time - time_low_voltage > 60.0) {
+                        time_low_voltage = 0;
+                        _state = ds_post_flight;
+                        post_flight_state = post_init_deep_sleep;
+                        communicate_state(es_pats_x);
+                    }
+                } else
+                    time_low_voltage = 0;
                 break;
         } case pre_telemetry_time_out: {
                 if (!_rc->telemetry_time_out()) {
@@ -498,12 +511,41 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_init;
                     communicate_state(es_pats_x);
                     _state = ds_pre_flight;
+                    time_low_voltage = 0;
+                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
+                    post_flight_state = post_init_deep_sleep;
+                    communicate_state(es_pats_x);
+                } else {
+                    time_low_voltage = 0;
                 }
                 break;
         } case post_lost: {
-                if ((_baseboard_link->charging() || _baseboard_link->disabled())) {
+                if (_baseboard_link->charging() || _baseboard_link->disabled()) {
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
+                    time_low_voltage = 0;
+                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
+                    post_flight_state = post_init_deep_sleep;
+                    communicate_state(es_pats_x);
+                } else {
+                    time_low_voltage = 0;
+                }
+                break;
+        } case post_init_deep_sleep: {
+                if (_baseboard_link->charging() && (control.telemetry_OK())) {
+                    post_flight_state = post_init;
+                    _state = ds_pre_flight;
+                } else {
+                    control.LED(false);
+                    post_flight_state = post_deep_sleep;
+                }
+                break;
+        } case post_deep_sleep: {
+                if (_baseboard_link->charging() && (control.telemetry_OK())) {
+                    post_flight_state = post_init;
+                    _state = ds_pre_flight;
+                } else {
+                    control.flight_mode(DroneController::fm_sleep);
                 }
                 break;
             }
@@ -561,6 +603,17 @@ void Drone::blink(double time) {
         last_blink_time = time;
     }
     control.LED(blink_state);
+}
+
+bool Drone::low_voltage_timeout(double time) {
+    if (!time_low_voltage) {
+        time_low_voltage = time;
+    }
+    if (time - time_low_voltage > 60.0) {
+        time_low_voltage = 0;
+        return true;
+    }
+    return false;
 }
 
 void Drone::inject_log(logging::LogEntryDrone entry, unsigned long long rs_id) {
