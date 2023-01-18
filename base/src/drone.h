@@ -43,7 +43,9 @@ static const char *post_flight_state_names[] = {
     "lost",
     "aborted",
     "crash",
-    "crashed"
+    "crashed",
+    "init_sleep",
+    "sleeping"
 };
 class Drone {
 public:
@@ -85,6 +87,8 @@ public:
         post_aborted,
         post_init_crashed,
         post_crashed,
+        post_init_deep_sleep,
+        post_deep_sleep
     };
 private:
     Interceptor *_interceptor;
@@ -135,6 +139,7 @@ private:
     double time_post_shake = 0;
     double time_shake_start = 0;
     double time_crashed = 0;
+    double time_low_voltage = 0;
     int n_shakes_sessions_after_landing = 0;
 
     const float max_safe_charging_telemetry_voltage = 4.35f; // safety overcharge flip happens at 4.4v
@@ -206,6 +211,7 @@ public:
         control.invalidize_blink();
         _state = ds_pre_flight;
     }
+    bool low_voltage_timeout(double time);
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
