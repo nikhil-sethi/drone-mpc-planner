@@ -490,6 +490,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_yaw = RC_MIDDLE;
                 _rc->arm(bf_disarmed);
                 break;
+        } case fm_sleep: {
+                mode += bf_sleep;
             }
     }
 

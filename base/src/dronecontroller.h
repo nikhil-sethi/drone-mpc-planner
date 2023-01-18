@@ -47,7 +47,8 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_start_shake",
                                            "fm_shake_it_baby",
                                            "fm_trim_accelerometer",
-                                           "fm_abort"
+                                           "fm_abort",
+                                           "fm_sleep"
                                          };
 
 
@@ -83,7 +84,8 @@ public:
         fm_start_shake,
         fm_shake_it_baby,
         fm_trim_accelerometer,
-        fm_abort
+        fm_abort,
+        fm_sleep
     };
     enum joy_mode_switch_modes { // raw switch modes
         jmsm_manual,
@@ -306,7 +308,7 @@ public:
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
-        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort)
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_sleep)
             in_flight_start_time = -1;
 
         if (in_flight_start_time > 0)
