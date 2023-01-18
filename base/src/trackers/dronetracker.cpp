@@ -608,7 +608,7 @@ void DroneTracker::match_template() {
     cv::matchTemplate(edge_detector(roi_L), edge_detector(template_drone), result_template_match_L, 2);
     cv::minMaxLoc(result_template_match_L, &min_val_L, &max_val_L, &min_loc_L, &max_loc_L);
 
-    cv::Rect crop_R = clamp_rect(cv::Rect(last_im_pos.x - last_im_pos.z - roi_size / 2, last_im_pos.y - roi_size / 2 + max_loc_L.y - 1, roi_size, template_drone.cols + 2), IMG_W, IMG_H);
+    cv::Rect crop_R = clamp_rect(cv::Rect(last_im_pos.x - last_im_pos.z - roi_size / 2, last_im_pos.y - roi_size / 2 + max_loc_L.y - 1, roi_size, template_drone.cols + 2), template_drone.cols, template_drone.rows, IMG_W, IMG_H);
     cv::Mat roi_R = _visdat->frameR(crop_R);
     cv::matchTemplate(edge_detector(roi_R), edge_detector(template_drone), result_template_match_R, 2);
     cv::minMaxLoc(result_template_match_R, &min_val_R, &max_val_R, &min_loc_R, &max_loc_R);
