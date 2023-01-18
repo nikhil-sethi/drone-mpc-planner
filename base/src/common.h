@@ -34,6 +34,7 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
 void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 cv::Rect clamp_rect(cv::Rect r, int w, int h);
+cv::Rect clamp_rect(cv::Rect r, int w_min, int h_min, int w_max, int h_max);
 std::string to_string_with_precision(float f, const int n);
 std::string to_string_with_precision(double f, const int n);
 cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2);
