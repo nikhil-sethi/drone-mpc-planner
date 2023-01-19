@@ -278,7 +278,7 @@ void Drone::pre_flight(double time) {
                     pre_flight_state = pre_locate_drone_init;
                     _trackers->mode(tracking::TrackerManager::t_idle);
                 }
-                if (time - time_start_locating_drone > 300) {
+                if (time - time_start_locating_drone > 60) {
                     pre_flight_state = pre_locate_time_out;
                     _trackers->mode(tracking::TrackerManager::t_c);
                     communicate_state(es_pats_x);
