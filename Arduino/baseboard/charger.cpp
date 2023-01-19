@@ -151,7 +151,7 @@ void Charger::run() {
                             drone_amps_burn = drone_amps_burn_initial_guess;
                         _charging_state = state_discharge;
                         volt_mode_pv_initialised = false;
-                    } else if (last_charging_amps < min_charge_amps && setpoint_amp_prev > min_charge_amps && last_charging_volts > 10 && battery_volts >= min_volts_detection) {
+                    } else if (last_charging_amps < min_charge_amps && setpoint_amp_prev > min_charge_amps && last_charging_volts - battery_volts > 1 && battery_volts >= min_volts_detection) {
                         _charging_state = state_contact_problem;
                         volt_mode_pv_initialised = false;
                     } else if (!volt_mode_pv_initialised && battery_volts >= min_battery_volts_initialise_trickle_charge) {
