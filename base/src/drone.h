@@ -5,6 +5,7 @@
 #include "dronenavigation.h"
 #include "baseboardlink.h"
 #include "interceptor.h"
+#include "benchmarkreader.h"
 
 static const char *drone_state_names[] = {
     "pre_flight",
@@ -212,6 +213,10 @@ public:
         _state = ds_pre_flight;
     }
     bool low_voltage_timeout(double time);
+
+    bool benchmark_mode = false;
+    time_t benchmark_time;
+    BenchmarkEntry benchmark_entry;
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
