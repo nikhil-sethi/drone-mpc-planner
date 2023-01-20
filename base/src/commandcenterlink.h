@@ -38,9 +38,6 @@ private:
     int reset_cnt = 0;
     int _n_replay_moth = 0;
 
-    int _benchmark_size = 0;
-    int _n_benchmark_entry = 0;
-
     bool exit_thread = false;
 
     void write_commandcenter_status_image();
