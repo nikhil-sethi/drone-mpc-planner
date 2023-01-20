@@ -83,34 +83,34 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 rename(benchmark_fn.c_str(), (data_output_dir + "pats_benchmark_trigger.csv").c_str());
                 BenchmarkReader benchmark_reader;
                 benchmark_reader.ParseBenchmarkCSV(data_output_dir + "pats_benchmark_trigger.csv");
-                _benchmark_size = benchmark_entries.size();
-                _patser->drone.benchmark_mode = true;
+                _patser->drone.benchmark_len = benchmark_entries.size();
                 _patser->drone.benchmark_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
+                _patser->drone.benchmark_entry_id = 0;
                 remove(benchmark_fn.c_str());
             }
             if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
-                if (_n_benchmark_entry < _benchmark_size) {
+                if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len) {
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
-                        _patser->drone.benchmark_entry = benchmark_entries[_n_benchmark_entry];
-                        if (benchmark_entries[_n_benchmark_entry].type == "replay") {
-                            _patser->trackers.init_replay_moth(benchmark_entries[_n_benchmark_entry].id);
+                        _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "replay") {
+                            _patser->trackers.init_replay_moth(benchmark_entries[_patser->drone.benchmark_entry_id].id);
                             _n_replay_moth++;
                         }
-                        else if (benchmark_entries[_n_benchmark_entry].type == "virtual") {
+                        else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
                             _patser->trackers.init_virtual_moth(&(_patser->drone.control));
                             _n_replay_moth++;
                         }
                         else {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
                         }
-                        _n_benchmark_entry++;
+                        _patser->drone.benchmark_entry_id++;
                     }
                 }
                 else {
-                    _n_benchmark_entry = 0;
-                    _patser->drone.benchmark_mode = false;
+                    // _patser->drone.benchmark_entry_id = 0;
+                    // _patser->drone.benchmark_mode = false;
                     remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
                 }
 

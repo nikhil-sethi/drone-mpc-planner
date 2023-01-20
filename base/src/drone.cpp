@@ -591,20 +591,26 @@ void Drone::save_flight_results() {
     results_log << "flight_time:" << nav.flight_time() << '\n';
     results_log << "crashed:" << nav.drone_problem() << '\n';
     results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
-    if (benchmark_mode) {
-        if (benchmark_entry.type == "replay") {
-            results_log << "benchmark_type:replay" << '\n';
-            results_log << "benchmark_timestamp:" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
-            results_log << "benchmark_replay_id:" << benchmark_entry.id << '\n';
-        } else if (benchmark_entry.type == "virtual") {
-            results_log << "benchmark_type:virtual" << '\n';
-            results_log << "benchmark_timestamp" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
-            results_log << "benchmark_insect_pos_x:" << benchmark_entry.pos_x << '\n';
-            results_log << "benchmark_insect_pos_y:" << benchmark_entry.pos_y << '\n';
-            results_log << "benchmark_insect_pos_z:" << benchmark_entry.pos_z << '\n';
-            results_log << "benchmark_insect_vel_x:" << benchmark_entry.vel_x << '\n';
-            results_log << "benchmark_insect_vel_y:" << benchmark_entry.vel_y << '\n';
-            results_log << "benchmark_insect_vel_z:" << benchmark_entry.vel_z << '\n';
+    if (benchmark_len) {
+        if (benchmark_entry_id <= benchmark_len) {
+            if (benchmark_entry.type == "replay") {
+                results_log << "benchmark_type:replay" << '\n';
+                results_log << "benchmark_timestamp:" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
+                results_log << "benchmark_replay_id:" << benchmark_entry.id << '\n';
+            } else if (benchmark_entry.type == "virtual") {
+                results_log << "benchmark_type:virtual" << '\n';
+                results_log << "benchmark_timestamp" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
+                results_log << "benchmark_insect_pos_x:" << benchmark_entry.pos_x << '\n';
+                results_log << "benchmark_insect_pos_y:" << benchmark_entry.pos_y << '\n';
+                results_log << "benchmark_insect_pos_z:" << benchmark_entry.pos_z << '\n';
+                results_log << "benchmark_insect_vel_x:" << benchmark_entry.vel_x << '\n';
+                results_log << "benchmark_insect_vel_y:" << benchmark_entry.vel_y << '\n';
+                results_log << "benchmark_insect_vel_z:" << benchmark_entry.vel_z << '\n';
+            }
+        }
+        else {
+            benchmark_len = 0;
+            benchmark_entry_id = 0;
         }
     }
     results_log.close();
