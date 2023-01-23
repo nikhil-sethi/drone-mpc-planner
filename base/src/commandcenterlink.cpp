@@ -91,10 +91,25 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 _patser->drone.benchmark_len = benchmark_entries.size();
                 _patser->drone.benchmark_time = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _patser->drone.benchmark_entry_id = 0;
+                _patser->drone.benchmark_mode = true;
                 remove(benchmark_fn.c_str());
             }
             if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
-                if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len) {
+                if (!_patser->drone.benchmark_mode) {
+                    for (auto &p : std::experimental::filesystem::directory_iterator("/home/pats/pats/flags/"))
+                    {
+                        std::cout << p.path().filename() << std::endl;
+                        std::string file_name = p.path().filename();
+                        if (file_name.find("BenchmarkEntry") == 0)
+                        {
+                            std::cout << file_name  << std::endl;
+                            char _entry_id = file_name.back();
+                            _patser->drone.benchmark_mode = true;
+                            _patser->drone.benchmark_entry_id = int(_entry_id);
+                        }
+                    }
+                }
+                if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
@@ -120,24 +135,12 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     }
                 }
                 else {
-                    // _patser->drone.benchmark_entry_id = 0;
-                    // _patser->drone.benchmark_mode = false;
                     remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                    remove(("/home/pats/pats/flags/BenchmarkEntry" + std::to_string(_patser->drone.benchmark_entry_id - 1)).c_str());
                 }
 
 
 
-            }
-            else {
-                for (auto &p : std::experimental::filesystem::directory_iterator("/home/pats/pats/flags/"))
-                {
-                    std::cout << p.path().filename() << std::endl;
-                    std::string file_name = p.path().filename();
-                    if (file_name.find("BenchmarkEntry") == 0)
-                    {
-                        std::cout << file_name  << std::endl;
-                    }
-                }
             }
         }
         if (file_exist(demo_insect_fn)) {
