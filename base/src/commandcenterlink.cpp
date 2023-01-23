@@ -125,8 +125,8 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
 
                         if (_patser->drone.benchmark_entry_id == 0) {
-                            remove("/home/pats/pats/flags/BenchmarkEntry.txt");
-                            ofstream EntryFlag("/home/pats/pats/flags/BenchmarkEntry.txt");
+                            ofstream EntryFlag;
+                            EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
                             EntryFlag << _patser->drone.benchmark_entry_id << "\n";
                             EntryFlag << _patser->drone.benchmark_time << "\n";
                             EntryFlag.close();
@@ -145,8 +145,8 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         }
                         _patser->drone.benchmark_entry_id++;
 
-                        remove("/home/pats/pats/flags/BenchmarkEntry.txt");
-                        ofstream EntryFlag("/home/pats/pats/flags/BenchmarkEntry.txt");
+                        ofstream EntryFlag;
+                        EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
                         EntryFlag << _patser->drone.benchmark_entry_id << "\n";
                         EntryFlag << _patser->drone.benchmark_time << "\n";
                         EntryFlag.close();
