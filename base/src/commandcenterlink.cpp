@@ -3,6 +3,11 @@
 #include "trackermanager.h"
 #include "benchmarkreader.h"
 
+#include <thread>
+#include <unistd.h> //usleep
+#include<iostream>
+#include <experimental/filesystem>
+
 void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *visdat) {
     _log_replay_mode = log_replay_mode;
     _visdat = visdat;
@@ -94,6 +99,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
                         _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        if (_patser->drone.benchmark_entry_id == 0)
+                        {
+                            ofstream EntryFlag("/home/pats/pats/flags/BenchmarkEntry" + std::to_string(_patser->drone.benchmark_entry_id));
+                            EntryFlag.close();
+                        }
                         if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "replay") {
                             _patser->trackers.init_replay_moth(benchmark_entries[_patser->drone.benchmark_entry_id].id);
                             _n_replay_moth++;
@@ -106,6 +116,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
                         }
                         _patser->drone.benchmark_entry_id++;
+                        rename(("/home/pats/pats/flags/BenchmarkEntry" + std::to_string(_patser->drone.benchmark_entry_id - 1)).c_str(), ("/home/pats/pats/flags/BenchmarkEntry" + std::to_string(_patser->drone.benchmark_entry_id)).c_str());
                     }
                 }
                 else {
@@ -116,6 +127,17 @@ void CommandCenterLink::check_commandcenter_triggers() {
 
 
 
+            }
+            else {
+                for (auto &p : std::experimental::filesystem::directory_iterator("/home/pats/pats/flags/"))
+                {
+                    std::cout << p.path().filename() << std::endl;
+                    std::string file_name = p.path().filename();
+                    if (file_name.find("BenchmarkEntry") == 0)
+                    {
+                        std::cout << file_name  << std::endl;
+                    }
+                }
             }
         }
         if (file_exist(demo_insect_fn)) {
