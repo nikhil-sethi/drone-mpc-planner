@@ -214,6 +214,7 @@ public:
     }
     bool low_voltage_timeout(double time);
 
+    bool benchmark_mode = false;
     int benchmark_len = 0;
     int benchmark_entry_id = 0;
     time_t benchmark_time;
