@@ -99,13 +99,17 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 remove(benchmark_fn.c_str());
             }
             if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
+                std::cout << "pats_benchmark_trigger.csv exists!" << std::endl;
                 if (!_patser->drone.benchmark_mode) {
+                    std::cout << "but benchmark mode is not active!" << std::endl;
                     if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+                        std::cout << "BenchmarkEntry.txt exists!" << std::endl;
                         std::ifstream file("/home/pats/pats/flags/BenchmarkEntry.txt");
                         std::string str;
                         int _idx = 0;
                         while (std::getline(file, str))
                         {
+                            std::cout << "str: " << str << std::endl;
                             if (_idx == 0)
                                 _patser->drone.benchmark_entry_id = std::stoi(str);
                             else if (_idx == 1)
