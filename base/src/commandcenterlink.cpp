@@ -85,9 +85,9 @@ void CommandCenterLink::check_commandcenter_triggers() {
             }
             if (file_exist(benchmark_fn)) {
                 std::cout << "Parsing benchmark!" << std::endl;
-                rename(benchmark_fn.c_str(), (data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
                 BenchmarkReader benchmark_reader;
-                benchmark_reader.ParseBenchmarkCSV(data_output_dir + "pats_benchmark_trigger.csv");
+                benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                 _patser->drone.benchmark_len = benchmark_entries.size();
                 time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 std::ostringstream oss;
@@ -98,7 +98,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 _patser->drone.benchmark_mode = true;
                 remove(benchmark_fn.c_str());
             }
-            if (file_exist(data_output_dir + "pats_benchmark_trigger.csv")) {
+            if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
                 if (!_patser->drone.benchmark_mode) {
                     if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
                         std::ifstream file("/home/pats/pats/flags/BenchmarkEntry.txt");
@@ -149,7 +149,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     }
                 }
                 else {
-                    remove((data_output_dir + "pats_benchmark_trigger.csv").c_str());
+                    remove("/home/pats/flags/pats_benchmark_trigger.csv");
                     remove("/home/pats/pats/flags/BenchmarkEntry.txt");
                 }
 
