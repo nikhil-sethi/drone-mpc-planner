@@ -116,6 +116,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
                                 _patser->drone.benchmark_time = str;
                             _idx++;
                         }
+                        file.close();
+                        BenchmarkReader benchmark_reader;
+                        benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                        _patser->drone.benchmark_len = benchmark_entries.size();
+                        _patser->drone.benchmark_mode = true;
                     }
                 }
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
