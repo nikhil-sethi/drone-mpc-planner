@@ -595,11 +595,11 @@ void Drone::save_flight_results() {
         if (benchmark_entry_id <= benchmark_len) {
             if (benchmark_entry.type == "replay") {
                 results_log << "benchmark_type:replay" << '\n';
-                results_log << "benchmark_timestamp:" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
+                results_log << "benchmark_timestamp:" << benchmark_time << '\n';
                 results_log << "benchmark_replay_id:" << benchmark_entry.id << '\n';
             } else if (benchmark_entry.type == "virtual") {
                 results_log << "benchmark_type:virtual" << '\n';
-                results_log << "benchmark_timestamp" << std::put_time(std::localtime(&benchmark_time), "%Y/%m/%d %T") << '\n';
+                results_log << "benchmark_timestamp:" << benchmark_time << '\n';
                 results_log << "benchmark_insect_pos_x:" << benchmark_entry.pos_x << '\n';
                 results_log << "benchmark_insect_pos_y:" << benchmark_entry.pos_y << '\n';
                 results_log << "benchmark_insect_pos_z:" << benchmark_entry.pos_z << '\n';

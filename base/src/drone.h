@@ -217,7 +217,7 @@ public:
     bool benchmark_mode = false;
     int benchmark_len = 0;
     int benchmark_entry_id = 0;
-    time_t benchmark_time;
+    string benchmark_time;
     BenchmarkEntry benchmark_entry;
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
