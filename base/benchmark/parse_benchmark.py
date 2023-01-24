@@ -128,6 +128,9 @@ class BenchmarkParser():
                 if line.find('benchmark_replay_id') != -1:
                     benchmark_replay_id = line.strip().split(':')[1]
                     entry.benchmark_replay_id = benchmark_replay_id
+                if line.find('benchmark_entry_id') != -1:
+                    benchmark_entry_id = line.strip().split(':')[1]
+                    entry.benchmark_entry_id = benchmark_entry_id
 
     def check_if_benchmark_entry(self, lines):
         for line in lines:
@@ -144,11 +147,10 @@ class BenchmarkParser():
 
     def assemble_dataframe(self):
         self.dataframe = pd.DataFrame(columns=['benchmark_timestamp', 'benchmark_type', 'benchmark_insect_pos_x', 'benchmark_insect_pos_y', 'benchmark_insect_pos_z',
-                                      'benchmark_insect_vel_x', 'benchmark_insect_vel_y', 'benchmark_insect_vel_z', 'take_off_datetime', 'land_datetime', 'flight_time', 'crashed', 'best_interception_distance'])
+                                      'benchmark_insect_vel_x', 'benchmark_insect_vel_y', 'benchmark_insect_vel_z', 'take_off_datetime', 'land_datetime', 'flight_time', 'crashed', 'best_interception_distance', 'benchmark_replay_id', 'benchmark_entry_id'])
         for entry in self.benchmark_entries:
             _new_row = pd.DataFrame([{'benchmark_timestamp': entry.benchmark_timestamp, 'benchmark_type': entry.benchmark_type, 'benchmark_insect_pos_x': entry.benchmark_insect_pos_x, 'benchmark_insect_pos_y': entry.benchmark_insect_pos_y, 'benchmark_insect_pos_z': entry.benchmark_insect_pos_z, 'benchmark_insect_vel_x': entry.benchmark_insect_vel_x,
-                        'benchmark_insect_vel_y': entry.benchmark_insect_vel_y, 'benchmark_insect_vel_z': entry.benchmark_insect_vel_z, 'take_off_datetime': entry.take_off_datetime, 'land_datetime': entry.land_datetime, 'flight_time': entry.flight_time, 'crashed': entry.crashed, 'best_interception_distance': entry.best_interception_distance}])
-            self.dataframe = pd.concat([_new_row, self.dataframe.loc[:]]).reset_index(drop=True)
+                                      'benchmark_insect_vel_y': entry.benchmark_insect_vel_y, 'benchmark_insect_vel_z': entry.benchmark_insect_vel_z, 'take_off_datetime': entry.take_off_datetime, 'land_datetime': entry.land_datetime, 'flight_time': entry.flight_time, 'crashed': entry.crashed, 'best_interception_distance': entry.best_interception_distance, 'benchmark_replay_id': entry.benchmark_replay_id, 'benchmark_entry_id': entry.benchmark_entry_id}])
 
     def calculate_mean_and_var(self, benchmark_timestamp, column, insect_type=None):
         _filtered_dataframe = self.dataframe[self.dataframe['benchmark_timestamp'] == benchmark_timestamp]
