@@ -417,6 +417,7 @@ void Drone::post_flight(double time) {
                 flight_logger.close();
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
+                voltage_post_flight = _rc->telemetry.batt_cell_v;
                 save_flight_results();
                 time_reset_yaw_on_pad = time;
                 control.freeze_attitude_reset_yaw_on_pad();
@@ -500,6 +501,7 @@ void Drone::post_flight(double time) {
                 flight_logger.close();
                 _trackers->stop_drone_tracking(&tracker);
                 _baseboard_link->allow_charging(true);
+                voltage_post_flight = _rc->telemetry.batt_cell_v;
                 save_flight_results();
                 post_flight_state = post_crashed;
                 communicate_state(es_pats_x);
@@ -570,6 +572,7 @@ void Drone::take_off(bool hunt, double time) {
     flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);
     tracker.init_flight(&flight_logger, time);
     flight_logger << "rs_id;elapsed;dt;drone_state_str;";
+    voltage_pre_flight = _rc->telemetry.batt_cell_v;
     _trackers->start_drone_tracking(&tracker);
     nav.init_flight(hunt, &flight_logger);
     if (!hunt) {
@@ -590,6 +593,7 @@ void Drone::save_flight_results() {
     results_log << "flight_time:" << nav.flight_time() << '\n';
     results_log << "crashed:" << nav.drone_problem() << '\n';
     results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
+    results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {
             if (benchmark_entry.type == "replay") {
