@@ -170,14 +170,14 @@ class BenchmarkParser():
         _var = _filtered_dataframe[column].var()
         return _mean, _var
 
-
     def calculate_benchmark_score(self, kpi):
         for benchmark in self.sorted_benchmark_entries.keys():
             results = BenchmarkResults()
             results.benchmark_timestamp = benchmark
 
             _number_of_flights = 0
-            print(f"{bcolors.OKBLUE}Calculating benchmark score for {benchmark}...{bcolors.ENDC}")
+            print(
+                f"{bcolors.OKBLUE}Calculating benchmark score for {benchmark}...{bcolors.ENDC}")
 
             for entry in self.sorted_benchmark_entries[benchmark]:
                 _number_of_flights += 1
@@ -191,24 +191,30 @@ class BenchmarkParser():
 
             results.number_of_flights = _number_of_flights
 
-            results.mean_best_interception_distance, results.var_best_interception_distance = self.calculate_mean_and_var(benchmark, 'best_interception_distance')
-            results.mean_best_interception_distance_replay, results.var_best_interception_distance_replay = self.calculate_mean_and_var(benchmark, 'best_interception_distance', 'replay')
-            results.mean_best_interception_distance_virtual, results.var_best_interception_distance_virtual = self.calculate_mean_and_var(benchmark, 'best_interception_distance', 'virtual')
+            results.mean_best_interception_distance, results.var_best_interception_distance = self.calculate_mean_and_var(
+                benchmark, 'best_interception_distance')
+            results.mean_best_interception_distance_replay, results.var_best_interception_distance_replay = self.calculate_mean_and_var(
+                benchmark, 'best_interception_distance', 'replay')
+            results.mean_best_interception_distance_virtual, results.var_best_interception_distance_virtual = self.calculate_mean_and_var(
+                benchmark, 'best_interception_distance', 'virtual')
 
-            results.mean_flight_time, results.var_flight_time = self.calculate_mean_and_var(benchmark, 'flight_time')
-            results.mean_flight_time_replay, results.var_flight_time_replay = self.calculate_mean_and_var(benchmark, 'flight_time', 'replay')
-            results.mean_flight_time_virtual, results.var_flight_time_virtual = self.calculate_mean_and_var(benchmark, 'flight_time', 'virtual')
+            results.mean_flight_time, results.var_flight_time = self.calculate_mean_and_var(
+                benchmark, 'flight_time')
+            results.mean_flight_time_replay, results.var_flight_time_replay = self.calculate_mean_and_var(
+                benchmark, 'flight_time', 'replay')
+            results.mean_flight_time_virtual, results.var_flight_time_virtual = self.calculate_mean_and_var(
+                benchmark, 'flight_time', 'virtual')
 
-            results.mean_crashed, results.var_crashed = self.calculate_mean_and_var(benchmark, 'crashed')
-            results.mean_crashed_replay, results.var_crashed_replay = self.calculate_mean_and_var(benchmark, 'crashed', 'replay')
-            results.mean_crashed_virtual, results.var_crashed_virtual = self.calculate_mean_and_var(benchmark, 'crashed', 'virtual')
+            results.mean_crashed, results.var_crashed = self.calculate_mean_and_var(
+                benchmark, 'crashed')
+            results.mean_crashed_replay, results.var_crashed_replay = self.calculate_mean_and_var(
+                benchmark, 'crashed', 'replay')
+            results.mean_crashed_virtual, results.var_crashed_virtual = self.calculate_mean_and_var(
+                benchmark, 'crashed', 'virtual')
             if benchmark not in self.benchmark_results:
                 self.benchmark_results[benchmark] = results
             else:
                 raise Exception('Benchmark already exists')
-
-
-
 
 
 """WHAT TO DO WITH THE RESULTS"""
@@ -217,10 +223,14 @@ class BenchmarkParser():
 # we can also do bar plots for the most important ones?
 
 
-if __name__ == "__main__":
-    TOTAL_BENCHMARK_ENTRIES = 5
+def find_matching_benchmark_entry(list_of_benchmark_entries, entry_id):
+    return
 
-    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmarksmon23jan")
+
+if __name__ == "__main__":
+    TOTAL_BENCHMARK_ENTRIES = 12
+
+    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/89")
 
     print(f"{bcolors.HEADER}Finding benchmarks...{bcolors.ENDC}")
     parser.find_benchmark_entries()
@@ -238,25 +248,45 @@ if __name__ == "__main__":
     print(f"{bcolors.HEADER}Benchmark results:{bcolors.ENDC}\n")
     print(f"{bcolors.HEADER}------------------{bcolors.ENDC}\n")
     with open('benchmark_results.org', 'w') as f:
-        results_table="| Timestamp | No. flights | Hunt error mean | Hunt error var | Flight time mean | Flight time var | Crashes |\n|--------+-----+--------+---------+----------------+-----------------+-------|\n"
+        results_table = "| Timestamp | No. flights | Hunt error mean | Hunt error var | Flight time mean | Flight time var | Crashes |\n|--------+-----+--------+---------+----------------+-----------------+-------|\n"
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
             print(f"{bcolors.OKGREEN}{_benchmark_time_date}{bcolors.ENDC}")
-            print(f"Number of flights: {parser.benchmark_results[_benchmark_time_date].number_of_flights} / 5")
+            print(
+                f"Number of flights: {parser.benchmark_results[_benchmark_time_date].number_of_flights} / 5")
             print("")
             print(f"{bcolors.OKBLUE}Best interception distance:{bcolors.ENDC}")
-            print("Mean, var best interception distance:", parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance)
-            print("Mean, var best interception distance replay:", parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance_replay, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance_replay)
-            print("Mean, var best interception distance virtual:", parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance_virtual, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance_virtual)
+            print("Mean, var best interception distance:",
+                  parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance)
+            print("Mean, var best interception distance replay:",
+                  parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance_replay, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance_replay)
+            print("Mean, var best interception distance virtual:",
+                  parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance_virtual, parser.benchmark_results[_benchmark_time_date].var_best_interception_distance_virtual)
             print("")
             print(f"{bcolors.OKBLUE}Flight time:{bcolors.ENDC}")
-            print("Mean, var flight time:", parser.benchmark_results[_benchmark_time_date].mean_flight_time, parser.benchmark_results[_benchmark_time_date].var_flight_time)
-            print("Mean, var flight time replay:", parser.benchmark_results[_benchmark_time_date].mean_flight_time_replay, parser.benchmark_results[_benchmark_time_date].var_flight_time_replay)
-            print("Mean, var flight time virtual:", parser.benchmark_results[_benchmark_time_date].mean_flight_time_virtual, parser.benchmark_results[_benchmark_time_date].var_flight_time_virtual)
+            print("Mean, var flight time:",
+                  parser.benchmark_results[_benchmark_time_date].mean_flight_time, parser.benchmark_results[_benchmark_time_date].var_flight_time)
+            print("Mean, var flight time replay:",
+                  parser.benchmark_results[_benchmark_time_date].mean_flight_time_replay, parser.benchmark_results[_benchmark_time_date].var_flight_time_replay)
+            print("Mean, var flight time virtual:",
+                  parser.benchmark_results[_benchmark_time_date].mean_flight_time_virtual, parser.benchmark_results[_benchmark_time_date].var_flight_time_virtual)
             print("")
             print(f"{bcolors.OKBLUE}Crashes:{bcolors.ENDC}")
-            print("Mean, var crashes:", parser.benchmark_results[_benchmark_time_date].mean_crashed, parser.benchmark_results[_benchmark_time_date].var_crashed)
-            print("Mean, var crashes replay:", parser.benchmark_results[_benchmark_time_date].mean_crashed_replay, parser.benchmark_results[_benchmark_time_date].var_crashed_replay)
-            print("Mean, var crashes virtual:", parser.benchmark_results[_benchmark_time_date].mean_crashed_virtual, parser.benchmark_results[_benchmark_time_date].var_crashed_virtual)
+            print("Mean, var crashes:", parser.benchmark_results[_benchmark_time_date].mean_crashed,
+                  parser.benchmark_results[_benchmark_time_date].var_crashed)
+            print("Mean, var crashes replay:",
+                  parser.benchmark_results[_benchmark_time_date].mean_crashed_replay, parser.benchmark_results[_benchmark_time_date].var_crashed_replay)
+            print("Mean, var crashes virtual:",
+                  parser.benchmark_results[_benchmark_time_date].mean_crashed_virtual, parser.benchmark_results[_benchmark_time_date].var_crashed_virtual)
 
             results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].mean_crashed} |\n"
+        results_table += "\n"
+
+        for _entry_id in range(TOTAL_BENCHMARK_ENTRIES):
+            results_table += f"**Entry {_entry_id}**\n"
+            results_table += "| Benchmark timestamp | Type | Replay id | Hunt error | Flight time | Crashed |\n|------+----------+-----+-------+-------+------+----|\n"
+            for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
+                _relevant_entry = parser.dataframe[(parser.dataframe['benchmark_timestamp'] == _benchmark_time_date) & (parser.dataframe['benchmark_entry_id'] == str(_entry_id))]
+                if not _relevant_entry.empty:
+                    results_table += f"| {_benchmark_time_date} | {_relevant_entry['benchmark_type'].values} | {_relevant_entry['benchmark_replay_id'].values} | {_relevant_entry['best_interception_distance'].values} | {_relevant_entry['flight_time'].values} | {_relevant_entry['crashed'].values} |\n"
+            results_table += "\n"
         f.write(results_table)
