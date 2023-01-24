@@ -98,6 +98,8 @@ class BenchmarkParser():
                     entry.crashed = crashed
                 if line.find('best_interception_distance') != -1:
                     best_interception_distance = line.strip().split(':')[1]
+                    if best_interception_distance == 'inf':
+                        best_interception_distance = 2
                     entry.best_interception_distance = best_interception_distance
                 if line.find('benchmark_type') != -1:
                     benchmark_type = line.strip().split(':')[1]
