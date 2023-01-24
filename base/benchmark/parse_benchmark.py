@@ -151,16 +151,21 @@ class BenchmarkParser():
         for entry in self.benchmark_entries:
             _new_row = pd.DataFrame([{'benchmark_timestamp': entry.benchmark_timestamp, 'benchmark_type': entry.benchmark_type, 'benchmark_insect_pos_x': entry.benchmark_insect_pos_x, 'benchmark_insect_pos_y': entry.benchmark_insect_pos_y, 'benchmark_insect_pos_z': entry.benchmark_insect_pos_z, 'benchmark_insect_vel_x': entry.benchmark_insect_vel_x,
                                       'benchmark_insect_vel_y': entry.benchmark_insect_vel_y, 'benchmark_insect_vel_z': entry.benchmark_insect_vel_z, 'take_off_datetime': entry.take_off_datetime, 'land_datetime': entry.land_datetime, 'flight_time': entry.flight_time, 'crashed': entry.crashed, 'best_interception_distance': entry.best_interception_distance, 'benchmark_replay_id': entry.benchmark_replay_id, 'benchmark_entry_id': entry.benchmark_entry_id}])
+            self.dataframe = pd.concat(
+                [_new_row, self.dataframe.loc[:]]).reset_index(drop=True)
 
     def calculate_mean_and_var(self, benchmark_timestamp, column, insect_type=None):
-        _filtered_dataframe = self.dataframe[self.dataframe['benchmark_timestamp'] == benchmark_timestamp]
+        _filtered_dataframe = self.dataframe[self.dataframe['benchmark_timestamp']
+                                             == benchmark_timestamp]
 
         if insect_type == 'virtual' or insect_type == 'replay':
             _filtered_dataframe = _filtered_dataframe[_filtered_dataframe['benchmark_type'] == insect_type]
         elif insect_type is not None:
             raise Exception('Unknown insect type')
 
-        _filtered_dataframe[column] = pd.to_numeric(_filtered_dataframe[column])
+        _filtered_dataframe[column] = pd.to_numeric(
+            _filtered_dataframe[column])
+
         _mean = _filtered_dataframe[column].mean()
         _var = _filtered_dataframe[column].var()
         return _mean, _var
