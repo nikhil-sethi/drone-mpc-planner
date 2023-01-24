@@ -125,6 +125,9 @@ class BenchmarkParser():
                 if line.find('benchmark_insect_vel_z') != -1:
                     benchmark_insect_vel_z = line.strip().split(':')[1]
                     entry.benchmark_insect_vel_z = benchmark_insect_vel_z
+                if line.find('benchmark_replay_id') != -1:
+                    benchmark_replay_id = line.strip().split(':')[1]
+                    entry.benchmark_replay_id = benchmark_replay_id
 
     def check_if_benchmark_entry(self, lines):
         for line in lines:
