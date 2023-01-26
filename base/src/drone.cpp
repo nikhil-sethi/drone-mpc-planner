@@ -390,17 +390,13 @@ void Drone::pre_flight(double time) {
                     communicate_state(es_pats_x);
                     time_low_voltage = 0;
                 } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK()) {
-                    if (!time_low_voltage) {
-                        time_low_voltage = time;
-                    }
-                    if (time - time_low_voltage > 60.0) {
-                        time_low_voltage = 0;
-                        _state = ds_post_flight;
+                    if (control.telemetry_OK() && low_voltage_timeout(time)) {
                         post_flight_state = post_init_deep_sleep;
                         communicate_state(es_pats_x);
                     }
-                } else
+                } else {
                     time_low_voltage = 0;
+                }
                 break;
         } case pre_telemetry_time_out: {
                 if (!_rc->telemetry_time_out()) {
@@ -511,9 +507,11 @@ void Drone::post_flight(double time) {
                     communicate_state(es_pats_x);
                     _state = ds_pre_flight;
                     time_low_voltage = 0;
-                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
-                    post_flight_state = post_init_deep_sleep;
-                    communicate_state(es_pats_x);
+                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK()) {
+                    if (control.telemetry_OK() && low_voltage_timeout(time)) {
+                        post_flight_state = post_init_deep_sleep;
+                        communicate_state(es_pats_x);
+                    }
                 } else {
                     time_low_voltage = 0;
                 }
@@ -523,9 +521,11 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
                     time_low_voltage = 0;
-                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
-                    post_flight_state = post_init_deep_sleep;
-                    communicate_state(es_pats_x);
+                } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK()) {
+                    if (control.telemetry_OK() && low_voltage_timeout(time)) {
+                        post_flight_state = post_init_deep_sleep;
+                        communicate_state(es_pats_x);
+                    }
                 } else {
                     time_low_voltage = 0;
                 }
