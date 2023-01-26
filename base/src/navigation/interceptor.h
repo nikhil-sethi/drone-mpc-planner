@@ -63,7 +63,8 @@ private:
 
     float hunt_error;
     float _best_hunt_error = INFINITY;
-    double _time_best_hunt_error = -1;
+    double _time_best_hunt_error = INFINITY;
+    cv::Point3f _pos_best_hunt_error  = {INFINITY, INFINITY, INFINITY};
     double _tti = -1;
     double _tti_iip = -1;
     const double duration_intercept_maneuver = 0.2;
@@ -165,6 +166,7 @@ public:
 
     float best_distance() {return _best_hunt_error;}
     float time_best_distance() {return _time_best_hunt_error;}
+    cv::Point3f pos_best_distance() {return _pos_best_hunt_error;}
     void reset_hunt_error() {_best_hunt_error = INFINITY;}
 
     double tti() {return _tti;};

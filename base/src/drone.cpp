@@ -595,6 +595,9 @@ void Drone::save_flight_results() {
     results_log << "crashed:" << nav.drone_problem() << '\n';
     results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
     results_log << "time_to_best_interception:" << _interceptor->time_best_distance() << '\n';
+    results_log << "pos_best_interception_x:" << _interceptor->pos_best_distance().x << '\n';
+    results_log << "pos_best_interception_y:" << _interceptor->pos_best_distance().y << '\n';
+    results_log << "pos_best_interception_z:" << _interceptor->pos_best_distance().z << '\n';
     results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {
