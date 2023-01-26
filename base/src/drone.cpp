@@ -594,6 +594,7 @@ void Drone::save_flight_results() {
     results_log << "flight_time:" << nav.flight_time() << '\n';
     results_log << "crashed:" << nav.drone_problem() << '\n';
     results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
+    results_log << "time_to_best_interception:" << _interceptor->time_best_distance() << '\n';
     results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {

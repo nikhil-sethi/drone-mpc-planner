@@ -239,11 +239,13 @@ void Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracki
 
 }
 
-void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos) {
+void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time) {
 
     hunt_error = normf(target_pos - drone_pos);
-    if (hunt_error < _best_hunt_error && !drone_at_base)
+    if (hunt_error < _best_hunt_error && !drone_at_base) {
         _best_hunt_error = hunt_error;
+        _time_best_hunt_error = time - _drone->nav.takeoff_time();
+    }
 }
 
 void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time) {
@@ -257,7 +259,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     drone.state.vel = cv::Point3f(0, 0, 0);
                 }
 
-                update_hunt_distance(drone_at_base, drone.pos(), target.pos());
+                update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
                 update_aim_and_target_in_flightarea(drone_at_base, target);
 
                 if (!aim_in_flightarea) {

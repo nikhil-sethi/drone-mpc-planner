@@ -118,6 +118,7 @@ public:
     int distance_threshold_mm() { return current_waypoint->threshold_mm; }
 
     float flight_time() {return _flight_time;}
+    double takeoff_time() {return time_take_off;}
     bool drone_problem() {return time_drone_problem >= 0;}
 };
 }
