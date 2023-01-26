@@ -245,6 +245,7 @@ void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos
     if (hunt_error < _best_hunt_error && !drone_at_base) {
         _best_hunt_error = hunt_error;
         _time_best_hunt_error = time - _drone->nav.takeoff_time();
+        _pos_best_hunt_error = _drone->tracker.last_track_data().pos();
     }
 }
 
