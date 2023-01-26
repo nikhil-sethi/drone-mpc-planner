@@ -63,6 +63,7 @@ private:
 
     float hunt_error;
     float _best_hunt_error = INFINITY;
+    double _time_best_hunt_error = -1;
     double _tti = -1;
     double _tti_iip = -1;
     const double duration_intercept_maneuver = 0.2;
@@ -79,7 +80,7 @@ private:
     void update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target);
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
-    void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos);
+    void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time);
     bool delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker);
     void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
         _intercepting_state = is_intercept_maneuvering;
@@ -163,6 +164,7 @@ public:
     double time_to_intercept() {return _tti;}
 
     float best_distance() {return _best_hunt_error;}
+    float time_best_distance() {return _time_best_hunt_error;}
     void reset_hunt_error() {_best_hunt_error = INFINITY;}
 
     double tti() {return _tti;};
