@@ -595,9 +595,9 @@ void Drone::save_flight_results() {
     results_log << "crashed:" << nav.drone_problem() << '\n';
     results_log << "best_interception_distance:" << _interceptor->best_distance() << '\n';
     results_log << "time_to_best_interception:" << _interceptor->time_best_distance() << '\n';
-    results_log << "pos_best_interception_x:" << _interceptor->pos_best_distance().x << '\n';
-    results_log << "pos_best_interception_y:" << _interceptor->pos_best_distance().y << '\n';
-    results_log << "pos_best_interception_z:" << _interceptor->pos_best_distance().z << '\n';
+    results_log << "pos_best_interception_xyz:" << _interceptor->pos_best_distance().x << "," << _interceptor->pos_best_distance().y << "," << _interceptor->pos_best_distance().z << '\n';
+    results_log << "vel_best_interception_xyz:" << _interceptor->vel_best_distance().x << "," << _interceptor->vel_best_distance().y << "," << _interceptor->vel_best_distance().z << '\n';
+    results_log << "acc_best_interception_xyz:" << _interceptor->acc_best_distance().x << "," << _interceptor->acc_best_distance().y << "," << _interceptor->acc_best_distance().z << '\n';
     results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {
@@ -608,12 +608,8 @@ void Drone::save_flight_results() {
             } else if (benchmark_entry.type == "virtual") {
                 results_log << "benchmark_type:virtual" << '\n';
                 results_log << "benchmark_timestamp:" << benchmark_time << '\n';
-                results_log << "benchmark_insect_pos_x:" << benchmark_entry.pos_x << '\n';
-                results_log << "benchmark_insect_pos_y:" << benchmark_entry.pos_y << '\n';
-                results_log << "benchmark_insect_pos_z:" << benchmark_entry.pos_z << '\n';
-                results_log << "benchmark_insect_vel_x:" << benchmark_entry.vel_x << '\n';
-                results_log << "benchmark_insect_vel_y:" << benchmark_entry.vel_y << '\n';
-                results_log << "benchmark_insect_vel_z:" << benchmark_entry.vel_z << '\n';
+                results_log << "benchmark_insect_pos_xyz:" << benchmark_entry.pos_x << "," << benchmark_entry.pos_y << "," << benchmark_entry.pos_z << '\n';
+                results_log << "benchmark_insect_vel_xyz:" << benchmark_entry.vel_x << "," << benchmark_entry.vel_y << "," << benchmark_entry.vel_z << '\n';
                 results_log << "benchmark_insect_evasion_trigger:" << benchmark_entry.evasion_trigger << '\n';
                 results_log << "benchmark_insect_evasion_type:" << benchmark_entry.evasion_type << '\n';
             }
