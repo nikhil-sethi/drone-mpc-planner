@@ -142,7 +142,8 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             _n_replay_moth++;
                         }
                         else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
-                            _patser->trackers.init_virtual_moth(&(_patser->drone.control));
+                            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_trigger), tracking::VirtualMothTracker::evasion_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_type)};
+                            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior);
                             _n_replay_moth++;
                         }
                         else {

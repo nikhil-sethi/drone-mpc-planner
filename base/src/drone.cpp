@@ -611,6 +611,8 @@ void Drone::save_flight_results() {
                 results_log << "benchmark_insect_vel_x:" << benchmark_entry.vel_x << '\n';
                 results_log << "benchmark_insect_vel_y:" << benchmark_entry.vel_y << '\n';
                 results_log << "benchmark_insect_vel_z:" << benchmark_entry.vel_z << '\n';
+                results_log << "benchmark_insect_evasion_trigger:" << benchmark_entry.evasion_trigger << '\n';
+                results_log << "benchmark_insect_evasion_type:" << benchmark_entry.evasion_type << '\n';
             }
             results_log << "benchmark_entry_id:" << benchmark_entry_id << '\n';
         }
