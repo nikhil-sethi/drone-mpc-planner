@@ -19,12 +19,8 @@ tracking::VirtualMothTracker::moth_behavior_type VirtualMothTracker::init(int id
     insect_pos = insectPos;
     insect_vel = insectVel;
     _moth_behavior = moth_behavior;
-    moth_behavior_type new_moth_behavior(moth_behavior.trigger, moth_behavior.evasion);
-    new_moth_behavior.trigger = static_cast<trigger_type>((static_cast<int>(moth_behavior.trigger) + 1) % number_trigger_types);
-    if (new_moth_behavior.trigger < moth_behavior.trigger)
-        new_moth_behavior.evasion = static_cast<evasion_type>((static_cast<int>(moth_behavior.evasion) + 1) % number_evasion_types);
 
-    return new_moth_behavior;
+    return _moth_behavior;
 }
 
 void VirtualMothTracker::init_logger() {

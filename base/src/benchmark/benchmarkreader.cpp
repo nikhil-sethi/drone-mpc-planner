@@ -33,7 +33,9 @@ void BenchmarkReader::ParseBenchmarkCSV(std::string file) {
             .pos_z = std::stod(result[4]),
             .vel_x = std::stod(result[5]),
             .vel_y = std::stod(result[6]),
-            .vel_z = std::stod(result[7])
+            .vel_z = std::stod(result[7]),
+            .evasion_trigger = std::stoi(result[8]),
+            .evasion_type = std::stoi(result[9])
         };
         benchmark_entries.push_back(entry);
     }
