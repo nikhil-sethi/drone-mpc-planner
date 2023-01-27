@@ -1,22 +1,25 @@
 #!/bin/bash
 
-TRIGGER_DELAY=60
+TRIGGER_DELAY=3
 
 while true; do
-	cp ~/code/pats/base/replay_insects/001.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/53-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/002.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/54-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/003.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/56-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/004.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/58-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/005.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/61-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/006.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/62-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/007.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/63-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
-	cp ~/code/pats/base/replay_insects/008.csv  ~/pats/flags/insect_demo
+	cp ~/code/pats/base/replay_insects/64-90fps.csv  ~/pats/flags/insect_demo
 	sleep $TRIGGER_DELAY
+	cp ~/code/pats/base/replay_insects/65-90fps.csv  ~/pats/flags/insect_demo
+	sleep $TRIGGER_DELAY
+	cp ~/code/pats/base/replay_insects/66-90fps.csv  ~/pats/flags/insect_demo
 done
