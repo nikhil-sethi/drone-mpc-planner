@@ -266,6 +266,11 @@ public:
         next_insecttrkr_id++;
     }
     inline void init_virtual_moth(DroneController *dctrl) {
+        tracking::VirtualMothTracker::moth_behavior_type new_moth_behavior(mothbehavior.trigger, mothbehavior.evasion);
+        new_moth_behavior.trigger = static_cast<tracking::VirtualMothTracker::trigger_type>((static_cast<int>(mothbehavior.trigger) + 1) % tracking::VirtualMothTracker::number_trigger_types);
+        if (new_moth_behavior.trigger < mothbehavior.trigger)
+            new_moth_behavior.evasion = static_cast<tracking::VirtualMothTracker::evasion_type>((static_cast<int>(mothbehavior.evasion) + 1) % tracking::VirtualMothTracker::number_evasion_types);
+        mothbehavior = new_moth_behavior;
         return init_virtual_moth(dctrl, mothbehavior);
     }
     void update(double time);
