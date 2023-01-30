@@ -613,6 +613,7 @@ void Drone::save_flight_results() {
                 results_log << "benchmark_insect_evasion_type:" << benchmark_entry.evasion_type << '\n';
             }
             results_log << "benchmark_entry_id:" << benchmark_entry_id << '\n';
+            results_log << "benchmark_hash:" << benchmark_hash << '\n';
         }
         else {
             benchmark_len = 0;

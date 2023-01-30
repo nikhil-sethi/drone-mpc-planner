@@ -92,7 +92,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     std::cout << "Parsing benchmark!" << std::endl;
                     rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
                     BenchmarkReader benchmark_reader;
-                    benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                     _patser->drone.benchmark_len = benchmark_entries.size();
                     time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
                     std::ostringstream oss;

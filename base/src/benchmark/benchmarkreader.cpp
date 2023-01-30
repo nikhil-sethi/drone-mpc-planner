@@ -3,24 +3,41 @@
 #include <iostream>
 #include <sstream>
 
+
+struct HashableObj {
+    std::string string;
+    std::size_t previous_hash;
+};
+
+struct MyHash
+{
+    std::size_t operator()(HashableObj const &s) const noexcept
+    {
+        std::size_t h1 = std::hash<std::string> {}(s.string);
+        std::size_t h2 = s.previous_hash;
+        return h1 ^ (h2 << 1);
+    }
+};
 // BenchmarkReader reader;
 std::vector<BenchmarkEntry> benchmark_entries;
 
-void BenchmarkReader::ParseBenchmarkCSV(std::string file) {
+size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {
     std::ifstream fileStream(file);
     std::string line;
     std::string headers;
 
     std::getline(fileStream, headers);
+    size_t new_benchmark_hash = 132;
 
     while (std::getline(fileStream, line)) {
         std::stringstream ss(line);
         std::vector<std::string> result;
-
         while (ss.good())
         {
             std::string substr;
             getline(ss, substr, ';');
+            HashableObj obj =  {substr, new_benchmark_hash};
+            new_benchmark_hash = MyHash{}(obj);
             result.push_back(substr);
         }
 
@@ -39,5 +56,5 @@ void BenchmarkReader::ParseBenchmarkCSV(std::string file) {
         };
         benchmark_entries.push_back(entry);
     }
-    return;
+    return new_benchmark_hash;
 }

@@ -219,6 +219,7 @@ public:
     bool benchmark_mode = false;
     int benchmark_len = 0;
     int benchmark_entry_id = 0;
+    size_t benchmark_hash;
     string benchmark_time;
     BenchmarkEntry benchmark_entry;
 
