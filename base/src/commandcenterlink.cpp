@@ -84,19 +84,25 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 remove(blink_fn.c_str());
             }
             if (file_exist(benchmark_fn)) {
-                std::cout << "Parsing benchmark!" << std::endl;
-                rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                BenchmarkReader benchmark_reader;
-                benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                _patser->drone.benchmark_len = benchmark_entries.size();
-                time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-                std::ostringstream oss;
-                oss << std::put_time(std::localtime(&_time_now), "%d%m%Y%H%M%S");
-                auto str = oss.str();
-                _patser->drone.benchmark_time = str;
-                _patser->drone.benchmark_entry_id = 0;
-                _patser->drone.benchmark_mode = true;
-                remove(benchmark_fn.c_str());
+                if (_patser->drone.benchmark_mode) {
+                    std::cout << "Benchmark already running!" << std::endl;
+                    return;
+                }
+                else {
+                    std::cout << "Parsing benchmark!" << std::endl;
+                    rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    BenchmarkReader benchmark_reader;
+                    benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    _patser->drone.benchmark_len = benchmark_entries.size();
+                    time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+                    std::ostringstream oss;
+                    oss << std::put_time(std::localtime(&_time_now), "%d%m%Y%H%M%S");
+                    auto str = oss.str();
+                    _patser->drone.benchmark_time = str;
+                    _patser->drone.benchmark_entry_id = 0;
+                    _patser->drone.benchmark_mode = true;
+                    remove(benchmark_fn.c_str());
+                }
             }
             if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
                 std::cout << "pats_benchmark_trigger.csv exists!" << std::endl;
