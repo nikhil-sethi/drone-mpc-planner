@@ -86,6 +86,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
             if (file_exist(benchmark_fn)) {
                 if (_patser->drone.benchmark_mode) {
                     std::cout << "Benchmark already running!" << std::endl;
+                    remove(benchmark_fn.c_str());
                     return;
                 }
                 else {
