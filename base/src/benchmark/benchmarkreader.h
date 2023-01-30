@@ -21,6 +21,6 @@ extern std::vector<BenchmarkEntry> benchmark_entries;
 
 class BenchmarkReader {
 public:
-    void ParseBenchmarkCSV(std::string file);
+    size_t ParseBenchmarkCSV(std::string file);
 
 };
