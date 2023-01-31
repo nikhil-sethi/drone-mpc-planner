@@ -371,6 +371,7 @@ if __name__ == "__main__":
     TOTAL_BENCHMARK_ENTRIES = 15
     DROP_DUPLICATES = True
     MAX_KILL_DISTANCE = 0.1
+    MEAN_VAR_PER_INSECT = False
 
     parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230131tti", "/home/gemenerik/code/pats/base/benchmark/benchmark_short.csv")
 
@@ -390,6 +391,7 @@ if __name__ == "__main__":
         results_table += "\n"
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
+            hunt_error_list = np.array([])
             results_table += f"**Entry {_entry_id}**\n"
 
             _entry = parser.benchmark_csv.iloc[_entry_id]
@@ -420,5 +422,11 @@ if __name__ == "__main__":
                 ]
                 if not _relevant_entry.empty:
                     results_table += f"| {_benchmark_time_date} | {_relevant_entry['benchmark_type'].values[0]} | {_relevant_entry['best_interception_distance'].values[0]} | {_relevant_entry['time_to_best_interception'].values[0]} |  {_relevant_entry['flight_time'].values[0]} | {_relevant_entry['crashed'].values[0]} | {_relevant_entry['voltage_reduction'].values[0]} | {_relevant_entry['pos_best_interception_x'].values[0]} {_relevant_entry['pos_best_interception_y'].values[0]} {_relevant_entry['pos_best_interception_z'].values[0]}  |\n"
+                    # print(_relevant_entry['best_interception_distance'].values[0])
+                    hunt_error_list = np.append(hunt_error_list, _relevant_entry['best_interception_distance'].values[0])
+            if MEAN_VAR_PER_INSECT:
+                results_table += "|------+----------+-----+-------+-------+------+----|\n"
+                results_table += f"| Mean | | {np.mean(np.array(hunt_error_list))} | | | | |\n"
+                results_table += f"| Var | | {np.var(np.array(hunt_error_list))} | | | | |\n"
             results_table += "\n"
         f.write(results_table)
