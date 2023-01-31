@@ -120,7 +120,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         }
                         file.close();
                         BenchmarkReader benchmark_reader;
-                        benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                        _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                         _patser->drone.benchmark_len = benchmark_entries.size();
                         _patser->drone.benchmark_mode = true;
                     }
