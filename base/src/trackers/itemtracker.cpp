@@ -516,6 +516,8 @@ std::tuple<int, float, int, int, bool> ItemTracker::disparity_search_rng(BlobPro
     }
     if (disp_start < 1)
         disp_start = 1;
+    if (disp_end < 2)
+        disp_end = 2;
     if (disp_pred < disp_start + 1)
         disp_pred = disp_start + 1;
 
