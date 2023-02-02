@@ -369,7 +369,7 @@ def find_matching_benchmark_entry(list_of_benchmark_entries, entry_id):
 
 
 if __name__ == "__main__":
-    TOTAL_BENCHMARK_ENTRIES = 12
+    TOTAL_BENCHMARK_ENTRIES = 15
     DROP_DUPLICATES = True
     MAX_KILL_DISTANCE = 0.1
 
