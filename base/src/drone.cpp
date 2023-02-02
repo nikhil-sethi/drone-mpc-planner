@@ -289,8 +289,10 @@ void Drone::pre_flight(double time) {
                     time_start_att_wait_pad = time;
                     if (control.pad_calib_valid())
                         pre_flight_state = pre_check_pad_att;
-                    else
+                    else {
+                        control.reset_attitude_pad_state();
                         pre_flight_state = pre_calibrating_pad;
+                    }
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
@@ -312,8 +314,10 @@ void Drone::pre_flight(double time) {
                             tracker.drone_on_landing_pad(true);
                             pre_flight_state = pre_wait_to_arm;
                         }
-                        if (!control.att_precisely_on_pad() && static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && dparams.Telemetry() && !_baseboard_link->disabled())
+                        if (!control.att_precisely_on_pad() && static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && dparams.Telemetry() && !_baseboard_link->disabled()) {
+                            control.reset_attitude_pad_state();
                             pre_flight_state = pre_calibrating_pad;
+                        }
                     } else if (static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && control.att_somewhere_on_pad()) {
                         pre_flight_state = pre_init;
                         confirm_drone_on_pad = true;
