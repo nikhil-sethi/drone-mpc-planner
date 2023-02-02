@@ -23,6 +23,8 @@ class BenchmarkResults:
         self.mean_best_interception_distance_replay = None
         self.var_best_interception_distance_replay = None
 
+        self.number_of_kills = None
+
         # flight time
         self.mean_flight_time = None
         self.var_flight_time = None
@@ -46,9 +48,10 @@ class BenchmarkEntry:
         self.land_datetime = None
         self.flight_time = None
 
-        self.crashed = None
+        self.crashed = False
 
         self.best_interception_distance = None
+        self.kill = False
         self.time_to_best_interception = None
         self.pos_best_interception_x = None
         self.pos_best_interception_y = None
@@ -112,10 +115,13 @@ class BenchmarkParser:
                     entry.flight_time = flight_time
                 if line.find("crashed") != -1:
                     crashed = line.strip().split(":")[1]
-                    entry.crashed = crashed
+                    if int(crashed) == 1:
+                        entry.crashed = True
                 if line.find("best_interception_distance") != -1:
                     best_interception_distance = line.strip().split(":")[1]
                     entry.best_interception_distance = best_interception_distance
+                    if float(best_interception_distance) < MAX_KILL_DISTANCE:
+                        entry.kill = True
                 if line.find("time_to_best_interception") != -1:
                     time_to_best_interception = line.strip().split(":")[1]
                     entry.time_to_best_interception = time_to_best_interception
@@ -181,6 +187,7 @@ class BenchmarkParser:
                 "flight_time",
                 "crashed",
                 "best_interception_distance",
+                "kill",
                 "time_to_best_interception",
                 "pos_best_interception_x",
                 "pos_best_interception_y",
@@ -226,6 +233,7 @@ class BenchmarkParser:
                         "best_interception_distance": float(
                             entry.best_interception_distance
                         ),
+                        "kill": int(entry.kill),
                         "time_to_best_interception": float(
                             entry.time_to_best_interception
                         ),
@@ -258,6 +266,22 @@ class BenchmarkParser:
             self.dataframe = self.dataframe[
                 self.dataframe["benchmark_entry_id"] < TOTAL_BENCHMARK_ENTRIES
             ]
+
+    def calculate_count(self, benchmark_timestamp, column, insect_type=None):
+        _filtered_dataframe = self.dataframe[
+            self.dataframe["benchmark_timestamp"] == benchmark_timestamp
+        ]
+
+        if insect_type == "virtual" or insect_type == "replay":
+            _filtered_dataframe = _filtered_dataframe[
+                _filtered_dataframe["benchmark_type"] == insect_type
+            ]
+        elif insect_type is not None:
+            raise Exception("Unknown insect type")
+
+        _count = _filtered_dataframe[column].sum()
+        return _count
+
 
     def calculate_mean_and_var(self, benchmark_timestamp, column, insect_type=None):
         _filtered_dataframe = self.dataframe[
@@ -310,6 +334,8 @@ class BenchmarkParser:
                 benchmark, "best_interception_distance", "virtual"
             )
 
+            results.number_of_kills = self.calculate_count(benchmark, "kill")
+
             (
                 results.mean_flight_time,
                 results.var_flight_time,
@@ -323,17 +349,15 @@ class BenchmarkParser:
                 results.var_flight_time_virtual,
             ) = self.calculate_mean_and_var(benchmark, "flight_time", "virtual")
 
-            results.mean_crashed, results.var_crashed = self.calculate_mean_and_var(
+            results.number_of_crashes = self.calculate_count(
                 benchmark, "crashed"
             )
-            (
-                results.mean_crashed_replay,
-                results.var_crashed_replay,
-            ) = self.calculate_mean_and_var(benchmark, "crashed", "replay")
-            (
-                results.mean_crashed_virtual,
-                results.var_crashed_virtual,
-            ) = self.calculate_mean_and_var(benchmark, "crashed", "virtual")
+            results.number_of_crashes_replay = self.calculate_count(
+                benchmark, "crashed", "replay"
+            )
+            results.number_of_crashes_virtual = self.calculate_count(
+                benchmark, "crashed", "virtual"
+            )
             if benchmark not in self.benchmark_results:
                 self.benchmark_results[benchmark] = results
             else:
@@ -347,8 +371,9 @@ def find_matching_benchmark_entry(list_of_benchmark_entries, entry_id):
 if __name__ == "__main__":
     TOTAL_BENCHMARK_ENTRIES = 12
     DROP_DUPLICATES = True
+    MAX_KILL_DISTANCE = 0.1
 
-    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/new_parser")
+    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230131tti")
 
     parser.find_benchmark_entries()
     parser.fill_benchmark_entries()
@@ -358,9 +383,9 @@ if __name__ == "__main__":
 
     with open("benchmark_results.org", "w+") as f:
         results_table = f"{parser.file_path}\n\n"
-        results_table += "| Timestamp | No. flights | No. late flights | Hunt error mean | Hunt error var | Flight time mean | Flight time var | Crashes |\n|--------+-----+--------+---------+----------------+-----------------+-------|\n"
+        results_table += "| Timestamp | No. flights | No. late flights | Hunt error mean | Hunt error var | No. kills | Flight time mean | Flight time var | Crashes |\n|--------+-----+--------+---------+----------------+-----------------+-------|\n"
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
-            results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].number_of_flights_started_late} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].mean_crashed} |\n"
+            results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].number_of_flights_started_late} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].number_of_kills} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].number_of_crashes} |\n"
         results_table += "\n"
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
