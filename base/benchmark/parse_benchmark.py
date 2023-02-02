@@ -78,8 +78,9 @@ class BenchmarkEntry:
 
 
 class BenchmarkParser:
-    def __init__(self, search_path):
+    def __init__(self, search_path, benchmark_csv_path):
         self.file_path = search_path
+        self.benchmark_csv_path = benchmark_csv_path
         self.benchmark_entries = []
         self.sorted_benchmark_entries = {}
         self.dataframe = None
@@ -363,23 +364,23 @@ class BenchmarkParser:
             else:
                 raise Exception("Benchmark already exists")
 
-
-def find_matching_benchmark_entry(list_of_benchmark_entries, entry_id):
-    return
-
+    def parse_benchmark_csv(self):
+        self.benchmark_csv = pd.read_csv(self.benchmark_csv_path, sep=";")
 
 if __name__ == "__main__":
     TOTAL_BENCHMARK_ENTRIES = 15
     DROP_DUPLICATES = True
     MAX_KILL_DISTANCE = 0.1
 
-    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230131tti")
+    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230131tti", "/home/gemenerik/code/pats/base/benchmark/benchmark_short.csv")
 
     parser.find_benchmark_entries()
     parser.fill_benchmark_entries()
     parser.assemble_dataframe()
 
     parser.calculate_benchmark_score()
+
+    parser.parse_benchmark_csv()
 
     with open("benchmark_results.org", "w+") as f:
         results_table = f"{parser.file_path}\n\n"
@@ -390,6 +391,26 @@ if __name__ == "__main__":
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
             results_table += f"**Entry {_entry_id}**\n"
+
+            _entry = parser.benchmark_csv.iloc[_entry_id]
+            _entry_type = _entry["type"]
+            results_table += f"{_entry_type} moth"
+            if _entry_type == "replay":
+                _entry_replay_id = _entry["id"]
+                results_table += f" (replay id: {_entry_replay_id})\n"
+            elif _entry_type == "virtual":
+                _entry_pos_x = _entry["pos_x"]
+                _entry_pos_y = _entry["pos_y"]
+                _entry_pos_z = _entry["pos_z"]
+                _entry_vel_x = _entry["vel_x"]
+                _entry_vel_y = _entry["vel_y"]
+                _entry_vel_z = _entry["vel_z"]
+
+                _entry_evasion_trigger = "spinup" if _entry["evasion_trigger"] == 1 else "hunt error"
+                _entry_evasion_type = "diving" if _entry["evasion_type"] == 1 else "u-turn" if _entry["evasion_type"] == 2 else "none"
+
+                results_table += f" (pos: {_entry_pos_x}, {_entry_pos_y}, {_entry_pos_z}, vel: {_entry_vel_x}, {_entry_vel_y}, {_entry_vel_z}, evasion trigger: {_entry_evasion_trigger}, evasion type: {_entry_evasion_type})\n"
+
             results_table += "| Benchmark timestamp | Type | Hunt error | Time to hunt error | Flight time | Crashed | Voltage drop | Interception pos xyz |\n|------+----------+-----+-------+-------+------+----|\n"
             for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
                 _relevant_entry = parser.dataframe[
