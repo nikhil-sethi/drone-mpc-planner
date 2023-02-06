@@ -352,7 +352,9 @@ bool Interceptor::delay_takeoff_for_better_interception(tracking::InsectTracker 
     lurk_distance = interception_center - prediceted_insect_position;
     bool interceptability_will_improve = (lurk_distance).dot(target_tracker->last_track_data().vel()) / normf(lurk_distance) / normf(target_tracker->last_track_data().vel()) > 0.5f;
 
-    return interceptability_is_improving && interceptability_will_improve;
+    bool insect_far_enough = normf(insect.predicted_image_item.pt - _drone->tracker.pad_im_location()) > 60.f;
+
+    return interceptability_is_improving && interceptability_will_improve && insect_far_enough;
 }
 
 tracking::TrackData Interceptor::target_last_trackdata() {
