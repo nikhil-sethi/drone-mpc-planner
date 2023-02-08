@@ -163,6 +163,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 else {
                     remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                     remove("/home/pats/pats/flags/BenchmarkEntry.txt");
+                    _patser->drone.benchmark_mode = false;
                 }
 
 
