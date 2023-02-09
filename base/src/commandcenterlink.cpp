@@ -95,7 +95,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     _patser->drone.benchmark_len = benchmark_entries.size();
                     time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
                     std::ostringstream oss;
-                    oss << std::put_time(std::localtime(&_time_now), "%Y%m%d%H%M%S");
+                    oss << std::put_time(std::localtime(&_time_now), "%Y%m%d_%H%M%S");
                     auto str = oss.str();
                     _patser->drone.benchmark_time = str;
                     _patser->drone.benchmark_entry_id = 0;
