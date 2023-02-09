@@ -190,6 +190,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 break;
         } case fm_max_burn: {
+                mode += bf_airmode;
                 auto_throttle = RC_BOUND_MAX;
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad()) {
                     _flight_mode = fm_flying_pid_init;
@@ -198,8 +199,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, takeoff_aim_acceleration_factor * GRAVITY, 0});
                     _flight_mode = fm_1g;
                 } else {
-                    cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 2.f * GRAVITY);
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
+                    auto_roll = RC_MIDDLE;
+                    auto_pitch = RC_MIDDLE;
+                    auto_yaw = RC_MIDDLE;
+                    auto_throttle = 2.f * GRAVITY;
                 }
                 break;
         } case fm_max_burn_spin_down: {
