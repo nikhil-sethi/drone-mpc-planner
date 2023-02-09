@@ -38,6 +38,8 @@ class BenchmarkResults:
         # crashes
         self.number_of_crashes = None
 
+        self.hash = None
+
 
 class BenchmarkEntry:
     def __init__(self):
@@ -171,6 +173,9 @@ class BenchmarkParser:
                 if line.find("voltage_reduction") != -1:
                     voltage_reduction = line.strip().split(":")[1]
                     entry.voltage_reduction = voltage_reduction
+                if line.find("benchmark_hash") != -1:
+                    hash = line.strip().split(":")[1]
+                    entry.hash = hash
 
     def assemble_dataframe(self):
         self.dataframe = pd.DataFrame(
@@ -201,6 +206,7 @@ class BenchmarkParser:
                 "acc_best_interception_z",
                 "benchmark_entry_id",
                 "voltage_reduction",
+                "hash",
             ]
         )
         for entry in self.benchmark_entries:
@@ -249,6 +255,7 @@ class BenchmarkParser:
                         "acc_best_interception_z": float(entry.acc_best_interception_z),
                         "benchmark_entry_id": int(entry.benchmark_entry_id),
                         "voltage_reduction": float(entry.voltage_reduction),
+                        "hash": entry.hash,
                     }
                 ]
             )
@@ -359,6 +366,10 @@ class BenchmarkParser:
             results.number_of_crashes_virtual = self.calculate_count(
                 benchmark, "crashed", "virtual"
             )
+
+            _filtered_dataframe = self.dataframe[self.dataframe["benchmark_timestamp"] == benchmark]
+            results.hash = _filtered_dataframe["hash"].iloc[0]
+
             if benchmark not in self.benchmark_results:
                 self.benchmark_results[benchmark] = results
             else:
@@ -368,12 +379,12 @@ class BenchmarkParser:
         self.benchmark_csv = pd.read_csv(self.benchmark_csv_path, sep=";")
 
 if __name__ == "__main__":
-    TOTAL_BENCHMARK_ENTRIES = 15
+    TOTAL_BENCHMARK_ENTRIES = 15 # + 1
     DROP_DUPLICATES = True
-    MAX_KILL_DISTANCE = 0.1
+    MAX_KILL_DISTANCE = 0.05
     MEAN_VAR_PER_INSECT = False
 
-    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230131tti", "/home/gemenerik/code/pats/base/benchmark/benchmark_short.csv")
+    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230209", "/home/gemenerik/code/pats/base/benchmark/benchmark_short.csv")
 
     parser.find_benchmark_entries()
     parser.fill_benchmark_entries()
@@ -385,9 +396,9 @@ if __name__ == "__main__":
 
     with open("benchmark_results.org", "w+") as f:
         results_table = f"{parser.file_path}\n\n"
-        results_table += "| Timestamp | No. flights | No. late flights | Hunt error mean | Hunt error var | No. kills | Flight time mean | Flight time var | Crashes |\n|--------+-----+--------+---------+----------------+-----------------+-------|\n"
+        results_table += "| Timestamp | No. flights | No. late flights | Hunt error mean | Hunt error var | No. kills | Flight time mean | Flight time var | Crashes | Hash |\n|--------+-----+--------+---------+----------------+-----------------+-------+-----|\n"
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
-            results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].number_of_flights_started_late} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].number_of_kills} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].number_of_crashes} |\n"
+            results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].number_of_flights_started_late} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].number_of_kills} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].number_of_crashes} | {parser.benchmark_results[_benchmark_time_date].hash} |\n"
         results_table += "\n"
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
