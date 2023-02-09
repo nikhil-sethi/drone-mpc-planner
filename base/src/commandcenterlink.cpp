@@ -167,9 +167,8 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     remove("/home/pats/pats/flags/BenchmarkEntry.txt");
                     _patser->drone.benchmark_mode = false;
                 }
-
-
-
+            } else if (!file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+                _patser->drone.benchmark_mode = false;
             }
         }
         if (file_exist(demo_insect_fn)) {
