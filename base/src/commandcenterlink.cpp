@@ -87,8 +87,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 if (_patser->drone.benchmark_mode) {
                     std::cout << "Benchmark already running!" << std::endl;
                     remove(benchmark_fn.c_str());
-                }
-                else {
+                } else {
                     std::cout << "Parsing benchmark!" << std::endl;
                     rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
                     BenchmarkReader benchmark_reader;
@@ -123,8 +122,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                         _patser->drone.benchmark_len = benchmark_entries.size();
                         _patser->drone.benchmark_mode = true;
-                    }
-                    else
+                    } else
                         remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                 }
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
@@ -144,13 +142,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "replay") {
                             _patser->trackers.init_replay_moth(benchmark_entries[_patser->drone.benchmark_entry_id].id);
                             _n_replay_moth++;
-                        }
-                        else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
+                        } else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
                             tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_trigger), tracking::VirtualMothTracker::evasion_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_type)};
                             _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior);
                             _n_replay_moth++;
-                        }
-                        else {
+                        } else {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
                         }
                         _patser->drone.benchmark_entry_id++;
@@ -161,8 +157,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         EntryFlag << _patser->drone.benchmark_time << "\n";
                         EntryFlag.close();
                     }
-                }
-                else {
+                } else {
                     remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                     remove("/home/pats/pats/flags/BenchmarkEntry.txt");
                     _patser->drone.benchmark_mode = false;
