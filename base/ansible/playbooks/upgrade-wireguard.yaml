@@ -1,0 +1,28 @@
+---
+- hosts: pats347
+  strategy: linear
+  tasks:
+    - name: Ansible apt update cache if it is older than 1 hour
+      become: true
+      register: updatesys
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Ansible apt install wireguard
+      become: true
+      ansible.builtin.apt:
+        name: wireguard
+        state: present
+    - name: Download wireguard conf for this
+      changed_when: false
+      ansible.builtin.shell: "rsync dash:wireguard_config/peers/{{ ansible_hostname }}.conf /home/pats/ -az"
+    - name: Apply wg0 conf
+      changed_when: false
+      become: true
+      ansible.builtin.shell: "cp /home/pats/{{ ansible_hostname }}.conf /etc/wireguard/wg0.conf"
+    - name: Enable wireguard at boot, and start service
+      changed_when: false
+      become: true
+      ansible.builtin.shell: "systemctl enable wg-quick@wg0.service && systemctl daemon-reload && systemctl start wg-quick@wg0 && wg show"
+      register: output_checks
+    - ansible.builtin.debug: var=output_checks.stdout_lines

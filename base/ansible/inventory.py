@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import argparse
 import os
-import re
 import json
 import sqlite3
 from datetime import datetime
@@ -22,44 +21,51 @@ def open_meta_db():
 
 
 with open_meta_db() as con:
-    systems = con.execute('''SELECT system,operation,maintenance,baseboard,customers.name FROM systems JOIN customers ON customers.customer_id = systems.customer_id ORDER BY system_id''').fetchall()
-    operation_modes = pd.read_sql_query('SELECT * FROM operational_modes', con)
-operation_modes = operation_modes.set_index('name').to_dict()['status_id']
+    systems = pd.read_sql_query('''
+                                    SELECT c_systems.id, maintenance, baseboard, sections.name, operational_modes.name as operation
+                                    FROM c_systems
+                                    JOIN sections ON sections.id = c_systems.section_id
+                                    JOIN operational_modes ON operational_modes.id = c_systems.operation
+                                    ORDER BY c_systems.id
+                                    ''', con).to_dict('records')
 
 groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'trapeye': {'hosts': []}, 'kevin': {'hosts': []}, 'qc': {'hosts': []}, 'rc': {'hosts': []}, 'darkroom': {'hosts': []}}
-
-for system, operation_mode, maintenance_date_str, baseboard, customer in systems:
-    customer = re.sub('[^a-zA-Z0-9 \n\.]', '', customer)
-
+for system in systems:
     maintenance = False
-    if maintenance_date_str:
-        maintenance_date_str = maintenance_date_str.strip()
-        if datetime.strptime(maintenance_date_str, "%Y%m%d") > datetime.today():
+    if system['maintenance']:
+        system['maintenance'] = system['maintenance'].strip()
+        if '_' in system['maintenance']:
+            system['maintenance'] = system['maintenance'].split('_')[0]
+        if datetime.strptime(system['maintenance'], "%Y%m%d") > datetime.today():
             maintenance = True
 
+    system['baseboard'] = bool(system['baseboard'])
+    system['maintenance'] = bool(maintenance)
+    system_name = 'pats' + str(system['id'])
+    groups[system_name] = {'hosts': [system_name]}
     if not maintenance:
-        if baseboard or True:  # optional use for upgrading baseboards
-            groups['all']['hosts'].append(system)
-            if operation_mode == operation_modes['c']:
-                groups['c']['hosts'].append(system)
+        if system['baseboard'] or True:  # optional use for upgrading baseboards
+            groups['all']['hosts'].append(system_name)
+            if system['operation'] == 'c':
+                groups['c']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['x']:
-                groups['x']['hosts'].append(system)
+            if system['operation'] == 'x':
+                groups['x']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['trapeye']:
-                groups['trapeye']['hosts'].append(system)
+            if system['operation'] == 'trapeye':
+                groups['trapeye']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['kevin']:
-                groups['kevin']['hosts'].append(system)
+            if system['operation'] == 'kevin':
+                groups['kevin']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['qc']:
-                groups['qc']['hosts'].append(system)
+            if system['operation'] == 'qc':
+                groups['qc']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['rc']:
-                groups['rc']['hosts'].append(system)
+            if system['operation'] == 'rc':
+                groups['rc']['hosts'].append(system_name)
 
-            if operation_mode == operation_modes['darkroom']:
-                groups['darkroom']['hosts'].append(system)
+            if system['operation'] == 'darkroom':
+                groups['darkroom']['hosts'].append(system_name)
 
 
 if __name__ == "__main__":

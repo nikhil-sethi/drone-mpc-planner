@@ -2,36 +2,47 @@ Host *
 ServerAliveInterval 240
 ForwardAgent yes
 
+host comm
+        Hostname vpn.pats-c.com
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+host comm_wg
+        Hostname 10.13.9.1
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+
 host comm_ip
         Hostname 85.10.135.67
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
 
-Host beta_ip
-        Hostname 185.95.13.11
+Host dash
+        Hostname pats-c.com
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
 
+Host dash_wg
+        Hostname 10.13.9.2
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
 Host dash_ip
-	Hostname 37.128.150.141
-        IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-
-host comm
-        Hostname vpn.pats-c.com
+        Hostname 37.128.150.141
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-
 
 Host beta
         Hostname beta.pats-c.com
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-
-Host dash
-	Hostname pats-c.com
+Host beta_wg
+        Hostname 10.13.9.3
         IdentityFile ~/.ssh/pats_id_rsa
-	User pats
+        User pats
+Host beta_ip
+        Hostname 185.95.13.11
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+
 
 Host pats0
         Hostname localhost
@@ -258,6 +269,10 @@ Host pats30
         Port 10030
 
 Host pats31
+        Hostname 10.13.10.31
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
+        User pats
+Host pats31_tunnel
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
@@ -279,6 +294,10 @@ Host pats33
         Port 10033
 
 Host pats34
+        Hostname 10.13.10.34
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
+        User pats
+Host pats34_tunnel
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
