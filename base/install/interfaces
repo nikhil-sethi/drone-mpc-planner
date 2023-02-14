@@ -16,3 +16,6 @@ allow-hotplug enx001e101f0000
 iface enx001e101f0000 inet dhcp
     metric 20999
 
+allow-hotplug enx344b50000000
+iface enx344b50000000 inet dhcp
+    metric 20999
