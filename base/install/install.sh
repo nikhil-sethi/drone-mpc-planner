@@ -64,10 +64,10 @@ SSH_KEYS_FLAG=ssh_keys.done
 }
 
 
-DEPENDENCIES_FLAG=dependencies-packages-v1.21.done
+DEPENDENCIES_FLAG=dependencies-packages-v1.22.done
 [ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv avrdude
 	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]] || [[ $KERNEL == "5.15."* ]]; then
