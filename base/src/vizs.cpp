@@ -699,6 +699,14 @@ void Visualizer::paint() {
                 }
                 imshow("stereo drone " + std::to_string(drone->uid()), drone->viz_disp);
             }
+            if (drone->template_viz().cols > 0) {
+                static bool template_viz_initialized = false;
+                if (!template_viz_initialized) {
+                    template_viz_initialized = true;
+                    namedWindow("template drone " + std::to_string(drone->uid()), cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                }
+                imshow("template drone " + std::to_string(drone->uid()), drone->template_viz());
+            }
         }
         if (_patser->interceptor.target_insecttracker()) {
             if (_patser->interceptor.target_insecttracker()->viz_disp.cols > 0) {

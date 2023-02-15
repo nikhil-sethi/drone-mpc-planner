@@ -61,7 +61,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     _image_template_item.size = make_even(_drone_on_pad_im_size);
     cv::Rect crop_template(_image_template_item.x - _image_template_item.size / 2, _image_template_item.y - _image_template_item.size / 2, _image_template_item.size, _image_template_item.size);
     crop_template = clamp_rect(crop_template, IMG_W, IMG_H);
-    template_drone = _visdat->frameL(crop_template);
+    _template = _visdat->frameL(crop_template);
     template_deviation_detected = false;
     _template_tracking = false;
 }
@@ -602,25 +602,25 @@ void DroneTracker::match_template() {
         return;
     cv::Point3f last_world_pos = im2world(_image_template_item.pt(), _image_template_item.disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
     int max_im_dist = static_cast<int>(world2im_dist(last_world_pos, max_world_dist, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()) + _image_template_item.size / 2);
-    int roi_size = std::clamp(max_im_dist, max(template_drone.cols, template_drone.rows) * 2, min(template_drone.cols, template_drone.rows) * 10);
+    int roi_size = std::clamp(max_im_dist, max(_template.cols, _template.rows) * 2, min(_template.cols, _template.rows) * 10);
     double min_val_L, min_val_R, max_val_L, max_val_R;
     cv::Point min_loc_L, min_loc_R, max_loc_L, max_loc_R;
     cv::Point3i last_im_pos = _image_template_item.ptd();
     cv::Rect crop_L = clamp_rect(cv::Rect(last_im_pos.x - roi_size / 2, last_im_pos.y - roi_size / 2, roi_size, roi_size), IMG_W, IMG_H);
     cv::Mat roi_L = _visdat->frameL(crop_L);
     cv::Mat result_template_match_L, result_template_match_R;
-    cv::matchTemplate(edge_detector(roi_L), edge_detector(template_drone), result_template_match_L, 2);
+    cv::matchTemplate(edge_detector(roi_L), edge_detector(_template), result_template_match_L, 2);
     cv::minMaxLoc(result_template_match_L, &min_val_L, &max_val_L, &min_loc_L, &max_loc_L);
 
-    cv::Rect crop_R = clamp_rect(cv::Rect(last_im_pos.x - last_im_pos.z - roi_size / 2, last_im_pos.y - roi_size / 2 + max_loc_L.y - 1, roi_size, template_drone.cols + 2), template_drone.cols, template_drone.rows, IMG_W, IMG_H);
+    cv::Rect crop_R = clamp_rect(cv::Rect(last_im_pos.x - last_im_pos.z - roi_size / 2, last_im_pos.y - roi_size / 2 + max_loc_L.y - 1, roi_size, _template.cols + 2), _template.cols, _template.rows, IMG_W, IMG_H);
     cv::Mat roi_R = _visdat->frameR(crop_R);
-    cv::matchTemplate(edge_detector(roi_R), edge_detector(template_drone), result_template_match_R, 2);
+    cv::matchTemplate(edge_detector(roi_R), edge_detector(_template), result_template_match_R, 2);
     cv::minMaxLoc(result_template_match_R, &min_val_R, &max_val_R, &min_loc_R, &max_loc_R);
 
     float temp_size = _image_template_item.size;
-    _image_template_item = ImageItem(last_im_pos.x - crop_L.width / 2 + max_loc_L.x + template_drone.cols / 2, last_im_pos.y - crop_L.height / 2 + max_loc_L.y + template_drone.rows / 2, last_im_pos.z, _visdat->frame_id);
+    _image_template_item = ImageItem(last_im_pos.x - crop_L.width / 2 + max_loc_L.x + _template.cols / 2, last_im_pos.y - crop_L.height / 2 + max_loc_L.y + _template.rows / 2, last_im_pos.z, _visdat->frame_id);
     _image_template_item.size = temp_size;
-    _image_template_item.disparity += (crop_R.width / 2 - max_loc_R.x - template_drone.cols / 2);
+    _image_template_item.disparity += (crop_R.width / 2 - max_loc_R.x - _template.cols / 2);
     if (!taking_off()) {
         recenter_template();
     } else {
@@ -629,7 +629,7 @@ void DroneTracker::match_template() {
     }
     cv::Rect crop_template(_image_template_item.x - _image_template_item.size / 2, _image_template_item.y - _image_template_item.size / 2, _image_template_item.size, _image_template_item.size);
     crop_template = clamp_rect(crop_template, IMG_W, IMG_H);
-    template_drone = _visdat->frameL(crop_template);
+    _template = _visdat->frameL(crop_template);
     return;
 }
 
@@ -637,7 +637,7 @@ void DroneTracker::recenter_template() {
     if (_image_item.valid && !template_tracking()) {
         cv::Point2f image_item_pos = _image_item.pt();
         cv::Point2f image_template_item_pos = _image_template_item.pt();
-        if (normf(image_item_pos - image_template_item_pos) <= template_drone.cols) {
+        if (normf(image_item_pos - image_template_item_pos) <= _template.cols) {
             if (normf(image_item_pos - image_template_item_pos) > 1) {
                 cv::Point2i move_direction = (image_item_pos - image_template_item_pos) / normf(image_item_pos - image_template_item_pos);
                 _image_template_item.x += move_direction.x;
@@ -655,11 +655,11 @@ void DroneTracker::recenter_template() {
             template_deviation_detected = true;
     } else {
         const uint8_t minimal_drone_brightness = 200;
-        if (template_drone.at<uint8_t>(template_drone.cols / 2, template_drone.cols / 2) > minimal_drone_brightness) {
-            cv::Moments template_drone_moments = cv::moments(template_drone);
+        if (_template.at<uint8_t>(_template.cols / 2, _template.cols / 2) > minimal_drone_brightness) {
+            cv::Moments template_drone_moments = cv::moments(_template);
             cv::Point2i center_of_mass(template_drone_moments.m10 / template_drone_moments.m00, template_drone_moments.m01 / template_drone_moments.m00);
-            if (normf(center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2)) > 1) {
-                cv::Point2i move_direction = (center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2)) / normf(center_of_mass - cv::Point2i(template_drone.cols / 2, template_drone.cols / 2));
+            if (normf(center_of_mass - cv::Point2i(_template.cols / 2, _template.cols / 2)) > 1) {
+                cv::Point2i move_direction = (center_of_mass - cv::Point2i(_template.cols / 2, _template.cols / 2)) / normf(center_of_mass - cv::Point2i(_template.cols / 2, _template.cols / 2));
                 _image_template_item.x += move_direction.x;
                 _image_template_item.y += move_direction.y;
             }
