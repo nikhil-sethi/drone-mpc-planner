@@ -386,20 +386,14 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
             } else {
                 for (auto &blob : *pbs) {
                     auto *props = blob.props;
-                    bool in_ignore_zone = trkr->check_ignore_blobs(props) && trkr->type() == tt_insect;
-                    if (in_ignore_zone)
-                        blob.ignored = true;
-                    if (!in_ignore_zone) {
-                        float score  = trkr->score(props);
-                        blob.tracker_scores.push_back(pair<int, float>(trkr->uid(), score));
-                        scores.push_back(ScorePair(score, trkr, &blob));
-                        if (_enable_viz_blob && trkr->viz_id() < 6) {
-                            cv::Mat viz = vizs_blobs.at(blob.id);
-                            cv::Point2i pt(viz.cols / 5 + 2, viz.rows - 20 * (trkr->viz_id() + 1));
-                            putText(viz, "#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score, 2), pt, FONT_HERSHEY_SIMPLEX, 0.4, tracker_color(trkr));
-                        }
+                    float score  = trkr->score(props);
+                    blob.tracker_scores.push_back(pair<int, float>(trkr->uid(), score));
+                    scores.push_back(ScorePair(score, trkr, &blob));
+                    if (_enable_viz_blob && trkr->viz_id() < 6) {
+                        cv::Mat viz = vizs_blobs.at(blob.id);
+                        cv::Point2i pt(viz.cols / 5 + 2, viz.rows - 20 * (trkr->viz_id() + 1));
+                        putText(viz, "#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score, 2), pt, FONT_HERSHEY_SIMPLEX, 0.4, tracker_color(trkr));
                     }
-
                 }
             }
         }
