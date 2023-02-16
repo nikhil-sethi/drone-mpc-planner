@@ -190,7 +190,7 @@ class errors_to_vps_task(pats_task):
         yesterday_file = lb.daily_errs_log + '.' + (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
         if os.path.exists(yesterday_file):
             remote_err_file = 'daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str_with_timezone(datetime.today()) + '.log'
-            cmd = 'rsync -az ' + yesterday_file + ' dash:' + remote_err_file
+            cmd = 'rsync -az ' + yesterday_file + ' dash_upload:' + remote_err_file
             send_success = False
             intervals = (1, 2, 5, 10, 60, 60, 120)
             for i in intervals:

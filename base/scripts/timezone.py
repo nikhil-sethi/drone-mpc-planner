@@ -14,9 +14,9 @@ if os.path.isfile('/home/pats/dependencies/hostname_set') and not os.path.isfile
 
     time.sleep(5)  # dash needs some time to send us our timezone
 
-    timezone_file = 'patsc/timezone/' + 'tmp_' + system
+    timezone_file = 'timezone/' + 'tmp_' + system
     target_file = '/home/pats/dependencies/timezone_set'
-    cmd = ['rsync -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null  -i /home/pats/.ssh/id_rsa -F /home/pats/.ssh/config" dash:' + timezone_file + ' ' + target_file]
+    cmd = ['rsync -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null  -i /home/pats/.ssh/id_rsa -F /home/pats/.ssh/config" dash_upload:' + timezone_file + ' ' + target_file]
     subprocess.run(cmd, shell=True)
 
     if os.path.isfile('/home/pats/dependencies/timezone_set'):

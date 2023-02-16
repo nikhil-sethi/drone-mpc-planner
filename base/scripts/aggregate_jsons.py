@@ -119,8 +119,8 @@ def send_all_jsons():
     Path(lb.json_dir + '/sent').mkdir(parents=True, exist_ok=True)
     files = glob.glob(lb.json_dir + '/*.tar.xz') + glob.glob(lb.json_dir + '/*.json')
     for json_fn in files:
-        remote_json_file = 'patsc/jsons/' + os.path.basename(json_fn)
-        cmd = 'rsync -a ' + json_fn + ' dash:' + remote_json_file
+        remote_json_file = 'jsons/' + os.path.basename(json_fn)
+        cmd = 'rsync -a ' + json_fn + ' dash_upload:' + remote_json_file
         if lb.execute(cmd, 3, 'aggregate_jsons') == 0:
             json_sent_fn = lb.json_dir + '/sent/' + os.path.basename(json_fn)
             os.rename(json_fn, json_sent_fn)

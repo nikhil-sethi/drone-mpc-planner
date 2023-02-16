@@ -2,7 +2,6 @@ Host *
 ServerAliveInterval 240
 ForwardAgent yes
 
-
 Host github-pats
   HostName github.com
   User git
@@ -23,13 +22,24 @@ Host github-trapeye
   User git
   IdentityFile ~/.ssh/id_rsa.trapeye
 
-  
-Host beta
-        Hostname beta.patsc.com
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
+
 
 Host dash
-	Hostname pats-c.com
-        IdentityFile ~/.ssh/pats_id_rsa
-	User pats
+  Hostname pats-c.com
+  IdentityFile ~/.ssh/pats_id_rsa
+  User pats
+
+Host dash_upload
+  Hostname pats-c.com
+  IdentityFile ~/.ssh/pats_upload_id_ed25519
+  User upload
+
+Host beta
+  Hostname beta.patsc.com
+  IdentityFile ~/.ssh/pats_id_rsa
+  User pats
+
+Host beta_upload
+  Hostname beta.pats-c.com
+  IdentityFile ~/.ssh/pats_upload_id_ed25519
+  User upload

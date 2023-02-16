@@ -108,11 +108,9 @@ Host pats7
 	Port 10007
 
 Host pats8
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dash
-	Port 10008
+        Hostname 10.13.10.8
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
+        User pats
 
 Host pats9
         Hostname localhost
@@ -272,12 +270,6 @@ Host pats31
         Hostname 10.13.10.31
         IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-Host pats31_tunnel
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
-        ProxyJump dash
-        Port 10031
 
 Host pats32
         Hostname localhost
