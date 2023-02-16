@@ -52,7 +52,7 @@ Same remarks as with drone flash script apply.
 ## Flashing Baseboard:
 
 ```
-$HOME/code/pats/config/firmwares/baseboard/update_baseboard.sh
+$HOME/code/pats/config/firmwares/baseboard/flash_baseboard.sh
 ```
 
 ## Initializing new Baseboard:
