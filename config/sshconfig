@@ -10,7 +10,6 @@ host comm_wg
         Hostname 10.13.9.1
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-
 host comm_ip
         Hostname 85.10.135.67
         IdentityFile ~/.ssh/pats_id_rsa
@@ -29,6 +28,10 @@ Host dash_ip
         Hostname 37.128.150.141
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
+host dash_upload
+        Hostname 37.128.150.141
+        User upload
+        IdentityFile ~/.ssh/pats_upload_id_ed25519
 
 Host beta
         Hostname beta.pats-c.com
@@ -42,6 +45,10 @@ Host beta_ip
         Hostname 185.95.13.11
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
+host beta_upload
+        Hostname 185.95.13.11
+        User upload
+        IdentityFile ~/.ssh/pats_upload_id_ed25519
 
 
 Host pats0
@@ -266,10 +273,16 @@ Host pats30
         ProxyJump dash
         Port 10030
 
-Host pats31
+Host pats31wg
         Hostname 10.13.10.31
         IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
+Host pats31
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10031
 
 Host pats32
         Hostname localhost
@@ -1529,11 +1542,9 @@ Host pats210
         Port 10210
 
 Host pats211
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.10.211
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10211
 
 Host pats212
         Hostname localhost
@@ -2285,14 +2296,10 @@ Host pats316
         ProxyJump dash
         Port 10316
 
-
 Host pats317
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.62
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10317
-
 
 Host pats318
         Hostname localhost

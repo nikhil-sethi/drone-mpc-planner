@@ -61,21 +61,14 @@ All done!
     - Remotely open (via ssh) the base project with vscode, and install all extensions
     - Make sure both tunnels have been connected
 2. Prep the image
-    - **Make sure the system hostname is called pats0**
+    - Run the clean_for_image.sh script
     - **Update the image version number in `~/dependencies/image_version`**
-    - Set the disable flag
-    - Delete all pats data, json and logs
-    - Clean up the `~/.bash_history'
     - Make sure the correct branch is selected.
-    - Make sure the following files are removed:
-        - `/home/pats/dependencies/hostname_set`
-        - `/home/pats/dependencies/timezone_set` 
-        - `/etc/wireguard/wg0.conf`
 3. Create the image with clonezilla
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
     - Choose `PATS Create Image`
-    - Give the image a name in the form: `NUC**_v*.*_DATE-img`. Except for the date, this **must** be similar to the contents in `~/pats/dependencies/image_version`
+    - Give the image a name in the form: `NUC**_v*.*_DATE-img`. Except for the date, this should be equal to the contents in `~/pats/dependencies/image_version`
     - Wait a few minutes until it powers off.
 4. Copy the image:
     - Repeat the procedure for the other USB stick
@@ -83,6 +76,13 @@ All done!
 5. Update the default burn image
     - Edit, commit, push `subl ~/code/pats/config/clonezilla/grub.cfg `
     - Copy to both sticks
+
+## initialize a compile box
+1. `cd ~ && mkdir code -p && cd code && git clone git@github-pats:pats-drones/pats.git`
+2. `cd ~/code/pats/base/install/install.sh`
+3. `cd ~/code/pats/config/firmware/image && ./compile_dependencies.sh`
+4. Put `binaries.tar.gz` and `package_list.txt` in the release repo
+5. Upload debs to dash in the appropiate debs folder
 
 ## Tools used to make the install stick:
 1. YUMI
