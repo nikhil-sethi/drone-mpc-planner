@@ -13,12 +13,13 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
 
     tti_optimizer.init(&interception_max_thrust);
+    rapid_route.init(&interception_max_thrust);
 #ifdef OCP_DEV
     // tti_optimizer.init_casadi("../ocp_design/tti/tti_optimizer.so");
     // intercept_in_planes_optimizer.init_casadi("../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");
 #endif
-    intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
-    iip_thread = std::thread(&Interceptor::iip_worker, this);
+    // intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
+    // iip_thread = std::thread(&Interceptor::iip_worker, this);
 
     initialized = true;
 }
@@ -209,15 +210,15 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 #endif
 }
 
-void Interceptor::update_aim_in_flightarea(tti_result tti_res) {
-    if (tti_res.valid) {
-        _tti = tti_res.time_to_intercept;
-        if (_flight_area->inside(tti_res.position_to_intercept, relaxed))
+void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
+    if (rapid_route_res.valid) {
+        _tti = rapid_route_res.time_to_intercept;
+        if (_flight_area->inside(rapid_route_res.position_to_intercept, relaxed))
             aim_in_flightarea = true;
     }
 
     if (aim_in_flightarea) {
-        _aim_pos = tti_res.position_to_intercept;
+        _aim_pos = rapid_route_res.position_to_intercept;
         _n_frames_aim_not_in_range = 0;
     } else
         _n_frames_aim_not_in_range++;
@@ -232,8 +233,9 @@ void Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracki
         interception_max_thrust = 2.f * (*_drone->control.max_thrust()); //Try to compensate ground effect
     }
 
-    auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    update_aim_in_flightarea(tti_res);
+    // auto tti_res = tti_optimizer.find_best_interception(drone, target);
+    auto rapid_route_res = rapid_route.find_best_interception(drone, target);
+    update_aim_in_flightarea(rapid_route_res);
 
     target_in_flightarea = _flight_area->inside(target.pos(), relaxed);
 

@@ -8,6 +8,7 @@
 #include "trackermanager.h"
 #include "visiondata.h"
 #include "tti_optimizer_interface.h"
+#include "rapid_route.h"
 #include "intercept_in_planes_optimizer_interface.h"
 #include "drone.h"
 #ifdef OPTI_ROSVIS
@@ -79,7 +80,7 @@ private:
 
     tracking::InsectTracker *update_target_insecttracker();
 
-    void update_aim_in_flightarea(tti_result tti_res);
+    void update_aim_in_flightarea(rapid_route_result rapid_route_res);
     void update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target);
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
@@ -112,6 +113,7 @@ private:
 public:
     TTIOptimizerInterface tti_optimizer;
     InterceptInPlanesOptimizerInterface intercept_in_planes_optimizer;
+    RapidRouteInterface rapid_route;
 
 #ifdef OPTI_ROSVIS
     void ros_interface(RosVisualizerInterface *interface) {
