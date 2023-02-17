@@ -255,13 +255,13 @@ class wdt_pats_task(pats_task):
 
 class wdt_tunnel_task(pats_task):
     # What I want to happen is the following:
-    # - restart the NUC if the tunnel is failing, but:
+    # - restart the NUC if the tunnel/wireguard is failing, but:
     # - only if absolutely necessary and it does not hurt the monitoring operation
     # - and make sure it can never constantly restart, so that we have a good chance
     #   of re establishing contact manually if there is some unforeseen problem
     #   with the wdt or whatever
 
-    # On the other hand, I do want to know if there are problems with tunnel more
+    # On the other hand, I do want to know if there are problems with tunnel/wireguard more
     # often. So, it is logged once per hour, but only once per day is it allowed to
     # actually reboot itself. This moment at 13:00 is chosen such that it can't
     # influence the monitoring results. The post processing scripts should be done by
@@ -271,65 +271,105 @@ class wdt_tunnel_task(pats_task):
         super(wdt_tunnel_task, self).__init__('wdt_tunnel', timedelta(), timedelta(hours=1), True, error_file_handler)
 
     tunnel_ok_time = datetime.today()
+    wireguard_ok_time = datetime.today()
 
     def task_func(self):
         if os.path.exists(lb.disable_tunnel_flag):
             daemon2baseboard_pkg.internet_OK = 1
             return
 
-        tunnel_ok = False
-        cmd = 'lsof -i tcp:22'
-        output = ''
-        try:
-            output = subprocess.check_output(cmd.split(' '))
-        except Exception as e:  # pylint: disable=broad-except
-            self.logger.warning('Error in getting tunnel info: ' + str(e))
-        if output:
-            output = output.decode(sys.stdout.encoding)
-            output = output.splitlines()
-            for line in output:
-                if line:
-                    if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
-                        self.tunnel_ok_time = datetime.today()
-                        tunnel_ok = True
+        if os.path.exists(os.path.expanduser('~/dependencies/wireguard_set')):
 
-        ping_ok = False
-        cmd = 'ping -c3 pats-c.com'
-        output = ''
-        try:
-            output = subprocess.check_output(cmd.split(' '))
-        except Exception as e:  # pylint: disable=broad-except
-            self.logger.warning('Error in getting ping info: ' + str(e))
-        if output:
-            output = output.decode(sys.stdout.encoding)
-            output = output.splitlines()
-            for line in output:
-                if line:
-                    if 'packets transmitted, ' in line:
-                        p = float(line.split(',')[2].strip().split('%')[0])
-                        if p < 90:
-                            ping_ok = True
-                            self.logger.info(line)
-                            break
+            ping_wireguard_ok = False
+            cmd = 'ping -c3 10.13.9.1'
+            output = ''
+            try:
+                output = subprocess.check_output(cmd.split(' '))
+            except Exception as e:  # pylint: disable=broad-except
+                self.logger.warning('Error in getting wireguard ping info: ' + str(e))
+            if output:
+                output = output.decode(sys.stdout.encoding)
+                output = output.splitlines()
+                for line in output:
+                    if line:
+                        if 'packets transmitted, ' in line:
+                            p = float(line.split(',')[2].strip().split('%')[0])
+                            if p < 90:
+                                ping_wireguard_ok = True
+                                daemon2baseboard_pkg.internet_OK = 1
+                                self.wireguard_ok_time = datetime.today()
+                                self.logger.info(line)
+                                break
 
-        if tunnel_ok and ping_ok:
-            daemon2baseboard_pkg.internet_OK = 1
-        else:
-            daemon2baseboard_pkg.internet_OK = 0
+            if (datetime.today() - self.wireguard_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
+                self.error_cnt += 1
+                self.logger.error('Wireguard watchdog alert! Rebooting!')
+                if not os.path.exists(lb.disable_baseboard_flag) and not os.path.exists(lb.disable_watchdog_flag):
+                    self.logger.info('Baseboard exists, see you in an hour.')
+                    cmd = 'sudo systemctl poweroff'
+                else:
+                    self.logger.info('No baseboard, see in 2 minutes.')
+                    cmd = 'sudo rtcwake -m off -s 120'
+                lb.execute(cmd, 1, logger_name=self.name)
+            elif not ping_wireguard_ok:
+                self.error_cnt += 1
+                self.logger.warning('Wireguard watchdog alert! Holding of reboot until 13:00 though')
 
-        if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
-            self.error_cnt += 1
-            self.logger.error('Tunnel watchdog alert! Rebooting!')
-            if not os.path.exists(lb.disable_baseboard_flag) and not os.path.exists(lb.disable_watchdog_flag):
-                self.logger.info('Baseboard exists, see you in an hour.')
-                cmd = 'sudo systemctl poweroff'
+        else:  # legacy tunnel watchdog
+
+            tunnel_ok = False
+            cmd = 'lsof -i tcp:22'
+            output = ''
+            try:
+                output = subprocess.check_output(cmd.split(' '))
+            except Exception as e:  # pylint: disable=broad-except
+                self.logger.warning('Error in getting tunnel info: ' + str(e))
+            if output:
+                output = output.decode(sys.stdout.encoding)
+                output = output.splitlines()
+                for line in output:
+                    if line:
+                        if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
+                            self.tunnel_ok_time = datetime.today()
+                            tunnel_ok = True
+
+            ping_ok = False
+            cmd = 'ping -c3 pats-c.com'
+            output = ''
+            try:
+                output = subprocess.check_output(cmd.split(' '))
+            except Exception as e:  # pylint: disable=broad-except
+                self.logger.warning('Error in getting ping info: ' + str(e))
+            if output:
+                output = output.decode(sys.stdout.encoding)
+                output = output.splitlines()
+                for line in output:
+                    if line:
+                        if 'packets transmitted, ' in line:
+                            p = float(line.split(',')[2].strip().split('%')[0])
+                            if p < 90:
+                                ping_ok = True
+                                self.logger.info(line)
+                                break
+
+            if tunnel_ok and ping_ok:
+                daemon2baseboard_pkg.internet_OK = 1
             else:
-                self.logger.info('No baseboard, see in 2 minutes.')
-                cmd = 'sudo rtcwake -m off -s 120'
-            lb.execute(cmd, 1, logger_name=self.name)
-        elif not tunnel_ok:
-            self.error_cnt += 1
-            self.logger.warning('Tunnel watchdog alert! Holding of reboot until 13:00 though')
+                daemon2baseboard_pkg.internet_OK = 0
+
+            if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
+                self.error_cnt += 1
+                self.logger.error('Tunnel watchdog alert! Rebooting!')
+                if not os.path.exists(lb.disable_baseboard_flag) and not os.path.exists(lb.disable_watchdog_flag):
+                    self.logger.info('Baseboard exists, see you in an hour.')
+                    cmd = 'sudo systemctl poweroff'
+                else:
+                    self.logger.info('No baseboard, see in 2 minutes.')
+                    cmd = 'sudo rtcwake -m off -s 120'
+                lb.execute(cmd, 1, logger_name=self.name)
+            elif not tunnel_ok:
+                self.error_cnt += 1
+                self.logger.warning('Tunnel watchdog alert! Holding of reboot until 13:00 though')
 
 
 class check_system_task(pats_task):

@@ -29,6 +29,8 @@ if not os.path.isfile('/home/pats/dependencies/hostname_set'):
                 rsync_cmd = ['rsync -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR  -i /home/pats/.ssh/pats_upload_id_ed25519 -F /home/pats/pats/release/install/sshconfig" dash_upload:wireguard_config/peers/' + pats_id + '.conf /etc/wireguard/wg0.conf']
                 subprocess.run(rsync_cmd, shell=True)
                 subprocess.run('wg-quick up wg0', shell=True)
+                with open('/home/pats/dependencies/wireguard_set', 'w', encoding="utf-8") as touchy_file:
+                    touchy_file.write(pats_id)
                 exit(0)
 
     print('Error: product id not found')
