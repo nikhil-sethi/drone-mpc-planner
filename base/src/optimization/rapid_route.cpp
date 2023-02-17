@@ -23,7 +23,7 @@ float largestRoot(float a, float b, float c) {
 
 void RapidRouteInterface::init(float *thrust) {
     _thrust = thrust;
-    _gravity = {0, 9.81, 0};
+    _gravity = {0, -9.81, 0};
 }
 
 rapid_route_result RapidRouteInterface::update_initial_guess(tracking::TrackData drone, tracking::TrackData target, rapid_route_result result) {
