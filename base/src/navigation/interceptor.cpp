@@ -56,10 +56,10 @@ void Interceptor::log(std::ostream *logger) {
 
 void Interceptor::close() {
     iip_thread_exit = true;
-    cond_var_iip.notify_one();
+    // cond_var_iip.notify_one();
     if (initialized) {
         std::cout << "Closing Interceptor" << std::endl;
-        iip_thread.join();
+        // iip_thread.join();
 
     }
 }
@@ -276,14 +276,14 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
                     _control_mode = position_control;
 
-                    auto res = update_iip_thread(delay_iip_valid);
+                    // auto res = update_iip_thread(delay_iip_valid);
 
-                    if (res.valid) {
-                        _tti_iip = res.time_to_intercept;
-                        _control_mode = acceleration_feedforward;
-                        _aim_acc = res.acceleration_to_intercept;
-                        _aim_pos = res.position_to_intercept;
-                    }
+                    // if (res.valid) {
+                    //     _tti_iip = res.time_to_intercept;
+                    //     _control_mode = acceleration_feedforward;
+                    //     _aim_acc = res.acceleration_to_intercept;
+                    //     _aim_pos = res.position_to_intercept;
+                    // }
                 }
 
                 if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel())) {
