@@ -22,32 +22,33 @@ charging_state_names = [
     'calibrating       '
 ]
 
+
 led0_state_names = [
-    'init',
-    'disabled',
-    'charging',
-    'trickle_charging',
-    'not_charging',
-    'discharging',
-    'battery_problem',
-    'chrg_telem_problem',
-    'telem_problem',
-    'locate_fail',
-    'crashed',
-    'unknown'
+    'L0_init',
+    'L0_disabled',
+    'L0_charging',
+    'L0_trickle',
+    'L0_not_chrg',
+    'L0_dis_chrg',
+    'L0_bat_problem',
+    'L0_chrg_telem_err',
+    'L0_telem_err',
+    'L0_locate_err',
+    'L0_crashed',
+    'L0_unknown'
 ]
 
 led1_state_names = [
-    'init',
-    'inresponsive_NUC',
-    'executor_problem',
-    'realsense_reset',
-    'executor_start',
-    'wait_for_enable_window',
-    'wait_for_lightlevel',
-    'c_OK',
-    'x_OK',
-    'unknown'
+    'L1_init',
+    'L1_NUC_err',
+    'L1_exe_err',
+    'L1_RS_reset',
+    'L1_exe_start',
+    'L1_enable_window',
+    'L1_lightlevel',
+    'L1_c_OK',
+    'L1_x_OK',
+    'L1_unknown'
 ]
 
 
@@ -80,24 +81,25 @@ class executor_states(Enum):
     es_wait_for_light_level = 8,
     es_wait_for_cam_angle = 9,
     es_wait_for_enable_window = 10,
-    es_pats_c = 11,
-    es_pats_x = 12,
-    es_closing = 13,
-    es_periodic_restart = 14,
-    es_watchdog_restart = 15,
-    es_user_restart = 16,
-    es_light_level_restart = 17,
-    es_enable_window_restart = 18,
-    es_drone_version_mismatch = 19,
-    es_drone_config_restart = 20,
-    es_realsense_fps_problem = 21,
-    es_realsense_frame_loss_problem = 22,
-    es_rc_problem = 23,
-    es_baseboard_problem = 24,
-    es_daemon_problen = 25,
-    es_realsense_error = 26,
-    es_xml_config_problem = 27,
-    es_runtime_error = 28,
+    es_locate_drone = 11,
+    es_pats_c = 12,
+    es_pats_x = 13,
+    es_closing = 14,
+    es_periodic_restart = 15,
+    es_watchdog_restart = 16,
+    es_user_restart = 17,
+    es_light_level_restart = 18,
+    es_enable_window_restart = 19,
+    es_drone_version_mismatch = 20,
+    es_drone_config_restart = 21,
+    es_realsense_fps_problem = 22,
+    es_realsense_frame_loss_problem = 23,
+    es_rc_problem = 24,
+    es_baseboard_problem = 25,
+    es_daemon_problen = 26,
+    es_realsense_error = 27,
+    es_xml_config_problem = 28,
+    es_runtime_error = 29,
 
 
 class rgb_led_1_states(Enum):

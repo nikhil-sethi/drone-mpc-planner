@@ -949,7 +949,7 @@ enum executor_package_headers {
 
 
 
-enum executor_states {
+enum executor_states { // don't forget to update the baseboardlink etc
     es_daemon_disabled = 0,
     es_starting,
     es_hardware_check,
