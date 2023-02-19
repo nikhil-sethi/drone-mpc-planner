@@ -354,8 +354,14 @@ PATS_BIN_FLAG=pats_bin-v1.done
 	rm /usr/local/* -rf
 	mv ./usr/local/* /usr/local/
 	sudo ldconfig
-	sudo apt-get install -y $(cat ~/pats/release/package_list.txt | awk '{print $1"=" $2}')
-	pip install -r ~/pats/release/requirements.txt
+	sudo apt upgrade -y # hmmmmm, package matching doesn't seem to be for the faint hearted
+	# sudo apt install $(cat ~/pats/release/package_list.txt) # this fails if a package was removed from the repo. Super annoying
+	for i in $(cat ~/pats/release/package_list.txt); do
+	  sudo apt-get install -y $i || true
+	done
+	
+	pip install -r ~/pats/release/requirements.txt #again fails if one package fails
+	#cat ~/pats/release/requirements.txt | xargs -n 1 pip install
 	touch $PATS_BIN_FLAG
 }
 
