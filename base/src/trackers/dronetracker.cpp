@@ -197,7 +197,6 @@ void DroneTracker::update(double time) {
                 data.time = time;
                 _track.push_back(data);
                 update_drone_prediction(time);
-                match_template();
                 if (_n_frames_lost == 0)
                     _drone_tracking_status = dts_landing;
                 break;
