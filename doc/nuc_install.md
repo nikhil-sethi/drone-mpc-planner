@@ -79,10 +79,11 @@ All done!
 
 ## initialize a compile box
 1. `cd ~ && mkdir code -p && cd code && git clone git@github-pats:pats-drones/pats.git`
-2. `cd ~/code/pats/base/install/install.sh`
-3. `cd ~/code/pats/config/firmware/image && ./compile_dependencies.sh`
-4. Put `binaries.tar.gz` and `package_list.txt` in the release repo
-5. Upload debs to dash in the appropiate debs folder
+2. `cd ~ && mkdir code -p && cd code && git clone git@github-trapeye:pats-drones/trapeye.git`
+3. `cd ~/code/pats/base/install/install.sh`
+4. `cd ~/code/pats/config/firmware/image && ./compile_dependencies.sh`
+5. Put `binaries.tar.gz` and `package_list.txt` in the release repo
+6. Upload debs to dash in the appropiate debs folder
 
 ## Tools used to make the install stick:
 1. YUMI
