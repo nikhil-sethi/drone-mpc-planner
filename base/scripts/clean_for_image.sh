@@ -17,7 +17,7 @@ rm ~/pats/status/* -rf
 rm ~/pats/xml/* -rf
 cp ~/pats/release/install/.bash_history ~/.bash_history
 
-touch ~/pats/flags/disable  ~/pats/flags/disable_baseboard  ~/pats/flags/disable_charging
+touch ~/pats/flags/disable  ~/pats/flags/disable_baseboard  ~/pats/flags/disable_charging ~/pats/flags/disable_trapeye
 
 rm .cache/ -rf
 rm .ccache/ -rf

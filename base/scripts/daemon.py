@@ -18,6 +18,7 @@ import pandas as pd
 import pause
 from lib_socket import socket_communication
 import lib_base as lb
+from trapeye import upload_images
 from clean_hd import clean_hd
 from status_cc import send_status_update
 from render_videos import render_last_day
@@ -175,6 +176,30 @@ class aggregate_jsons_task(pats_task):
                 pause.until(datetime.today() + timedelta(minutes=i))
         if not send_success:
             self.logger.error('Sending jsons failed.')
+        daemon2baseboard_pkg.post_processing = 0
+
+
+class trapeye_task(pats_task):
+    def __init__(self, error_file_handler):
+        super(trapeye_task, self).__init__('trapeye', timedelta(hours=8, minutes=30), timedelta(hours=6), False, error_file_handler)
+
+    def task_func(self):
+        if os.path.exists(lb.disable_trapeye):
+            self.logger.info('Trapeye disabled.')
+            return
+
+        daemon2baseboard_pkg.post_processing = 1
+        send_success = False
+        intervals = (1, 2, 5, 10, 60, 60, 120)
+        for i in intervals:
+            if upload_images():
+                send_success = True
+                break
+            else:
+                self.logger.warning('Sending error. Retrying in ' + str(i) + ' minutes.')
+                pause.until(datetime.today() + timedelta(minutes=i))
+        if not send_success:
+            self.logger.error('Sending trapeye data failed.')
         daemon2baseboard_pkg.post_processing = 0
 
 
@@ -457,6 +482,7 @@ tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
 lb.block_if_disabled()  # We need the wdt_pats to write to the baseboard, but the rest can wait until the disable flag is removed.
 tasks.append(clean_hd_task(error_file_handler))
 tasks.append(aggregate_jsons_task(error_file_handler))
+tasks.append(trapeye_task(error_file_handler))
 tasks.append(render_task(error_file_handler))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))

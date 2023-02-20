@@ -14,6 +14,8 @@ socket_dir = os.path.expanduser('~/pats/sockets/')
 data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
+trapeye_images_dir = os.path.expanduser('~/trapeye/images/')
+trapeye_pkl = os.path.expanduser('~/trapeye/trapeye_ids.pkl')
 executor_log_dir = os.path.expanduser('~/pats/release/build/logging/')
 
 daily_errs_log = log_dir + 'all_errors.log'
@@ -29,6 +31,7 @@ disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_executor_flag = flags_dir + 'disable_executor'
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
+disable_trapeye = flags_dir + 'disable_trapeye'
 keep_videoraw_flag = flags_dir + 'keep_videoraw'
 remain_inactive_flag = flags_dir + 'remain_inactive'
 enable_wp_demo_flag = flags_dir + 'enable_wp_demo'

@@ -1,5 +1,5 @@
 ---
-- hosts: pats31
+- hosts: pats288
   strategy: linear
   tasks:
     - name: Ansible apt update cache if it is older than 1 hour
@@ -8,6 +8,9 @@
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+    - name: reset grub
+      changed_when: false
+      ansible.builtin.shell: "update-grub"
     - name: Ansible apt install wireguard
       become: true
       ansible.builtin.apt:
@@ -19,7 +22,7 @@
     - name: Apply wg0 conf
       changed_when: false
       become: true
-      ansible.builtin.shell: "cp /home/pats/{{ ansible_hostname }}.conf /etc/wireguard/wg0.conf"
+      ansible.builtin.shell: "mv /home/pats/{{ ansible_hostname }}.conf /etc/wireguard/wg0.conf"
     - name: Enable wireguard at boot, and start service
       changed_when: false
       become: true
