@@ -2613,27 +2613,19 @@ Host pats356
 
 
 Host pats357
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.102
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10357
-
 
 Host pats358
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.103
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10358
-
 
 Host pats359
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.104
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10359
 
 
 Host pats360
@@ -2715,29 +2707,22 @@ Host pats369
         ProxyJump dash
         Port 10369
 
-
 Host pats370
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.115
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10370
 
 
 Host pats371
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.116
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10371
 
 
 Host pats372
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
+        Hostname 10.13.11.117
+        IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-        ProxyJump dash
-        Port 10372
 
 
 Host pats373
