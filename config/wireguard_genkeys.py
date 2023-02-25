@@ -73,15 +73,21 @@ def update_peer(wc: wgconfig.WGConfig, peer_name: str, ip3: int, ip4: int, vip: 
     wc_peer.add_attr(public_key_server, 'Endpoint', 'vpn.pats-c.com:' + str(port), append_as_line=True)
     wc_peer.add_attr(public_key_server, 'AllowedIPs', start_range + str(server_range) + '.0/24', append_as_line=True)
     if vip:
-        wc_peer.add_attr(public_key_server, 'AllowedIPs', start_range + str(server_range + 1) + '.0/24', append_as_line=True)
+        for i in range(1,11):
+            wc_peer.add_attr(public_key_server, 'AllowedIPs', start_range + str(server_range + i) + '.0/24', append_as_line=True)
+        
     wc_peer.add_attr(public_key_server, 'PersistentKeepalive', '25', append_as_line=True)
     wc_peer.write_file()
 
 
-vips = ['dash', 'beta', 'dummy1', 'dummy1', 'kevin', 'sjoerd', 'wouter', 'jorn', 'rik']
+vips = ['dash', 'beta', 'dummy1', 'dummy1', 'kevin', 'sjoerd', 'wouter_o','wouter_vdh', 'jorn', 'rik','lotte','dayo','frank']
 if len(wc.peers):
     for i, vip in enumerate(vips):
-        update_peer(wc, vip, server_range, i + 2, True)
+        if os.path.exists(folder + 'peers/' + vip + '.conf'):
+            update_peer(wc, vip, server_range, i + 2, True)
+        else:
+            create_peer(wc, vip, server_range, i + 2, True)
+
 
     pbar = tqdm(range(1, len(wc.peers) - len(vips)))
     for i in pbar:
