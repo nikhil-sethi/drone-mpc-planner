@@ -46,6 +46,7 @@ void VisionData::update(StereoPair *data) {
     frameR = data->right;
     frame_id = data->rs_id;
     _current_frame_time = data->time;
+    frame_cnt++;
 
     cv::Mat frameL_prev16 = frameL16;
     cv::Mat frameR_prev16 = frameR16;
@@ -76,6 +77,11 @@ void VisionData::update(StereoPair *data) {
             cv::circle(diffL16, motion_spot_to_be_reset.pt, motion_spot_to_be_reset.r, 0, cv::FILLED);
             cv::circle(diffR16, motion_spot_to_be_reset.pt - cv::Point(motion_spot_to_be_reset.disparity, 0), motion_spot_to_be_reset.r, 0, cv::FILLED);
             motion_spot_to_be_reset.cnt_active--;
+        }
+        if (frame_cnt < 10) {
+            for (auto spot : motion_start_spots_to_be_reset) {
+                cv::circle(diffL16, spot.pt, spot.r, 0, cv::FILLED);
+            }
         }
 
         //calcuate the motion difference, through the integral over time (over each pixel)
@@ -265,6 +271,13 @@ void VisionData::reset_spot_on_motion_map(cv::Point p, int disparity, int radius
     motion_spot_to_be_reset.pt = p;
     motion_spot_to_be_reset.disparity = disparity;
     motion_spot_to_be_reset.r = radius;
+}
+
+void VisionData::add_start_reset_spot_on_motion_map(cv::Point p, int radius) {
+    DeleteSpot spot;
+    spot.pt = p;
+    spot.r = radius;
+    motion_start_spots_to_be_reset.push_back(spot);
 }
 
 void VisionData::exclude_drone_from_motion_fading(cv::Point3f p, int radius) {
