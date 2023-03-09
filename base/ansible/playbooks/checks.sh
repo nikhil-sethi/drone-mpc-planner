@@ -27,7 +27,7 @@
 
 
 if [ -f '/home/pats/pats/flags/disable' ] ; then echo 'SYSTEM DISABLED' ; fi
-if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
+#if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
 if [ -f '/home/pats/pats/xml/pats.xml' ] ; then
     if ( ! grep -q "Version=\"1.20\"" /home/pats/pats/xml/pats.xml ) ; then echo pats.xml VERSION ERROR ; fi
 fi
@@ -37,6 +37,7 @@ if [ ! -e '/dev/baseboard' ] && [ ! -f '/home/pats/pats/flags/disable_baseboard'
 if ( rs-enumerate-devices | grep -q plugged ) ; then echo REALSENSE NOT DETECTED ; fi
 if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT RUNNING ; fi
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
-if [ ! -f /home/pats/code/pats/base/build/executor ]; then echo 'EXECUTOR DOES NOT EXIST'; fi
+#if [ ! -f /home/pats/release/build/executor ]; then echo 'EXECUTOR DOES NOT EXIST'; fi
 if ( ! ps -aux  | grep -q "[e]xecutor" ) ; then echo EXECUTOR NOT RUNNING ; fi
-if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 98ab746062614a94f1840b301f414aceca8c0c71 ) ; then echo SHA DISCREPANCY; fi
+#if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 98ab746062614a94f1840b301f414aceca8c0c71 ) ; then echo SHA DISCREPANCY; fi
+if ( ! ifconfig | grep -q "inet 10.13" ) ; then echo WIREGUARD NOT CONNECTED; fi
