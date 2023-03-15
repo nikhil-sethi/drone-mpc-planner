@@ -16,10 +16,11 @@ struct rapid_route_result {
 
 class RapidRouteInterface {
 public:
-    void init(float *thrust);
+    void init(float *thrust, float thrust_factor);
     rapid_route_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
 private:
     float *_thrust;
+    float _thrust_factor;
     cv::Point3f _gravity;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
 };
