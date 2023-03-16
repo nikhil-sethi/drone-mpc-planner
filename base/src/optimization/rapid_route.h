@@ -23,4 +23,5 @@ private:
     float _thrust_factor;
     cv::Point3f _gravity;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
+    bool feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone);
 };

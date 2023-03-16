@@ -61,9 +61,28 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
         } else {
             _lower_bound = result.time_to_intercept;
         }
-        result.position_to_intercept = target.pos() + target.vel() * result.time_to_intercept;
         _iteration++;
     }
-    result.valid = true;
+    if (feasible_solution(result, drone))
+        result.valid = true;
     return result;
+}
+
+bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone) {
+    if (result.time_to_intercept < 0)
+        return false;
+
+    if (normf(result.acceleration_to_intercept) > _thrust_factor * *_thrust) {
+        // std::cout << "acceleration too high: " << normf(result.acceleration_to_intercept) << std::endl;
+        return false;
+    }
+
+    cv::Point3f intercept_pos_drone = track_data_drone.pos() + track_data_drone.vel() * result.time_to_intercept + 1.f / 2.f * (result.acceleration_to_intercept + _gravity) * pow(result.time_to_intercept, 2);
+    float intercept_error = normf(result.position_to_intercept - intercept_pos_drone);
+    if (intercept_error > 0.01f) {
+        // std::cout << "intercept error(tti): " << intercept_error << std::endl;
+        return false;
+    }
+
+    return true;
 }
