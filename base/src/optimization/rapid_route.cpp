@@ -49,14 +49,17 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
     result = update_initial_guess(drone, target, result);
 
     int _iteration = 0;
-    while (_iteration < 1000 && !(_iteration > 1 && norm(result.acceleration_to_intercept) > 0.99 * static_cast<double>(_thrust_factor * *_thrust) && norm(result.acceleration_to_intercept) < 1.01 * static_cast<double>(_thrust_factor * *_thrust))) {
-        // todo: set the number of iterations to a reasonable value that guarantees framerate
+    float _lower_bound = 0;
+    float _upper_bound = result.time_to_intercept * 100;
+    while (_iteration < 100 && !(_iteration > 1 && norm(result.acceleration_to_intercept) > 0.99999 * static_cast<double>(_thrust_factor * *_thrust) && norm(result.acceleration_to_intercept) < 1.00001 * static_cast<double>(_thrust_factor * *_thrust))) {
+        result.time_to_intercept = (_lower_bound + _upper_bound) / 2;
+        result.position_to_intercept = target.pos() + target.vel() * result.time_to_intercept; //todo: consider including target acceleration
         cv::Point3f _position_error = result.position_to_intercept - drone.pos();
         result.acceleration_to_intercept = 2 * (_position_error - drone.vel()  * result.time_to_intercept) / pow(result.time_to_intercept, 2) - _gravity;
         if (norm(result.acceleration_to_intercept) < static_cast<double>(_thrust_factor * *_thrust)) {
-            result.time_to_intercept = result.time_to_intercept * 0.99f;
+            _upper_bound = result.time_to_intercept;
         } else {
-            result.time_to_intercept = result.time_to_intercept * 1.01f;
+            _lower_bound = result.time_to_intercept;
         }
         result.position_to_intercept = target.pos() + target.vel() * result.time_to_intercept;
         _iteration++;
