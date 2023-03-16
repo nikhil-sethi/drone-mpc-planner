@@ -51,7 +51,7 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
     int _iteration = 0;
     float _lower_bound = 0;
     float _upper_bound = result.time_to_intercept * 100;
-    while (_iteration < 100 && !(_iteration > 1 && norm(result.acceleration_to_intercept) > 0.99999 * static_cast<double>(_thrust_factor * *_thrust) && norm(result.acceleration_to_intercept) < 1.00001 * static_cast<double>(_thrust_factor * *_thrust))) {
+    while (_iteration < 100 && !(_iteration > 1 && norm(result.acceleration_to_intercept) > 0.99999 * static_cast<double>(_thrust_factor * *_thrust) && norm(result.acceleration_to_intercept) < static_cast<double>(_thrust_factor * *_thrust))) {
         result.time_to_intercept = (_lower_bound + _upper_bound) / 2;
         result.position_to_intercept = target.pos() + target.vel() * result.time_to_intercept; //todo: consider including target acceleration
         cv::Point3f _position_error = result.position_to_intercept - drone.pos();
