@@ -206,7 +206,7 @@ bool TTIOptimizerInterface::feasible_solution(Eigen::VectorXd opti_var) {
     // std::cout << "Intercept vel drone: " << intercept_vel_drone << std::endl;
     cv::Point3f intercept_pos_insect = cv::Point3f(opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSX], opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSY], opti_var[insect_states_first + N_INSECT_STATES + INSECT_POSZ]);
     float intercept_error = normf(intercept_pos_drone - intercept_pos_insect);
-    if (intercept_error > 0.02f) {
+    if (intercept_error > 0.01f) {
         // std::cout << "intercept error(tti): " << intercept_error << std::endl;
         return false;
     }
