@@ -166,6 +166,10 @@ void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casad
 #endif
                 break;
             }
+        case rapid_route: {
+                rr.init(&thrust, 0.8f);
+                break;
+            }
 
     }
 
@@ -237,6 +241,13 @@ range_stats OcpTester::exec_range_test() {
                                     }
                                 case intercept_in_planes: {
                                         auto opti_res = iip.find_best_interception(drone, insect);
+                                        valid = opti_res.valid;
+                                        timetointercept = opti_res.time_to_intercept;
+                                        positiontointercept = opti_res.position_to_intercept;
+                                        break;
+                                    }
+                                case rapid_route: {
+                                        auto opti_res = rr.find_best_interception(drone, insect);
                                         valid = opti_res.valid;
                                         timetointercept = opti_res.time_to_intercept;
                                         positiontointercept = opti_res.position_to_intercept;

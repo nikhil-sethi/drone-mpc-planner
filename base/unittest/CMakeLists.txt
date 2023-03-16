@@ -74,6 +74,7 @@ set(SRC_FILES  ../src/quaternion.cpp
                   ../src/third_party/tinyxml/tinyxml2.cpp
                   ../src/optimization/intercept_in_planes_optimizer_interface.cpp
                   ../src/optimization/tti_optimizer_interface.cpp
+                  ../src/optimization/rapid_route.cpp
 
 
                   main.cpp
@@ -87,6 +88,7 @@ set(SRC_FILES  ../src/quaternion.cpp
                   # filtertest.cpp
                   # flightareatest.cpp
                   # planetest.cpp
+                  rapidroutetest.cpp
 )
 if(OPTI_ROSVIS)
   FILE(GLOB ROSVIS_SRCS ../src/rosvisualization/rosvisualizerdatapublisher.* ../src/rosvisualization/rosvisualizerinterface.*)

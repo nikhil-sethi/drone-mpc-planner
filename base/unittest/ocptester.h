@@ -4,10 +4,12 @@
 #include "flightarea.h"
 #include "tti_optimizer_interface.h"
 #include "intercept_in_planes_optimizer_interface.h"
+#include "rapid_route.h"
 
 enum optimizer_test {
     time_to_intercept,
     intercept_in_planes,
+    rapid_route,
 };
 
 struct range_stats {
@@ -88,6 +90,7 @@ public:
 private:
     TTIOptimizerInterface tti;
     InterceptInPlanesOptimizerInterface iip;
+    RapidRouteInterface rr;
     FlightArea flightarea;
 
     std::vector<sqp_solver_configuration> generate_sqp_configs();
