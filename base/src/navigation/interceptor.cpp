@@ -170,8 +170,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
-                if ((!delay_takeoff_for_better_interception()) && !_n_frames_aim_not_in_range) {
+                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
+                if ((!delay_takeoff_for_better_interception(optim_result)) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
                 }
                 else
@@ -225,7 +225,7 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
         _n_frames_aim_not_in_range++;
 }
 
-void Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target) {
+rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target) {
     TrackData drone = _drone->tracker.last_track_data();
 
     if (drone_at_base || normf(drone.pos()) < 0.01f) {
@@ -235,11 +235,12 @@ void Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracki
     }
 
     // auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    auto rapid_route_res = rapid_route.find_best_interception(drone, target);
+    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target);
     update_aim_in_flightarea(rapid_route_res);
 
     target_in_flightarea = _flight_area->inside(target.pos(), relaxed);
 
+    return rapid_route_res;
 }
 
 void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time) {
@@ -346,7 +347,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
 }
 
 
-bool Interceptor::delay_takeoff_for_better_interception() {
+bool Interceptor::delay_takeoff_for_better_interception(rapid_route_result optimization_result) {
     float tti = _tti;
     if (_tti_iip > 0)
         tti = _tti_iip;
@@ -354,7 +355,8 @@ bool Interceptor::delay_takeoff_for_better_interception() {
     if (tti > 0 && tti_running_avg > 0) {
         if ((1.f / 2 * tti_running_avg + 1.f / 2 * tti) >= (1.f - 1e-6f) * tti_running_avg) {
             tti_running_avg = -1;
-            return false;
+            if (optimization_result.valid && _flight_area->inside(optimization_result.stopping_position, relaxed))
+                return false;
         }
     }
     if (tti_running_avg == -1)
