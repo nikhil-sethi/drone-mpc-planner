@@ -89,16 +89,18 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
 }
 
 cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone) {
-    cv::Point3f _velocity_at_interception = drone.vel() + interception_result.acceleration_to_intercept * interception_result.time_to_intercept;
-    float _element_a = pow(GRAVITY, 2.f) * pow(_velocity_at_interception.z, 2.f) - pow(GRAVITY, 2.f) - 2.f * GRAVITY;
-    float _element_b = _velocity_at_interception.z * sqrt(pow(_thrust_factor * *_thrust, 2.f) + pow(GRAVITY, 2.f) * pow(_velocity_at_interception.z, 2.f) - pow(GRAVITY, 2.f));
-    float _stopping_acceleration_x = -1.f * _velocity_at_interception.x * sqrt(_thrust_factor * *_thrust + 2.f * _element_a * _element_b);
-    float _stopping_acceleration_y = -1.f * _velocity_at_interception.y * sqrt(_thrust_factor * *_thrust + 2.f * _element_a * _element_b);
-    float _stopping_acceleration_z = GRAVITY * pow(_velocity_at_interception.z, 2.f) - GRAVITY - _element_b;
+    cv::Point3f _velocity_at_interception = drone.vel() + (interception_result.acceleration_to_intercept + _gravity) * interception_result.time_to_intercept;
+    float _g = GRAVITY;
+    float _v_x = _velocity_at_interception.x;
+    float _v_y = _velocity_at_interception.y;
+    float _v_z = _velocity_at_interception.z;
+    float _T = _thrust_factor * *_thrust;
+    float _stopping_acceleration_x = _v_x*(-_g*_v_x + sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));
+    float _stopping_acceleration_y = _g + _v_y*sqrt(pow(_T, 2.f) + 2*pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f) - 2*_g*_v_x*sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));
+    float _stopping_acceleration_z = _v_z*sqrt(pow(_T, 2.f) + 2*pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f) - 2*_g*_v_x*sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));
     cv::Point3f _stopping_acceleration = {_stopping_acceleration_x, _stopping_acceleration_y, _stopping_acceleration_z};
-    cv::Point3f _stopping_time = {_velocity_at_interception.x / _stopping_acceleration.x, _velocity_at_interception.y / _stopping_acceleration.y, _velocity_at_interception.z / _stopping_acceleration.z};
-    float _stopping_time_max = std::max(std::max(_stopping_time.x, _stopping_time.y), _stopping_time.z);
-    cv::Point3f _stopping_distance = _velocity_at_interception * _stopping_time_max + 1.f / 2.f * _stopping_acceleration * pow(_stopping_time_max, 2.f);
+    cv::Point3f _stopping_time = {abs(_velocity_at_interception.x / _stopping_acceleration.x), abs(_velocity_at_interception.y / (_stopping_acceleration.y - _g)), abs(_velocity_at_interception.z / _stopping_acceleration.z)};
+    cv::Point3f _stopping_distance = {_velocity_at_interception.x * _stopping_time.x + 1.f / 2.f * _stopping_acceleration.x * pow(_stopping_time.x, 2.f), _velocity_at_interception.y * _stopping_time.y + 1.f / 2.f * (_stopping_acceleration.y - GRAVITY) * pow(_stopping_time.y, 2.f), _velocity_at_interception.z * _stopping_time.z + 1.f / 2.f * _stopping_acceleration.z * pow(_stopping_time.z, 2.f)};
     cv::Point3f _stopping_position = interception_result.position_to_intercept + _stopping_distance;
     return _stopping_position;
 }
