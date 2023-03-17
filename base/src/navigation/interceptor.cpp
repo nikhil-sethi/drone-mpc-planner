@@ -216,9 +216,15 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
         _tti = rapid_route_res.time_to_intercept;
         if (_flight_area->inside(rapid_route_res.position_to_intercept, relaxed))
             aim_in_flightarea = true;
+        else
+            aim_in_flightarea = false;
+        if (_flight_area->inside(rapid_route_res.stopping_position, relaxed))
+            stopping_position_in_flightarea = true;
+        else
+            stopping_position_in_flightarea = false;
     }
 
-    if (aim_in_flightarea) {
+    if (aim_in_flightarea && stopping_position_in_flightarea) {
         _aim_pos = rapid_route_res.position_to_intercept;
         _n_frames_aim_not_in_range = 0;
     } else

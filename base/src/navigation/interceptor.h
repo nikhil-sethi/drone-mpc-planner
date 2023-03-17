@@ -57,6 +57,7 @@ private:
 
     bool target_in_flightarea = false;
     bool aim_in_flightarea = false;
+    bool stopping_position_in_flightarea = false;
 
     uint _n_frames_aim_not_in_range = 0;
     float n_frames_target_cleared_timeout;
