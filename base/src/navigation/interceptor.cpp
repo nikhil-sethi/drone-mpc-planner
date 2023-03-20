@@ -153,7 +153,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
+                update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.f);
                 if (!_n_frames_aim_not_in_range)
                     _interceptor_state = is_lurking;
                 else
@@ -170,7 +170,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data());
+                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.3f);
                 if ((!delay_takeoff_for_better_interception(optim_result)) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
                 }
@@ -231,7 +231,7 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
         _n_frames_aim_not_in_range++;
 }
 
-rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target) {
+rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target, float delay) {
     TrackData drone = _drone->tracker.last_track_data();
 
     if (drone_at_base || normf(drone.pos()) < 0.01f) {
@@ -241,7 +241,7 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
     }
 
     // auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target);
+    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target, delay);
     update_aim_in_flightarea(rapid_route_res);
 
     target_in_flightarea = _flight_area->inside(target.pos(), relaxed);
@@ -273,7 +273,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 }
 
                 update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
-                update_aim_and_target_in_flightarea(drone_at_base, target);
+                update_aim_and_target_in_flightarea(drone_at_base, target, 0.f);
 
                 if (!aim_in_flightarea) {
                     // Insect is currently not interceptable. Try to go directly to the target (and hope is target changing its path)

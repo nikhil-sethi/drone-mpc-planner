@@ -19,7 +19,7 @@ struct rapid_route_result {
 class RapidRouteInterface {
 public:
     void init(float *thrust, float thrust_factor);
-    rapid_route_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect);
+    rapid_route_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay);
 private:
     float *_thrust;
     float _thrust_factor;

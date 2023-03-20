@@ -84,7 +84,7 @@ private:
     tracking::InsectTracker *update_target_insecttracker();
 
     void update_aim_in_flightarea(rapid_route_result rapid_route_res);
-    rapid_route_result update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target);
+    rapid_route_result update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target, float delay);
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time);
