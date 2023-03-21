@@ -96,7 +96,7 @@ private:
         _control_mode = position_control;
     };
     bool exit_is_intercept_maneuvering(double time) {
-        return norm(time - time_start_intercept_maneuver) > duration_intercept_maneuver;
+        return (time - time_start_intercept_maneuver) > duration_intercept_maneuver;
     };
 
     std::thread iip_thread;
