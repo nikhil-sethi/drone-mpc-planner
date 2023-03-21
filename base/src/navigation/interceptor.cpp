@@ -170,7 +170,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.3f);
+                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 1.2f);
                 if ((!delay_takeoff_for_better_interception(optim_result)) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
                 }
