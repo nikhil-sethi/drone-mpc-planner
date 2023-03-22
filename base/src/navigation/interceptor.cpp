@@ -313,7 +313,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
 
 
 tracking::InsectTracker *Interceptor::update_target_insecttracker() {
-    float best_acceleration = INFINITY;
+    float best_time_to_intercept = INFINITY;
     InsectTracker *best_itrkr = NULL;
     auto all_trackers = _trackers->all_target_trackers();
 
@@ -336,15 +336,16 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     current_insect_pos = {0};
             }
             cv::Point3f current_insect_vel = insect_state.vel();
-            cv::Point3f aim = current_insect_pos + 0.3f * current_insect_vel;
-            bool inview = _flight_area->inside(aim, bare);
+            rapid_route_result _optim_result = rapid_route.find_best_interception(tracking_data, insect_state, 0.f);
+            cv::Point3f aim = _optim_result.position_to_intercept;
+            bool inview = _flight_area->inside(aim, bare) && _flight_area->inside(_optim_result.stopping_position, bare);
 
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
             if ((trkr->type() == tt_insect && !pparams.disable_real_hunts && inview) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float req_acceleration = normf(_drone->control.update_pid_controller(tracking_data, current_insect_pos, true));
-                if (best_acceleration > req_acceleration) {
-                    best_acceleration = req_acceleration;
+                float _time_to_intercept = _optim_result.time_to_intercept;
+                if (best_time_to_intercept > _time_to_intercept) {
+                    best_time_to_intercept = _time_to_intercept;
                     best_itrkr = static_cast<InsectTracker *>(trkr);
                 }
             }
