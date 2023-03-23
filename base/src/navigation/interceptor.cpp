@@ -246,8 +246,6 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
     rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target, delay, _drone->control.kiv_ctrl.safety);
     update_aim_in_flightarea(rapid_route_res);
 
-    target_in_flightarea = _flight_area->inside(target.pos(), relaxed);
-
     return rapid_route_res;
 }
 

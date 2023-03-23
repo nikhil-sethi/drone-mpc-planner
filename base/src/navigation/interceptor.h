@@ -55,7 +55,6 @@ private:
     cv::Point3f _aim_acc;
     float interception_max_thrust;
 
-    bool target_in_flightarea = false;
     bool aim_in_flightarea = false;
     bool stopping_position_in_flightarea = false;
 
@@ -147,7 +146,7 @@ public:
             return _target_insecttracker->insect_trkr_id();
     }
 
-    bool target_acquired(double time) { return target_detected(time) && target_in_flightarea; }
+    bool target_acquired(double time) { return target_detected(time) && !_n_frames_aim_not_in_range; }
 
     bool intercepting() {return _interceptor_state == is_intercepting;}
 
