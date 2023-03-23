@@ -53,8 +53,10 @@ private:
     control_modes _control_mode = position_control;
     cv::Point3f _aim_pos;
     cv::Point3f _aim_acc;
+
     float interception_max_thrust;
 
+    rapid_route_result _rapid_route_result;
     bool interception_position_in_flightarea = false;
     bool stopping_position_in_flightarea = false;
 
@@ -168,6 +170,8 @@ public:
     cv::Point3f aim_pos() {return _aim_pos;}
     cv::Point3f aim_acc() {return _aim_acc;}
 
+    cv::Point3f interception_pos() {return _rapid_route_result.position_to_intercept;}
+    cv::Point3f stopping_pos() {return _rapid_route_result.stopping_position;}
     double time_to_intercept() {return _tti;}
 
     float best_distance() {return _best_hunt_error;}

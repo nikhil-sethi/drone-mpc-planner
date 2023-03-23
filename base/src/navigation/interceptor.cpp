@@ -173,8 +173,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                rapid_route_result optim_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 1.2f);
-                if ((!delay_takeoff_for_better_interception(optim_result)) && !_n_frames_aim_not_in_range) {
+                _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 1.2f);
+                if ((!delay_takeoff_for_better_interception(_rapid_route_result)) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
                 }
                 else
@@ -244,10 +244,10 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
     }
 
     // auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target, delay, _drone->control.kiv_ctrl.safety);
-    update_aim_in_flightarea(rapid_route_res);
+    _rapid_route_result = rapid_route.find_best_interception(drone, target, delay, _drone->control.kiv_ctrl.safety);
+    update_aim_in_flightarea(_rapid_route_result);
 
-    return rapid_route_res;
+    return _rapid_route_result;
 }
 
 void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time) {
