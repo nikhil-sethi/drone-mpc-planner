@@ -100,7 +100,7 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = _velocity_at_interception_hat;
 
-    float _max_thrust = safety_factor * _thrust_factor * *_thrust;
+    float _max_thrust = _thrust_factor * *_thrust / safety_factor;
     int _iteration = 0;
     float _lower_bound = 0;
     float _upper_bound = 3 * _max_thrust;
