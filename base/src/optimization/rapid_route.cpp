@@ -51,15 +51,22 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
     int _iteration = 0;
     float _lower_bound = 0;
     float _upper_bound = result.time_to_intercept * 100;
+    cv::Point3f _directionality = {1, 1, 1};
     while (_iteration < 100 && !(_iteration > 1 && norm(result.acceleration_to_intercept) > 0.99999 * static_cast<double>(_thrust_factor * *_thrust) && norm(result.acceleration_to_intercept) < static_cast<double>(_thrust_factor * *_thrust))) {
         result.time_to_intercept = (_lower_bound + _upper_bound) / 2;
         result.position_to_intercept = target.pos() + target.vel() * (result.time_to_intercept + delay); //todo: consider including target acceleration
         cv::Point3f _position_error = result.position_to_intercept - drone.pos();
         result.acceleration_to_intercept = 2 * (_position_error - drone.vel()  * result.time_to_intercept) / pow(result.time_to_intercept, 2) - _gravity;
-        if (norm(result.acceleration_to_intercept) < static_cast<double>(_thrust_factor * *_thrust)) {
+        _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / result.acceleration_to_intercept.y, _position_error.z / result.acceleration_to_intercept.z};
+        if (_directionality.x < 0 && _directionality.y < 0 && _directionality.z < 0) {
             _upper_bound = result.time_to_intercept;
-        } else {
-            _lower_bound = result.time_to_intercept;
+        }
+        else {
+            if (norm(result.acceleration_to_intercept) < static_cast<double>(_thrust_factor * *_thrust)) {
+                _upper_bound = result.time_to_intercept;
+            } else {
+                _lower_bound = result.time_to_intercept;
+            }
         }
         _iteration++;
     }
