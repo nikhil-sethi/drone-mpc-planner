@@ -109,7 +109,7 @@ void DroneNavigation::update(double time) {
                 break;
         } case ns_chasing_insect: {
                 setpoint_pos_world = _iceptor->aim_pos();
-                setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->last_track_data().pos());
+                // setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->last_track_data().pos());
 
                 if (_iceptor->target_cleared())
                     _navigation_status = ns_goto_yaw_waypoint;
