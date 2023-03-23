@@ -44,7 +44,7 @@ rapid_route_result RapidRouteInterface::update_initial_guess(tracking::TrackData
     return result;
 }
 
-rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackData drone, tracking::TrackData target, float delay) {
+rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
     rapid_route_result result;
     result = update_initial_guess(drone, target, result);
 
@@ -65,7 +65,7 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
     }
     if (feasible_solution(result, drone))
         result.valid = true;
-    result.stopping_position = find_stopping_position(result, drone);
+    result.stopping_position = find_stopping_position(result, drone, stopping_safety_factor);
     return result;
 }
 
@@ -88,13 +88,13 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
     return true;
 }
 
-cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone) {
+cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor) {
     cv::Point3f _velocity_at_interception = drone.vel() + (interception_result.acceleration_to_intercept + _gravity) * interception_result.time_to_intercept;
     float _g = GRAVITY;
     float _v_x = _velocity_at_interception.x;
     float _v_y = _velocity_at_interception.y;
     float _v_z = _velocity_at_interception.z;
-    float _T = _thrust_factor * *_thrust;
+    float _T = _thrust_factor * *_thrust / safety_factor;
     float _stopping_acceleration_x = _v_x*(-_g*_v_x + sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));
     float _stopping_acceleration_y = _g + _v_y*sqrt(pow(_T, 2.f) + 2*pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f) - 2*_g*_v_x*sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));
     float _stopping_acceleration_z = _v_z*sqrt(pow(_T, 2.f) + 2*pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f) - 2*_g*_v_x*sqrt(pow(_T, 2.f) + pow(_g, 2.f)*pow(_v_x, 2.f) + pow(_g, 2.f)));

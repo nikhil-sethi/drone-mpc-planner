@@ -19,12 +19,12 @@ struct rapid_route_result {
 class RapidRouteInterface {
 public:
     void init(float *thrust, float thrust_factor);
-    rapid_route_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay);
+    rapid_route_result find_best_interception(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
 private:
     float *_thrust;
     float _thrust_factor;
     cv::Point3f _gravity;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
     bool feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone);
-    cv::Point3f find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone);
+    cv::Point3f find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor);
 };

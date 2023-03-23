@@ -243,7 +243,7 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
     }
 
     // auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target, delay);
+    rapid_route_result rapid_route_res = rapid_route.find_best_interception(drone, target, delay, _drone->control.kiv_ctrl.safety);
     update_aim_in_flightarea(rapid_route_res);
 
     target_in_flightarea = _flight_area->inside(target.pos(), relaxed);
@@ -336,7 +336,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     current_insect_pos = {0};
             }
             cv::Point3f current_insect_vel = insect_state.vel();
-            rapid_route_result _optim_result = rapid_route.find_best_interception(tracking_data, insect_state, 0.f);
+            rapid_route_result _optim_result = rapid_route.find_best_interception(tracking_data, insect_state, 0.f, _drone->control.kiv_ctrl.safety);
             cv::Point3f aim = _optim_result.position_to_intercept;
             bool inview = _flight_area->inside(aim, bare) && _flight_area->inside(_optim_result.stopping_position, bare);
 
