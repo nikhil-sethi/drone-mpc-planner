@@ -55,7 +55,7 @@ private:
     cv::Point3f _aim_acc;
     float interception_max_thrust;
 
-    bool aim_in_flightarea = false;
+    bool interception_position_in_flightarea = false;
     bool stopping_position_in_flightarea = false;
 
     uint _n_frames_aim_not_in_range = 0;

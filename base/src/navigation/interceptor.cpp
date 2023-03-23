@@ -115,7 +115,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     _time = time;
     _tti = -1;
     _tti_iip = -1;
-    aim_in_flightarea = false;
+    interception_position_in_flightarea = false;
+    stopping_position_in_flightarea = false;
     _aim_acc = cv::Point3f(0, 0, 0);
     _control_mode = position_control;
     auto target_trkr = update_target_insecttracker();
@@ -217,16 +218,16 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
     if (rapid_route_res.valid) {
         _tti = rapid_route_res.time_to_intercept;
         if (_flight_area->inside(rapid_route_res.position_to_intercept, relaxed))
-            aim_in_flightarea = true;
+            interception_position_in_flightarea = true;
         else
-            aim_in_flightarea = false;
+            interception_position_in_flightarea = false;
         if (_flight_area->inside(rapid_route_res.stopping_position, relaxed))
             stopping_position_in_flightarea = true;
         else
             stopping_position_in_flightarea = false;
     }
 
-    if (aim_in_flightarea && stopping_position_in_flightarea) {
+    if (interception_position_in_flightarea && stopping_position_in_flightarea) {
         _aim_pos = rapid_route_res.position_to_intercept;
         _n_frames_aim_not_in_range = 0;
     } else
@@ -275,7 +276,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
                 update_aim_and_target_in_flightarea(drone_at_base, target, 0.f);
 
-                if (!aim_in_flightarea) {
+                if (!interception_position_in_flightarea || !stopping_position_in_flightarea) {
                     // Insect is currently not interceptable. Try to go directly to the target (and hope is target changing its path)
                     _aim_pos = target.pos() + _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error;
                     _control_mode = position_control;
