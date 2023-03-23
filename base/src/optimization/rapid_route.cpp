@@ -98,7 +98,7 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
 cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor) {
     cv::Point3f _velocity_at_interception = drone.vel() + (interception_result.acceleration_to_intercept + _gravity) * interception_result.time_to_intercept;
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
-    cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
+    cv::Point3f _stopping_vector_hat = _velocity_at_interception_hat;
 
     float _max_thrust = safety_factor * _thrust_factor * *_thrust;
     int _iteration = 0;
