@@ -116,7 +116,13 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
         }
         _iteration++;
     }
-    cv::Point3f _stopping_time = {_velocity_at_interception.x / _stopping_vector.x, _velocity_at_interception.y / _stopping_vector.y, _velocity_at_interception.z / _stopping_vector.z};
+    cv::Point3f _stopping_time = {0, 0, 0};
+    if (_stopping_vector.x != 0)
+        _stopping_time.x = _velocity_at_interception.x / _stopping_vector.x;
+    if (_stopping_vector.y != 0)
+        _stopping_time.y = _velocity_at_interception.y / _stopping_vector.y;
+    if (_stopping_vector.z != 0)
+        _stopping_time.z = _velocity_at_interception.z / _stopping_vector.z;
     float _stopping_time_max = abs(std::max(std::max(_stopping_time.x, _stopping_time.y), _stopping_time.z));
     // cv::Point3f _stopping_acceleration = _stopping_vector - _gravity;
     cv::Point3f _stopping_distance = _velocity_at_interception * _stopping_time_max + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
