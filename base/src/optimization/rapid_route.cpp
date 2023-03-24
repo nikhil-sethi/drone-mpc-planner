@@ -96,7 +96,7 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
 }
 
 cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor) {
-    cv::Point3f _velocity_at_interception = drone.vel() + (interception_result.acceleration_to_intercept - _gravity) * interception_result.time_to_intercept;
+    cv::Point3f _velocity_at_interception = drone.vel() + (interception_result.acceleration_to_intercept + _gravity) * interception_result.time_to_intercept;
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
 
@@ -105,11 +105,11 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
     float _lower_bound = 0;
     float _upper_bound = 3 * _max_thrust;
     cv::Point3f _stopping_vector = _stopping_vector_hat * (_lower_bound + _upper_bound) / 2;
-    while (_iteration < 100 && !(_iteration > 1 && norm(_stopping_vector + _gravity) > 0.99999 * static_cast<double>(_max_thrust) && norm(_stopping_vector + _gravity) < static_cast<double>(_max_thrust))) {
+    while (_iteration < 100 && !(_iteration > 1 && norm(_stopping_vector - _gravity) > 0.99999 * static_cast<double>(_max_thrust) && norm(_stopping_vector - _gravity) < static_cast<double>(_max_thrust))) {
         float _total_acc = (_lower_bound + _upper_bound) / 2;
         _stopping_vector = _stopping_vector_hat * _total_acc;
 
-        if (norm(_stopping_vector + _gravity) < static_cast<double>(_max_thrust)) {
+        if (norm(_stopping_vector - _gravity) < static_cast<double>(_max_thrust)) {
             _lower_bound = _total_acc;
         } else {
             _upper_bound = _total_acc;
