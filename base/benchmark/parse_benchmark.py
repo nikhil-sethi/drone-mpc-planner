@@ -6,15 +6,6 @@ import numpy as np
 pd.set_option('mode.use_inf_as_na', True)
 
 
-def dataframe_to_orgmode_table(dataframe):
-    print(dataframe)
-    dataframe = dataframe.to_csv(
-        sep="|", header=True, index=False).strip('\n').split('\n')
-    dataframe.insert(1, "-+-")
-    dataframe_string = '|\n|'.join(dataframe)
-    return f"|{dataframe_string}|\n"
-
-
 class BenchmarkResults:
     def __init__(self):
         self.benchmark_timestamp = None
@@ -462,6 +453,35 @@ class BenchmarkParser:
         self.benchmark_csv = pd.read_csv(self.benchmark_csv_path, sep=";")
 
 
+class Utils:
+    def dataframe_to_orgmode_table(dataframe):
+        dataframe = dataframe.to_csv(
+            sep="|", header=True, index=False).strip('\n').split('\n')
+        dataframe.insert(1, "-+-")
+        dataframe_string = '|\n|'.join(dataframe)
+        return f"|{dataframe_string}|\n"
+
+    def write_moth_entry_type(entry):
+        _entry_type = _entry["type"]
+        result = f"{_entry_type} moth"
+        if _entry_type == "replay":
+            _entry_replay_id = _entry["id"]
+            result += f" (replay id: {_entry_replay_id})\n"
+        elif _entry_type == "virtual":
+            _entry_pos_x = _entry["pos_x"]
+            _entry_pos_y = _entry["pos_y"]
+            _entry_pos_z = _entry["pos_z"]
+            _entry_vel_x = _entry["vel_x"]
+            _entry_vel_y = _entry["vel_y"]
+            _entry_vel_z = _entry["vel_z"]
+
+            _entry_evasion_trigger = "spinup" if _entry["evasion_trigger"] == 1 else "hunt error"
+            _entry_evasion_type = "diving" if _entry[
+                "evasion_type"] == 1 else "u-turn" if _entry["evasion_type"] == 2 else "none"
+            result += f" (pos: {_entry_pos_x}, {_entry_pos_y}, {_entry_pos_z}, vel: {_entry_vel_x}, {_entry_vel_y}, {_entry_vel_z}, evasion trigger: {_entry_evasion_trigger}, evasion type: {_entry_evasion_type})\n"
+        return result
+
+
 if __name__ == "__main__":
     TOTAL_BENCHMARK_ENTRIES = 15  # + 1
     DROP_DUPLICATES = True
@@ -474,18 +494,17 @@ if __name__ == "__main__":
     parser.find_benchmark_entries()
     parser.fill_benchmark_entries()
     parser.assemble_dataframe()
-
     parser.calculate_benchmark_score()
-
     parser.parse_benchmark_csv()
 
     with open("benchmark_results.org", "w+") as f:
         results_string = f"{parser.file_path}\n\n"
-        overall_result_dataframes = []
+
+        relevant_dataframes = []
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
-            overall_result_dataframes.append(parser.benchmark_results[_benchmark_time_date].dataframe)
-        overall_result_dataframes = pd.concat(overall_result_dataframes)
-        results_string += dataframe_to_orgmode_table(overall_result_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes']])
+            relevant_dataframes.append(parser.benchmark_results[_benchmark_time_date].dataframe)
+        relevant_dataframes = pd.concat(relevant_dataframes)
+        results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes']])
         results_string += "\n"
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
@@ -493,24 +512,8 @@ if __name__ == "__main__":
             results_string += f"**Entry {_entry_id}**\n"
 
             _entry = parser.benchmark_csv.iloc[_entry_id]
-            _entry_type = _entry["type"]
-            results_string += f"{_entry_type} moth"
-            if _entry_type == "replay":
-                _entry_replay_id = _entry["id"]
-                results_string += f" (replay id: {_entry_replay_id})\n"
-            elif _entry_type == "virtual":
-                _entry_pos_x = _entry["pos_x"]
-                _entry_pos_y = _entry["pos_y"]
-                _entry_pos_z = _entry["pos_z"]
-                _entry_vel_x = _entry["vel_x"]
-                _entry_vel_y = _entry["vel_y"]
-                _entry_vel_z = _entry["vel_z"]
 
-                _entry_evasion_trigger = "spinup" if _entry["evasion_trigger"] == 1 else "hunt error"
-                _entry_evasion_type = "diving" if _entry[
-                    "evasion_type"] == 1 else "u-turn" if _entry["evasion_type"] == 2 else "none"
-
-                results_string += f" (pos: {_entry_pos_x}, {_entry_pos_y}, {_entry_pos_z}, vel: {_entry_vel_x}, {_entry_vel_y}, {_entry_vel_z}, evasion trigger: {_entry_evasion_trigger}, evasion type: {_entry_evasion_type})\n"
+            results_string += Utils.write_moth_entry_type(_entry)
 
             relevant_dataframes = []
             for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
@@ -526,10 +529,13 @@ if __name__ == "__main__":
             if relevant_dataframes:
                 relevant_dataframes = pd.concat(relevant_dataframes)
                 relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "pos_best_interception_x", "pos_best_interception_y", "pos_best_interception_z"]]
-                results_string += dataframe_to_orgmode_table(relevant_dataframes)
+                results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes)
+
             if MEAN_VAR_PER_INSECT:
                 results_string += "|------+----------+-----+-------+-------+------+----|\n"
                 results_string += f"| Mean | | {np.mean(np.array(hunt_error_list))} | | | | |\n"
                 results_string += f"| Var | | {np.var(np.array(hunt_error_list))} | | | | |\n"
+
             results_string += "\n"
+
         f.write(results_string)
