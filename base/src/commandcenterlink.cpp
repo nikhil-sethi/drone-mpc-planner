@@ -128,7 +128,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
-                    if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt) {
+                    if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt && !_patser->trackers.monster_alert()) {
                         _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
 
                         if (_patser->drone.benchmark_entry_id == 0) {
