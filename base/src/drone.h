@@ -116,6 +116,8 @@ private:
     double time_led_init = 0;
     double time_start_att_wait_pad = 0;
     float voltage_pre_flight;
+    int n_monsters_pre_flight;
+    int n_insects_pre_flight;
 
     // flight
     bool _has_been_ready = false;
@@ -137,6 +139,8 @@ private:
     const float att_wait_pad_timeout = 10;
     float confirm_drone_on_pad_delta_distance;
     float voltage_post_flight;
+    int n_monsters_post_flight;
+    int n_insects_post_flight;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
     double time_post_shake = 0;
