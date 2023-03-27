@@ -6,6 +6,15 @@ import numpy as np
 pd.set_option('mode.use_inf_as_na', True)
 
 
+def dataframe_to_orgmode_table(dataframe):
+    print(dataframe)
+    dataframe = dataframe.to_csv(
+        sep="|", header=True, index=False).strip('\n').split('\n')
+    dataframe.insert(1, "-+-")
+    dataframe_string = '|\n|'.join(dataframe)
+    return f"|{dataframe_string}|\n"
+
+
 class BenchmarkResults:
     def __init__(self):
         self.benchmark_timestamp = None
@@ -38,7 +47,67 @@ class BenchmarkResults:
         # crashes
         self.number_of_crashes = None
 
+        self.number_of_monsters = None
+        self.number_of_insects = None
+
         self.hash = None
+
+        self.dataframe = None
+
+    def assemble_dataframe(self):
+        self.dataframe = pd.DataFrame(
+            columns=[
+                "benchmark_timestamp",
+                "number_of_flights",
+                "number_of_flights_started_late",
+                "mean_best_interception_distance",
+                "var_best_interception_distance",
+                "mean_best_interception_distance_virtual",
+                "var_best_interception_distance_virtual",
+                "mean_best_interception_distance_replay",
+                "var_best_interception_distance_replay",
+                "number_of_kills",
+                "mean_flight_time",
+                "var_flight_time",
+                "mean_flight_time_virtual",
+                "var_flight_time_virtual",
+                "mean_flight_time_replay",
+                "var_flight_time_replay",
+                "number_of_crashes",
+                "number_of_monsters",
+                "number_of_insects",
+                "hash",
+            ]
+        )
+        _new_row = pd.DataFrame(
+            [
+                {
+                    "benchmark_timestamp": self.benchmark_timestamp,
+                    "number_of_flights": self.number_of_flights,
+                    "number_of_flights_started_late": self.number_of_flights_started_late,
+                    "mean_best_interception_distance": self.mean_best_interception_distance,
+                    "var_best_interception_distance": self.var_best_interception_distance,
+                    "mean_best_interception_distance_virtual": self.mean_best_interception_distance_virtual,
+                    "var_best_interception_distance_virtual": self.var_best_interception_distance_virtual,
+                    "mean_best_interception_distance_replay": self.mean_best_interception_distance_replay,
+                    "var_best_interception_distance_replay": self.var_best_interception_distance_replay,
+                    "number_of_kills": self.number_of_kills,
+                    "mean_flight_time": self.mean_flight_time,
+                    "var_flight_time": self.var_flight_time,
+                    "mean_flight_time_virtual": self.mean_flight_time_virtual,
+                    "var_flight_time_virtual": self.var_flight_time_virtual,
+                    "mean_flight_time_replay": self.mean_flight_time_replay,
+                    "var_flight_time_replay": self.var_flight_time_replay,
+                    "number_of_crashes": self.number_of_crashes,
+                    "number_of_monsters": self.number_of_monsters,
+                    "number_of_insects": self.number_of_insects,
+                    "hash": self.hash
+                }
+            ]
+        )
+        self.dataframe = pd.concat([_new_row, self.dataframe.loc[:]]).reset_index(
+            drop=True
+        )
 
 
 class BenchmarkEntry:
@@ -78,6 +147,9 @@ class BenchmarkEntry:
 
         self.voltage_reduction = None
 
+        self.n_monsters = None
+        self.n_insects = None
+
 
 class BenchmarkParser:
     def __init__(self, search_path, benchmark_csv_path):
@@ -108,10 +180,10 @@ class BenchmarkParser:
         for entry in self.benchmark_entries:
             for line in entry.lines:
                 if line.find("take_off_datetime") != -1:
-                    take_off_datetime = line.strip().split(":")[1]
+                    take_off_datetime = ':'.join(line.strip().split(":")[1:4])
                     entry.take_off_datetime = take_off_datetime
                 if line.find("land_datetime") != -1:
-                    land_datetime = line.strip().split(":")[1]
+                    land_datetime = ':'.join(line.strip().split(":")[1:4])
                     entry.land_datetime = land_datetime
                 if line.find("flight_time") != -1:
                     flight_time = line.strip().split(":")[1]
@@ -173,6 +245,12 @@ class BenchmarkParser:
                 if line.find("voltage_reduction") != -1:
                     voltage_reduction = line.strip().split(":")[1]
                     entry.voltage_reduction = voltage_reduction
+                if line.find("n_monsters") != -1:
+                    n_monsters = line.strip().split(":")[1]
+                    entry.n_monsters = n_monsters
+                if line.find("n_insects") != -1:
+                    n_insects = line.strip().split(":")[1]
+                    entry.n_insects = n_insects
                 if line.find("benchmark_hash") != -1:
                     hash = line.strip().split(":")[1]
                     entry.hash = hash
@@ -206,6 +284,8 @@ class BenchmarkParser:
                 "acc_best_interception_z",
                 "benchmark_entry_id",
                 "voltage_reduction",
+                "n_monsters",
+                "n_insects",
                 "hash",
             ]
         )
@@ -255,6 +335,8 @@ class BenchmarkParser:
                         "acc_best_interception_z": float(entry.acc_best_interception_z),
                         "benchmark_entry_id": int(entry.benchmark_entry_id),
                         "voltage_reduction": float(entry.voltage_reduction),
+                        "n_monsters": int(entry.n_monsters) if entry.n_monsters else None,
+                        "n_insects": int(entry.n_insects) if entry.n_insects else None,
                         "hash": entry.hash,
                     }
                 ]
@@ -289,7 +371,6 @@ class BenchmarkParser:
 
         _count = _filtered_dataframe[column].sum()
         return _count
-
 
     def calculate_mean_and_var(self, benchmark_timestamp, column, insect_type=None):
         _filtered_dataframe = self.dataframe[
@@ -375,11 +456,14 @@ class BenchmarkParser:
             else:
                 raise Exception("Benchmark already exists")
 
+            results.assemble_dataframe()
+
     def parse_benchmark_csv(self):
         self.benchmark_csv = pd.read_csv(self.benchmark_csv_path, sep=";")
 
+
 if __name__ == "__main__":
-    TOTAL_BENCHMARK_ENTRIES = 15 # + 1
+    TOTAL_BENCHMARK_ENTRIES = 15  # + 1
     DROP_DUPLICATES = True
     MAX_KILL_DISTANCE = 0.05
     MEAN_VAR_PER_INSECT = False
@@ -395,22 +479,24 @@ if __name__ == "__main__":
     parser.parse_benchmark_csv()
 
     with open("benchmark_results.org", "w+") as f:
-        results_table = f"{parser.file_path}\n\n"
-        results_table += "| Timestamp | No. flights | No. late flights | Hunt error mean | Hunt error var | No. kills | Flight time mean | Flight time var | Crashes | Hash |\n|--------+-----+--------+---------+----------------+-----------------+-------+-----|\n"
+        results_string = f"{parser.file_path}\n\n"
+        overall_result_dataframes = []
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
-            results_table += f"| {_benchmark_time_date} | {parser.benchmark_results[_benchmark_time_date].number_of_flights} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].number_of_flights_started_late} / {TOTAL_BENCHMARK_ENTRIES} | {parser.benchmark_results[_benchmark_time_date].mean_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].var_best_interception_distance} | {parser.benchmark_results[_benchmark_time_date].number_of_kills} | {parser.benchmark_results[_benchmark_time_date].mean_flight_time} | {parser.benchmark_results[_benchmark_time_date].var_flight_time} | {parser.benchmark_results[_benchmark_time_date].number_of_crashes} | {parser.benchmark_results[_benchmark_time_date].hash} |\n"
-        results_table += "\n"
+            overall_result_dataframes.append(parser.benchmark_results[_benchmark_time_date].dataframe)
+        overall_result_dataframes = pd.concat(overall_result_dataframes)
+        results_string += dataframe_to_orgmode_table(overall_result_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes']])
+        results_string += "\n"
 
         for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
             hunt_error_list = np.array([])
-            results_table += f"**Entry {_entry_id}**\n"
+            results_string += f"**Entry {_entry_id}**\n"
 
             _entry = parser.benchmark_csv.iloc[_entry_id]
             _entry_type = _entry["type"]
-            results_table += f"{_entry_type} moth"
+            results_string += f"{_entry_type} moth"
             if _entry_type == "replay":
                 _entry_replay_id = _entry["id"]
-                results_table += f" (replay id: {_entry_replay_id})\n"
+                results_string += f" (replay id: {_entry_replay_id})\n"
             elif _entry_type == "virtual":
                 _entry_pos_x = _entry["pos_x"]
                 _entry_pos_y = _entry["pos_y"]
@@ -420,11 +506,12 @@ if __name__ == "__main__":
                 _entry_vel_z = _entry["vel_z"]
 
                 _entry_evasion_trigger = "spinup" if _entry["evasion_trigger"] == 1 else "hunt error"
-                _entry_evasion_type = "diving" if _entry["evasion_type"] == 1 else "u-turn" if _entry["evasion_type"] == 2 else "none"
+                _entry_evasion_type = "diving" if _entry[
+                    "evasion_type"] == 1 else "u-turn" if _entry["evasion_type"] == 2 else "none"
 
-                results_table += f" (pos: {_entry_pos_x}, {_entry_pos_y}, {_entry_pos_z}, vel: {_entry_vel_x}, {_entry_vel_y}, {_entry_vel_z}, evasion trigger: {_entry_evasion_trigger}, evasion type: {_entry_evasion_type})\n"
+                results_string += f" (pos: {_entry_pos_x}, {_entry_pos_y}, {_entry_pos_z}, vel: {_entry_vel_x}, {_entry_vel_y}, {_entry_vel_z}, evasion trigger: {_entry_evasion_trigger}, evasion type: {_entry_evasion_type})\n"
 
-            results_table += "| Benchmark timestamp | Type | Hunt error | Time to hunt error | Flight time | Crashed | Voltage drop | Interception pos xyz |\n|------+----------+-----+-------+-------+------+----|\n"
+            relevant_dataframes = []
             for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
                 _relevant_entry = parser.dataframe[
                     (parser.dataframe["benchmark_timestamp"]
@@ -432,12 +519,16 @@ if __name__ == "__main__":
                     & (parser.dataframe["benchmark_entry_id"] == _entry_id)
                 ]
                 if not _relevant_entry.empty:
-                    results_table += f"| {_benchmark_time_date} | {_relevant_entry['benchmark_type'].values[0]} | {_relevant_entry['best_interception_distance'].values[0]} | {_relevant_entry['time_to_best_interception'].values[0]} |  {_relevant_entry['flight_time'].values[0]} | {_relevant_entry['crashed'].values[0]} | {_relevant_entry['voltage_reduction'].values[0]} | {_relevant_entry['pos_best_interception_x'].values[0]} {_relevant_entry['pos_best_interception_y'].values[0]} {_relevant_entry['pos_best_interception_z'].values[0]}  |\n"
-                    # print(_relevant_entry['best_interception_distance'].values[0])
-                    hunt_error_list = np.append(hunt_error_list, _relevant_entry['best_interception_distance'].values[0])
+                    relevant_dataframes.append(_relevant_entry)
+                    hunt_error_list = np.append(
+                        hunt_error_list, _relevant_entry['best_interception_distance'].values[0])
+            if relevant_dataframes:
+                relevant_dataframes = pd.concat(relevant_dataframes)
+                relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "pos_best_interception_x", "pos_best_interception_y", "pos_best_interception_z"]]
+                results_string += dataframe_to_orgmode_table(relevant_dataframes)
             if MEAN_VAR_PER_INSECT:
-                results_table += "|------+----------+-----+-------+-------+------+----|\n"
-                results_table += f"| Mean | | {np.mean(np.array(hunt_error_list))} | | | | |\n"
-                results_table += f"| Var | | {np.var(np.array(hunt_error_list))} | | | | |\n"
-            results_table += "\n"
-        f.write(results_table)
+                results_string += "|------+----------+-----+-------+-------+------+----|\n"
+                results_string += f"| Mean | | {np.mean(np.array(hunt_error_list))} | | | | |\n"
+                results_string += f"| Var | | {np.var(np.array(hunt_error_list))} | | | | |\n"
+            results_string += "\n"
+        f.write(results_string)
