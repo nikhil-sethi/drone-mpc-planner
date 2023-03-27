@@ -468,7 +468,8 @@ if __name__ == "__main__":
     MAX_KILL_DISTANCE = 0.05
     MEAN_VAR_PER_INSECT = False
 
-    parser = BenchmarkParser("/home/gemenerik/Downloads/benchmark/20230209", "/home/gemenerik/code/pats/base/benchmark/benchmark_short.csv")
+    parser = BenchmarkParser("/home/pats/Downloads/example_path/",
+                             "/home/pats/code/pats/base/benchmark/benchmark_short.csv")
 
     parser.find_benchmark_entries()
     parser.fill_benchmark_entries()
