@@ -488,7 +488,7 @@ class Utils:
 
 
 if __name__ == "__main__":
-    TOTAL_BENCHMARK_ENTRIES = 15  # + 1
+    TOTAL_BENCHMARK_ENTRIES = 16
     DROP_DUPLICATES = False
     MAX_KILL_DISTANCE = 0.05
     MEAN_VAR_PER_INSECT = False
@@ -512,7 +512,7 @@ if __name__ == "__main__":
         results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes']])
         results_string += "\n"
 
-        for _entry_id in range(1, TOTAL_BENCHMARK_ENTRIES + 1):
+        for _entry_id in range(0, TOTAL_BENCHMARK_ENTRIES):
             hunt_error_list = np.array([])
             results_string += f"**Entry {_entry_id}**\n"
 
@@ -525,7 +525,7 @@ if __name__ == "__main__":
                 _relevant_entry = parser.dataframe[
                     (parser.dataframe["benchmark_timestamp"]
                      == _benchmark_time_date)
-                    & (parser.dataframe["benchmark_entry_id"] == _entry_id)
+                    & (parser.dataframe["benchmark_entry_id"] == _entry_id+1)
                 ]
                 if not _relevant_entry.empty:
                     relevant_dataframes.append(_relevant_entry)
