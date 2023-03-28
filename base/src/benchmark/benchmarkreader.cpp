@@ -4,9 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-
-
-// BenchmarkReader reader;
 std::vector<BenchmarkEntry> benchmark_entries;
 
 size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {

@@ -2,6 +2,7 @@
 #include <chrono>
 #include <experimental/filesystem>
 #include "navigation.h"
+#include "hash.h"
 
 void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard_link) {
     _rc_id = rc_id;
@@ -18,6 +19,8 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
     control.init(_rc, &tracker, flight_area);
     tracker.commanded_acceleration(&control.commanded_acceleration);
     tracker.takeoff_area(flight_area);
+
+    executor_hash = getFileHash("/home/pats/code/pats/base/build/executor");
 
     (*main_logger) << "drone_state_str;";
     initialized = true;
@@ -606,6 +609,7 @@ void Drone::save_flight_results() {
     results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
     results_log << "n_monsters:" << n_monsters_post_flight - n_monsters_pre_flight << '\n';
     results_log << "n_insects:" << n_insects_post_flight - n_insects_pre_flight << '\n';
+    results_log << "executor_hash:" << executor_hash << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {
             if (benchmark_entry.type == "replay") {

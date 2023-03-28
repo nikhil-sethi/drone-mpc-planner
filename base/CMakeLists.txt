@@ -78,6 +78,7 @@ find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package( OpenCV 4.3.0 REQUIRED )
+find_package(OpenSSL REQUIRED)
 
 if(OCP_DEV)
   find_package(osqp REQUIRED)
@@ -179,6 +180,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} OpenSSL::SSL)
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} stdc++fs) #until we upgrade to gcc 8

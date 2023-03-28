@@ -15,3 +15,5 @@ struct MyHash
         return h1 ^ (h2 << 1);
     }
 };
+
+unsigned char getFileHash(std::string file);
