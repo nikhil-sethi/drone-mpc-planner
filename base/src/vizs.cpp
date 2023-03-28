@@ -587,6 +587,26 @@ void Visualizer::draw_tracker_viz() {
             cv::line(frameL_color, drone_pos, target, c2, 1);
         }
     }
+    cv::Point2i _pad_pos_im = _patser->drone.tracker.pad_im_location();
+    cv::Point3f _aim_pos = _patser->interceptor.aim_pos();
+    cv::Point2f _aim_pos_im = world2im_2d(_aim_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+    cv::Point3f _interception_pos = _patser->interceptor.interception_pos();
+    cv::Point2f _interception_pos_im = world2im_2d(_interception_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+    cv::Point3f _stopping_pos = _patser->interceptor.stopping_pos();
+    cv::Point2f _stopping_pos_im = world2im_2d(_stopping_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+    tracking::WorldItem wti = last_drone_detection.world_item;
+    cv::Point2i _drone_pos_im(wti.image_item.x, wti.image_item.y);
+
+    if (_patser->drone.control.at_base()) {
+        cv::line(frameL_color, _pad_pos_im, _interception_pos_im, white, 2);
+        cv::line(frameL_color, _pad_pos_im, _aim_pos_im, blue, 1);
+        cv::line(frameL_color, _interception_pos_im, _stopping_pos_im, white, 1);
+    }
+    else {
+        cv::line(frameL_color, _drone_pos_im, _interception_pos_im, red, 2);
+        cv::line(frameL_color, _drone_pos_im, _aim_pos_im, blue, 1);
+        cv::line(frameL_color, _interception_pos_im, _stopping_pos_im, red, 1);
+    }
 
     if (pos_log_drone_valid) {
         cv::circle(frameL_color, pos_log_drone, 10, blue, 2);
