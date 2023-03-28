@@ -135,7 +135,7 @@ TEST_GROUP(InterceptInPlanes) {
 
 
 TEST(InterceptInPlanes, overall_behavior_linesearch) {
-    dparams.deserialize("../../xml/drone_anvil_superbee.xml");
+    dparams.deserialize("../xml/drone_anvil_superbee.xml");
     QPSettings qpsettings = QPSettings();
     sqp_solver_configuration sqp_config = sqp_solver_configuration(30, 1e-6, 1e-6, 1e-9);
     ocptester.init_range_test(intercept_in_planes, false, sqp_config, &qpsettings);

@@ -247,7 +247,7 @@ range_stats OcpTester::exec_range_test() {
                                         break;
                                     }
                                 case rapid_route: {
-                                        auto opti_res = rr.find_best_interception(drone, insect);
+                                        auto opti_res = rr.find_best_interception(drone, insect, 0.f, 1.2f);
                                         valid = opti_res.valid;
                                         timetointercept = opti_res.time_to_intercept;
                                         positiontointercept = opti_res.position_to_intercept;

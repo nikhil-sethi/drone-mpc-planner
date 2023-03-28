@@ -25,8 +25,8 @@ TEST(RapidRoute, overall_behavior) {
 TEST(RapidRoute, stopping_distance) {
     rapid_route_result result;
     RapidRouteInterface rr;
-    float _thrust = 20.f;
-    rr.init(&_thrust, 0.8f);
+    float _thrust = 24.5f;
+    rr.init(&_thrust, 1.f);
 
     tracking::TrackData rr_drone;
     rr_drone.pos_valid = true;
@@ -38,12 +38,15 @@ TEST(RapidRoute, stopping_distance) {
     tracking::TrackData rr_insect;
     rr_insect.pos_valid = true;
     rr_insect.vel_valid = true;
-    rr_insect.state.pos = {1.32f, 1.32f, 2.3f};
-    rr_insect.state.vel = {0.1f, 0.2f, 0.3f};
+    rr_insect.state.pos = {-0.470907f, 0.831266f, -0.47854f};
+    rr_insect.state.vel = {0.0104176f, -0.32662f, -0.36589f};
     rr_insect.state.acc = {0.f, 0.f, 0.f};
 
-    result = rr.find_best_interception(rr_drone, rr_insect);
+    result = rr.find_best_interception(rr_drone, rr_insect, 0.0f, 1.f);
     CHECK(result.valid);
+    std::cout << "Interception position: " << result.position_to_intercept << std::endl;
+    std::cout << "Interception acceleration: " << result.acceleration_to_intercept << std::endl;
+    std::cout << "Interception velocity: " << result.velocity_at_intercept << std::endl;
+    std::cout << "Time to interception: " << result.time_to_intercept << std::endl;
     std::cout << "Stopping position: " << result.stopping_position << std::endl;
-
 }
