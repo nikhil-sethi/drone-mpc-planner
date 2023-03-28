@@ -335,13 +335,18 @@ class BenchmarkParser:
             self.dataframe = pd.concat([_new_row, self.dataframe.loc[:]]).reset_index(
                 drop=True
             )
-        if DROP_DUPLICATES and self.dataframe[
+
+        if self.dataframe[
             ["benchmark_timestamp", "benchmark_entry_id"]
         ].drop_duplicates().shape[0] != len(self.dataframe):
-            print("Duplicates found, dropping them...")
-            self.dataframe = self.dataframe.drop_duplicates(
-                subset=["benchmark_timestamp", "benchmark_entry_id"], keep="first"
-            )
+            if DROP_DUPLICATES:
+                print("Duplicates found, dropping them...")
+                self.dataframe = self.dataframe.drop_duplicates(
+                    subset=["benchmark_timestamp", "benchmark_entry_id"], keep="first"
+                )
+            else:
+                print("DUPLICATES FOUND!")
+
 
         if (self.dataframe["benchmark_entry_id"] > TOTAL_BENCHMARK_ENTRIES).any:
             self.dataframe = self.dataframe[
@@ -484,7 +489,7 @@ class Utils:
 
 if __name__ == "__main__":
     TOTAL_BENCHMARK_ENTRIES = 15  # + 1
-    DROP_DUPLICATES = True
+    DROP_DUPLICATES = False
     MAX_KILL_DISTANCE = 0.05
     MEAN_VAR_PER_INSECT = False
 
