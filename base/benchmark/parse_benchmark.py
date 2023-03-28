@@ -509,7 +509,7 @@ if __name__ == "__main__":
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
             relevant_dataframes.append(parser.benchmark_results[_benchmark_time_date].dataframe)
         relevant_dataframes = pd.concat(relevant_dataframes)
-        results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes']])
+        results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes', 'hash']])
         results_string += "\n"
 
         for _entry_id in range(0, TOTAL_BENCHMARK_ENTRIES):
@@ -533,7 +533,7 @@ if __name__ == "__main__":
                         hunt_error_list, _relevant_entry['best_interception_distance'].values[0])
             if relevant_dataframes:
                 relevant_dataframes = pd.concat(relevant_dataframes)
-                relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "pos_best_interception_x", "pos_best_interception_y", "pos_best_interception_z"]]
+                relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "n_insects", "n_monsters"]]
                 results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes)
 
             if MEAN_VAR_PER_INSECT:
