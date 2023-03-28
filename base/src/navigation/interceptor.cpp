@@ -356,7 +356,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
 
 
 bool Interceptor::delay_takeoff_for_better_interception(rapid_route_result optimization_result) {
-    float tti = _tti;
+    float tti = optimization_result.time_to_intercept;
     if (_tti_iip > 0)
         tti = _tti_iip;
 
