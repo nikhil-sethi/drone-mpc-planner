@@ -13,6 +13,7 @@ struct rapid_route_result {
     float time_to_intercept;
     cv::Point3f position_to_intercept;
     cv::Point3f acceleration_to_intercept;
+    cv::Point3f velocity_at_intercept;
     cv::Point3f stopping_position;
 };
 
