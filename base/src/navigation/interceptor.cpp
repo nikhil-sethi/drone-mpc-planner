@@ -313,6 +313,8 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
 
 tracking::InsectTracker *Interceptor::update_target_insecttracker() {
     float best_time_to_intercept = INFINITY;
+    bool best_aim_inview = false;
+    bool best_stop_inview = false;
     InsectTracker *best_itrkr = NULL;
     auto all_trackers = _trackers->all_target_trackers();
 
@@ -337,14 +339,21 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
             cv::Point3f current_insect_vel = insect_state.vel();
             rapid_route_result _optim_result = rapid_route.find_best_interception(tracking_data, insect_state, 0.f, _drone->control.kiv_ctrl.safety);
             cv::Point3f aim = _optim_result.position_to_intercept;
-            bool inview = _flight_area->inside(aim, bare) && _flight_area->inside(_optim_result.stopping_position, bare);
+            bool aim_inview = _flight_area->inside(aim, bare);
+            bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
 
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
-            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts && inview) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float _time_to_intercept = _optim_result.time_to_intercept;
-                if (best_time_to_intercept > _time_to_intercept) {
-                    best_time_to_intercept = _time_to_intercept;
+            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
+                if (aim_inview > best_aim_inview || (stop_inview > best_stop_inview && aim_inview == best_aim_inview)) {
+                    best_time_to_intercept = _optim_result.time_to_intercept;
+                    best_aim_inview = aim_inview;
+                    best_stop_inview = stop_inview;
+                    best_itrkr = static_cast<InsectTracker *>(trkr);
+                } else if (best_time_to_intercept > _optim_result.time_to_intercept) {
+                    best_time_to_intercept = _optim_result.time_to_intercept;
+                    best_aim_inview = aim_inview;
+                    best_stop_inview = stop_inview;
                     best_itrkr = static_cast<InsectTracker *>(trkr);
                 }
             }
