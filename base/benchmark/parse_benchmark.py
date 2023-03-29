@@ -547,7 +547,7 @@ if __name__ == "__main__":
                 relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "n_insects", "n_monsters", "file_path"]]
                 results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes)
 
-            if MEAN_VAR_PER_INSECT:
+            if MEAN_VAR_PER_INSECT and len(hunt_error_list):
                 results_string += "|------+----------+-----+-------+-------+------+----|\n"
                 results_string += f"| Mean | | {np.mean(np.array(hunt_error_list))} | | | | |\n"
                 results_string += f"| Var | | {np.var(np.array(hunt_error_list))} | | | | |\n"
