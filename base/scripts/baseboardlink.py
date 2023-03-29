@@ -44,8 +44,12 @@ logger.info('Starting baseboard!')
 
 
 def led():
-    dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
-    if dt_last_executor_msg > 20 and not os.path.exists(lb.disable_executor_flag):
+    if not os.path.exists(lb.disable_executor_flag):
+        dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
+    else:
+        dt_last_executor_msg = 0
+        rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_start.value[0]
+    if dt_last_executor_msg > 20:
         rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_problem.value[0]
     rgb_led_pkg.internet_OK = daemon_pkg.internet_OK
     if os.path.exists(lb.disable_tunnel_flag):
@@ -134,7 +138,8 @@ rgb_led_pkg = ls.SerialNUC2BaseboardRGBLEDPackage()  # must be initialized befor
 executor_state_pkg = ls.SocketExecutorStatePackage()
 daemon_pkg = ls.SocketDaemon2BaseboardLinkPackage()
 daemon_comm = socket_communication('Daemon', 'baseboard', lb.socket_baseboard2daemon, True, deamon_receiver)
-executor_comm = socket_communication('Executor', 'baseboard', lb.socket_baseboard2executor, True, executor_receiver)
+if not os.path.exists(lb.disable_executor_flag):
+    executor_comm = socket_communication('Executor', 'baseboard', lb.socket_baseboard2executor, True, executor_receiver)
 
 while True:
     try:
@@ -232,9 +237,10 @@ while True:
                                          + ' wdt: ' + str(bool(new_pkg.watchdog_state))
                                          )
                             executor_pkg = serial_data[pkg_start:]
-                            if not executor_comm.connection_ok:
-                                logger.info('Executor link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
-                            executor_comm.send(executor_pkg)  # force send thread to find out connection is lost
+                            if not os.path.exists(lb.disable_executor_flag):
+                                if not executor_comm.connection_ok:
+                                    logger.info('Executor link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
+                                executor_comm.send(executor_pkg)  # force send thread to find out connection is lost
                             prev_pkg = new_pkg
                             serial_data.clear()
                         else:

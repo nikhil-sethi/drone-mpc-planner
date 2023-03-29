@@ -17,6 +17,15 @@ STAT_FN=~/pats/status/system_info.txt
 HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
+while [ -f /home/pats/pats/flags/disable ]; do
+	sleep 10
+	echo "Waiting until disable flag disappears"
+done
+while [ -f /home/pats/pats/flags/disable_executor ]; do
+	sleep 10
+	echo "Waiting until executor disable flag disappears"
+done
+
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
 ./executor --rs-reset | /usr/bin/tee terminal_cam_reset.log || true
 sleep 10s # wait some time to enumerate device again after a reset

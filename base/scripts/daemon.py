@@ -505,7 +505,7 @@ while True:
 
     if os.path.exists(lb.disable_daemonlink_flag):
         print('Executor daemon link: disabled by flag: ' + lb.disable_daemonlink_flag)
-    elif not executor_comm.connection_ok:
+    elif not executor_comm.connection_ok and not os.path.exists(lb.disable_executor_flag):
         print('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
     else:
         print('Executor daemon link OK: ' + str(round(executor2daemon_pkg.time)))
