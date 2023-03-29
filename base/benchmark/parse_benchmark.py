@@ -285,6 +285,7 @@ class BenchmarkParser:
                 "n_insects",
                 "benchmark_hash",
                 "executor_hash",
+                "file_path",
             ]
         )
         for entry in self.benchmark_entries:
@@ -337,6 +338,7 @@ class BenchmarkParser:
                         "n_insects": int(entry.n_insects) if entry.n_insects else None,
                         "benchmark_hash": entry.benchmark_hash,
                         "executor_hash": entry.executor_hash,
+                        "file_path": entry.entry_file_path,
                     }
                 ]
             )
@@ -542,7 +544,7 @@ if __name__ == "__main__":
                         hunt_error_list, _relevant_entry['best_interception_distance'].values[0])
             if relevant_dataframes:
                 relevant_dataframes = pd.concat(relevant_dataframes)
-                relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "n_insects", "n_monsters"]]
+                relevant_dataframes = relevant_dataframes[["benchmark_timestamp", "benchmark_type", "best_interception_distance", "time_to_best_interception", "flight_time", "crashed", "voltage_reduction", "n_insects", "n_monsters", "file_path"]]
                 results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes)
 
             if MEAN_VAR_PER_INSECT:
