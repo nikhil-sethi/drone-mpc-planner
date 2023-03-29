@@ -59,7 +59,7 @@ void Drone::update(double time) {
                     _state = ds_charging_failure;
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
                     _state = ds_pre_flight;
-                    confirm_drone_on_pad = true;
+                    require_confirmation_drone_on_pad = true;
                 }
 
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
@@ -106,7 +106,7 @@ void Drone::update(double time) {
                     _state = ds_charging_failure;
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
                     _state = ds_pre_flight;
-                    confirm_drone_on_pad = true;
+                    require_confirmation_drone_on_pad = true;
                 } else if (_baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v - 0.1f && !_baseboard_link->disabled()) {
                     _state = ds_charging;
                     _baseboard_link->allow_charging(true);
@@ -195,7 +195,7 @@ void Drone::pre_flight(double time) {
                     std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
                     pre_flight_state = pre_locate_time_out;
                     _trackers->mode(tracking::TrackerManager::t_c);
-                } else if (control.pad_calib_valid() && !confirm_drone_on_pad)
+                } else if (control.pad_calib_valid() && !require_confirmation_drone_on_pad)
                     pre_flight_state = pre_check_telemetry;
                 else
                     pre_flight_state = pre_locate_drone_wait_led;
@@ -213,7 +213,7 @@ void Drone::pre_flight(double time) {
         } case pre_locate_drone: {
                 blink(time);
 
-                if (confirm_drone_on_pad && _baseboard_link->charging() && control.pad_calib_valid()) {
+                if (require_confirmation_drone_on_pad && _baseboard_link->charging() && control.pad_calib_valid()) {
                     pre_flight_state = pre_init;
                     _state = ds_charging;
                 }
@@ -229,8 +229,8 @@ void Drone::pre_flight(double time) {
                     n_detected_blink_locations = detected_blink_locations.size();
                     control.LED(true);
                     _visdat->disable_fading = false;
-                    if (confirm_drone_on_pad) {
-                        confirm_drone_on_pad = false;
+                    if (require_confirmation_drone_on_pad) {
+                        require_confirmation_drone_on_pad = false;
                         float dist = normf(tracker.pad_location(false) - tracker.pad_location_from_blink(detected_blink_locations.back()));
                         std::cout << "Confirmed drone on " << dist << " from the pad... while charging is: " << _baseboard_link->charging() << std::endl;
                         if (dist < confirm_drone_on_pad_delta_distance && _baseboard_link->charging()) {
@@ -319,7 +319,7 @@ void Drone::pre_flight(double time) {
                         }
                     } else if (static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && control.att_somewhere_on_pad()) {
                         pre_flight_state = pre_init;
-                        confirm_drone_on_pad = true;
+                        require_confirmation_drone_on_pad = true;
                     }
                 }
                 if (_rc->telemetry_time_out()) {
@@ -378,7 +378,7 @@ void Drone::pre_flight(double time) {
                     pre_flight_state = pre_init;
                     _state = ds_charging;
                 } else if (static_cast<float>(time - time_waiting_for_charge) > wait_charging_response_duration) {
-                    confirm_drone_on_pad = true;
+                    require_confirmation_drone_on_pad = true;
                     pre_flight_state = pre_locate_drone_init;
                     std::cout << "Not charging, but drone att is within pad bounds. Confirming with blink...." << std::endl;
                 }
@@ -443,7 +443,7 @@ void Drone::post_flight(double time) {
                 }
                 break;
         } case post_shaking_drone: {
-                if (control.shake_finished())  // confirm_drone_on_pad = true;
+                if (control.shake_finished())  // require_confirmation_drone_on_pad = true;
                     post_flight_state = post_wait_after_shake_init;
                 break;
         } case post_wait_after_shake_init: {
