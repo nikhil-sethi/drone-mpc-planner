@@ -41,7 +41,8 @@ class BenchmarkResults:
         self.number_of_monsters = None
         self.number_of_insects = None
 
-        self.hash = None
+        self.benchmark_hash = None
+        self.executor_hash = None
 
         self.dataframe = None
 
@@ -67,7 +68,8 @@ class BenchmarkResults:
                 "number_of_crashes",
                 "number_of_monsters",
                 "number_of_insects",
-                "hash",
+                "benchmark_hash",
+                "executor_hash",
             ]
         )
         _new_row = pd.DataFrame(
@@ -92,7 +94,8 @@ class BenchmarkResults:
                     "number_of_crashes": self.number_of_crashes,
                     "number_of_monsters": self.number_of_monsters,
                     "number_of_insects": self.number_of_insects,
-                    "hash": self.hash
+                    "benchmark_hash": self.benchmark_hash,
+                    "executor_hash": self.executor_hash,
                 }
             ]
         )
@@ -243,8 +246,11 @@ class BenchmarkParser:
                     n_insects = line.strip().split(":")[1]
                     entry.n_insects = n_insects
                 if line.find("benchmark_hash") != -1:
-                    hash = line.strip().split(":")[1]
-                    entry.hash = hash
+                    benchmark_hash = line.strip().split(":")[1]
+                    entry.benchmark_hash = benchmark_hash
+                if line.find("executor_hash") != -1:
+                    executor_hash = line.strip().split(":")[1]
+                    entry.executor_hash = executor_hash
 
     def assemble_dataframe(self):
         self.dataframe = pd.DataFrame(
@@ -277,7 +283,8 @@ class BenchmarkParser:
                 "voltage_reduction",
                 "n_monsters",
                 "n_insects",
-                "hash",
+                "benchmark_hash",
+                "executor_hash",
             ]
         )
         for entry in self.benchmark_entries:
@@ -328,7 +335,8 @@ class BenchmarkParser:
                         "voltage_reduction": float(entry.voltage_reduction),
                         "n_monsters": int(entry.n_monsters) if entry.n_monsters else None,
                         "n_insects": int(entry.n_insects) if entry.n_insects else None,
-                        "hash": entry.hash,
+                        "benchmark_hash": entry.benchmark_hash,
+                        "executor_hash": entry.executor_hash,
                     }
                 ]
             )
@@ -445,7 +453,8 @@ class BenchmarkParser:
             )
 
             _filtered_dataframe = self.dataframe[self.dataframe["benchmark_timestamp"] == benchmark]
-            results.hash = _filtered_dataframe["hash"].iloc[0]
+            results.benchmark_hash = _filtered_dataframe["benchmark_hash"].iloc[0]
+            results.executor_hash = _filtered_dataframe["executor_hash"].iloc[0]
 
             if benchmark not in self.benchmark_results:
                 self.benchmark_results[benchmark] = results
@@ -509,7 +518,7 @@ if __name__ == "__main__":
         for _benchmark_time_date in sorted(parser.benchmark_results.keys()):
             relevant_dataframes.append(parser.benchmark_results[_benchmark_time_date].dataframe)
         relevant_dataframes = pd.concat(relevant_dataframes)
-        results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes', 'hash']])
+        results_string += Utils.dataframe_to_orgmode_table(relevant_dataframes[['benchmark_timestamp', 'number_of_flights', 'number_of_flights_started_late', 'mean_best_interception_distance', 'var_best_interception_distance', 'number_of_kills', 'number_of_crashes', 'benchmark_hash', 'executor_hash']])
         results_string += "\n"
 
         for _entry_id in range(0, TOTAL_BENCHMARK_ENTRIES):
