@@ -214,6 +214,7 @@ void Drone::pre_flight(double time) {
                 blink(time);
 
                 if (require_confirmation_drone_on_pad && _baseboard_link->charging() && control.pad_calib_valid()) {
+                    require_confirmation_drone_on_pad = false;
                     pre_flight_state = pre_init;
                     _state = ds_charging;
                 }
