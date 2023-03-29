@@ -48,7 +48,7 @@ def led():
         dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
     else:
         dt_last_executor_msg = 0
-        rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_start.value[0]
+        rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_blind_OK.value[0]
     if dt_last_executor_msg > 20:
         rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_executor_problem.value[0]
     rgb_led_pkg.internet_OK = daemon_pkg.internet_OK

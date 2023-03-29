@@ -1,7 +1,7 @@
 from enum import Enum
 import struct
 
-BASEBOARD_FIRMWARE_VERSION = 21
+BASEBOARD_FIRMWARE_VERSION = 22
 BASEBOARD_PACKAGE_PRE_HEADER = '@'
 EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
@@ -48,6 +48,7 @@ led1_state_names = [
     'L1_lightlevel',
     'L1_c_OK',
     'L1_x_OK',
+    'L1_blind_OK',
     'L1_unknown'
 ]
 
@@ -112,7 +113,8 @@ class rgb_led_1_states(Enum):
     LED1_wait_for_light_level = 6,
     LED1_c_OK = 7,
     LED1_x_OK = 8,
-    LED1_unknown = 9,
+    LED1_blind_OK = 9,
+    LED1_unknown = 10,
 
 
 class SerialBaseboard2NUCPackage:

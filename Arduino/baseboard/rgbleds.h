@@ -31,6 +31,7 @@ public:
         LED1_wait_for_lightlevel,
         LED1_c_OK,
         LED1_x_OK,
+        LED1_blind_OK,
         LED1_unknown
     };
 
