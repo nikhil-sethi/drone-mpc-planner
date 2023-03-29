@@ -1,5 +1,5 @@
 ---
-- hosts: c,trapeye,x,qc,rc
+- hosts: c,trapeye,blind,x
   strategy: free
   tasks:
     - name: checks
