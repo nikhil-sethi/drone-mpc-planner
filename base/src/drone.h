@@ -107,7 +107,7 @@ private:
     int n_locate_drone_attempts = 0;
     uint n_detected_blink_locations = 0;
 
-    bool confirm_drone_on_pad = false;
+    bool require_confirmation_drone_on_pad = true;
     double time_start_locating_drone = 0;
     double time_start_locating_drone_attempt = 0;
     double time_located_drone = 0;
