@@ -316,23 +316,25 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
             }
             cv::Point3f current_insect_vel = insect_state.vel();
             rapid_route_result _optim_result = rapid_route.find_best_interception(tracking_data, insect_state, 0.f, _drone->control.kiv_ctrl.safety);
-            cv::Point3f aim = _optim_result.position_to_intercept;
-            bool aim_inview = _flight_area->inside(aim, bare);
-            bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
+            if (_optim_result.valid) {
+                cv::Point3f aim = _optim_result.position_to_intercept;
+                bool aim_inview = _flight_area->inside(aim, bare);
+                bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
 
-            if (!insect_state.vel_valid)
-                current_insect_vel = {0};
-            if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                if (aim_inview > best_aim_inview || (stop_inview > best_stop_inview && aim_inview == best_aim_inview)) {
-                    best_time_to_intercept = _optim_result.time_to_intercept;
-                    best_aim_inview = aim_inview;
-                    best_stop_inview = stop_inview;
-                    best_itrkr = static_cast<InsectTracker *>(trkr);
-                } else if (best_time_to_intercept > _optim_result.time_to_intercept && aim_inview == best_aim_inview && stop_inview == best_stop_inview) {
-                    best_time_to_intercept = _optim_result.time_to_intercept;
-                    best_aim_inview = aim_inview;
-                    best_stop_inview = stop_inview;
-                    best_itrkr = static_cast<InsectTracker *>(trkr);
+                if (!insect_state.vel_valid)
+                    current_insect_vel = {0};
+                if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
+                    if (aim_inview > best_aim_inview || (stop_inview > best_stop_inview && aim_inview == best_aim_inview)) {
+                        best_time_to_intercept = _optim_result.time_to_intercept;
+                        best_aim_inview = aim_inview;
+                        best_stop_inview = stop_inview;
+                        best_itrkr = static_cast<InsectTracker *>(trkr);
+                    } else if (best_time_to_intercept > _optim_result.time_to_intercept && aim_inview == best_aim_inview && stop_inview == best_stop_inview) {
+                        best_time_to_intercept = _optim_result.time_to_intercept;
+                        best_aim_inview = aim_inview;
+                        best_stop_inview = stop_inview;
+                        best_itrkr = static_cast<InsectTracker *>(trkr);
+                    }
                 }
             }
         }
@@ -350,8 +352,7 @@ bool Interceptor::delay_takeoff_for_better_interception(rapid_route_result optim
     if (tti > 0 && tti_running_avg > 0) {
         if ((1.f / 2 * tti_running_avg + 1.f / 2 * tti) >= (1.f - 1e-6f) * tti_running_avg) {
             tti_running_avg = -1;
-            if (optimization_result.valid && _flight_area->inside(optimization_result.stopping_position, relaxed))
-                return false;
+            return false;
         }
     }
     if (tti_running_avg == -1)
