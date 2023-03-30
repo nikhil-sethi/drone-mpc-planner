@@ -328,7 +328,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     best_aim_inview = aim_inview;
                     best_stop_inview = stop_inview;
                     best_itrkr = static_cast<InsectTracker *>(trkr);
-                } else if (best_time_to_intercept > _optim_result.time_to_intercept) {
+                } else if (best_time_to_intercept > _optim_result.time_to_intercept && aim_inview == best_aim_inview && stop_inview == best_stop_inview) {
                     best_time_to_intercept = _optim_result.time_to_intercept;
                     best_aim_inview = aim_inview;
                     best_stop_inview = stop_inview;
