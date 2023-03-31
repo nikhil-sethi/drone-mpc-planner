@@ -15,7 +15,8 @@ data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
 trapeye_images_dir = os.path.expanduser('~/trapeye/images/')
-trapeye_pkl = os.path.expanduser('~/trapeye/trapeye_ids.pkl')
+trapeye_db_dir = os.path.expanduser('~/trapeye/db/')
+trapeye_pkl = trapeye_db_dir + 'trapeye_ids.pkl'
 executor_log_dir = os.path.expanduser('~/pats/release/build/logging/')
 
 daily_errs_log = log_dir + 'all_errors.log'
@@ -123,9 +124,10 @@ def block_if_disabled():
     while os.path.exists(disable_flag):
         print('Waiting until disable_flag disappears')
         time.sleep(10)
-    while not os.path.exists(local_status_txt_file):
-        print('Warning: ' + local_status_txt_file + ' does not exist')
-        time.sleep(10)
+    if not os.path.exists(disable_executor_flag):
+        while not os.path.exists(local_status_txt_file):
+            print('Warning: ' + local_status_txt_file + ' does not exist')
+            time.sleep(10)
 
 
 def system_was_monitoring_in_folder(folder):

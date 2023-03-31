@@ -31,14 +31,15 @@ def apply_ids_and_move_for_send(image_paths: List[str]):
 
 
 def upload_images():
-    logger = logging.getLogger('trapeye')
-
     image_paths = lb.natural_sort(glob.glob(os.path.expanduser(lb.trapeye_images_dir) + '/*.jpg'))
+    if not len(image_paths):
+        return 0
     image_paths.reverse()
     if not os.path.exists(lb.trapeye_images_dir + 'to_send'):
         os.mkdir(lb.trapeye_images_dir + 'to_send')
     if not os.path.exists(lb.trapeye_images_dir + 'sent'):
         os.mkdir(lb.trapeye_images_dir + 'sent')
+
     apply_ids_and_move_for_send(image_paths)
 
     cmd = ' rsync -a ' + lb.trapeye_images_dir + 'to_send/*' + ' dash:trapeye_images/'

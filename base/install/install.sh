@@ -24,6 +24,10 @@ mkdir -p ~/pats/logs
 mkdir -p ~/pats/flags
 mkdir -p ~/pats/status
 mkdir -p ~/pats/images
+mkdir -p ~/trapeye
+mkdir -p ~/trapeye/images
+mkdir -p ~/trapeye/db
+mkdir -p ~/trapeye/conf
 
 pushd ~/dependencies
 
@@ -85,6 +89,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.22.done
 
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache qtbase5-dev
+
 	sudo apt-get remove -y modemmanager	
 	sudo apt purge -y snapd # remove snap, because it uses data
 
@@ -98,7 +103,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.22.done
 	touch $DEPENDENCIES_FLAG
 }
 
-TRAPEYE_FLAG=trapeye-v1.0.done
+TRAPEYE_FLAG=trapeye-v1.1.done
 [ -f $TRAPEYE_FLAG ] || {
 	sudo apt install -y hostapd isc-dhcp-server rfkill
 	touch $TRAPEYE_FLAG

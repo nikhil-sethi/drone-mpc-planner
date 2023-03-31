@@ -11,6 +11,7 @@ class socket_communication:
 
     send_trigger = threading.Condition()
     send_data = None
+    disable_flag_fn = ''
     connection_ok = False
     connection_lost_datetime = datetime.now()
     target_name = ''
@@ -21,12 +22,13 @@ class socket_communication:
     trying_to_join_send_thread_since = datetime.now()
     receiver_callback = None
 
-    def __init__(self, name, logger_name, socket_path, server, receiver=None) -> None:
+    def __init__(self, name, logger_name, socket_path, server, disable_flag_fn, receiver=None) -> None:
         logging.basicConfig()
         self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(logging.DEBUG)
         self.target_name = name
         self.socket_path = socket_path
+        self.disable_flag_fn = disable_flag_fn
         self.server = server
         self.receiver_callback = receiver
         self.connecter_thread = threading.Thread(target=self.__connecter)
@@ -35,6 +37,8 @@ class socket_communication:
     def __connecter(self):
         self.logger.info('Starting ' + self.target_name + ' communication thread!')
         while not self.exit_now:
+            while (os.path.exists(self.disable_flag_fn)):
+                time.sleep(1)
             self.logger.info('Waiting for connection ' + self.target_name)
             if self.server:
                 if os.path.exists(self.socket_path):

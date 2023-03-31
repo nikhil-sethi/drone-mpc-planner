@@ -188,11 +188,16 @@ class trapeye_task(pats_task):
             self.logger.info('Trapeye disabled.')
             return
 
+        if not os.path.exists(lb.trapeye_db_dir):
+            os.mkdir(lb.trapeye_db_dir)
+        cmd = ' rsync -aLz dash_upload:trapeye_ids.pkl ' + lb.trapeye_pkl
+        lb.execute(cmd, 3, 'trapeye')
+
         daemon2baseboard_pkg.post_processing = 1
         send_success = False
         intervals = (1, 2, 5, 10, 60, 60, 120)
         for i in intervals:
-            if upload_images():
+            if not upload_images():
                 send_success = True
                 break
             else:
@@ -474,8 +479,8 @@ print(start_time)
 start_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode(sys.stdout.encoding).strip()
 logger.info('sha: ' + start_sha)
 
-baseboard_comm = socket_communication('baseboard', 'daemon', lb.socket_baseboard2daemon, False)
-executor_comm = socket_communication('executor', 'daemon', lb.socket_executor2daemon, True, executor_receive)
+baseboard_comm = socket_communication('baseboard', 'daemon', lb.socket_baseboard2daemon, False, lb.disable_baseboard_flag)
+executor_comm = socket_communication('executor', 'daemon', lb.socket_executor2daemon, True, lb.disable_executor_flag, executor_receive)
 
 tasks: List[pats_task] = []
 tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
@@ -505,6 +510,8 @@ while True:
 
     if os.path.exists(lb.disable_daemonlink_flag):
         print('Executor daemon link: disabled by flag: ' + lb.disable_daemonlink_flag)
+    elif os.path.exists(lb.disable_executor_flag):
+        print('Executor daemon link: disabled by flag: ' + lb.disable_executor_flag)
     elif not executor_comm.connection_ok and not os.path.exists(lb.disable_executor_flag):
         print('Executor daemon link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
     else:

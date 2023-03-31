@@ -5,10 +5,14 @@ set -e
 cp -r ~/code/pats/base/install ~/code/release-18/
 cp -r ~/code/pats/base/scripts ~/code/release-18/
 cp -r ~/code/pats/base/xml ~/code/release-18/
+cp -r ~/code/pats/config/firmwares/baseboard ~/code/release-18/
+#cp -r ~/code/trapeye/basestation/scripts/setup_wifi ~/code/release-18/scripts/
 
 cp -r ~/code/pats/base/install ~/code/release-20/
 cp -r ~/code/pats/base/scripts ~/code/release-20/
 cp -r ~/code/pats/base/xml ~/code/release-20/
+cp -r ~/code/pats/config/firmwares/baseboard ~/code/release-20/
+#cp -r ~/code/trapeye/basestation/scripts/setup_wifi ~/code/release-20/scripts/
 
 
 #cd ~/code/release-18/build
