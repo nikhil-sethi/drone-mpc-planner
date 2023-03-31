@@ -215,8 +215,7 @@ void Drone::pre_flight(double time) {
 
                 if (require_confirmation_drone_on_pad && _baseboard_link->charging() && control.pad_calib_valid()) {
                     require_confirmation_drone_on_pad = false;
-                    pre_flight_state = pre_init;
-                    _state = ds_charging;
+                    pre_flight_state = pre_check_telemetry;
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
@@ -235,8 +234,7 @@ void Drone::pre_flight(double time) {
                         float dist = normf(tracker.pad_location(false) - tracker.pad_location_from_blink(detected_blink_locations.back()));
                         std::cout << "Confirmed drone on " << dist << " from the pad... while charging is: " << _baseboard_link->charging() << std::endl;
                         if (dist < confirm_drone_on_pad_delta_distance && _baseboard_link->charging()) {
-                            pre_flight_state = pre_init;
-                            _state = ds_charging;
+                            pre_flight_state = pre_check_telemetry;
                             _trackers->mode(tracking::TrackerManager::t_x);
                         } else if (_baseboard_link->charging()) {
                             control.invalidize_blink();
