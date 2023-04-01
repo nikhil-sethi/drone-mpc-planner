@@ -258,7 +258,7 @@ class wdt_pats_task(pats_task):
         self.no_realsense_wdt_cycles = 0
 
     def task_func(self):
-        if os.path.exists(lb.disable_flag):
+        if os.path.exists(lb.disable_flag) or os.path.exists(lb.disable_executor_flag):
             return
 
         dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
