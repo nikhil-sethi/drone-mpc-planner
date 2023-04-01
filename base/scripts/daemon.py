@@ -41,7 +41,7 @@ def status_cc_worker():
     if status_file_missing:
         logger.info('Warning: status file missing...')
 
-    disabled_flag_detected = os.path.exists(lb.disable_flag)
+    disabled_flag_detected = os.path.exists(lb.disable_flag) or os.path.exists(lb.disable_executor_flag)
     if disabled_flag_detected:
         logger.info('Warning: disable flag active: ' + lb.disable_flag)
 
@@ -53,8 +53,8 @@ def status_cc_worker():
         if status_file_missing == os.path.exists(lb.local_status_txt_file):
             status_file_missing = not os.path.exists(lb.local_status_txt_file)
             logger.info('Warning: status file went missing...')
-        if disabled_flag_detected != os.path.exists(lb.disable_flag):
-            disabled_flag_detected = os.path.exists(lb.disable_flag)
+        if disabled_flag_detected != (os.path.exists(lb.disable_flag) or os.path.exists(lb.disable_executor_flag)):
+            disabled_flag_detected = os.path.exists(lb.disable_flag) or os.path.exists(lb.disable_executor_flag)
             logger.info('Warning: disable flag went active...')
 
         if not status_file_missing and not disabled_flag_detected:
