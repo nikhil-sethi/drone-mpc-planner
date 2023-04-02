@@ -315,7 +315,7 @@ SYMLINK_FLAG=symlinks-v2.2.done
 	sudo ln -s ~/pats/release/install/system.conf /etc/systemd/system.conf
 
 	sudo chown $USER $PRE_COMPILED_BINARIES_PATH -R
-	sudo touch /etc/cloud/cloud-init.disabled
+	sudo touch /etc/cloud/cloud-init.disabled | true
 
 	sudo systemctl restart ssh.service
 
