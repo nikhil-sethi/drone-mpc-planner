@@ -42,7 +42,7 @@ def upload_images():
 
     apply_ids_and_move_for_send(image_paths)
 
-    cmd = ' rsync -a ' + lb.trapeye_images_dir + 'to_send/*' + ' dash:trapeye_images/'
+    cmd = 'rsync -a ' + lb.trapeye_images_dir + 'to_send/*' + ' dash_upload:trapeye_images/'
 
     send_result = lb.execute(cmd, 3, 'trapeye')
     if not send_result:

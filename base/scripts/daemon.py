@@ -190,7 +190,7 @@ class trapeye_task(pats_task):
 
         if not os.path.exists(lb.trapeye_db_dir):
             os.mkdir(lb.trapeye_db_dir)
-        cmd = ' rsync -aLz dash_upload:trapeye_ids.pkl ' + lb.trapeye_pkl
+        cmd = 'rsync -aLz dash_upload:trapeye_ids.pkl ' + lb.trapeye_pkl
         lb.execute(cmd, 3, 'trapeye')
 
         daemon2baseboard_pkg.post_processing = 1
