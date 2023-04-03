@@ -134,7 +134,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 if (_drone->in_flight())
                     update_hunt_strategy(drone_at_base, target_trkr->last_track_data(), time);
                 else
-                    _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 1.2f);
+                    _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.5f);
                 if (!_n_frames_aim_not_in_range)
                     _interceptor_state = is_lurking;
                 else
