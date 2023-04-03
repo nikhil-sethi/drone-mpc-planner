@@ -195,7 +195,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad()) {
                     _flight_mode = fm_flying_pid_init;
                 }
-                else if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration) {
+                else if (static_cast<float>(time - start_takeoff_burn_time) >  auto_burn_duration + transmission_delay_duration) {
                     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, takeoff_aim_acceleration_factor * GRAVITY, 0});
                     _flight_mode = fm_1g;
                 } else {
