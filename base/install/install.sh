@@ -165,12 +165,12 @@ PATS_RELEASE_FLAG=pats_release_v1.0.done
 		touch ~/pats/flags/disable_baseboard
 		pushd ../pats
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
-		[ -d pats ] || {
+		[ -d release-20 ] || {
 			git clone git@github-release-20:pats-drones/release-20.git
 			ln -s release-20 release
 		}
 	else
-		[ -d pats ] || {
+		[ -d release-18 ] || {
 			git clone git@github-release-18:pats-drones/release-18.git
 			ln -s release-18 release
 		}
@@ -315,7 +315,9 @@ SYMLINK_FLAG=symlinks-v2.2.done
 	sudo ln -s ~/pats/release/install/system.conf /etc/systemd/system.conf
 
 	sudo chown $USER $PRE_COMPILED_BINARIES_PATH -R
-	sudo touch /etc/cloud/cloud-init.disabled | true
+	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		sudo touch /etc/cloud/cloud-init.disabled
+	fi
 
 	sudo systemctl restart ssh.service
 
@@ -361,11 +363,13 @@ PATS_BIN_FLAG=pats_bin-v1.done
 	sudo ldconfig
 	sudo apt upgrade -y # hmmmmm, package matching doesn't seem to be for the faint hearted
 	# sudo apt install $(cat ~/pats/release/package_list.txt) # this fails if a package was removed from the repo. Super annoying
-	for i in $(cat ~/pats/release/package_list.txt); do
-	  sudo apt-get install -y $i || true
-	done
+	#for i in $(cat ~/pats/release/package_list.txt); do
+	  #sudo apt-get install -y $i || true
+	#done
 	
-	pip install -r ~/pats/release/requirements.txt #again fails if one package fails
+	pip3 install --upgrade pip
+	pip install --upgrade pip
+	#pip install -r ~/pats/release/requirements.txt #again fails if one package fails
 	#cat ~/pats/release/requirements.txt | xargs -n 1 pip install
 	touch $PATS_BIN_FLAG
 }
