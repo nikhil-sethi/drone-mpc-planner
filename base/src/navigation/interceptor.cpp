@@ -151,8 +151,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 1.2f);
-                if ((!delay_takeoff_for_better_interception(_rapid_route_result)) && !_n_frames_aim_not_in_range) {
+                if ((!delay_takeoff_for_better_interception()) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
                 }
                 else
@@ -344,23 +343,8 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
 }
 
 
-bool Interceptor::delay_takeoff_for_better_interception(rapid_route_result optimization_result) {
-    float tti = optimization_result.time_to_intercept;
-    if (_tti_iip > 0)
-        tti = _tti_iip;
-
-    if (tti > 0 && tti_running_avg > 0) {
-        if ((1.f / 2 * tti_running_avg + 1.f / 2 * tti) >= (1.f - 1e-6f) * tti_running_avg) {
-            tti_running_avg = -1;
-            return false;
-        }
-    }
-    if (tti_running_avg == -1)
-        tti_running_avg = tti;
-    else
-        tti_running_avg = 1.f / 2 * tti_running_avg + 1.f / 2 * tti;
-
-    return true;
+bool Interceptor::delay_takeoff_for_better_interception() {
+    return false;
 }
 
 tracking::TrackData Interceptor::target_last_trackdata() {

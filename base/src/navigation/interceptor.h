@@ -89,7 +89,7 @@ private:
 
     void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time);
-    bool delay_takeoff_for_better_interception(rapid_route_result optimization_result);
+    bool delay_takeoff_for_better_interception();
     void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
         _intercepting_state = is_intercept_maneuvering;
         time_start_intercept_maneuver = time;
