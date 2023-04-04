@@ -229,6 +229,11 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
         update_aim_in_flightarea(_rapid_route_result);
         _aim_pos = _rapid_route_result.position_to_intercept;
         _flight_area->move_inside(_aim_pos, strict, drone.pos());
+        if (interception_position_in_flightarea) { // if aim from intermediate poitn is in flight area, go to it, ignore stopping position for now
+            _n_frames_aim_not_in_range = 0;
+            interception_position_in_flightarea = true;
+            stopping_position_in_flightarea = true; // must set to true or we will actually use extrapolated insect pos as aim pos
+        }
     }
     return _rapid_route_result;
 }
