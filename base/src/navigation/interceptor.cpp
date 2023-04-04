@@ -226,8 +226,9 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
     update_aim_in_flightarea(_rapid_route_result);
     if (_n_frames_aim_not_in_range) {
         _rapid_route_result = rapid_route.find_interception_via(_drone->tracker.last_track_data(), target, delay, _drone->control.kiv_ctrl.safety);
-        _aim_pos = _rapid_route_result.position_to_intercept;
         update_aim_in_flightarea(_rapid_route_result);
+        _aim_pos = _rapid_route_result.position_to_intercept;
+        _flight_area->move_inside(_aim_pos, strict, drone.pos());
     }
     return _rapid_route_result;
 }
