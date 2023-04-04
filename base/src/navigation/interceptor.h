@@ -3,6 +3,7 @@
 #include <condition_variable>
 #include <thread>
 #include "flightarea/flightarea.h"
+#include "flightareaconfig.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
 #include "trackermanager.h"
@@ -43,6 +44,7 @@ private:
     VisionData *_visdat;
     Drone *_drone;
     FlightArea *_flight_area;
+    FlightAreaConfig *_flight_area_config;
 
     bool initialized = false;
     interceptor_states _interceptor_state = is_init;
@@ -125,7 +127,7 @@ public:
         intercept_in_planes_optimizer.ros_interface(interface);
     }
 #endif
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, FlightAreaConfig *flight_area_config);
     void close();
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);

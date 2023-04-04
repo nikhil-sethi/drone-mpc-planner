@@ -3,17 +3,18 @@
 
 using namespace tracking;
 
-void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone) {
+void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, FlightAreaConfig *flight_area_config) {
     _trackers = trackers;
     _visdat = visdat;
     _flight_area = flight_area;
+    _flight_area_config = flight_area_config;
     _drone = drone;
     interception_max_thrust = *drone->control.max_thrust();
 
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
 
     // tti_optimizer.init(&interception_max_thrust);
-    rapid_route.init(&interception_max_thrust, 0.8f);
+    rapid_route.init(&interception_max_thrust, 0.8f, flight_area_config);
 #ifdef OCP_DEV
     // tti_optimizer.init_casadi("../ocp_design/tti/tti_optimizer.so");
     // intercept_in_planes_optimizer.init_casadi("../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");

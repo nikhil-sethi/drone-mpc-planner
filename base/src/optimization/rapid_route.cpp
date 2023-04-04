@@ -21,10 +21,11 @@ float largestRoot(float a, float b, float c) {
     }
 }
 
-void RapidRouteInterface::init(float *thrust, float thrust_factor) {
+void RapidRouteInterface::init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config) {
     _thrust = thrust;
     _thrust_factor = thrust_factor;
     _gravity = {0, -GRAVITY, 0};
+    _flight_area_config = *flight_area_config;
 }
 
 rapid_route_result RapidRouteInterface::update_initial_guess(tracking::TrackData drone, tracking::TrackData target, rapid_route_result result) {
@@ -74,7 +75,55 @@ rapid_route_result RapidRouteInterface::find_best_interception(tracking::TrackDa
     if (feasible_solution(result, drone))
         result.valid = true;
     result.stopping_position = find_stopping_position(result, drone, stopping_safety_factor);
+
+    bool _interception_position_in_flightarea = false;
+    bool _stopping_position_in_flightarea = false;
+    if (result.valid) {
+        if (_flight_area_config.inside(result.position_to_intercept))
+            _interception_position_in_flightarea = true;
+        else
+            _interception_position_in_flightarea = false;
+        if (_flight_area_config.inside(result.stopping_position))
+            _stopping_position_in_flightarea = true;
+        else
+            _stopping_position_in_flightarea = false;
+
+        if (_interception_position_in_flightarea && _stopping_position_in_flightarea) {
+            return result;
+        } else {
+            result.position_to_intercept = find_intermediate_position(drone, target);
+            result.stopping_position = result.position_to_intercept;
+            result.valid = true;
+            result.acceleration_to_intercept = {0, 0, 0};
+            result.velocity_at_intercept = {0, 0, 0};
+        }
+    }
     return result;
+}
+
+cv::Point3f RapidRouteInterface::find_intermediate_position(tracking::TrackData drone, tracking::TrackData target) {
+    int _iteration_counter = 0;
+    cv::Point3f _target_position = target.pos();
+    while (1) {
+        _sorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position);
+        Plane _first_plane = _sorted_planes[0];
+        int _second_plane_idx = _flight_area_config.find_next_non_parallel_plane(_sorted_planes, 0);
+        Plane _second_plane = _sorted_planes[_second_plane_idx];
+        int _third_plane_idx = _flight_area_config.find_next_non_parallel_plane(_sorted_planes, 0, _second_plane_idx);
+        Plane _third_plane = _sorted_planes[_third_plane_idx];
+
+        cv::Point3f _intersection = intersection_of_3_planes(&_first_plane, &_second_plane, &_third_plane);
+        _intersection = _flight_area_config.move_inside(_intersection); // may still exceed the constraints of a 4+th plane
+        float _time_to_reach_intersection = sqrt(4 * norm(_intersection - drone.pos()) / (_thrust_factor * *_thrust));
+        cv::Point3f _target_position_after_time_to_reach = target.pos() + target.vel() * _time_to_reach_intersection;
+
+        _resorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position_after_time_to_reach);
+
+        if (_sorted_planes == _resorted_planes || _iteration_counter > 20)
+            return _intersection;
+        else
+            _iteration_counter++;
+    }
 }
 
 bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone) {

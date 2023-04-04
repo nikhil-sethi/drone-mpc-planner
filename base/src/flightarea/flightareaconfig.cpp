@@ -332,6 +332,46 @@ std::vector<cv::Point3f> FlightAreaConfig::find_corner_points_of_plane(uint plan
     return corner_pnts;
 }
 
+std::vector<Plane> FlightAreaConfig::sort_planes_by_proximity(cv::Point3f point) {
+    std::vector<Plane> _sorted_planes_by_proximity = _planes;
+    std::sort(_sorted_planes_by_proximity.begin(), _sorted_planes_by_proximity.end(), [point](Plane p1, Plane p2) {
+        return normf(p1.support - point) < normf(p2.support - point);
+    });
+    return _sorted_planes_by_proximity;
+}
+
+int FlightAreaConfig::find_next_non_parallel_plane(std::vector<Plane> sorted_planes, int plane_index) {
+    bool _parallel = true;
+    int N = plane_index;
+    Plane _first_plane = sorted_planes[N];
+    while (_parallel) {
+        N++;
+        Plane _second_plane = sorted_planes[N];
+        _parallel = norm(_first_plane.normal.cross(_second_plane.normal)) < 0.0001;
+        // if (N > len(_sorted_planes_by_proximity)) {
+        //     std::cout << "No non-parallel plane found" << std::endl;
+        //     return _first_plane;
+        // }
+    }
+    return N;
+}
+
+int FlightAreaConfig::find_next_non_parallel_plane(std::vector<Plane> sorted_planes, int first_plane_index, int second_plane_index) {
+    bool _parallel = true;
+    int N = first_plane_index;
+    Plane _first_plane = sorted_planes[N];
+    Plane _second_plane = sorted_planes[second_plane_index];
+    while (_parallel) {
+        N++;
+        Plane _third_plane = sorted_planes[N];
+        _parallel = norm(_first_plane.normal.cross(_third_plane.normal)) < 0.0001;
+        if (!_parallel) {
+            _parallel = norm(_second_plane.normal.cross(_third_plane.normal)) < 0.0001;
+        }
+    }
+    return N;
+}
+
 void FlightAreaConfig::cout_debug_info() {
     std::cout << *this << std::endl;
     std::cout << "CornerPoints:" << std::endl;
