@@ -160,7 +160,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 break;
         } case fm_start_takeoff: {
                 take_off_start_time = time;
-                remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(time));
+                remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - time_spent_spinning_up(time));
                 _flight_mode = fm_take_off_aim;
                 _burn_direction_for_thrust_approx = {0};
                 auto_throttle = spinup_throttle();
