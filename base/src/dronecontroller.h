@@ -128,7 +128,6 @@ private:
 
     const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
-    const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     cv::Point3f vel_after_takeoff = {0};
