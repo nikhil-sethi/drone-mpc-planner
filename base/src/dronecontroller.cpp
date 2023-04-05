@@ -202,7 +202,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     auto_roll = RC_MIDDLE;
                     auto_pitch = RC_MIDDLE;
                     auto_yaw = RC_MIDDLE;
-                    auto_throttle = 2.f * GRAVITY;
+                    auto_throttle = calibration.max_thrust;
                 }
                 break;
         } case fm_max_burn_spin_down: {
