@@ -144,6 +144,11 @@ TRAPEYE_FLAG=trapeye-v1.1.done
 
 	systemctl restart ssh.service
 
+	rm /lib/udev/rules.d/45-pats_mm.rules -rf
+	ln -s /home/pats/pats/release/install/45-pats_mm.rules /lib/udev/rules.d/
+	rm /lib/udev/rules.d/99-charging-pads.rules -rf
+	ln -s /home/pats/pats/release/install/99-charging-pads.rules /lib/udev/rules.d/
+	udevadm control --reload-rules && udevadm trigger
 
 	rm /home/pats/dependencies/grub_20 -rf
 	rm /home/pats/5.11.0-38-generic-* -rf
@@ -151,10 +156,7 @@ TRAPEYE_FLAG=trapeye-v1.1.done
 
 
 	touch $RELEASE_UPGRADE_P7_FLAG
+	echo Please reboot me
 }
 
 ldconfig
-
-touch $RELEASE_UPGRADE_FLAG
-echo Release upgrade SUCCESSFUL
-echo Please reboot me

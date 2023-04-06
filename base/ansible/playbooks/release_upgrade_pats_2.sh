@@ -102,17 +102,5 @@ fi
 	mkdir -p ~/trapeye/db
 	mkdir -p ~/trapeye/conf
 
-
-	if [ -e '/dev/baseboard' ] ; then
-		touch ~/pats/flags/disable_baseboard
-		kill $(pgrep -f baseboardlink.py) || true
-		cd ~/pats/release/baseboard/
-		./flash.sh
-		rm ~/pats/flags/disable_baseboard
- 	fi
- 	rm ~/pats/flags/disable -rf
-	kill $(pgrep -f daemon.py) || true
-	killall executor || true
-
 	touch $RELEASE_UPGRADE_P5_FLAG
 }
