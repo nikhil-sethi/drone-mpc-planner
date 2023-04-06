@@ -71,7 +71,7 @@ SSH_KEYS_FLAG=ssh_keys.done
 DEPENDENCIES_FLAG=dependencies-packages-v1.22.done
 [ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv avrdude
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv avrdude gdisk
 	
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]] || [[ $KERNEL == "5.15."* ]]; then
@@ -272,7 +272,6 @@ SYMLINK_FLAG=symlinks-v2.2.done
 		sudo cp /etc/environment{,.bak} --backup=numbered
 		sudo rm /etc/environment
 	}
-	ubuntu_str=$(lsb_release -a | grep Release)
 	if [[ $ubuntu_str == *"18.04"* ]] ; then
 		sudo ln -s ~/pats/release/install/environment_18.04 /etc/environment
 	else
