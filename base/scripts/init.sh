@@ -5,3 +5,4 @@ python3 /home/pats/pats/release/scripts/timezone.py || true
 [ -f /home/pats/pats/flags/disable_trapeye ] || {
 /home/pats/pats/release/scripts/trapeye_wifi_boot_setup.sh
 }
+python3 /home/pats/pats/release/scripts/update.py || true &

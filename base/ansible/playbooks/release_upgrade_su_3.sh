@@ -155,6 +155,9 @@ TRAPEYE_FLAG=trapeye-v1.1.done
 	rm /home/pats/dependencies/usr -rf
 
 
+	mkdir -p /home/pats/pats/updates
+	chmod 755 /home/pats/pats/updates
+
 	touch $RELEASE_UPGRADE_P7_FLAG
 	echo Please reboot me
 }
