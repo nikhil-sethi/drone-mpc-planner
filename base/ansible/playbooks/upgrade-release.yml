@@ -1,6 +1,6 @@
 ---
-- hosts: pats386,pats387,pats388,pats389,pats390,pats391,pats392
-# pats2,pats34,pats39,pats87,pats152,pats173,pats195,pats275,pats300,pats41
+# - hosts: pats2,pats34,pats39,pats152,pats173,pats195,pats275,pats300,pats346 ,pats349, pats351, pats352, pats309, pats152 # pats87
+- hosts: pats150
   strategy: free
   tasks:
     - name: Ansible apt update cache if it is older than 1 hour
@@ -35,7 +35,7 @@
         connect_timeout: 20
         sleep: 5
         delay: 15
-        timeout: 300
+        timeout: 600
 
 
     - name: sudo upgrade script 2
@@ -84,7 +84,7 @@
         connect_timeout: 20
         sleep: 5
         delay: 15
-        timeout: 300
+        timeout: 600
     - name: Run ldconfig
       changed_when: false
       become: true
@@ -93,6 +93,7 @@
     - name: pats upgrade script 3
       register: release_upgrade_pats_3
       ansible.builtin.script: release_upgrade_pats_3.sh
+      timeout: 300
     # - name: debug pats 3
     #   ansible.builtin.debug: var=release_upgrade_pats_3.stdout
     #   when: release_upgrade_pats_3.stdout is defined

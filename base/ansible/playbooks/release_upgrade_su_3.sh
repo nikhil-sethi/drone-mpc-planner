@@ -32,6 +32,7 @@ cd /home/pats/dependencies
 	apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed astyle wireguard openresolv avrdude gdisk
 
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		KERNEL=$(uname -r)
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]] || [[ $KERNEL == "5.15."* ]]; then
 			apt remove -y intel-media-va-driver
 			apt install -y intel-media-va-driver-non-free

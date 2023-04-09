@@ -38,13 +38,13 @@ export HOME=/home/pats/
 	eval "$(ssh-agent -s)"
 	ssh-add id_rsa.release-18
 	ssh-add id_rsa.release-20
-	mv ~/dependencies ~/dependencies.old
+	mv ~/dependencies ~/dependencies.old | true
 	mkdir -p ~/dependencies
-	mv ~/dependencies.old/*.done ~/dependencies/
+	mv ~/dependencies.old/*.done ~/dependencies/ | true
 	mv ~/dependencies.old/hostname_set ~/dependencies/ | true
 	mv ~/dependencies.old/wireguard_set ~/dependencies/ | true
 	mv ~/dependencies.old/timezone_set ~/dependencies/ | true
-	mv ~/dependencies.old/image_version ~/dependencies/
+	mv ~/dependencies.old/image_version ~/dependencies/ | true
 
 	touch $RELEASE_UPGRADE_P3_FLAG
 }

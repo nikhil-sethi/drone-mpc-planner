@@ -14,7 +14,7 @@ fi
 	if [ -e '/dev/baseboard' ] ; then
 		touch ~/pats/flags/disable_baseboard
 		kill $(pgrep -f baseboardlink.py) || true
-		cd ~/pats/release/baseboard/
+		cd ~/pats/release/firmware/baseboard/
 		./flash.sh
 		rm ~/pats/flags/disable_baseboard
  	fi

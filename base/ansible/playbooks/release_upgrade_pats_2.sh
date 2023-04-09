@@ -84,9 +84,11 @@ fi
 	rm ~/Templates -rf
 	rm ~/Videos -rf
 	rm ~/pats/flags/no_realsense_flag -rf
+	rm ~/pats/flags/frame_loss_warning_flag -rf
 	rm ~/code -rf
 	rm ~/trapeye/images/to_sent -rf
 	rm ~/.ssh/pats_ssh_files_v*.tar.* -rf
+	rm ~/pats/logs/cut_moths.log -rf
 
 	mkdir -p ~/pats/sockets
 	mkdir -p ~/pats/xml
