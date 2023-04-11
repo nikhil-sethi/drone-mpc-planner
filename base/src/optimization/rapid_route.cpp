@@ -115,6 +115,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     _future_target.state.pos = _target_position_after_time_to_reach;
 
     result = find_interception_direct(_future_drone, _future_target, delay, stopping_safety_factor);
+    result.intermediate_position = _intersection;
     result.via = true;
     // std::vector<CornerPoint> _corners = _flight_area_config.corner_points()
 
