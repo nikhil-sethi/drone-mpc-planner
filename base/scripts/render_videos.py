@@ -70,6 +70,9 @@ def render(detection, render_process_dir, render_mode):
     render_ok = False
     video_src_path = detection['video_src_path']
     video_target_path = detection['video_target_path']
+    if os.stat((detection['video_src_path'])).st_size < 600:
+        logger.error('Source video for render empty for ' + video_src_path)
+        return
     for i in range(1, 10):
         if lb.execute(cmd, render_process_dir=render_process_dir, raw_log_file=detection['log_target_path']) == 0:
             if os.stat((detection['video_src_path'])).st_size > 30000:  # another work around for #833
