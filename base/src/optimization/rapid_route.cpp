@@ -119,6 +119,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     result.via = true;
     // std::vector<CornerPoint> _corners = _flight_area_config.corner_points()
 
+    return result;
 }
 
 bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone) {
