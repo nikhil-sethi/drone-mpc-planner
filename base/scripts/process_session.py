@@ -591,7 +591,7 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
     return cuts_new
 
 
-def run_ffmpeg(cuts, frames_fn, folder, video_in_fn):
+def run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger: logging.Logger):
     with open(frames_fn, 'r', encoding="utf-8") as frames_log:
         heads = frames_log.readline().rstrip().split(';')
         cut_log_fn = folder + '/cut.log'
@@ -688,7 +688,7 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
         cuts = associate_detections_to_flight_cuts(cuts, detections)
         cuts = filter_cuts(cuts, detections + flights)
 
-        run_ffmpeg(cuts, frames_fn, folder, video_in_fn)
+        run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger)
 
     if not os.path.exists(lb.keep_videoraw_flag):
         os.remove(video_in_fn)
