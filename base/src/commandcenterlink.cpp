@@ -182,12 +182,10 @@ void CommandCenterLink::check_commandcenter_triggers() {
             _n_replay_moth++;
             std::cout << "Static target!" << std::endl;
             tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(0), tracking::VirtualMothTracker::evasion_type(2)};
-            float LO = -2.f;
-            float HI = 2.f;
-            float _rand_x = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
-            float _rand_y = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
-            float _rand_z = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
-            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {_rand_x, _rand_y, _rand_z}, {0, 0, 0});
+            float _rand_x = -1.f + static_cast <float>(rand()) / (RAND_MAX / (1.f - -1.f));
+            float _rand_y = 0.f + static_cast <float>(rand()) / (RAND_MAX / (2.f - 0.f));
+            float _rand_z = 0.f + static_cast <float>(rand()) / (RAND_MAX / (0.f - - 3.f));
+            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {_rand_x, _rand_y, _rand_z}, {0, 0.1, 0});
             remove(static_target_fn.c_str());
         }
     }
