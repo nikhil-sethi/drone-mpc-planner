@@ -316,6 +316,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
         tracking_data.state.pos = _drone->tracker.pad_location();
         tracking_data.state.spos = _drone->tracker.pad_location();
     }
+    std::cout << "\n\nTarget switching..." << std::endl;
     for (auto trkr : all_trackers) {
         if (trkr->tracking()) {
             auto insect_state = trkr->last_track_data();
@@ -333,6 +334,9 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
                 bool aim_inview = _flight_area->inside(_optim_result.position_to_intercept, bare);
                 bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
 
+                std::cout << "Considering target with time to intercept " << _optim_result.time_to_intercept << " and via " << _optim_result.via << std::endl;
+                std::cout << "Aim inview: " << aim_inview << " Stop inview: " << stop_inview << std::endl;
+
                 if (!insect_state.vel_valid)
                     current_insect_vel = {0};
                 if ((trkr->type() == tt_insect && !pparams.disable_real_hunts) || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
@@ -341,11 +345,13 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
                         best_aim_inview = aim_inview;
                         best_stop_inview = stop_inview;
                         best_itrkr = static_cast<InsectTracker *>(trkr);
+                        std::cout << "Better" << std::endl;
                     } else if (best_time_to_intercept > _optim_result.time_to_intercept + _optim_result.via * _optim_result.time_to_intermediate && aim_inview == best_aim_inview && stop_inview == best_stop_inview) {
                         best_time_to_intercept = _optim_result.time_to_intercept + _optim_result.via * _optim_result.time_to_intermediate;
                         best_aim_inview = aim_inview;
                         best_stop_inview = stop_inview;
                         best_itrkr = static_cast<InsectTracker *>(trkr);
+                        std::cout << "Better" << std::endl;
                     }
                 }
             }
