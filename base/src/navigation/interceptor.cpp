@@ -214,7 +214,11 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
     if (interception_position_in_flightarea && stopping_position_in_flightarea) {
         _aim_pos = rapid_route_res.position_to_intercept;
         _n_frames_aim_not_in_range = 0;
-    } else
+    } else if (rapid_route_res.via && interception_position_in_flightarea) {
+        _aim_pos = rapid_route_res.intermediate_position;
+        _n_frames_aim_not_in_range = 0;
+    }
+    else
         _n_frames_aim_not_in_range++;
 }
 
