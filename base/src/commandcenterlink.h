@@ -19,6 +19,7 @@ private:
     std::string demo_waypoint_fn = "/home/pats/pats/flags/pats_demo.xml";
     std::string demo_insect_fn = "/home/pats/pats/flags/insect_demo";
     std::string virtual_insect_fn = "/home/pats/pats/flags/virtual_insect";
+    std::string static_target_fn = "/home/pats/pats/flags/static_target";
     std::string calib_fn = "/home/pats/pats/flags/calib_now";
     std::string beep_fn = "/home/pats/pats/flags/beep_now";
     std::string shake_fn = "/home/pats/pats/flags/shake_now";

@@ -178,6 +178,18 @@ void CommandCenterLink::check_commandcenter_triggers() {
             _patser->trackers.init_virtual_moth(&(_patser->drone.control));
             remove(virtual_insect_fn.c_str());
         }
+        if (file_exist(static_target_fn)) {
+            _n_replay_moth++;
+            std::cout << "Static target!" << std::endl;
+            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(0), tracking::VirtualMothTracker::evasion_type(2)};
+            float LO = -2.f;
+            float HI = 2.f;
+            float _rand_x = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
+            float _rand_y = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
+            float _rand_z = LO + static_cast <float>(rand()) / (RAND_MAX / (HI - LO));
+            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {_rand_x, _rand_y, _rand_z}, {0, 0, 0});
+            remove(static_target_fn.c_str());
+        }
     }
 }
 
