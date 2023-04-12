@@ -221,20 +221,8 @@ rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_a
         interception_max_thrust = 2.f * (*_drone->control.max_thrust()); //Try to compensate ground effect
     }
 
-    // auto tti_res = tti_optimizer.find_best_interception(drone, target);
-    _rapid_route_result = rapid_route.find_interception_direct(drone, target, delay, _drone->control.kiv_ctrl.safety);
+    _rapid_route_result = rapid_route.find_interception(drone, target, delay, _drone->control.kiv_ctrl.safety);
     update_aim_in_flightarea(_rapid_route_result);
-    if (_n_frames_aim_not_in_range) {
-        _rapid_route_result = rapid_route.find_interception_via(drone, target, delay, _drone->control.kiv_ctrl.safety);
-        update_aim_in_flightarea(_rapid_route_result);
-        _aim_pos = _rapid_route_result.intermediate_position;
-        _flight_area->move_inside(_aim_pos, strict, drone.pos());
-        if (interception_position_in_flightarea) { // if aim from intermediate poitn is in flight area, go to it, ignore stopping position for now
-            _n_frames_aim_not_in_range = 0;
-            interception_position_in_flightarea = true;
-            stopping_position_in_flightarea = true; // must set to true or we will actually use extrapolated insect pos as aim pos
-        }
-    }
     return _rapid_route_result;
 }
 

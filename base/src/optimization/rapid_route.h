@@ -10,6 +10,8 @@ struct rapid_route_result {
         position_to_intercept = {0, 0, 0};
         acceleration_to_intercept = {0, 0, 0};
         stopping_position = {0, 0, 0};
+        intermediate_position = {0, 0, 0};
+        time_to_intermediate = 0;
     };
     bool valid;
     bool via;
@@ -19,6 +21,7 @@ struct rapid_route_result {
     cv::Point3f velocity_at_intercept;
     cv::Point3f stopping_position;
     cv::Point3f intermediate_position;
+    float time_to_intermediate;
 };
 
 class RapidRouteInterface {
@@ -26,6 +29,7 @@ public:
     void init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config);
     rapid_route_result find_interception_direct(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
     rapid_route_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
+    rapid_route_result find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
 private:
     float *_thrust;
     float _thrust_factor;

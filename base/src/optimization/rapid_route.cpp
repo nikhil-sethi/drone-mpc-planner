@@ -75,6 +75,7 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
     if (feasible_solution(result, drone))
         result.valid = true;
     result.stopping_position = find_stopping_position(result, drone, stopping_safety_factor);
+    result.intermediate_position = {0.f, 0.f, 0.f};
     result.via = false;
 
     return result;
@@ -86,6 +87,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     cv::Point3f _target_position_after_time_to_reach;
     int _iteration_counter = 0;
     cv::Point3f _target_position = target.pos();
+    float _time_to_reach_intersection;
     while (1) {
         _sorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position);
         Plane _first_plane = _sorted_planes[0];
@@ -96,7 +98,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
 
         _intersection = intersection_of_3_planes(&_first_plane, &_second_plane, &_third_plane);
         _intersection = _flight_area_config.move_inside(_intersection); // may still exceed the constraints of a 4+th plane
-        float _time_to_reach_intersection = sqrt(4 * norm(_intersection - drone.pos()) / (_thrust_factor * *_thrust));
+        _time_to_reach_intersection = sqrt(4 * norm(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay;
         _target_position_after_time_to_reach = target.pos() + target.vel() * _time_to_reach_intersection;
 
         _resorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position_after_time_to_reach);
@@ -114,12 +116,24 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     tracking::TrackData _future_target = target;
     _future_target.state.pos = _target_position_after_time_to_reach;
 
-    result = find_interception_direct(_future_drone, _future_target, delay, stopping_safety_factor);
+    result = find_interception_direct(_future_drone, _future_target, 0.f, stopping_safety_factor);
     result.intermediate_position = _intersection;
+    result.time_to_intermediate = _time_to_reach_intersection;
     result.via = true;
     // std::vector<CornerPoint> _corners = _flight_area_config.corner_points()
 
     return result;
+}
+
+rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
+    rapid_route_result _rapid_route_result;
+    _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
+    if (_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)) {
+        return _rapid_route_result;
+    } else {
+        _rapid_route_result = find_interception_via(drone, target, delay, stopping_safety_factor);
+        return _rapid_route_result;
+    }
 }
 
 bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone) {
