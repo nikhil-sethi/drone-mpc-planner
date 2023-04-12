@@ -258,12 +258,15 @@ public:
         replay_logs.end()
         );
     }
-    void init_virtual_moth(DroneController *dctrl, tracking::VirtualMothTracker::moth_behavior_type mothBehavior) {
+    void init_virtual_moth(DroneController *dctrl, tracking::VirtualMothTracker::moth_behavior_type mothBehavior, cv::Point3f insectPos, cv::Point3f insectVel) {
         VirtualMothTracker *vt;
         vt = new VirtualMothTracker();
-        mothbehavior = vt->init(next_insecttrkr_id, mothBehavior, _visdat, dctrl);
+        mothbehavior = vt->init(next_insecttrkr_id, mothBehavior, _visdat, dctrl, insectPos, insectVel);
         _trackers.push_back(vt);
         next_insecttrkr_id++;
+    }
+    inline void init_virtual_moth(DroneController *dctrl, tracking::VirtualMothTracker::moth_behavior_type mothBehavior) {
+        return init_virtual_moth(dctrl, mothBehavior,  cv::Point3f(1.2, -0.7, -1.45), cv::Point3f(-0.5, 0, 0));
     }
     inline void init_virtual_moth(DroneController *dctrl) {
         tracking::VirtualMothTracker::moth_behavior_type new_moth_behavior(mothbehavior.trigger, mothbehavior.evasion);
