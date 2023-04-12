@@ -84,7 +84,7 @@ private:
     bool realtime_check = true;
     std::ofstream *_logger;
 
-    tracking::InsectTracker *update_target_insecttracker();
+    tracking::InsectTracker *update_target_insecttracker(float delay);
 
     void update_aim_in_flightarea(rapid_route_result rapid_route_res);
     rapid_route_result update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target, float delay);

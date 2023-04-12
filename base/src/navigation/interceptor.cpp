@@ -98,7 +98,13 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     stopping_position_in_flightarea = false;
     _aim_acc = cv::Point3f(0, 0, 0);
     _control_mode = position_control;
-    auto target_trkr = update_target_insecttracker();
+
+    float _delay;
+    if (_drone->in_flight())
+        _delay = 0.5f;
+    else
+        _delay = 0.f;
+    auto target_trkr = update_target_insecttracker(_delay);
 
     interception_max_thrust = *_drone->control.max_thrust();
     if (!_drone->nav.drone_hunting()) {
@@ -292,7 +298,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
 
 
 
-tracking::InsectTracker *Interceptor::update_target_insecttracker() {
+tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
     float best_time_to_intercept = INFINITY;
     bool best_aim_inview = false;
     bool best_stop_inview = false;
@@ -318,7 +324,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
                     current_insect_pos = {0};
             }
             cv::Point3f current_insect_vel = insect_state.vel();
-            rapid_route_result _optim_result = rapid_route.find_interception(tracking_data, insect_state, 0.f, _drone->control.kiv_ctrl.safety);
+            rapid_route_result _optim_result = rapid_route.find_interception(tracking_data, insect_state, delay, _drone->control.kiv_ctrl.safety);
             if (_optim_result.valid) {
                 bool aim_inview = _flight_area->inside(_optim_result.position_to_intercept, bare);
                 bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
