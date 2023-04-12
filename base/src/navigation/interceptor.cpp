@@ -201,11 +201,11 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
     if (rapid_route_res.valid) {
         _tti = rapid_route_res.time_to_intercept;
-        if (_flight_area->inside(rapid_route_res.position_to_intercept, relaxed))
+        if (_flight_area->inside(rapid_route_res.position_to_intercept, bare))
             interception_position_in_flightarea = true;
         else
             interception_position_in_flightarea = false;
-        if (_flight_area->inside(rapid_route_res.stopping_position, relaxed))
+        if (_flight_area->inside(rapid_route_res.stopping_position, bare))
             stopping_position_in_flightarea = true;
         else
             stopping_position_in_flightarea = false;
