@@ -79,15 +79,14 @@ set(SRC_FILES  ../src/quaternion.cpp
 
                   main.cpp
                   ocptester.cpp
-                  # minnlptest.cpp
                   ttitest.cpp
                   interceptinplanestest.cpp
-                  # quaterniontest.cpp
-                  # commontest.cpp
-                  # linalgtest.cpp
-                  # filtertest.cpp
-                  # flightareatest.cpp
-                  # planetest.cpp
+                  quaterniontest.cpp
+                  commontest.cpp
+                  linalgtest.cpp
+                  filtertest.cpp
+                  flightareatest.cpp
+                  planetest.cpp
                   rapidroutetest.cpp
 )
 if(OPTI_ROSVIS)
