@@ -1,6 +1,7 @@
 #include "ocptester.h"
 #include <chrono>
 #include "rapid_route.h"
+#include "flightarea.h"
 
 #include <CppUTest/TestHarness.h> //include at last!
 
@@ -10,6 +11,7 @@ TEST_GROUP(RapidRoute) {
 
     tracking::TrackData drone;
     tracking::TrackData insect;
+    FlightArea flightarea;
 };
 
 TEST(RapidRoute, overall_behavior) {
@@ -23,10 +25,22 @@ TEST(RapidRoute, overall_behavior) {
 }
 
 TEST(RapidRoute, stopping_distance) {
+    std::vector<Plane> _planes;
+    _planes.push_back(Plane(-0.00117206, -0.149722, 0.00905782, -0.00781371, -0.998145, 0.0603854, unspecified_plane));
+    _planes.push_back(Plane(-0.125613, -0.0569893, -0.0589382, -0.837417, -0.379929, -0.392921, unspecified_plane));
+    _planes.push_back(Plane(0, -0.544917, -0.83849, 0, -0.544917, -0.83849, unspecified_plane));
+    _planes.push_back(Plane(0.85, 0, 0, -1, 0, 0, unspecified_plane));
+    _planes.push_back(Plane(0.125414, -0.0585367, -0.0578341, 0.836093, -0.390245, -0.38556, unspecified_plane));
+    _planes.push_back(Plane(0, 0, -1.95, 0, 0, 1, unspecified_plane));
+    _planes.push_back(Plane(0, 0, -0.895112, 0, 0, -1, unspecified_plane));
+    _planes.push_back(Plane(0, -0.90269, 0, 0, 1, 0, unspecified_plane));
+    _planes.push_back(Plane(-0.85, 0, 0, 1, 0, 0, unspecified_plane));
+    flightarea.init(_planes);
+    FlightAreaConfig *_config = flightarea.flight_area_config(bare);
     rapid_route_result result;
     RapidRouteInterface rr;
     float _thrust = 24.5f;
-    rr.init(&_thrust, 1.f);
+    rr.init(&_thrust, 1.f, _config);
 
     tracking::TrackData rr_drone;
     rr_drone.pos_valid = true;
@@ -42,7 +56,7 @@ TEST(RapidRoute, stopping_distance) {
     rr_insect.state.vel = {0.0104176f, -0.32662f, -0.36589f};
     rr_insect.state.acc = {0.f, 0.f, 0.f};
 
-    result = rr.find_best_interception(rr_drone, rr_insect, 0.0f, 1.f);
+    result = rr.find_interception(rr_drone, rr_insect, 0.0f, 1.f);
     CHECK(result.valid);
     std::cout << "Interception position: " << result.position_to_intercept << std::endl;
     std::cout << "Interception acceleration: " << result.acceleration_to_intercept << std::endl;

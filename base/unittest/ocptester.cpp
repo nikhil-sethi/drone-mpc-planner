@@ -1,6 +1,7 @@
 #include "ocptester.h"
 #include <limits>
 #include <stdlib.h>
+#include "flightarea.h"
 #ifdef OPTI_ROSVIS
 #include "rosvisualizerinterface.h"
 #endif
@@ -167,7 +168,19 @@ void OcpTester:: init_range_test(optimizer_test optimizer_select, bool use_casad
                 break;
             }
         case rapid_route: {
-                rr.init(&thrust, 0.8f);
+                std::vector<Plane> _planes;
+                _planes.push_back(Plane(-0.00117206, -0.149722, 0.00905782, -0.00781371, -0.998145, 0.0603854, unspecified_plane));
+                _planes.push_back(Plane(-0.125613, -0.0569893, -0.0589382, -0.837417, -0.379929, -0.392921, unspecified_plane));
+                _planes.push_back(Plane(0, -0.544917, -0.83849, 0, -0.544917, -0.83849, unspecified_plane));
+                _planes.push_back(Plane(0.85, 0, 0, -1, 0, 0, unspecified_plane));
+                _planes.push_back(Plane(0.125414, -0.0585367, -0.0578341, 0.836093, -0.390245, -0.38556, unspecified_plane));
+                _planes.push_back(Plane(0, 0, -1.95, 0, 0, 1, unspecified_plane));
+                _planes.push_back(Plane(0, 0, -0.895112, 0, 0, -1, unspecified_plane));
+                _planes.push_back(Plane(0, -0.90269, 0, 0, 1, 0, unspecified_plane));
+                _planes.push_back(Plane(-0.85, 0, 0, 1, 0, 0, unspecified_plane));
+                flightarea.init(_planes);
+                FlightAreaConfig *_config = flightarea.flight_area_config(bare);
+                rr.init(&thrust, 0.8f, _config);
                 break;
             }
 
@@ -247,7 +260,7 @@ range_stats OcpTester::exec_range_test() {
                                         break;
                                     }
                                 case rapid_route: {
-                                        auto opti_res = rr.find_best_interception(drone, insect, 0.f, 1.2f);
+                                        auto opti_res = rr.find_interception_direct(drone, insect, 0.f, 1.2f);
                                         valid = opti_res.valid;
                                         timetointercept = opti_res.time_to_intercept;
                                         positiontointercept = opti_res.position_to_intercept;
