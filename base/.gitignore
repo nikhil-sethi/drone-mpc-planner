@@ -20,5 +20,7 @@ mpc-design/*.csv
 .clangd/*
 .ccls*
 
+unittest/pats-unittest
+
 launch.json
 compile_commands.json
