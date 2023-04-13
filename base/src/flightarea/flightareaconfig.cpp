@@ -154,7 +154,7 @@ void FlightAreaConfig::apply_safety_margin(safety_margin_types type) {
 bool FlightAreaConfig::inside(cv::Point3f point) {
     for (auto plane : _planes) {
         if (plane.is_active) {
-            if (!plane.on_normal_side(point))
+            if (!plane.on_normal_side(point) && !plane.on_plane(point))
                 return false;
         }
     }
@@ -167,7 +167,7 @@ std::tuple<bool, std::vector<bool>> FlightAreaConfig::find_violated_planes(cv::P
     bool in_view = true;
     for (auto plane : _planes) {
         if (plane.is_active) {
-            if (!plane.on_normal_side(point)) {
+            if (!plane.on_normal_side(point) && !plane.on_plane(point)) {
                 in_view = false;
                 violated_planes.at(plane.id) = true;
             }
@@ -200,13 +200,13 @@ cv::Point3f FlightAreaConfig::move_inside(cv::Point3f point, cv::Point3f drone_p
 cv::Point3f FlightAreaConfig::project_to_closest_point_in_flight_area(cv::Point3f point, std::vector<bool> violated_planes) {
     // The closest point in the volume to the setpoint lies on the violated planes
     cv::Point3f closest_point = point;
-    float ref_distance = 999.f;
+    float ref_distance = std::numeric_limits<float>::max();;
 
     for (auto plane : _planes) {
         if (violated_planes.at(plane.id) && plane.is_active) {
             cv::Point3f projected_point = point + fabs(plane.distance(point)) * plane.normal;
 
-            // check if point is correct plane segment (the one which actually limits the volume)
+            // check if point is in correct plane segment (the one which actually limits the volume)
             std::vector<CornerPoint> plane_corner_points = corner_points_of_plane(plane.id);
             bool in_polygon = in_plane_polygon(projected_point, plane_corner_points);
             if (!in_polygon)
