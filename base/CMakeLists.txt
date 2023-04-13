@@ -15,18 +15,6 @@ if(PATS_PROFILING)
   message("Set -DPATS_PROFILING")
 endif(PATS_PROFILING)
 
-option(PATS_OCP_PROFILING "pats_ocp_profiling" 0)
-if(PATS_OCP_PROFILING)
-  add_definitions(-DPATS_OCP_PROFILING)
-  message("Set -DPATS_OCP_PROFILING")
-endif(PATS_OCP_PROFILING)
-
-option(OCP_DEV "ocp_dev" 0)
-if(OCP_DEV)
-  add_definitions(-DOCP_DEV)
-  message("Set -DOCP_DEV")
-endif(OCP_DEV)
-
 option(ROSVIS "rosviz" 0)
 if(ROSVIS)
   add_definitions(-DROSVIS)
@@ -60,13 +48,7 @@ MESSAGE( STATUS "CMAKE BUILD TYPE: " ${CMAKE_BUILD_TYPE} )
 # sources
 FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h" "${SRC_DIR}flightarea/*.cpp" "${SRC_DIR}flightarea/*.h" "${SRC_DIR}benchmark/*.cpp" "${SRC_DIR}benchmark/*.h")
 FILE(GLOB THIRD_PARTY_SRCS "${SRC_DIR}third_party/*.h" "${SRC_DIR}third_party/*.hpp" "${SRC_DIR}third_party/*.cpp" "${SRC_DIR}third_party/*.c" "${SRC_DIR}third_party/cereal/*.hpp" "${SRC_DIR}third_party/tinyxml/*.h" "${SRC_DIR}third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "${SRC_DIR}third_party/3dviz/*.cpp" "${SRC_DIR}third_party/3dviz/*.h")
-FILE(GLOB OPTI_SRCS "${SRC_DIR}/optimization/sqpmethod.*"
-  "${SRC_DIR}/optimization/qpoasesconfig.*"
-  "${SRC_DIR}/optimization/tti_optimizer_interface*"
-  "${SRC_DIR}/optimization/tti_quad_opti_qpoases*"
-  "${SRC_DIR}/optimization/rapid_route*"
-  "${SRC_DIR}/optimization/intercept_in_planes_optimizer_interface*"
-  "${SRC_DIR}/optimization/intercept_in_planes_quad_opti_qpoases*")
+FILE(GLOB OPTI_SRCS "${SRC_DIR}/optimization/rapid_route*")
 
 if(ROSVIS)
   FILE(GLOB ROSVIS_SRCS "${SRC_DIR}rosvisualization/*")
@@ -80,10 +62,6 @@ find_package(PkgConfig REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package( OpenCV 4.3.0 REQUIRED )
 find_package(OpenSSL REQUIRED)
-
-if(OCP_DEV)
-  find_package(osqp REQUIRED)
-endif()
 
 if(ROSVIS)
   find_package(roscpp REQUIRED)
@@ -102,13 +80,6 @@ MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
 
-if(OCP_DEV)
-  add_definitions(-DOCP_DEV)
-  pkg_check_modules(CASADI REQUIRED casadi)
-  message(STATUS "CASADI_LIBRARY_DIRS: ${CASADI_LIBRARY_DIRS}")
-  message(STATUS "CASADI_LIBRARIES: ${CASADI_LIBRARIES}")
-  message(STATUS "CASADI_INCLUDEDIR: ${CASADI_INCLUDEDIR}")
-endif()
 set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 
 #gstreamer:
@@ -163,10 +134,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/optimization")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/benchmark")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/third_party/ros_msgs/")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_party")
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/intercept_in_planes")
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${OPTI_SRC_DIR}/tti")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GST_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ~/dependencies/qpOASES/include)
 
 if(ROSVIS)
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/rosvisualization")
@@ -175,9 +143,6 @@ if(ROSVIS)
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${tf2_INCLUDE_DIRS})
   target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${tf2_ros_INCLUDE_DIRS})
 endif()
-if(OCP_DEV)
-  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CASADI_INCLUDE_DIR})
-endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
@@ -185,15 +150,9 @@ target_link_libraries(${PROJECT_NAME} OpenSSL::SSL)
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} stdc++fs) #until we upgrade to gcc 8
-target_link_libraries(${PROJECT_NAME} qpOASES)
 
 if(ROSVIS)
   target_link_libraries(${PROJECT_NAME} ${roscpp_LIBRARIES} ${std_msgs_LIBRARIES} ${tf2_LIBRARIES} ${tf2_ros_LIBRARIES})
-endif()
-if(OCP_DEV)
-  target_link_libraries(${PROJECT_NAME} osqp::osqp)
-  target_link_libraries(${PROJECT_NAME} osqp::osqpstatic)
-  target_link_libraries(${PROJECT_NAME} ${CASADI_LIBRARIES})
 endif()
 if(WITH_AIRSIM)
     target_link_libraries(${PROJECT_NAME} AirLib)

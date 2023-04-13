@@ -5,28 +5,20 @@ using namespace tracking;
 
 void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, FlightAreaConfig *flight_area_config) {
     _trackers = trackers;
-    _visdat = visdat;
     _flight_area = flight_area;
+    _visdat = visdat;
     _flight_area_config = flight_area_config;
     _drone = drone;
     interception_max_thrust = *drone->control.max_thrust();
 
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
 
-    // tti_optimizer.init(&interception_max_thrust);
     rapid_route.init(&interception_max_thrust, 0.8f, flight_area_config);
-#ifdef OCP_DEV
-    // tti_optimizer.init_casadi("../ocp_design/tti/tti_optimizer.so");
-    // intercept_in_planes_optimizer.init_casadi("../ocp_design/intercept_in_planes/intercept_in_planes_optimizer.so");
-#endif
-    // intercept_in_planes_optimizer.init(&interception_max_thrust, _flight_area, relaxed);
-    // iip_thread = std::thread(&Interceptor::iip_worker, this);
-
     initialized = true;
 }
 
 void Interceptor::init_flight(std::ofstream *logger) {
-    (*logger) << "posX_bestinsect;posY_bestinsect;posZ_bestinsect;velX_bestinsect;velY_bestinsect;velZ_bestinsect;tti;posX_aim;posY_aim;posZ_aim;tti_iip;accX_iip;accY_iip;accZ_iip;";
+    (*logger) << "posX_bestinsect;posY_bestinsect;posZ_bestinsect;velX_bestinsect;velY_bestinsect;velZ_bestinsect;tti;posX_aim;posY_aim;posZ_aim;accX;accY;accZ;";
 }
 
 void Interceptor::log(std::ostream *logger) {
@@ -49,42 +41,9 @@ void Interceptor::log(std::ostream *logger) {
               _aim_pos.x << ";" <<
               _aim_pos.y << ";" <<
               _aim_pos.z  << ";" <<
-              _tti_iip << ";" <<
               _aim_acc.x << ";" <<
               _aim_acc.y << ";" <<
               _aim_acc.z << ";";
-}
-
-void Interceptor::close() {
-    iip_thread_exit = true;
-    // cond_var_iip.notify_one();
-    if (initialized) {
-        std::cout << "Closing Interceptor" << std::endl;
-        // iip_thread.join();
-
-    }
-}
-
-intercept_in_planes_result Interceptor::update_iip_thread(float cpu_time) {
-    if (iip_thread_finished) {
-        time_prev_iip_started = time_iip_started;
-        iip_thread_ready = true;
-        iip_thread_finished = false;
-    }
-
-    if (iip_thread_ready && !iip_thread_exit) {
-        time_iip_started = _time;
-        intercept_in_planes_optimizer.max_cpu_time(static_cast<double>(cpu_time));
-        iip_thread_ready = false;
-        cond_var_iip.notify_one();
-    }
-
-    intercept_in_planes_result res = intercept_in_planes_result();
-    if (static_cast<float>(_time - time_prev_iip_started) < delay_iip_valid && time_prev_iip_started > 0) {
-        std::lock_guard lk(_mutex);
-        res = iip_res;
-    }
-    return res;
 }
 
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
@@ -93,7 +52,6 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 #endif
     _time = time;
     _tti = -1;
-    _tti_iip = -1;
     interception_position_in_flightarea = false;
     stopping_position_in_flightarea = false;
     _aim_acc = cv::Point3f(0, 0, 0);
@@ -189,9 +147,6 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
             }
     }
 
-    if (!_drone->nav.drone_hunting()) { //Correct too high thrust due to ground compensation (see beginning of this method)
-        _aim_acc /= 2;
-    }
 #ifdef PATS_PROFILING
     std::chrono::_V2::system_clock::time_point t_end_interceptor = std::chrono::high_resolution_clock::now();
     std::cout << "timing (update_interceptor): " << (t_end_interceptor - t_start_interceptor).count() * 1e-6 << "ms" << std::endl;
@@ -275,15 +230,6 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
                     _control_mode = position_control;
-
-                    // auto res = update_iip_thread(delay_iip_valid);
-
-                    // if (res.valid) {
-                    //     _tti_iip = res.time_to_intercept;
-                    //     _control_mode = acceleration_feedforward;
-                    //     _aim_acc = res.acceleration_to_intercept;
-                    //     _aim_pos = res.position_to_intercept;
-                    // }
                 }
 
                 if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel())) {
@@ -299,8 +245,6 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
             }
     }
 }
-
-
 
 tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
     float best_time_to_intercept = INFINITY;

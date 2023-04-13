@@ -92,7 +92,6 @@ void Patser::maintain_motion_map(double time) {
 }
 
 void Patser::close() {
-    interceptor.close();
     trackers.close();
     drone.close();
 }

@@ -8,9 +8,7 @@
 #include "dronetracker.h"
 #include "trackermanager.h"
 #include "visiondata.h"
-#include "tti_optimizer_interface.h"
 #include "rapid_route.h"
-#include "intercept_in_planes_optimizer_interface.h"
 #include "drone.h"
 #ifdef OPTI_ROSVIS
 #include "rosvisualizerinterface.h"
@@ -73,7 +71,6 @@ private:
     cv::Point3f _vel_best_hunt_error  = {INFINITY, INFINITY, INFINITY};
     cv::Point3f _acc_best_hunt_error  = {INFINITY, INFINITY, INFINITY};
     double _tti = -1;
-    double _tti_iip = -1;
     const double duration_intercept_maneuver = 0.2;
     double time_start_intercept_maneuver = -1;
 
@@ -102,31 +99,9 @@ private:
         return (time - time_start_intercept_maneuver) > duration_intercept_maneuver;
     };
 
-    std::thread iip_thread;
-    std::mutex _mutex;
-    std::condition_variable cond_var_iip;
-    bool iip_thread_exit = false;
-    bool iip_thread_ready = true;;
-    bool iip_thread_finished = false;
-    double time_iip_started = -1;
-    double time_prev_iip_started = -1;
-    const float delay_iip_valid = 0.023f; // 2./fps: optimization result must be ready in next frame
-    intercept_in_planes_result iip_res;
-    intercept_in_planes_result update_iip_thread(float cpu_time);
-    void iip_worker();
-
-
 public:
-    TTIOptimizerInterface tti_optimizer;
-    InterceptInPlanesOptimizerInterface intercept_in_planes_optimizer;
     RapidRouteInterface rapid_route;
 
-#ifdef OPTI_ROSVIS
-    void ros_interface(RosVisualizerInterface *interface) {
-        tti_optimizer.ros_interface(interface);
-        intercept_in_planes_optimizer.ros_interface(interface);
-    }
-#endif
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, FlightAreaConfig *flight_area_config);
     void close();
     void init_flight(std::ofstream *logger);
@@ -135,12 +110,6 @@ public:
     void max_optimization_time(double max_time) {optimization_time = max_time;};
 
     tracking::TrackData target_last_trackdata();
-
-    void disable_realtime_checks() {
-        realtime_check = false;
-        intercept_in_planes_optimizer.max_cpu_time(0);
-        tti_optimizer.max_cpu_time(0);
-    };
 
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
     int insect_id() {
