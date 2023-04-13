@@ -87,6 +87,7 @@ struct Plane {
     float distance(cv::Point3f pnt);
     bool on_normal_side(cv::Point3f p) ;
     bool on_normal_side(cv::Point3f p, float eps);
+    bool on_plane(cv::Point3f p);
     std::tuple<float, cv::Point3f> hesse_normal_form();
 };
 
