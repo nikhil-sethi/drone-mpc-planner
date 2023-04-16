@@ -46,11 +46,13 @@ updated_today = True
 while True:
 
     now = datetime.now()
-    if (now.hour == 11 and not updated_today):
+    if now.hour == 11 and not updated_today:
         updated_today = True
         try:
             update_now()
         except Exception as e:  # pylint: disable=broad-except
             print(e)
+    elif now.hour != 11 and updated_today:
+        updated_today = False
     else:
         time.sleep(300)
