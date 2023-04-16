@@ -281,7 +281,7 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
 
 def process_detection_log(log_fn: str, folder: str, session_start_datetime: datetime, flights_in_folder: list, logger: logging.Logger):
     try:
-        log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
+        log = pd.read_csv(log_fn, sep=";", converters={'fp': str})
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
         return {}
@@ -746,21 +746,21 @@ def process_session(folder: str, logger: logging.Logger, dry_run: bool = False):
 
     if mode == 'c' or mode == 'x':
         Path(folder + '/OK').touch()
-        data_wait_for_conditions = {"start_datetime": lb.datetime_to_str(t_start),
-                                    "end_datetime": lb.datetime_to_str(t_end),
-                                    "detections": detections,
-                                    "flights": flights,
-                                    "flight_sessions": flight_sessions,
-                                    "statuss": statuss,
-                                    "errors": errors,
-                                    "cam_resets": cam_resets
-                                    }
+        data = {"start_datetime": lb.datetime_to_str(t_start),
+                "end_datetime": lb.datetime_to_str(t_end),
+                "detections": detections,
+                "flights": flights,
+                "flight_sessions": flight_sessions,
+                "statuss": statuss,
+                "errors": errors,
+                "cam_resets": cam_resets
+                }
         if not dry_run:
             json_fn = folder + '/results.json'
             if exists(json_fn):
                 logger.warning('Results json already existed')
             with open(json_fn, 'w', encoding="utf-8") as outfile:
-                json.dump(data_wait_for_conditions, outfile)
+                json.dump(data, outfile)
         logger.info("Processing complete, saved in " + json_fn)
     elif waited_for_conditions:
         Path(folder + '/OK').touch()
