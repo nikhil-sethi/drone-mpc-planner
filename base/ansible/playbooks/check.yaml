@@ -1,5 +1,5 @@
 ---
-- hosts: c,trapeye,blind,x
+- hosts: x,c,qc,rc,trapeye,blind
   strategy: free
   tasks:
     - name: checks
@@ -7,14 +7,4 @@
       register: output_checks
     - name: debug
       ansible.builtin.debug: var=output_checks.stdout
-    # - name: serial
-    #   become: true
-    #   shell: "cat /sys/class/dmi/id/product_serial"
-    #   register: output_serial
-    # - debug: var=output_serial.stdout_lines
-    - name: copy the output to a local file
-      ansible.builtin.copy:
-        content: "{{ output_checks.stdout }}"
-        dest: "~/ansible_checks.txt"
-        mode: '0644'
       delegate_to: localhost

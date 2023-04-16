@@ -94,6 +94,6 @@
       register: release_upgrade_pats_3
       ansible.builtin.script: release_upgrade_pats_3.sh
       timeout: 300
-    # - name: debug pats 3
-    #   ansible.builtin.debug: var=release_upgrade_pats_3.stdout
-    #   when: release_upgrade_pats_3.stdout is defined
+    - name: debug pats 3
+      ansible.builtin.debug: var=release_upgrade_pats_3.stdout
+      when: release_upgrade_pats_3.stdout is defined

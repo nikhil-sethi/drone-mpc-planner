@@ -25,9 +25,9 @@
 # rm ~/code/pats/base/install/sshd_config.ucf-dist -rf
 # rm ~/code/pats/base/build_render -rf
 
-uptime -p
-lsb_release -a | grep Release
-lscpu | grep "Model name:"
+#uptime -p
+#lsb_release -a | grep Release
+#lscpu | grep "Model name:"
 
 if [ -f '/home/pats/pats/flags/disable' ] ; then echo 'SYSTEM DISABLED' ; fi
 #if [ -f /var/run/reboot-required ]; then echo 'Reboot required'; fi
@@ -44,3 +44,4 @@ if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT R
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if ( ! ifconfig | grep -q "inet 10.13" ) ; then echo WIREGUARD NOT CONNECTED; fi
 #if ! ( cd /home/pats/code/pats && git rev-parse HEAD | grep -q 98ab746062614a94f1840b301f414aceca8c0c71 ) ; then echo SHA DISCREPANCY; fi
+if [ ! -f '/home/pats/dependencies/release_upgraded_20230405.done' ] ; then echo 'RELEASE UPGRADE NOT FINISHED' ; fi

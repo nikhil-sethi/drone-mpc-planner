@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -ex
+
+if [[ $HOSTNAME != pats31 ]]; then
+	echo "This update is not intended for this system"
+	exit 0
+fi
+
+/bin/su - pats -c "rm ~/pats/updates/20230415.sh -rf"
+/bin/su - pats -c "cd ~/pats/release && git pr"

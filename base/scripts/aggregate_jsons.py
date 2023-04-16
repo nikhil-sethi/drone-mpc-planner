@@ -13,6 +13,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import lib_base as lb
 from process_session import process_session
+from retro_fix_size import retro_fix
 
 
 def check_if_system_at_office():
@@ -26,6 +27,7 @@ def check_if_system_at_office():
 
 
 def aggregate_jsons(data_folder, sys_str, aggregated_fn):
+    retro_fix()
 
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
     Path(data_folder + '/junk').mkdir(parents=True, exist_ok=True)
