@@ -18,11 +18,9 @@ from dateutil.relativedelta import relativedelta
 
 rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+error_file_handler = logging.handlers.WatchedFileHandler(filename=lb.daily_errs_log)  # a watched file handler makes sure that logging continues to the new file if it is rotated.
 error_file_handler.setFormatter(file_format)
 error_file_handler.level = logging.ERROR
-error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
-error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
 
 logging.basicConfig()
 logger = logging.getLogger('retro_fix_size')
@@ -123,20 +121,24 @@ def retro_fix():
         found_dirs = sorted(glob.glob(lb.data_dir + "processed/202304*_*"), key=dir_to_datetime)
         found_dirs_fixed = []
         for dir_name in found_dirs:
-            terminal_log_path = Path(dir_name, 'terminal.log')
-            with open(terminal_log_path, 'r', encoding="utf-8") as file:
-                contents = file.read()
-                exe_name = '/home/pats/pats/release/tmp/retrofix-20 '
-                if "4e1e1dab0732b37133accdb6a9f43ac7798cc84a" in contents:
-                    exe_name = '/home/pats/pats/release/tmp/retrofix-18 '
-                    # lb.execute('./executor-18 --log ' + dir_name + ' ')
-                    print("This folder needs fixing release 18 style")
-                    found_dirs_fixed.append(dir_name)
-                elif "636884f7340ed45d70c39d65c7f3504f7d228aa7" in contents:
-                    print("This folder needs fixing release 20 style")
-                    found_dirs_fixed.append(dir_name)
-                else:
-                    continue
+            stripped_path = Path(dir_name, 'STRIPPED')
+            if not os.path.exists(stripped_path):
+                terminal_log_path = Path(dir_name, 'terminal.log')
+                with open(terminal_log_path, 'r', encoding="utf-8") as file:
+                    contents = file.read()
+                    exe_name = '/home/pats/pats/release/tmp/retrofix-20 '
+                    if "4e1e1dab0732b37133accdb6a9f43ac7798cc84a" in contents:
+                        exe_name = '/home/pats/pats/release/tmp/retrofix-18 '
+                        # lb.execute('./executor-18 --log ' + dir_name + ' ')
+                        print("This folder needs fixing release 18 style")
+                        found_dirs_fixed.append(dir_name)
+                    elif "636884f7340ed45d70c39d65c7f3504f7d228aa7" in contents:
+                        print("This folder needs fixing release 20 style")
+                        found_dirs_fixed.append(dir_name)
+                    else:
+                        continue
+            else:
+                continue
 
             detection_fns = lb.natural_sort([fp for fp in glob.glob(os.path.join(dir_name, "log_i*.csv"))])
             if len(detection_fns):
