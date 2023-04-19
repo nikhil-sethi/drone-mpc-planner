@@ -117,7 +117,7 @@ def aggregate_jsons(ordered_dirs, sys_str, aggregated_fn, logger):
 
 
 def retro_fix():
-    if not os.path.exists('/home/pats/dependencies/retro_fix_20230416.done'):
+    if not os.path.exists('/home/pats/dependencies/retro_fix_20230419.done'):
         found_dirs = sorted(glob.glob(lb.data_dir + "processed/202304*_*"), key=dir_to_datetime)
         found_dirs_fixed = []
         for dir_name in found_dirs:
@@ -132,7 +132,7 @@ def retro_fix():
                         # lb.execute('./executor-18 --log ' + dir_name + ' ')
                         print("This folder needs fixing release 18 style")
                         found_dirs_fixed.append(dir_name)
-                    elif "636884f7340ed45d70c39d65c7f3504f7d228aa7" in contents:
+                    elif "636884f7340ed45d70c39d65c7f3504f7d228aa7" in contents or 'c4b21f3647aeec76b6e929b61b460e10f8218135' in contents:
                         print("This folder needs fixing release 20 style")
                         found_dirs_fixed.append(dir_name)
                     else:
@@ -162,7 +162,7 @@ def retro_fix():
                     with open(dir_name + '/results.json', 'w', encoding="utf-8") as json_file_fixed:
                         json.dump(data_old, json_file_fixed)
         aggregate_jsons(found_dirs_fixed, socket.gethostname(), lb.json_dir + 'retro_fix_' + lb.datetime_to_str_with_timezone(datetime.now()), logger=logger)
-        with open('/home/pats/dependencies/retro_fix_20230416.done', 'w', encoding="utf-8") as touchy_file:
+        with open('/home/pats/dependencies/retro_fix_20230419.done', 'w', encoding="utf-8") as touchy_file:
             touchy_file.write('OK')
 
 

@@ -1,26 +1,26 @@
 ---
 # - hosts: c,rc,qc,trapeye
-- hosts: c,trapeye,rc,qc
+- hosts: pats181
   strategy: free
   tasks:
     - name: retrofix
       register: retrofit
       ansible.builtin.script: retrofix.sh
-    - name: Reboot
-      changed_when: false
-      ignore_errors: true
-      ignore_unreachable: true
-      async: true
-      poll: false
-      ansible.builtin.shell: "sleep 5 && sudo rtcwake -m off -s 120"
-      when: retrofit.stdout is defined and  retrofit.stdout | regex_search('Please reboot me') is not none
-    # - name: Exit playbook
-    #   ansible.builtin.meta: end_play
-    #   when: release_upgrade_su.stdout is defined and release_upgrade_su.stdout | regex_search('Please reboot me') is not none
-    - name: Wait for reboot
-      when: retrofit.stdout is defined and retrofit.stdout | regex_search('Please reboot me') is not none
-      ansible.builtin.wait_for_connection:
-        connect_timeout: 20
-        sleep: 5
-        delay: 15
-        timeout: 600
+    # - name: Reboot
+    #   changed_when: false
+    #   ignore_errors: true
+    #   ignore_unreachable: true
+    #   async: true
+    #   poll: false
+    #   ansible.builtin.shell: "sleep 5 && sudo rtcwake -m off -s 120"
+    #   when: retrofit.stdout is defined and  retrofit.stdout | regex_search('Please reboot me') is not none
+    # # - name: Exit playbook
+    # #   ansible.builtin.meta: end_play
+    # #   when: release_upgrade_su.stdout is defined and release_upgrade_su.stdout | regex_search('Please reboot me') is not none
+    # - name: Wait for reboot
+    #   when: retrofit.stdout is defined and retrofit.stdout | regex_search('Please reboot me') is not none
+    #   ansible.builtin.wait_for_connection:
+    #     connect_timeout: 20
+    #     sleep: 5
+    #     delay: 15
+    #     timeout: 600
