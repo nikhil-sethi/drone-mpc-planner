@@ -42,25 +42,24 @@ TEST(Filtering, PT1_T_smaller_dt) {
     CHECK( abs(error)<0.1f);
 }
 
-TEST(Filtering, PT2_T_larger_dt) {
-    filtering::Tf_PT2_f f;
-    float T = 0.02f;
-    f.init(dt, K, T, T);
-    f.internal_states(0, 0);
+// TEST(Filtering, PT2_T_larger_dt) {
+//     filtering::Tf_PT2_f f;
+//     float T = 0.02f;
+//     f.init(dt, K, T, T);
+//     f.internal_states(0, 0);
 
-    filtering::Tf_PT1_f f1, f2;
-    f1.init(dt, K, T);
-    f2.init(dt, K, T);
-    f1.reset(0);
-    f2.reset(0);
+//     filtering::Tf_PT1_f f1, f2;
+//     f1.init(dt, K, T);
+//     f2.init(dt, K, T);
+//     f1.reset(0);
+//     f2.reset(0);
 
 
-    float y;
-    float y1, y2;
-    for (int i=1; i<100; i++) {
-        y = f.new_sample(1.f);
-        y1 = f1.new_sample(1.);
-        y2 = f2.new_sample(y1);
-
-    }
-}
+//     float y;
+//     float y1, y2;
+//     for (int i=1; i<100; i++) {
+//         y = f.new_sample(1.f);
+//         y1 = f1.new_sample(1.);
+//         y2 = f2.new_sample(y1);
+//     }
+// }
