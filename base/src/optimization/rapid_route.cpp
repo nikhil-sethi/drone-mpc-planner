@@ -98,7 +98,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
 
         _intersection = intersection_of_3_planes(&_first_plane, &_second_plane, &_third_plane);
         _intersection = _flight_area_config.move_inside(_intersection); // may still exceed the constraints of a 4+th plane
-        _time_to_reach_intersection = sqrt(4 * norm(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay;
+        _time_to_reach_intersection = sqrt(4.f * normf(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay;
         _target_position_after_time_to_reach = target.pos() + target.vel() * _time_to_reach_intersection;
 
         _resorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position_after_time_to_reach);
