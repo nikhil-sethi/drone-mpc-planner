@@ -126,8 +126,6 @@ TEST (RapidRoute, ensureStoppingDistanceIsEqualToHuntDistance) {
     insect.state.vel = {0, 0, 0};
     result = rr.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(!result.via);
-    std::cout << result.stopping_position << std::endl;
-    std::cout << result.position_to_intercept << std::endl;
     CHECK(abs(norm(result.position_to_intercept) - norm(result.stopping_position - result.position_to_intercept)) < 1e-3); // 1mm error margin
 }
 
@@ -142,8 +140,6 @@ TEST (RapidRoute, ensureStoppingDistanceIsLongerThanHuntIfSafetyFactorIsUsed) {
     insect.state.vel = {0, 0, 0};
     result = rr.find_interception(drone, insect, 0.0f, 2.f);
     CHECK(!result.via);
-    std::cout << result.stopping_position << std::endl;
-    std::cout << result.position_to_intercept << std::endl;
     CHECK(abs(norm(result.position_to_intercept) / norm(result.stopping_position - result.position_to_intercept)) < 0.5); // stopping distance should be more than 2x hunt distance
 }
 

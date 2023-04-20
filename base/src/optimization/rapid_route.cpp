@@ -129,11 +129,9 @@ rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData dr
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
     if (_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)) {
-        std::cout << "found direct interception at " << _rapid_route_result.position_to_intercept << std::endl;
         return _rapid_route_result;
     } else {
         _rapid_route_result = find_interception_via(drone, target, delay, stopping_safety_factor);
-        std::cout << "found interception via " << _rapid_route_result.intermediate_position << " at " << _rapid_route_result.position_to_intercept << std::endl;
         return _rapid_route_result;
     }
 }
