@@ -1,22 +1,28 @@
 #include "hash.h"
 #include<fstream>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 
 unsigned char getFileHash(std::string file) {
     std::ifstream fileStream(file, std::ios::binary);
 
-    MD5_CTX new_hash;
-    unsigned char result;
+    EVP_MD_CTX *new_hash;
+    unsigned char *result;
+    unsigned int md5_digest_len = EVP_MD_size(EVP_md5());
     char b;
 
-    MD5_Init(&new_hash);
+    new_hash = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(new_hash, EVP_md5(), NULL);
 
     while (fileStream.get(b))
     {
-        MD5_Update(&new_hash, &b, 1);
+        EVP_DigestUpdate(new_hash, &b, 1);
     }
-    MD5_Final(&result, &new_hash);
+
+    result = (unsigned char *)OPENSSL_malloc(md5_digest_len);
+    EVP_DigestFinal_ex(new_hash, result, &md5_digest_len);
+    EVP_MD_CTX_free(new_hash);
+
     fileStream.close();
 
-    return result;
+    return *result;
 }
