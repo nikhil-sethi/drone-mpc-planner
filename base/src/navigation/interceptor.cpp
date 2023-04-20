@@ -166,14 +166,13 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
             stopping_position_in_flightarea = false;
     }
 
-    if (interception_position_in_flightarea && stopping_position_in_flightarea) {
-        _aim_pos = rapid_route_res.position_to_intercept;
-        _n_frames_aim_not_in_range = 0;
-    } else if (rapid_route_res.via && interception_position_in_flightarea) {
+    if (rapid_route_res.via && interception_position_in_flightarea) {
         _aim_pos = rapid_route_res.intermediate_position;
         _n_frames_aim_not_in_range = 0;
-    }
-    else
+    } else if (!rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
+        _aim_pos = rapid_route_res.position_to_intercept;
+        _n_frames_aim_not_in_range = 0;
+    } else
         _n_frames_aim_not_in_range++;
 }
 
@@ -217,19 +216,19 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
                 rapid_route_result _res = update_aim_and_target_in_flightarea(drone_at_base, target, 0.f);
 
-                if (!interception_position_in_flightarea || !stopping_position_in_flightarea) {
+                if (_res.via && interception_position_in_flightarea) {
+                    _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
+                    _control_mode = position_control;
+                } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
+                    _aim_pos = _flight_area->move_inside(_aim_pos, bare, drone.pos());
+                    _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
+                    _control_mode = position_control;
+                } else {
                     // Insect is currently not interceptable. Try to go directly to the target (and hope is target changing its path)
                     _aim_pos = target.pos() + _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error;
                     _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
                     _control_mode = position_control;
                     return;
-                } else if (_res.via) {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
-                    _control_mode = position_control;
-                } else {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
-                    _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
-                    _control_mode = position_control;
                 }
 
                 if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel())) {
