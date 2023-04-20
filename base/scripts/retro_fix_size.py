@@ -140,6 +140,8 @@ def retro_fix():
             else:
                 continue
 
+            if os.path.exists(dir_name + '/retrofix_20230420.done'):
+                continue
             detection_fns = lb.natural_sort([fp for fp in glob.glob(os.path.join(dir_name, "log_i*.csv"))])
             if len(detection_fns):
                 for detection_fn in detection_fns:
@@ -161,9 +163,12 @@ def retro_fix():
                         data_old['detections'][i]['size'] = data_new['detections'][i]['size']
                     with open(dir_name + '/results.json', 'w', encoding="utf-8") as json_file_fixed:
                         json.dump(data_old, json_file_fixed)
+            with open(dir_name + '/retrofix_20230420.done', 'w', encoding="utf-8") as touchy_file:
+                touchy_file.write('OK')
         aggregate_jsons(found_dirs_fixed, socket.gethostname(), lb.json_dir + 'retro_fix_' + lb.datetime_to_str_with_timezone(datetime.now()), logger=logger)
         with open('/home/pats/dependencies/retro_fix_20230419.done', 'w', encoding="utf-8") as touchy_file:
             touchy_file.write('OK')
 
 
-retro_fix()
+if __name__ == "__main__":
+    retro_fix()
