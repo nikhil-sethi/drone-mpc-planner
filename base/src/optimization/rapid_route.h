@@ -37,7 +37,7 @@ private:
     FlightAreaConfig _flight_area_config;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
     bool feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone);
-    cv::Point3f find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor);
+    cv::Point3f find_stopping_position(rapid_route_result interception_result, const float safety_factor);
     std::vector<Plane> _sorted_planes;
     std::vector<Plane> _resorted_planes;
 };

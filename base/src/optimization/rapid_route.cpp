@@ -74,7 +74,7 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
     result.velocity_at_intercept = drone.vel() + (result.acceleration_to_intercept + _gravity) * result.time_to_intercept;
     if (feasible_solution(result, drone))
         result.valid = true;
-    result.stopping_position = find_stopping_position(result, drone, stopping_safety_factor);
+    result.stopping_position = find_stopping_position(result, stopping_safety_factor);
     result.intermediate_position = {0.f, 0.f, 0.f};
     result.via = false;
 
@@ -157,7 +157,7 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
     return true;
 }
 
-cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, tracking::TrackData drone, const float safety_factor) {
+cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, const float safety_factor) {
     cv::Point3f _velocity_at_interception = interception_result.velocity_at_intercept;
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
