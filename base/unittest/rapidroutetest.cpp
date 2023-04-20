@@ -144,14 +144,18 @@ TEST (RapidRoute, ensureStoppingDistanceIsLongerThanHuntIfSafetyFactorIsUsed) {
 }
 
 TEST (RapidRoute, ensureIntermediatePointIsACorner) {
-    float _thrust = 24.5f;
-    rr.init(&_thrust, 1.f, _config);
+    for (int exponent=-1; exponent<3; exponent++) {
+        flightarea.init(return_plane_box(powf(10, exponent)));
+        float _thrust = 24.5f;
+        rr.init(&_thrust, 1.f, _config);
 
-    result = rr.find_interception_via(drone, insect, 0.0f, 1.f);
+        result = rr.find_interception_via(drone, insect, 0.0f, 1.f);
 
-    CHECK(result.via);
-    std::cout << result.intermediate_position << std::endl;
-    // CHECK(result.intermediate_position.x == )
+        CHECK(result.via);
+        CHECK(abs(result.intermediate_position.x) == powf(10, exponent));
+        CHECK(abs(result.intermediate_position.y) == powf(10, exponent));
+        CHECK(abs(result.intermediate_position.z) == powf(10, exponent));
+    }
 }
 
 TEST(RapidRoute, stopping_distance) {
