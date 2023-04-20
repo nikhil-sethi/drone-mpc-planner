@@ -143,6 +143,8 @@ public:
 
     cv::Point3f interception_pos() {return _rapid_route_result.position_to_intercept;}
     cv::Point3f stopping_pos() {return _rapid_route_result.stopping_position;}
+    bool via() {return _rapid_route_result.via;}
+    cv::Point3f intermediate_pos() {return _rapid_route_result.intermediate_position;}
     double time_to_intercept() {return _tti;}
 
     float best_distance() {return _best_hunt_error;}

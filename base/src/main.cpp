@@ -83,6 +83,7 @@ enable_window_modes enable_window_mode = enable_window_disabled;
 std::time_t start_time = 0;
 std::time_t periodic_stop_time = 0;
 bool draw_plots = false;
+bool draw_optimization = false;
 bool realsense_reset = false;
 bool log_replay_mode = false;
 bool flight_replay_mode = false;
@@ -261,7 +262,7 @@ void process_frame(StereoPair *frame) {
 
     if (pparams.has_screen || render_mode) {
         visualizer.add_plot_sample();
-        visualizer.update_tracker_data(visdat.frameL, patser.drone.nav.setpoint().pos(), frame->time, draw_plots);
+        visualizer.update_tracker_data(visdat.frameL, patser.drone.nav.setpoint().pos(), frame->time, draw_plots, draw_optimization);
         if (flight_replay_mode)
             visualizer.draw_drone_from_log(logreader.log_drone()->current_entry);
         if (pparams.video_render && !exit_now) {
@@ -327,6 +328,10 @@ bool handle_key(double time [[maybe_unused]]) {
         case 'p':
             if (log_replay_mode || generator_mode)
                 draw_plots = true;
+            break;
+        case 'i':
+            if (log_replay_mode || generator_mode)
+                draw_optimization = true;
             break;
         case '[':
             if (log_replay_mode || generator_mode)

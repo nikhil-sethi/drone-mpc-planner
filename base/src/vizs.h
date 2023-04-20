@@ -40,6 +40,7 @@ private:
     bool _viz_exposure_initialized = false;
 
     bool enable_plots = false;
+    bool enable_optimization_drawing = false;
 
     const int bufsize = 600;
 
@@ -148,7 +149,7 @@ public:
     void render();
     void add_plot_sample(void);
     void set_generator_cam(GeneratorCam *cam) {generator_cam = cam; generator_cam_set = true;}
-    void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
+    void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, bool draw_optimization);
     void init(VisionData *visdat, Patser *patser, bool fromfile);
     void close();
 
