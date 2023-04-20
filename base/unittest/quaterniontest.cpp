@@ -18,7 +18,7 @@ TEST(Quaternions, calc_rot_quat1) {
     cv::Point3f bf_hover = cv::Point3f(0, 0, -1);
     cv::Point3f acc = cv::Point3f(1, 1, 1);
     Quaternion qrot = rot_quat(bf_hover, acc);
-    bool check = norm(rotate(bf_hover, qrot) - acc/norm(acc))<eps;
+    bool check = normf(rotate(bf_hover, qrot) - acc/normf(acc))<eps;
     CHECK(check);
     CHECK(abs(normq(qrot)-1)<eps);
 }
@@ -27,7 +27,7 @@ TEST(Quaternions, calc_rot_quat2) {
     cv::Point3f bf_hover = cv::Point3f(0, 0, -1);
     cv::Point3f acc = cv::Point3f(0, 0, 1);
     Quaternion qrot = rot_quat(bf_hover, acc);
-    bool check = norm(rotate(bf_hover, qrot) - acc/norm(acc))<eps;
+    bool check = normf(rotate(bf_hover, qrot) - acc/normf(acc))<eps;
     CHECK(check);
     CHECK(abs(normq(qrot)-1)<eps);
 }
@@ -36,7 +36,7 @@ TEST(Quaternions, calc_rot_quat3) {
     cv::Point3f bf_hover = cv::Point3f(0, 0, -1);
     cv::Point3f acc = cv::Point3f(0, 0, -1);
     Quaternion qrot = rot_quat(bf_hover, acc);
-    bool check = norm(rotate(bf_hover, qrot) - acc/norm(acc))<eps;
+    bool check = normf(rotate(bf_hover, qrot) - acc/normf(acc))<eps;
     CHECK(check);
     CHECK(abs(normq(qrot)-1)<eps);
 }
@@ -58,5 +58,5 @@ TEST(Quaternions, restore_direction) {
     Quaternion qrot = rot_quat(bf_hover, acc_bf);
     cv::Point3f res_dir = restore_direction(qrot.v.x, qrot.v.y);
     res_dir = betaflight_to_pats_coord(res_dir);
-    CHECK(norm(acc/norm(acc)-res_dir/norm(res_dir))<eps);
+    CHECK(normf(acc/normf(acc)-res_dir/normf(res_dir))<eps);
 }
