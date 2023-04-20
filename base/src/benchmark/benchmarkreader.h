@@ -6,12 +6,12 @@ struct BenchmarkEntry {
     std::string type;
     int id;
 
-    double pos_x;
-    double pos_y;
-    double pos_z;
-    double vel_x;
-    double vel_y;
-    double vel_z;
+    float pos_x;
+    float pos_y;
+    float pos_z;
+    float vel_x;
+    float vel_y;
+    float vel_z;
 
     int evasion_trigger;
     int evasion_type;

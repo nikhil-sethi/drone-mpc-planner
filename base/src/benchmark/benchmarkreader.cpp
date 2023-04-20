@@ -30,12 +30,12 @@ size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {
         entry = (BenchmarkEntry) {
             .type = result[0],
             .id = std::stoi(result[1]),
-            .pos_x = std::stod(result[2]),
-            .pos_y = std::stod(result[3]),
-            .pos_z = std::stod(result[4]),
-            .vel_x = std::stod(result[5]),
-            .vel_y = std::stod(result[6]),
-            .vel_z = std::stod(result[7]),
+            .pos_x = std::stof(result[2]),
+            .pos_y = std::stof(result[3]),
+            .pos_z = std::stof(result[4]),
+            .vel_x = std::stof(result[5]),
+            .vel_y = std::stof(result[6]),
+            .vel_z = std::stof(result[7]),
             .evasion_trigger = std::stoi(result[8]),
             .evasion_type = std::stoi(result[9])
         };
