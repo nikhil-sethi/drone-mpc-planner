@@ -72,8 +72,6 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
         _iteration++;
     }
     result.velocity_at_intercept = drone.vel() + (result.acceleration_to_intercept + _gravity) * result.time_to_intercept;
-    if (feasible_solution(result, drone))
-        result.valid = true;
     result.stopping_position = find_stopping_position(result, stopping_safety_factor);
     result.intermediate_position = {0.f, 0.f, 0.f};
     result.via = false;
@@ -128,15 +126,17 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
 rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
-    if (_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)) {
-        return _rapid_route_result;
-    } else {
+    if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)))
         _rapid_route_result = find_interception_via(drone, target, delay, stopping_safety_factor);
-        return _rapid_route_result;
-    }
+
+    if (feasible_solution(_rapid_route_result))
+        _rapid_route_result.valid = true;
+    else
+        _rapid_route_result.valid = false;
+    return _rapid_route_result;
 }
 
-bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking::TrackData track_data_drone) {
+bool RapidRouteInterface::feasible_solution(rapid_route_result result) {
     if (result.time_to_intercept < 0)
         return false;
 
@@ -145,10 +145,8 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, tracking:
         return false;
     }
 
-    cv::Point3f intercept_pos_drone = track_data_drone.pos() + track_data_drone.vel() * result.time_to_intercept + 1.f / 2.f * (result.acceleration_to_intercept + _gravity) * pow(result.time_to_intercept, 2);
-    float intercept_error = normf(result.position_to_intercept - intercept_pos_drone);
-    if (intercept_error > 0.01f) {
-        // std::cout << "intercept error(tti): " << intercept_error << std::endl;
+    if (result.position_to_intercept != result.position_to_intercept || result.acceleration_to_intercept != result.acceleration_to_intercept || result.velocity_at_intercept != result.velocity_at_intercept || result.stopping_position != result.stopping_position || result.intermediate_position != result.intermediate_position) {
+        // NaN
         return false;
     }
 
