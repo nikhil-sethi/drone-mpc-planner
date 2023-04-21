@@ -211,7 +211,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 rapid_route_result _res = update_aim_and_target_in_flightarea(drone_at_base, target, 0.f);
 
                 if (_res.via && interception_position_in_flightarea) {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
+                    _aim_pos = _flight_area->move_inside(_aim_pos, bare, drone.pos());
                     _control_mode = position_control;
                 } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
                     _aim_pos = _flight_area->move_inside(_aim_pos, bare, drone.pos());
