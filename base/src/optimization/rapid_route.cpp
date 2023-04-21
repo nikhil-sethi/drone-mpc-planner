@@ -163,11 +163,13 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
     float _lower_bound = 0;
     float _upper_bound = 3 * _max_thrust;
     cv::Point3f _stopping_vector = _stopping_vector_hat * (_lower_bound + _upper_bound) / 2;
-    while (_iteration < 100 && !(_iteration > 1 && norm(_stopping_vector - _gravity) > 0.99999 * static_cast<double>(_max_thrust) && norm(_stopping_vector - _gravity) < static_cast<double>(_max_thrust))) {
+    cv::Point3f _stopping_vector_gravity_compensated = _stopping_vector - _gravity;
+    while (_iteration < 100 && !(_iteration > 1 && norm(_stopping_vector_gravity_compensated) > 0.99999 * static_cast<double>(_max_thrust) && norm(_stopping_vector_gravity_compensated) < static_cast<double>(_max_thrust))) {
         float _total_acc = (_lower_bound + _upper_bound) / 2;
         _stopping_vector = _stopping_vector_hat * _total_acc;
+        _stopping_vector_gravity_compensated = _stopping_vector - _gravity;
 
-        if (norm(_stopping_vector - _gravity) < static_cast<double>(_max_thrust)) {
+        if (norm(_stopping_vector_gravity_compensated) < static_cast<double>(_max_thrust)) {
             _lower_bound = _total_acc;
         } else {
             _upper_bound = _total_acc;
@@ -175,6 +177,7 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
         _iteration++;
     }
     cv::Point3f _stopping_time = {0, 0, 0};
+    _stopping_vector = _stopping_vector_gravity_compensated + _gravity;
     if (_stopping_vector.x != 0)
         _stopping_time.x = -_velocity_at_interception.x / _stopping_vector.x;
     if (_stopping_vector.y != 0)
