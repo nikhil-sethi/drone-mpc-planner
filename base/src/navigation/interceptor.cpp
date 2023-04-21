@@ -132,12 +132,6 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 if (_intercepting_state == is_approaching && !target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
-                } else if (_intercepting_state != is_intercept_maneuvering && (target_trkr->n_frames_lost() > 0.112 * pparams.fps
-                           || _n_frames_aim_not_in_range > 0.34 * pparams.fps
-                           || target_trkr->false_positive()
-                           || _trackers->monster_alert())) {
-                    enter_is_intercept_maneuvering(time, _drone->tracker.last_track_data());
-                    break;
                 }
 
                 if (_intercepting_state == is_approaching)
