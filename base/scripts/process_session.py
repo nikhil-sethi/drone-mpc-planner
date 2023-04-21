@@ -234,9 +234,12 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
         logger.info('Flight time invalid')
         return {}
     try:
-        log = pd.read_csv(log_fn, sep=";")
+        log = pd.read_csv(log_fn, sep=";",)
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
+        return {}
+
+    if log.empty:
         return {}
 
     elapsed_time = log["elapsed"].values
@@ -284,6 +287,9 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
         log = pd.read_csv(log_fn, sep=";", converters={'fp': str})
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
+        return {}
+
+    if log.empty:
         return {}
 
     elapsed_time = log["elapsed"].values
