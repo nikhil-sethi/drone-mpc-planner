@@ -86,7 +86,8 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     int _iteration_counter = 0;
     cv::Point3f _target_position = target.pos();
     float _time_to_reach_intersection;
-    while (1) {
+    int _cnt = 0;
+    while (_cnt < 100) {
         _sorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position);
         Plane _first_plane = _sorted_planes[0];
         int _second_plane_idx = _flight_area_config.find_next_non_parallel_plane(_sorted_planes, 0);
