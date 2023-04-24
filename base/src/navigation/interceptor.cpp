@@ -330,3 +330,7 @@ bool Interceptor::insect_in_pad_area() {
     }
     return false;
 }
+
+void Interceptor::abort_flight() {
+    _interceptor_state = is_init;
+}

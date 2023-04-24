@@ -108,6 +108,7 @@ public:
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);
     void update(bool drone_at_base, double time);
+    void abort_flight();
     void max_optimization_time(double max_time) {optimization_time = max_time;};
 
     tracking::TrackData target_last_trackdata();
