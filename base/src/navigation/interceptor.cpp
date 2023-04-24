@@ -165,11 +165,15 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
     if (rapid_route_res.via && interception_position_in_flightarea) {
         _aim_pos = rapid_route_res.intermediate_position;
         _n_frames_aim_not_in_range = 0;
+        _n_frames_aim_in_range++;
     } else if (!rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
         _aim_pos = rapid_route_res.position_to_intercept;
         _n_frames_aim_not_in_range = 0;
-    } else
+        _n_frames_aim_in_range++;
+    } else {
         _n_frames_aim_not_in_range++;
+        _n_frames_aim_in_range = 0;
+    }
 }
 
 rapid_route_result Interceptor::update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target, float delay) {
@@ -296,7 +300,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
 
 
 bool Interceptor::delay_takeoff_for_better_interception() {
-    if (_rapid_route_result.valid && !_n_frames_aim_not_in_range)
+    if (_rapid_route_result.valid && !_n_frames_aim_not_in_range && _n_frames_aim_in_range > 2)
         return false;
     else
         return true;

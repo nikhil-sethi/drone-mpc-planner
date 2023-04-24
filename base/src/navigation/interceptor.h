@@ -61,6 +61,7 @@ private:
     bool stopping_position_in_flightarea = false;
 
     uint _n_frames_aim_not_in_range = 0;
+    uint _n_frames_aim_in_range = 0;
     float n_frames_target_cleared_timeout;
     tracking::InsectTracker *_target_insecttracker = NULL;
 
