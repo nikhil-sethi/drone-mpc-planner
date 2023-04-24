@@ -603,7 +603,6 @@ void Visualizer::draw_tracker_viz() {
         tracking::WorldItem wti = last_drone_detection.world_item;
         cv::Point2i _drone_pos_im(wti.image_item.x, wti.image_item.y);
 
-        std::cout << _patser->drone.control.flight_mode() << std::endl;
         if (_patser->drone.control.at_base()) {
             cv::line(frameL_color, _interception_pos_im, _stopping_pos_im, white, 1);
             if (_via) {
