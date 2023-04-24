@@ -92,7 +92,7 @@ private:
     void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
         _intercepting_state = is_intercept_maneuvering;
         time_start_intercept_maneuver = time;
-        _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
+        _aim_pos += 100.f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
         _control_mode = position_control;
     };
     bool exit_is_intercept_maneuvering(double time) {
