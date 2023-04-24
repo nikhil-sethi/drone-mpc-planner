@@ -76,6 +76,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 FlightAreaConfig *relaxed_flightareaconfig = _flight_area->flight_area_config(relaxed);
                 interception_center = cv::Point3f(0, _drone->tracker.pad_location().y / 2, _drone->tracker.pad_location().z + (relaxed_flightareaconfig->active_back_plane().support.z - _drone->tracker.pad_location().z) / 2);
                 _tti = -1;
+                _n_frames_aim_in_range = 0;
                 [[fallthrough]];
         } case is_waiting_for_target: {
                 _n_frames_aim_not_in_range++;
