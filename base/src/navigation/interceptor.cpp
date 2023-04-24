@@ -153,11 +153,11 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
     if (rapid_route_res.valid) {
         _tti = rapid_route_res.time_to_intercept;
-        if (_flight_area->inside(rapid_route_res.position_to_intercept, bare))
+        if (_flight_area->inside(rapid_route_res.position_to_intercept, relaxed))
             interception_position_in_flightarea = true;
         else
             interception_position_in_flightarea = false;
-        if (_flight_area->inside(rapid_route_res.stopping_position, bare))
+        if (_flight_area->inside(rapid_route_res.stopping_position, relaxed))
             stopping_position_in_flightarea = true;
         else
             stopping_position_in_flightarea = false;
@@ -218,10 +218,10 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                 rapid_route_result _res = update_aim_and_target_in_flightarea(drone_at_base, target, 0.f);
 
                 if (_res.via && interception_position_in_flightarea) {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, bare, drone.pos());
+                    _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _control_mode = position_control;
                 } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, bare, drone.pos());
+                    _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
                     _control_mode = position_control;
                 } else {
@@ -274,8 +274,8 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(float delay) {
             cv::Point3f current_insect_vel = insect_state.vel();
             rapid_route_result _optim_result = rapid_route.find_interception(tracking_data, insect_state, delay, _drone->control.kiv_ctrl.safety);
             if (_optim_result.valid) {
-                bool aim_inview = _flight_area->inside(_optim_result.position_to_intercept, bare);
-                bool stop_inview = _flight_area->inside(_optim_result.stopping_position, bare);
+                bool aim_inview = _flight_area->inside(_optim_result.position_to_intercept, relaxed);
+                bool stop_inview = _flight_area->inside(_optim_result.stopping_position, relaxed);
 
                 if (!insect_state.vel_valid)
                     current_insect_vel = {0};
