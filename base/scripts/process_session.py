@@ -580,7 +580,7 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
     [apply_hunt_video_filename(d) for d in detections if d['hunt_id'] >= 0]
 
     cuts_new = []
-    for i in range(0, len(cuts) - 1):
+    for i in range(0, len(cuts)):
         if cuts[i]['rs_id'] >= 0:
             for ii in range(i + 1, len(cuts)):
                 if cuts[i]['end_rs_id'] > cuts[ii]['end_rs_id'] and (cuts[ii]['type'] == 'insect' or cuts[ii]['type'] == 'anomoly') and cuts[i]['type'] == 'flight':
@@ -591,9 +591,6 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
                             detection['video_filename'] = cuts[i]['video_filename']
                     cuts[ii]['rs_id'] = -1
             cuts_new.append(cuts[i])
-    if len(cuts) > 1:
-        if cuts[i + 1]['rs_id'] >= 0:
-            cuts_new.append(cuts[i + 1])
     return cuts_new
 
 
@@ -794,14 +791,10 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', help="Do not permanentely change anything", required=False)
     args = parser.parse_args()
 
-    rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+    error_file_handler = logging.handlers.WatchedFileHandler(filename=lb.daily_errs_log)  # a watched file handler makes sure that logging continues to the new file if it is rotated.
     error_file_handler.setFormatter(file_format)
     error_file_handler.level = logging.ERROR
-    error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
-    error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
-
     logging.basicConfig()
     logger = logging.getLogger('process_session')
     logger.setLevel(logging.DEBUG)
