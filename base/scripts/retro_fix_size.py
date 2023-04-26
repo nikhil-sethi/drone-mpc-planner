@@ -3,7 +3,6 @@ import os
 import socket
 import json
 import glob
-import re
 import sys
 import subprocess
 import logging

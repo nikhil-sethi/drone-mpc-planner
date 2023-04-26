@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from datetime import datetime
 import sys
+import xmltodict
 import os
 import subprocess
 import time
@@ -44,7 +45,7 @@ logger.info('Starting baseboard!')
 
 
 def led():
-    if not os.path.exists(lb.disable_executor_flag):
+    if not os.path.exists(lb.disable_executor_flag) or os.path.exists(lb.disable_flag):
         dt_last_executor_msg = (datetime.now() - executor_comm.last_msg_time).total_seconds()
     else:
         dt_last_executor_msg = 0
@@ -142,6 +143,7 @@ executor_comm = socket_communication('Executor', 'baseboard', lb.socket_baseboar
 
 while True:
     try:
+        pats_settings = lb.read_xml(lb.pats_xml_fn)
         logger.info('Connecting baseboard...')
         comm = serial.Serial('/dev/baseboard', 115200, timeout=1)
         logger.info('Connected to baseboard')
@@ -157,7 +159,7 @@ while True:
             wdt_pkg.watchdog_enabled = 0
             comm.write(wdt_pkg.pack())
             logger.info('Watchdog DISABLED')
-        if not os.path.exists(lb.disable_charging_flag):
+        if pats_settings['charging']:
             chrg_pkg = ls.SerialNUC2BaseboardChargingPackage()
             chrg_pkg.enable_charging = 1
             comm.write(chrg_pkg.pack())
@@ -236,7 +238,7 @@ while True:
                                          + ' wdt: ' + str(bool(new_pkg.watchdog_state))
                                          )
                             executor_pkg = serial_data[pkg_start:]
-                            if not os.path.exists(lb.disable_executor_flag):
+                            if not os.path.exists(lb.disable_executor_flag) and not os.path.exists(lb.disable_flag):
                                 if not executor_comm.connection_ok:
                                     logger.info('Executor link LOST since: ' + executor_comm.connection_lost_datetime.strftime("%d-%m-%Y %H:%M:%S"))
                                 executor_comm.send(executor_pkg)  # force send thread to find out connection is lost

@@ -2,7 +2,6 @@
 from cmath import isinf
 from genericpath import exists
 import os
-import re
 import glob
 import json
 import math
@@ -606,7 +605,7 @@ def run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger: logging.Logger):
             key_frame_ids = []
             for cut in cuts:
                 video_start_rs_id = cut['rs_id']
-                video_start_time = -1
+                video_start_time: float = -1
                 video_start_video_id = -1
                 while True:
                     frame_line = frames_log.readline()

@@ -6,6 +6,11 @@ import glob
 import time
 from datetime import datetime
 
+# This script runs as super on all basestations. It downloads update scripts from dash and runs them as root.
+# Very dangerous, so some annoying safeguards are in place. (e.g. the update folder must be root only, only admins can put updates on dash)
+# This updater should only be used for system upgrades that require root. It is not ran from within the daemon.py.
+# Daemon.py has a normal (non super user) updater called update_from_daemon.py.
+
 
 def update_now():
 
@@ -46,7 +51,7 @@ updated_today = True
 while True:
 
     now = datetime.now()
-    if now.hour == 11 and not updated_today:
+    if now.hour == 14 and not updated_today:
         updated_today = True
         try:
             update_now()

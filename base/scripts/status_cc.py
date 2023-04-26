@@ -12,15 +12,6 @@ def send_status_update():
                 if lines[0] != first_read:
                     first_read = lines[0]
 
-                    if os.path.exists(lb.local_xml_folder):
-                        cmd = 'rsync -az ' + lb.local_xml_folder + ' dash_upload:' + lb.remote_xml_folder
-                        lb.execute(cmd, 1, 'status_cc')
-                    if os.path.exists(lb.local_pats_xml_override):
-                        cmd = 'rsync -az ' + lb.local_pats_xml_override + ' dash_upload:' + lb.remote_pats_xml_override
-                        lb.execute(cmd, 1, 'status_cc')
-                    else:
-                        cmd = 'ssh dash "rm -f ' + lb.remote_pats_xml_override + '"'
-                        lb.execute(cmd, 1, 'status_cc')
                     if os.path.exists(lb.local_status_txt_file):
                         cmd = 'rsync -az ' + lb.local_status_txt_file + ' dash_upload:' + lb.remote_status_txt_file
                         lb.execute(cmd, 1, 'status_cc')

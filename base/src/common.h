@@ -194,11 +194,16 @@ static const char *drone_types_str[] = {
 };
 enum op_modes {
     op_mode_c,
-    op_mode_x
+    op_mode_x,
+    op_mode_blind, // in this case executor should not even be started, but added for completeness
+    op_mode_disabled, // in this case executor should not even be started, but added for completeness
 };
 static const char *op_modes_str[] = {
     "op_mode_c",
-    "op_mode_x"
+    "op_mode_x",
+    "op_mode_blind",
+    "op_mode_disabled",
+
     "" // must be the last entry! (check in serializer)
 };
 
@@ -349,6 +354,9 @@ private:
     xDrone_type _drone;
     xOp_mode _op_mode;
     xBool _disable_real_hunts;
+    xBool _charging;
+    xBool _trapeye;
+    xString _tag;
     xInt _fps, _periodic_restart_minutes;
 
     xString _enable_start, _enable_end;
@@ -371,6 +379,9 @@ public:
     drone_types drone;
     op_modes op_mode;
     bool disable_real_hunts;
+    bool charging;
+    bool trapeye;
+    std::string tag;
     std::string enable_start, enable_end;
     float min_hunt_size, max_hunt_size;
     std::string location;
@@ -388,7 +399,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.20");
+        setVersion("1.21");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("light_level_threshold", &_light_level_threshold);
@@ -400,6 +411,9 @@ public:
         Register("has_screen", &_has_screen);
         Register("op_mode", &_op_mode);
         Register("disable_real_hunts", &_disable_real_hunts);
+        Register("charging", &_charging);
+        Register("trapeye", &_trapeye);
+        Register("tag", &_tag);
         Register("watchdog", &_watchdog);
         Register("fps", &_fps);
         Register("video_raw", &_video_raw);
@@ -446,6 +460,9 @@ public:
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
         disable_real_hunts = _disable_real_hunts.value();
+        charging = _charging.value();
+        trapeye = _trapeye.value();
+        tag = _tag.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_raw = _video_raw.value();
@@ -471,6 +488,9 @@ public:
         _has_screen = has_screen;
         _op_mode = op_mode;
         _disable_real_hunts = disable_real_hunts;
+        _charging = charging;
+        _trapeye = trapeye;
+        _tag = tag;
         _watchdog = watchdog;
         _fps = fps;
         _video_raw = video_raw;
