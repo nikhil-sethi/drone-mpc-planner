@@ -1,7 +1,8 @@
 ---
 # - hosts: c,rc,qc,trapeye
-- hosts: pats181
+- hosts: c,trapeye
   strategy: free
+  gather_facts: no
   tasks:
     - name: retrofix
       register: retrofit
@@ -24,3 +25,6 @@
     #     sleep: 5
     #     delay: 15
     #     timeout: 600
+    - name: debug
+      ansible.builtin.debug: var=retrofit.stdout
+      when: retrofit.stdout is defined

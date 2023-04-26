@@ -1,16 +1,9 @@
 ---
-- hosts: c,rc,qc,blind,trapeye
+- hosts: c,trapeye
   strategy: free
   tasks:
     - name: pull
       ansible.builtin.script: pull_release.sh
-    - name: Kill (auto restart) executor process
-      shell: "killall executor || true"
-    - name: Kill (auto restart) daemon
-      shell: "kill $(pgrep -f daemon.py)"
-      failed_when: false
-      ignore_errors: yes
-    - name: Kill (auto restart) baseboard
-      shell: "kill $(pgrep -f baseboardlink.py)"
-      failed_when: false
-      ignore_errors: yes
+      register: output_checks
+    - name: debug
+      ansible.builtin.debug: var=output_checks.stdout_lines
