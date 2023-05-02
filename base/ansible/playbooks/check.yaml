@@ -1,10 +1,13 @@
 ---
 - hosts: x,c,qc,rc,trapeye,blind
   strategy: free
+  strategy: linear
   tasks:
     - name: checks
       ansible.builtin.script: checks.sh
       register: output_checks
+      timeout: 30
     - name: debug
       ansible.builtin.debug: var=output_checks.stdout
       delegate_to: localhost
+      when: output_checks.stdout is defined

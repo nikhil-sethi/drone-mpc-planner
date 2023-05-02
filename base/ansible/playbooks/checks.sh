@@ -11,13 +11,13 @@ if [ -f '/home/pats/pats/xml/pats.xml' ] ; then
 fi
 if [ -e '/dev/baseboard' ] && [ -f '/home/pats/pats/flags/disable_baseboard' ] ; then echo 'BASEBOARD AVAILABLE BUT DISABLED' ; fi
 if [ ! -e '/dev/baseboard' ] && [ ! -f '/home/pats/pats/flags/disable_baseboard' ] ; then echo 'BASEBOARD NOT DETETECTED AND NOT DISABLED' ; fi
-#if [ -e '/dev/pats_mm0' ] ; then echo 'MultiModule: OK' ; else echo 'MULTIMODULE NOT DETECTED' ; fi
-if [ ! -f '/home/pats/pats/flags/disable_executor' ] && ( rs-enumerate-devices | grep -q plugged ) ; then echo REALSENSE NOT DETECTED ; fi
+# if [ -e '/dev/pats_mm0' ] ; then echo 'MultiModule: OK' ; else echo 'MULTIMODULE NOT DETECTED' ; fi
+# if [ ! -f '/home/pats/pats/flags/disable_executor' ] && ( rs-enumerate-devices | grep -q plugged ) ; then echo REALSENSE NOT DETECTED ; fi # may get stuck?!
 
 if [ ! -f '/home/pats/pats/flags/disable_executor' ] && ( ! ps -aux  | grep -q "[e]xecutor" ) ; then echo EXECUTOR NOT RUNNING ; fi
 if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT RUNNING ; fi
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if ( ! ifconfig | grep -q "inet 10.13" ) ; then echo WIREGUARD NOT CONNECTED; fi
-#if ! ( cd /home/pats/pats/release && git rev-parse HEAD | grep -q 98ab746062614a94f1840b301f414aceca8c0c71 ) ; then echo SHA DISCREPANCY; fi
+if [ -f '/home/pats/dependencies/release_upgraded_20230405.done' ] ; then if ! ( cd /home/pats/pats/release && git describe --tags | grep -q "v2.2.2" ) ; then echo TAG DISCREPANCY; fi ; fi
 if [ ! -f '/home/pats/dependencies/release_upgraded_20230405.done' ] && [ -f '/home/pats/dependencies/release_upgraded_P1_20230405.done' ] ; then echo 'RELEASE UPGRADE NOT FINISHED' ; fi
 if [ ! -f '/home/pats/dependencies/release_upgraded_20230405.done' ] && [ ! -f '/home/pats/dependencies/release_upgraded_P1_20230405.done' ] ; then echo 'RELEASE UPGRADE NOT DONE' ; fi

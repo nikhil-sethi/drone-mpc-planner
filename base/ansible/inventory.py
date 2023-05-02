@@ -29,7 +29,7 @@ with open_meta_db() as con:
                                     ORDER BY c_systems.id
                                     ''', con).to_dict('records')
 
-groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'trapeye': {'hosts': []}, 'blind': {'hosts': []}, 'kevin': {'hosts': []}, 'qc': {'hosts': []}, 'rc': {'hosts': []}, 'darkroom': {'hosts': []}}
+groups: Dict[str, Dict[str, List[str]]] = {'all': {'hosts': []}, 'c': {'hosts': []}, 'x': {'hosts': []}, 'trapeye': {'hosts': []}, 'blind': {'hosts': []}, 'kevin': {'hosts': []}, 'custom': {'hosts': []}, 'qc': {'hosts': []}, 'rc': {'hosts': []}, 'darkroom': {'hosts': []}}
 for system in systems:
     maintenance = False
     if system['maintenance']:
@@ -57,6 +57,9 @@ for system in systems:
 
             if system['operation'] == 'blind':
                 groups['blind']['hosts'].append(system_name)
+
+            if system['operation'] == 'custom':
+                groups['custom']['hosts'].append(system_name)
 
             if system['operation'] == 'kevin':
                 groups['kevin']['hosts'].append(system_name)
