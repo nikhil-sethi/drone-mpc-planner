@@ -28,6 +28,7 @@ class RapidRouteInterface {
 public:
     void init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config);
     rapid_route_result find_interception_direct(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
+    rapid_route_result alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result);
     rapid_route_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
     rapid_route_result find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
 private:

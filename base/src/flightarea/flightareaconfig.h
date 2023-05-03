@@ -109,8 +109,10 @@ public:
     };
     std::vector<cv::Point3f> find_corner_points_of_plane(uint plane_id);
     std::vector<Plane> sort_planes_by_proximity(cv::Point3f point);
+    Plane find_most_constraining_plane(cv::Point3f point);
     int find_next_non_parallel_plane(std::vector<Plane> sorted_planes, int plane_index);
     int find_next_non_parallel_plane(std::vector<Plane> sorted_planes, int first_plane_index, int second_plane_index);
+    cv::Point3f project_onto_plane(cv::Point3f point, Plane plane);
 };
 
 

@@ -242,6 +242,10 @@ cv::Point3f FlightAreaConfig::project_inside_plane_polygon(cv::Point3f point, st
     return closest_point;
 }
 
+cv::Point3f FlightAreaConfig::project_onto_plane(cv::Point3f point, Plane plane) {
+    return point + fabs(plane.distance(point)) * plane.normal;
+}
+
 bool FlightAreaConfig::in_plane_polygon(cv::Point3f point, std::vector<CornerPoint> plane_corner_points) {
     // If the plane is in the segment (polygon) then the sum of all angles between the point and the pairwise vertices is 2pi or -2pi.
     // http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
@@ -338,6 +342,15 @@ std::vector<Plane> FlightAreaConfig::sort_planes_by_proximity(cv::Point3f point)
         return normf(p1.support - point) < normf(p2.support - point);
     });
     return _sorted_planes_by_proximity;
+}
+
+Plane FlightAreaConfig::find_most_constraining_plane(cv::Point3f point) {
+    std::vector<Plane> _sorted_planes_by_proximity = sort_planes_by_proximity(point);
+    for (auto plane : _sorted_planes_by_proximity) {
+        if (plane.is_active)
+            return plane;
+    }
+    return _sorted_planes_by_proximity.at(0); // not great
 }
 
 int FlightAreaConfig::find_next_non_parallel_plane(std::vector<Plane> sorted_planes, int plane_index) {
