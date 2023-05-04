@@ -192,7 +192,7 @@ rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData dr
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
     if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)))
-        _rapid_route_result = alt_find_interception_via(drone, target, delay, stopping_safety_factor);
+        _rapid_route_result = alt_find_interception_via(drone, target, delay, stopping_safety_factor, _rapid_route_result);
 
     if (feasible_solution(_rapid_route_result))
         _rapid_route_result.valid = true;
