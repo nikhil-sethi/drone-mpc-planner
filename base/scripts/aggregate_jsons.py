@@ -13,7 +13,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import lib_base as lb
 from process_session import process_session
-from retro_fix_size import retro_fix
 
 
 def check_if_system_at_office():
@@ -27,8 +26,6 @@ def check_if_system_at_office():
 
 
 def aggregate_jsons(data_folder, sys_str, aggregated_fn):
-    retro_fix()
-
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
     Path(data_folder + '/junk').mkdir(parents=True, exist_ok=True)
     Path(lb.json_dir).mkdir(parents=True, exist_ok=True)
@@ -44,6 +41,9 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
     cam_resets = 0
     t_start = datetime.max
     t_end = datetime.min + relativedelta(years=1000)
+
+    popen = subprocess.Popen('cd ~/pats/release/scripts && git describe --tags', stdout=subprocess.PIPE, shell=True)
+    tag = popen.stdout.readline().decode('utf-8').strip()
 
     logger = logging.getLogger('aggregate_jsons')
     for folder in ordered_dirs:
@@ -90,7 +90,8 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
                        "mode": statuss,
                        "errors": errors,
                        "cam_resets": cam_resets,
-                       "system": sys_str
+                       "system": sys_str,
+                       "tag": tag
                        }
     aggregated_json_fn = aggregated_fn + '.json'
     with open(aggregated_json_fn, 'w', encoding="utf-8") as outfile:
