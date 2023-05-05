@@ -147,7 +147,7 @@ if __name__ == "__main__":
     if args.filename:
         out_fn = args.filename
     else:
-        out_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now())
+        out_fn = lb.json_dir + socket.gethostname().lower() + '_' + lb.datetime_to_str_with_timezone(datetime.now())
     if args.i:
         data_folder = args.i
     else:
