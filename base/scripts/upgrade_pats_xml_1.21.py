@@ -15,7 +15,7 @@ def modify_xml(file_path):
     # Add new members
     new_members = [
         {'Name': 'charging', 'value': 'false'},
-        {'Name': 'tag', 'value': 'v2.3.0'},
+        {'Name': 'tag', 'value': 'v2.3.2'},
         {'Name': 'trapeye', 'value': 'false'}
     ]
 

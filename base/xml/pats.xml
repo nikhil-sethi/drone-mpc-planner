@@ -22,6 +22,6 @@
     <Member Name="n_cams">1</Member>
     <Member Name="long_range_mode">false</Member>
     <Member Name="charging">false</Member>
-    <Member Name="tag">v2.3.0</Member>
+    <Member Name="tag">v2.3.2</Member>
     <Member Name="trapeye">false</Member>
 </SerializableClass>
