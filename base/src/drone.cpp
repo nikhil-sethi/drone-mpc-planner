@@ -466,6 +466,7 @@ void Drone::post_flight(double time) {
                         _state = ds_charging;
                     } else if (_baseboard_link->charging()) {
                         post_flight_state = post_init;
+                        pre_flight_state = pre_init;
                         _state = ds_pre_flight;
                     } else if (n_shakes_sessions_after_landing <= 30 && control.att_somewhere_on_pad()) {
                         post_flight_state = post_start_shaking;
@@ -506,6 +507,7 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_init;
                     communicate_state(es_pats_x);
                     _state = ds_pre_flight;
+                    pre_flight_state = pre_init;
                 } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
@@ -514,6 +516,7 @@ void Drone::post_flight(double time) {
         } case post_lost: {
                 if (_baseboard_link->charging() || _baseboard_link->disabled()) {
                     post_flight_state = post_init;
+                    pre_flight_state = pre_init;
                     _state = ds_pre_flight;
                 } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
                     post_flight_state = post_init_deep_sleep;
@@ -523,6 +526,7 @@ void Drone::post_flight(double time) {
         } case post_init_deep_sleep: {
                 if (_baseboard_link->charging() && (control.telemetry_OK())) {
                     post_flight_state = post_init;
+                    pre_flight_state = pre_init;
                     _state = ds_pre_flight;
                 } else {
                     control.LED(false);
@@ -532,6 +536,7 @@ void Drone::post_flight(double time) {
         } case post_deep_sleep: {
                 if (_baseboard_link->charging() && (control.telemetry_OK())) {
                     post_flight_state = post_init;
+                    pre_flight_state = pre_init;
                     _state = ds_pre_flight;
                 } else {
                     control.flight_mode(DroneController::fm_sleep);
