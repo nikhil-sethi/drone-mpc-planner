@@ -19,7 +19,7 @@ def update_now():
         print("Error: the update folder does not exist")
         return
 
-    if not os.path.isfile('/home/pats/flags/disable_updates'):
+    if not os.path.exists('/home/pats/pats/flags/disable_updates'):
 
         st = os.stat(update_dir)
         owner = st.st_uid
