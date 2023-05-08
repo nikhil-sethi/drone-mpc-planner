@@ -392,6 +392,7 @@ void Drone::pre_flight(double time) {
                     pre_flight_state =  pre_telemetry_time_out;
                     communicate_state(es_pats_x);
                 } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
+                    _state = ds_post_flight;
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
                 }
