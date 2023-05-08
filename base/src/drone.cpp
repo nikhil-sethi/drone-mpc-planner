@@ -300,7 +300,6 @@ void Drone::pre_flight(double time) {
                 }
                 break;
         } case pre_calibrating_pad: {
-                control.reset_attitude_pad_state();
                 if (control.att_ok_for_pad_calibration() || !dparams.Telemetry()) {
                     control.save_pad_pos_and_att_calibration();
                     pre_flight_state = pre_wait_to_arm;
