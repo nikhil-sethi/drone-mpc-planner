@@ -611,6 +611,7 @@ void Drone::blink(double time) {
 bool Drone::low_voltage_timeout(double time) {
     if (!time_low_voltage) {
         time_low_voltage = time;
+        return false;
     }
     if (time - time_low_voltage > 60.0) {
         time_low_voltage = 0;
