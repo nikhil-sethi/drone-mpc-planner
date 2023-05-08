@@ -290,7 +290,7 @@ void Drone::pre_flight(double time) {
                     if (control.pad_calib_valid())
                         pre_flight_state = pre_check_pad_att;
                     else {
-                        control.reset_attitude_pad_state();
+                        control.reset_attitude_pad_state(); // avoids calibrating the pad attitude with corrupt telemetry
                         pre_flight_state = pre_calibrating_pad;
                     }
                 }
@@ -314,7 +314,7 @@ void Drone::pre_flight(double time) {
                             pre_flight_state = pre_wait_to_arm;
                         }
                         if (!control.att_precisely_on_pad() && static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && dparams.Telemetry() && !_baseboard_link->disabled()) {
-                            control.reset_attitude_pad_state();
+                            control.reset_attitude_pad_state(); // avoids calibrating the pad attitude with corrupt telemetry
                             pre_flight_state = pre_calibrating_pad;
                         }
                     } else if (static_cast<float>(time - time_start_att_wait_pad) > att_wait_pad_timeout && control.att_somewhere_on_pad()) {
