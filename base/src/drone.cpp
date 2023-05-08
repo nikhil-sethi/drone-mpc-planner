@@ -84,7 +84,7 @@ void Drone::update(double time) {
                     _baseboard_link->allow_charging(false);
                     break;
                 } else if (_interceptor->target_detected(time)) {
-                    control.flight_mode(DroneController::fm_spinup);
+                    control.flight_mode(DroneController::fm_init_spinup);
                     _baseboard_link->allow_charging(false);
                 } else if (control.manual_override_take_off_now()) {
                     flightplan_fn = pparams.flightplan;
