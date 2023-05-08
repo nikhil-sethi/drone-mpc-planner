@@ -190,6 +190,7 @@ void Drone::pre_flight(double time) {
                 control.flight_mode(DroneController::fm_disarmed);
                 communicate_state(es_pats_x);
                 time_start_locating_drone_attempt = time;
+                time_low_voltage = 0;
                 n_locate_drone_attempts++;
                 if (dparams.led_type == led_none && !control.pad_calib_valid()) {
                     std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
@@ -386,12 +387,10 @@ void Drone::pre_flight(double time) {
                 if (((_baseboard_link->charging() && _baseboard_link->charging_duration() < 1) || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
                     pre_flight_state =  pre_locate_drone_init;
                     time_start_locating_drone = time;
-                    time_low_voltage = 0;
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
                     communicate_state(es_pats_x);
-                    time_low_voltage = 0;
                 } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
@@ -411,6 +410,7 @@ void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
                 n_shakes_sessions_after_landing = 0;
+                time_low_voltage = 0;
                 flight_logger.flush();
                 flight_logger.close();
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -507,7 +507,6 @@ void Drone::post_flight(double time) {
                     post_flight_state = post_init;
                     communicate_state(es_pats_x);
                     _state = ds_pre_flight;
-                    time_low_voltage = 0;
                 } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
@@ -519,7 +518,6 @@ void Drone::post_flight(double time) {
                 if (_baseboard_link->charging() || _baseboard_link->disabled()) {
                     post_flight_state = post_init;
                     _state = ds_pre_flight;
-                    time_low_voltage = 0;
                 } else if (_rc->telemetry.batt_cell_v < 4.0F && control.telemetry_OK() && low_voltage_timeout(time)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
