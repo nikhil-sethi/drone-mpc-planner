@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -ex
+
+ubuntu_str=$(lsb_release -a | grep Release)
+if [[ $ubuntu_str == *"18.04"* ]] ; then
+	apt install ffmpeg
+fi
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+/bin/su - pats -c "echo 20230508 > /home/pats/dependencies/last_update"

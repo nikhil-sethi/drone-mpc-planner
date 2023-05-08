@@ -32,6 +32,7 @@ disable_daemonlink_flag = flags_dir + 'disable_daemonlink'
 disable_baseboard_flag = flags_dir + 'disable_baseboard'
 disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_executor_flag = flags_dir + 'disable_executor'
+last_update_tag = os.path.expanduser('~/dependencies/last_update')
 disable_updates = flags_dir + 'disable_updates'  # N.B. also hardcoded in update.py!
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'

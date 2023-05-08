@@ -43,7 +43,11 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
     t_end = datetime.min + relativedelta(years=1000)
 
     popen = subprocess.Popen('cd ~/pats/release/scripts && git describe --tags', stdout=subprocess.PIPE, shell=True)
-    tag = popen.stdout.readline().decode('utf-8').strip()
+    release_tag = popen.stdout.readline().decode('utf-8').strip()
+    update_tag = '?'
+    if os.path.exists(lb.last_update_tag):
+        with open(lb.last_update_tag, "r", encoding="utf-8") as file:
+            update_tag = file.readline()
 
     logger = logging.getLogger('aggregate_jsons')
     for folder in ordered_dirs:
@@ -91,7 +95,8 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
                        "errors": errors,
                        "cam_resets": cam_resets,
                        "system": sys_str,
-                       "tag": tag
+                       "release_tag": release_tag,
+                       "update_tag": update_tag
                        }
     aggregated_json_fn = aggregated_fn + '.json'
     with open(aggregated_json_fn, 'w', encoding="utf-8") as outfile:

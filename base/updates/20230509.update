@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -ex
+
+
+#if [[ $HOSTNAME != pats31 ]]; then
+#	echo "This test update is not intended for this system"
+#	exit 0
+#fi
+
+/bin/su - pats -c "pip3 install defusedxml"
+/bin/su - pats -c "cd ~/pats/release && git co master && git pr"
+kill $(pgrep -f daemon.py)
+kill $(pgrep -f baseboardlink.py)
+# kill $(pgrep -f endless_wait.sh)
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+/bin/su - pats -c "echo 20230506 > /home/pats/dependencies/last_update"
+
+[ -f /home/pats/pats/flags/disable_trapeye ] || {
+	# trap eye systems must reboot, last time hopefully
+	sleep 3600 # to have a safety in case of unexpected bootloops, with this at least one should be able to login again
+	/bin/su - pats -c "sudo rtcwake -m off -s 120"
+}
