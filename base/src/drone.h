@@ -211,7 +211,7 @@ public:
         control.invalidize_blink();
         _state = ds_pre_flight;
     }
-    bool low_voltage_timeout(double time);
+    bool low_voltage_timeout(double time, float voltage);
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
