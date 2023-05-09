@@ -45,7 +45,7 @@ rapid_route_result RapidRouteInterface::update_initial_guess(tracking::TrackData
     return result;
 }
 
-rapid_route_result RapidRouteInterface::find_interception_direct(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
+rapid_route_result RapidRouteInterface::find_interception_direct(tracking::TrackData drone, tracking::TrackData target, float delay, const cv::Point3f stopping_safety_factor) {
     rapid_route_result result;
     result = update_initial_guess(drone, target, result);
 
@@ -79,7 +79,7 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
     return result;
 }
 
-rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result) {
+rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const cv::Point3f stopping_safety_factor, rapid_route_result previous_result) {
     cv::Point3f _original_target_position = target.pos();
     int _intermediate_pos_cnt = 0;
 
@@ -143,7 +143,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
     return _direct_result;
 }
 
-rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
+rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const cv::Point3f stopping_safety_factor) {
     rapid_route_result result;
     cv::Point3f _intersection;
     cv::Point3f _target_position_after_time_to_reach;
@@ -188,7 +188,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
     return result;
 }
 
-rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
+rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const cv::Point3f stopping_safety_factor) {
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
     if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)))
@@ -218,12 +218,12 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result) {
     return true;
 }
 
-cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, const float safety_factor) {
+cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, const cv::Point3f safety_factor) {
     cv::Point3f _velocity_at_interception = interception_result.velocity_at_intercept;
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
 
-    float _max_thrust = _thrust_factor * *_thrust / safety_factor;
+    float _max_thrust = _thrust_factor * abs(*_thrust / safety_factor.dot(_stopping_vector_hat));
     int _iteration = 0;
     float _lower_bound = 0;
     float _upper_bound = 3 * _max_thrust;
