@@ -142,7 +142,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 yaw = joy_yaw;
                 joy_control = true;
                 break;
-        } case fm_spinup: {
+        } case fm_init_spinup: {
                 _rc->arm(bf_armed);
 #if ENABLE_SPINUP==true
                 start_takeoff_burn_time = 0;
@@ -161,8 +161,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         } case fm_start_takeoff: {
                 take_off_start_time = time;
                 remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - time_spent_spinning_up(time));
-                _flight_mode = fm_take_off_aim;
-                _burn_direction_for_thrust_approx = {0};
+                _flight_mode = fm_remaining_spinup;
                 auto_throttle = spinup_throttle();
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
@@ -173,7 +172,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     break;
                 }
                 [[fallthrough]];
-        } case fm_take_off_aim: {
+        } case fm_remaining_spinup: {
                 mode += bf_airmode;
                 auto_throttle = spinup_throttle();
                 auto_roll = RC_MIDDLE;
@@ -948,8 +947,8 @@ void DroneController::fine_tune_thrust(float integration_error) {
 
 bool DroneController::abort_take_off() {
     //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
-    if (_flight_mode == fm_spinup || _flight_mode == fm_take_off_aim) {
-        _flight_mode = fm_spinup;
+    if (_flight_mode == fm_init_spinup) {
+        _flight_mode = fm_init_spinup;
         return true;
     } else
         return false;
@@ -1083,7 +1082,7 @@ void DroneController::load_calibration() {
 
 void DroneController::save_calibration() {
     if (!log_replay_mode)
-        calibration.serialize("../../../../pats/xml/" + calib_fn);
+        calibration.serialize(pats_folder + "xml/" + calib_fn);
 }
 void DroneController::save_calibration_before_flight(int flight_id) {
     calibration.serialize(data_output_dir + "/drone_calibration_flight" + to_string(flight_id) + ".xml");

@@ -40,6 +40,10 @@ void TrackerManager::update(double time) {
     prep_vizs();
     if (_mode != t_idle) {
         find_blobs();
+        if (_visdat->first_frame()) {
+            for (auto  blob : _blobs)
+                _visdat->add_start_reset_spot_on_motion_map(blob.pt_unscaled(), blob.size_unscaled() / 2.f + 2);
+        }
         collect_static_ignores();
         erase_dissipated_fps(time);
         match_blobs_to_trackers(time);
@@ -397,6 +401,10 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
                 }
             }
         }
+        BlobWorldProps w = {0};
+        trkr->calc_world_props_blob_template(&w);
+        tracking::WorldItem world_item(trkr->image_template_item(), w);
+        trkr->world_item(world_item);
     }
 
     for (auto trkr : template_trackers) {

@@ -1,6 +1,4 @@
 #include "baseboardlink.h"
-#include <unistd.h> //usleep
-#include<iostream>
 
 void BaseboardLink::init(bool replay_mode) {
     _replay_mode = replay_mode;

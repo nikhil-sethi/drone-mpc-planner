@@ -266,9 +266,9 @@ void Realsense::connect_and_check(string ser_nr, int id) {
         master_or_slave_str = "slave";
     std::cout << name << ", sn: " << serial_nr_str << ", fw: " << current_firmware_version << ", " << master_or_slave_str << std::endl;
 
-    if (current_firmware_version != required_firmware1_version_realsense && current_firmware_version != required_firmware2_version_realsense) {
+    if (current_firmware_version != required_firmware1_version_realsense && current_firmware_version != required_firmware2_version_realsense && current_firmware_version != required_firmware3_version_realsense) {
         std::stringstream serr;
-        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version_realsense << " or " << required_firmware2_version_realsense << ".";
+        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version_realsense << " or " << required_firmware2_version_realsense << " or " << required_firmware3_version_realsense << ".";
         throw std::runtime_error(serr.str());
     }
     dev_initialized = true;

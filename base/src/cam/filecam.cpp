@@ -1,13 +1,11 @@
 #include "filecam.h"
-#include <iostream>
-#include <string.h>
-#include <unistd.h>       //usleep
+#include "third_party/stopwatch.h"
 
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
-#include "third_party/stopwatch.h"
 
-#include "stopwatch.h"
+
+
 static stopwatch_c swc;
 GstElement *_pipeline, *_appsink;
 

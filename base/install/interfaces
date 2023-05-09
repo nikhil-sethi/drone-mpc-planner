@@ -2,17 +2,20 @@
 auto lo
 iface lo inet loopback
 
+#set the 4g sticks too have a high metric, so that they are not used if wifi is available
 auto lo enx0c5b8f279a64
-iface lo inet loopback
-
 allow-hotplug enx0c5b8f279a64
 iface enx0c5b8f279a64 inet dhcp
     metric 20999
 
+#another 4g stick model
 auto lo enx001e101f0000
-iface lo inet loopback
-
 allow-hotplug enx001e101f0000
 iface enx001e101f0000 inet dhcp
     metric 20999
 
+#another 4g stick model
+auto lo enx344b50000000
+allow-hotplug enx344b50000000
+iface enx344b50000000 inet dhcp
+    metric 20999

@@ -17,13 +17,14 @@ public:
         cv::Point pt = {0};
         int disparity = 0;
         int r = 0;
-        int cnt_active;
+        int cnt_active = 0;
     };
 private:
 
     bool initialized = false;
     bool enable_viz_motion = false;
     Cam *_cam;
+    uint32_t  frame_cnt = 0;
     int motion_update_iterator = 0;
     bool _calibrating_motion_noise_map = false;
     bool _motion_filtered_noise_initialized = false;
@@ -47,6 +48,7 @@ private:
     double large_brightness_event_time = -large_brightness_change_timeout; // minus to not trigger a brightness warning at startup
     DeleteSpot motion_spot_to_be_deleted;
     DeleteSpot motion_spot_to_be_reset;
+    std::vector<DeleteSpot> motion_start_spots_to_be_reset;
 
     cv::Point exclude_drone_from_motion_fading_spot_L = {-1};
     cv::Point exclude_drone_from_motion_fading_spot_R = {-1};
@@ -61,6 +63,7 @@ private:
 
 public:
     unsigned long long  frame_id;
+
     cv::Size smallsize;
     cv::Mat Qf, Qfi;
     float camera_roll() {return _cam->camera_roll();}
@@ -92,9 +95,11 @@ public:
     void create_overexposed_removal_mask(bool filter_drone, cv::Point3f drone_im_location, float blink_size);
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);
+    void add_start_reset_spot_on_motion_map(cv::Point p, int radius);
     void exclude_drone_from_motion_fading(cv::Point3f p, int radius);
     int max_noise(cv::Point blob_pt);
     bool overexposed(cv::Point blob_pt);
+    bool first_frame() { return frame_cnt == 2;}
 
     bool no_recent_brightness_events(double time) {
         return static_cast<float>(time - large_brightness_event_time) > large_brightness_change_timeout;

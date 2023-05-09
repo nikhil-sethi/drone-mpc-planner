@@ -59,13 +59,14 @@ void InsectTracker::check_false_positive() {
         auto wti_0 = _track.at(0).world_item;
         assert(wti_0.valid); // the first ever point tracked should always be valid
         if (_track.size() > 1) {
-            if (_world_item.valid)
+            if (_world_item.valid) {
                 dist_integrator_fp += normf(_world_item.pt - wti_0.pt);
-            float tot = dist_integrator_fp / (_n_frames_tracked - 1);
-            if (tot < 0.01f && _n_frames_tracked > 1)
-                _fp_static_cnt++;
-            else
-                _fp_static_cnt = 0;
+                float tot = dist_integrator_fp / _n_frames_tracked ;
+                if (tot < 0.01f && _n_frames_tracked)
+                    _fp_static_cnt++;
+                else
+                    _fp_static_cnt = 0;
+            }
         } else {
             _fp_static_cnt = 0;
         }

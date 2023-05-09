@@ -2,13 +2,13 @@
 
 ## Flashing the Anvil:
 
-1. Start the bf_flash script to flash the firmware and betaflight settings:
+1. Start the flash script to flash the firmware and betaflight settings:
 ```
 cd ~/code/pats/config/firmwares/drone
-./bf_flash.py -i <ID>
+./flash.py -i <ID>
 ```
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
-The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./bf_flash.py --help`.
+The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./flash.py --help`.
 
 2. Download, unpack and start blheli-m: https://github.com/Asizon/blheli-configurator/releases/tag/1.2.0-jazzmaverick-beta4
 
@@ -47,13 +47,10 @@ cd ~/code/pats/config/firmwares/multimodule
 Same remarks as with drone flash script apply.
 
 ## Flashing realsense camera:
-`sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_14_50.bin`
+`$HOME/code/pats/config/firmwares/realsense/./flash.sh`
 
 ## Flashing Baseboard:
-
-```
-$HOME/code/pats/config/firmwares/baseboard/update_baseboard.sh
-```
+`$HOME/code/pats/config/firmwares/baseboard/flash.sh`
 
 ## Initializing new Baseboard:
 ### Checklist

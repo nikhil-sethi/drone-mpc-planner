@@ -35,3 +35,4 @@ pats ALL = (root) NOPASSWD: /bin/systemctl
 pats ALL = (root) NOPASSWD: /sbin/poweroff
 pats ALL = (root) NOPASSWD: /usr/bin/nmcli
 pats ALL = (root) NOPASSWD: /usr/sbin/nethogs
+pats ALL = (root) NOPASSWD: /usr/bin/wg show

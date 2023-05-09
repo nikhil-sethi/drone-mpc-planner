@@ -1,13 +1,8 @@
 #include "generatorcam.h"
-#include <iostream>
-#include <string.h>
-#include <unistd.h>       //usleep
+#include "third_party/stopwatch.h"
 
 #include "opencv2/imgproc/imgproc.hpp"
 
-
-
-#include "stopwatch.h"
 static stopwatch_c swc;
 
 void GeneratorCam::init() {

@@ -1,0 +1,99 @@
+---
+# - hosts: pats2,pats34,pats39,pats152,pats173,pats195,pats275,pats300,pats346 ,pats349, pats351, pats352, pats309, pats152 # pats87
+- hosts: pats150
+  strategy: free
+  tasks:
+    - name: Ansible apt update cache if it is older than 1 hour
+      become: true
+      register: update_sys
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 86400
+    - name: Download grub update for ubu 20 syss
+      ansible.builtin.shell: "rsync dash:base_upgrade_tmp/grub_20 /home/pats/dependencies/grub_20 -az"
+    - name: sudo upgrade script 1
+      register: release_upgrade_su
+      become: true
+      ansible.builtin.script: release_upgrade_su.sh
+    # - name: debug su
+    #   ansible.builtin.debug: var=release_upgrade_su.stdout
+    #   when: release_upgrade_su.stdout is defined
+    - name: Reboot su
+      changed_when: false
+      ignore_errors: true
+      ignore_unreachable: true
+      async: true
+      poll: false
+      ansible.builtin.shell: "sleep 5 && sudo rtcwake -m off -s 120"
+      when: release_upgrade_su.stdout is defined and  release_upgrade_su.stdout | regex_search('Please reboot me') is not none
+    # - name: Exit playbook
+    #   ansible.builtin.meta: end_play
+    #   when: release_upgrade_su.stdout is defined and release_upgrade_su.stdout | regex_search('Please reboot me') is not none
+    - name: Wait for reboot
+      when: release_upgrade_su.stdout is defined and release_upgrade_su.stdout | regex_search('Please reboot me') is not none
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 15
+        timeout: 600
+
+
+    - name: sudo upgrade script 2
+      register: release_upgrade_su_2
+      become: true
+      ansible.builtin.script: release_upgrade_su_2.sh
+    # - name: debug su
+    #   ansible.builtin.debug: var=release_upgrade_su_2.stdout
+    #   when: release_upgrade_su_2.stdout is defined
+
+
+    - name: pats upgrade script 1
+      register: release_upgrade_pats_1
+      ansible.builtin.script: release_upgrade_pats_1.sh
+    # - name: debug pats 1
+    #   ansible.builtin.debug: var=release_upgrade_pats_1.stdout
+    #   when: release_upgrade_pats_1.stdout is defined
+
+    - name: pats upgrade script 2
+      register: release_upgrade_pats_2
+      ansible.builtin.script: release_upgrade_pats_2.sh
+    # - name: debug pats 2
+    #   ansible.builtin.debug: var=release_upgrade_pats_2.stdout
+    #   when: release_upgrade_pats_2.stdout is defined
+
+    - name: sudo upgrade script 3
+      register: release_upgrade_su_3
+      become: true
+      ansible.builtin.script: release_upgrade_su_3.sh
+    # - name: debug su 3
+    #   ansible.builtin.debug: var=release_upgrade_su_3.stdout
+    #   when: release_upgrade_su_3.stdout is defined
+
+
+    - name: Reboot pats
+      changed_when: false
+      ignore_errors: true
+      ignore_unreachable: true
+      async: true
+      poll: false
+      ansible.builtin.shell: "sleep 5 && sudo rtcwake -m off -s 120"
+      when: release_upgrade_su_3.stdout is defined and release_upgrade_su_3.stdout | regex_search('Please reboot me') is not none
+    - name: Wait for reboot 2
+      when: release_upgrade_su_3.stdout is defined and release_upgrade_su_3.stdout | regex_search('Please reboot me') is not none
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 15
+        timeout: 600
+    - name: Run ldconfig
+      changed_when: false
+      become: true
+      ansible.builtin.command: ldconfig
+
+    - name: pats upgrade script 3
+      register: release_upgrade_pats_3
+      ansible.builtin.script: release_upgrade_pats_3.sh
+      timeout: 300
+    - name: debug pats 3
+      ansible.builtin.debug: var=release_upgrade_pats_3.stdout
+      when: release_upgrade_pats_3.stdout is defined

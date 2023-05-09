@@ -1,11 +1,12 @@
 ## NUC installation instructions
-1. Bios Power state:
+1. Scan / copy the NUC serial code, and update id_db.txt on dash
+2. Bios Power state:
     - Boot NUC with screen and keyboard
     - Press F2 during boot
     - Go to power tab, select Power state: always on
     - Go to the boot tab, disable secure boot
     - Save and shut down
-2. Install image:
+3. Install image:
     - Connect NUC install usb stick
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
@@ -13,14 +14,15 @@
     - After a minute, select the *correct image* for the *correct NUC*
     - Say y
     - Wait a few minutes until it powers off.
-3. Physically label the NUC
-4. Remove USB dongle, boot up NUC
-5. Change hostname:
+4. Physically label the NUC
+5. Remove USB dongle, boot up NUC
+6. If the config is not automatically downloaded from id_db.txt, change hostname:
     - `sudo nano /etc/hosts`     Change `127.0.1.1 pats0` to reflect number on the label from step 3
     - Again for: `sudo nano /etc/hostname`
+    - Download the wireguard config from `dash:wireguard_config/peers/patsID` and put and rename it into `/etc/wireguard/wg0.conf`
     - Reboot
-6. Remove the `~/pats/flags/disable` file to enable the pats process in the background (preferably after the camera etc is connected)
-7. Idem for the `disable_baseboard` and `disable_charging` flags, if required
+7. Remove the `~/pats/flags/disable` file to enable the pats process in the background (preferably after the camera etc is connected)
+8. Idem for the `disable_baseboard` and `disable_charging` flags, if required
 
 All done!
 
@@ -59,19 +61,14 @@ All done!
     - Remotely open (via ssh) the base project with vscode, and install all extensions
     - Make sure both tunnels have been connected
 2. Prep the image
-    - **Make sure the system hostname is called pats0**
+    - Run the clean_for_image.sh script
     - **Update the image version number in `~/dependencies/image_version`**
-    - Set the disable flag
-    - Delete all pats data, json and logs
-    - Clean up the `~/.bash_history'
-    - Make sure the correct branch is selected. (e.g. monitoring for `~/code/pats/`)
-    - Make sure pats is build
-    - Make sure `/home/pats/dependencies/hostname_set` and `/home/pats/dependencies/timezone_set` do not exist
+    - Make sure the correct branch is selected.
 3. Create the image with clonezilla
     - Power up and press F10 during boot
     - Select USB : UEFI: SanDisk : Partition 1
     - Choose `PATS Create Image`
-    - Give the image a name in the form: `NUC**_v*.*_DATE-img`. Except for the date, this **must** be similar to the contents in `~/pats/dependencies/image_version`
+    - Give the image a name in the form: `NUC**_v*.*_DATE-img`. Except for the date, this should be equal to the contents in `~/pats/dependencies/image_version`
     - Wait a few minutes until it powers off.
 4. Copy the image:
     - Repeat the procedure for the other USB stick
@@ -80,9 +77,16 @@ All done!
     - Edit, commit, push `subl ~/code/pats/config/clonezilla/grub.cfg `
     - Copy to both sticks
 
+## initialize a compile box
+1. `cd ~ && mkdir code -p && cd code && git clone git@github-pats:pats-drones/pats.git`
+2. `cd ~ && mkdir code -p && cd code && git clone git@github-trapeye:pats-drones/trapeye.git`
+3. `cd ~/code/pats/base/install/install.sh`
+4. `cd ~/code/pats/config/firmware/image && ./compile_dependencies.sh`
+5. Put `binaries.tar.gz` and `package_list.txt` in the release repo
+6. Upload debs to dash in the appropiate debs folder
+
 ## Tools used to make the install stick:
 1. YUMI
 2. CloneZilla iso
-3. Ubuntu 18.04.* LTS iso
-4. Pats install script and ssh key files
+
 
