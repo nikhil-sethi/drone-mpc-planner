@@ -389,7 +389,6 @@ void Drone::pre_flight(double time) {
                 if (((_baseboard_link->charging() && _baseboard_link->charging_duration() < 1) || _baseboard_link->disabled()) && (control.telemetry_OK() || ! dparams.Telemetry())) {
                     pre_flight_state =  pre_locate_drone_init;
                     time_start_locating_drone = time;
-                    time_low_voltage = 0;
                 }
                 if (_rc->telemetry_time_out()) {
                     pre_flight_state =  pre_telemetry_time_out;
