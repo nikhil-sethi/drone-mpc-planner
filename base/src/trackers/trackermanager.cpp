@@ -401,6 +401,9 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
                 }
             }
         }
+    }
+
+    for (auto trkr : template_trackers) {
         BlobWorldProps w = {0};
         trkr->calc_world_props_blob_template(&w);
         tracking::WorldItem world_item(trkr->image_template_item(), w);
