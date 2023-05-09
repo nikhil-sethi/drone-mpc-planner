@@ -175,9 +175,8 @@ def process_flight_status_in_folder(folder: str, operational_log_start: str, mod
             if line.find('n_replay_hunts') != -1:
                 n_replay_hunts = int(line.strip().split(':')[1])
 
-    if not n_takeoffs:
-        if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=2):
-            return {}
+    if str_to_datetime(os.path.basename(folder)) - str_to_datetime(operational_log_start) < timedelta(seconds=15):
+        return {}
 
     session = {"start_datetime": operational_log_start,
                "end_datetime": os.path.basename(folder),
@@ -235,14 +234,20 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
         logger.info('Flight time invalid')
         return {}
     try:
-        log = pd.read_csv(log_fn, sep=";")
+        log = pd.read_csv(log_fn, sep=";",)
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
+        return {}
+
+    if log.empty:
         return {}
 
     elapsed_time = log["elapsed"].values
     lost = log['n_frames_lost_drone'].values > 0
     remove_ids = [i for i, x in enumerate(lost) if x]
+    if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
+        logger.info('Flight log too short')
+        return {}
 
     vxs = log['svelX_drone'].values
     inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
@@ -279,9 +284,12 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
 
 def process_detection_log(log_fn: str, folder: str, session_start_datetime: datetime, flights_in_folder: list, logger: logging.Logger):
     try:
-        log = pd.read_csv(log_fn, sep=";", dtype=float, converters={'fp': str})
+        log = pd.read_csv(log_fn, sep=";", converters={'fp': str})
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
+        return {}
+
+    if log.empty:
         return {}
 
     elapsed_time = log["elapsed"].values
@@ -572,7 +580,7 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
     [apply_hunt_video_filename(d) for d in detections if d['hunt_id'] >= 0]
 
     cuts_new = []
-    for i in range(0, len(cuts) - 1):
+    for i in range(0, len(cuts)):
         if cuts[i]['rs_id'] >= 0:
             for ii in range(i + 1, len(cuts)):
                 if cuts[i]['end_rs_id'] > cuts[ii]['end_rs_id'] and (cuts[ii]['type'] == 'insect' or cuts[ii]['type'] == 'anomoly') and cuts[i]['type'] == 'flight':
@@ -583,13 +591,10 @@ def associate_detections_to_flight_cuts(cuts: list, detections: list):
                             detection['video_filename'] = cuts[i]['video_filename']
                     cuts[ii]['rs_id'] = -1
             cuts_new.append(cuts[i])
-    if len(cuts) > 1:
-        if cuts[i + 1]['rs_id'] >= 0:
-            cuts_new.append(cuts[i + 1])
     return cuts_new
 
 
-def run_ffmpeg(cuts, frames_fn, folder, video_in_fn):
+def run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger: logging.Logger):
     with open(frames_fn, 'r', encoding="utf-8") as frames_log:
         heads = frames_log.readline().rstrip().split(';')
         cut_log_fn = folder + '/cut.log'
@@ -686,7 +691,7 @@ def cut_video_raw(folder: str, detections: list, flights: list, logger: logging.
         cuts = associate_detections_to_flight_cuts(cuts, detections)
         cuts = filter_cuts(cuts, detections + flights)
 
-        run_ffmpeg(cuts, frames_fn, folder, video_in_fn)
+        run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger)
 
     if not os.path.exists(lb.keep_videoraw_flag):
         os.remove(video_in_fn)
@@ -744,21 +749,21 @@ def process_session(folder: str, logger: logging.Logger, dry_run: bool = False):
 
     if mode == 'c' or mode == 'x':
         Path(folder + '/OK').touch()
-        data_wait_for_conditions = {"start_datetime": lb.datetime_to_str(t_start),
-                                    "end_datetime": lb.datetime_to_str(t_end),
-                                    "detections": detections,
-                                    "flights": flights,
-                                    "flight_sessions": flight_sessions,
-                                    "statuss": statuss,
-                                    "errors": errors,
-                                    "cam_resets": cam_resets
-                                    }
+        data = {"start_datetime": lb.datetime_to_str(t_start),
+                "end_datetime": lb.datetime_to_str(t_end),
+                "detections": detections,
+                "flights": flights,
+                "flight_sessions": flight_sessions,
+                "statuss": statuss,
+                "errors": errors,
+                "cam_resets": cam_resets
+                }
         if not dry_run:
             json_fn = folder + '/results.json'
             if exists(json_fn):
                 logger.warning('Results json already existed')
             with open(json_fn, 'w', encoding="utf-8") as outfile:
-                json.dump(data_wait_for_conditions, outfile)
+                json.dump(data, outfile)
         logger.info("Processing complete, saved in " + json_fn)
     elif waited_for_conditions:
         Path(folder + '/OK').touch()
@@ -786,14 +791,10 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', help="Do not permanentely change anything", required=False)
     args = parser.parse_args()
 
-    rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+    error_file_handler = logging.handlers.WatchedFileHandler(filename=lb.daily_errs_log)  # a watched file handler makes sure that logging continues to the new file if it is rotated.
     error_file_handler.setFormatter(file_format)
     error_file_handler.level = logging.ERROR
-    error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
-    error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
-
     logging.basicConfig()
     logger = logging.getLogger('process_session')
     logger.setLevel(logging.DEBUG)

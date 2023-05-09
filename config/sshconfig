@@ -5060,4 +5060,3 @@ host pats998
         Hostname 10.13.13.233
         IdentityFile ~/.ssh/pats_wg_id_ed25519
         User pats
-

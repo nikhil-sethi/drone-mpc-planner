@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -ex
+
+
+if [[ $HOSTNAME != pats31 ]]; then
+	echo "This update is not intended for this system"
+	exit 0
+fi
+
+echo ok this update is for me!
+touch ~/harrow
+/bin/su - pats -c "touch ~/harrow"

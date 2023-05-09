@@ -36,7 +36,5 @@ ln -s ~/code/trapeye/basestation/build/trapeye ~/pats/release/build/trapeye
 ln -s ~/code/pats/base/install ~/pats/release/install
 ln -s ~/code/pats/base/scripts ~/pats/release/scripts
 ln -s ~/code/pats/base/xml ~/pats/release/xml
-ln -s ~/code/pats/base/xml ~/pats/release/xml
-
-
+touch ~/pats/flags/disable_updates
 

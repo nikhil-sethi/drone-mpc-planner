@@ -96,6 +96,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps *blob) {
         w.trkr_id = _uid;
         float disparity = stereo_match(blob);
         calc_world_props(&w, p, size, disparity);
+        w.motion_sum = blob->motion_sum;
         blob->world_props = w;
     }
 }
@@ -105,6 +106,7 @@ void ItemTracker::calc_world_props_blob_template(BlobWorldProps *w) {
     float size = _image_template_item.size;
     float disparity = _image_template_item.disparity;
     calc_world_props(w, p, size, disparity);
+    w->motion_sum = 0;
     w->im_pos_ok = true;
     w->valid = w->bkg_check_ok && w->disparity_in_range && w->radius_in_range;
 }
@@ -132,7 +134,6 @@ void ItemTracker::calc_world_props(BlobWorldProps *w, cv::Point2f p, float size,
 
         w->radius = static_cast<float>(cv::norm(world_coordinates_size - world_coordinates)) / 2.f;
         w->radius_in_range = w->radius < max_radius;
-        w->motion_sum = 0;
 
         w->distance_bkg = _visdat->depth_background_mm.at<float>(p.y, p.x);
         w->distance = sqrtf(powf(w->x, 2) + powf(w->y, 2) + powf(w->z, 2));

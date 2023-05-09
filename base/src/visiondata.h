@@ -17,7 +17,7 @@ public:
         cv::Point pt = {0};
         int disparity = 0;
         int r = 0;
-        int cnt_active;
+        int cnt_active = 0;
     };
 private:
 
