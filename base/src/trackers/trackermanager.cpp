@@ -381,12 +381,14 @@ void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs, double time) {
 
 void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     std::vector<ScorePair> scores;
-    std::vector<ItemTracker *> template_trackers;
     for (auto trkr : _trackers) {
         if (trkr->tracking()) {
             if (trkr->template_tracking()) {
                 trkr->match_template();
-                template_trackers.push_back(trkr);
+                BlobWorldProps w = {0};
+                trkr->calc_world_props_blob_template(&w);
+                tracking::WorldItem world_item(trkr->image_template_item(), w);
+                trkr->world_item(world_item);
             } else {
                 for (auto &blob : *pbs) {
                     auto *props = blob.props;
@@ -401,10 +403,6 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
                 }
             }
         }
-        BlobWorldProps w = {0};
-        trkr->calc_world_props_blob_template(&w);
-        tracking::WorldItem world_item(trkr->image_template_item(), w);
-        trkr->world_item(world_item);
     }
 
     for (auto trkr : template_trackers) {
