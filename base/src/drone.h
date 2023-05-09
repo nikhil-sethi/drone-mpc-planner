@@ -218,15 +218,15 @@ public:
         control.invalidize_blink();
         _state = ds_pre_flight;
     }
+    size_t executor_hash;
+    bool low_voltage_timeout(double time, float voltage);
+
     bool benchmark_mode = false;
     int benchmark_len = 0;
     int benchmark_entry_id = 0;
     size_t benchmark_hash;
     string benchmark_time;
     BenchmarkEntry benchmark_entry;
-
-    size_t executor_hash;
-    bool low_voltage_timeout(double time, float voltage);
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
