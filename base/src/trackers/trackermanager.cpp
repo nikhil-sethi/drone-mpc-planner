@@ -405,13 +405,6 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
         }
     }
 
-    for (auto trkr : template_trackers) {
-        BlobWorldProps w = {0};
-        trkr->calc_world_props_blob_template(&w);
-        tracking::WorldItem world_item(trkr->image_template_item(), w);
-        trkr->world_item(world_item);
-    }
-
     std::sort(scores.begin(), scores.end(), [](const ScorePair & a, const ScorePair & b) -> bool { return a.score < b.score; });
 
     for (size_t i = 0; i < scores.size(); i++) {
