@@ -63,7 +63,7 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
                     - current_drone_speed_normal_to_plane * (drone_rotating_time + transmission_delay_duration);
             if (remaining_breaking_distance_normal_to_plane < 0)
                 remaining_breaking_distance_normal_to_plane = 0;
-            float effective_acceleration = abs(_drone_calib->max_thrust / safety.dot(plane.normal)) + cv::Point3f(0, -GRAVITY, 0).dot(plane.normal);
+            float effective_acceleration = _drone_calib->max_thrust / safety + cv::Point3f(0, -GRAVITY, 0).dot(plane.normal);
             float required_breaking_time = sqrtf(2 / 3 * remaining_breaking_distance_normal_to_plane / effective_acceleration);
             if (required_breaking_time != required_breaking_time) { // if required_breaking_time is nan
                 // drone max_thrust including the safety is not strong enough to compensate gravity!
