@@ -9,10 +9,10 @@ set -ex
 #fi
 
 /bin/su - pats -c "pip3 install defusedxml"
-/bin/su - pats -c "cd ~/pats/release && git co master && git pr"
-kill $(pgrep -f daemon.py)
-kill $(pgrep -f baseboardlink.py)
-# kill $(pgrep -f endless_wait.sh)
+/bin/su - pats -c "cd ~/pats/release && git reset --hard && git co master && git pr"
+kill -9 $(pgrep -f daemon.py)
+kill -9 $(pgrep -f baseboardlink.py)
+# kill -9 $(pgrep -f endless_wait.sh)
 
 /bin/su - pats -c "touch /home/pats/dependencies/last_update"
 /bin/su - pats -c "echo 20230509 > /home/pats/dependencies/last_update"
