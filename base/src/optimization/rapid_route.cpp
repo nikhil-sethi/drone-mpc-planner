@@ -117,7 +117,34 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
 
         _intermediate_position = _flight_area_config.project_onto_plane(_constraining_point, _most_constraining_plane);
 
-        _time_to_reach_intersection = sqrt(4 * (normf(_intermediate_position - drone.pos())) / _thrust_factor * *_thrust) + delay;
+        float _vel_in_dir = drone.vel().dot(_intermediate_position - drone.pos());
+        float a = _thrust_factor * *_thrust / 2;
+        float b = _vel_in_dir;
+        float c = -normf(_intermediate_position - drone.pos());
+        float a1, a2, valid;
+        std::tie(a1, a2, valid) = solve_quadratic_solution(a, b, c);
+        if (valid < 0) {
+            _time_to_reach_intersection = abs(sqrt(2 * (normf(_intermediate_position - drone.pos())) / _thrust_factor * *_thrust) + delay);
+        }
+        else {
+            bool a1_valid = (0 <= a1);
+            bool a2_valid = (0 <= a2);
+            if (a1_valid && !a2_valid) {
+                _time_to_reach_intersection = abs(a1) + delay;
+            } else if (!a1_valid && a2_valid) {
+                _time_to_reach_intersection = abs(a2) + delay;
+            } else if (a1_valid && a2_valid) {
+                if (a1 >= a2) {
+                    _time_to_reach_intersection = abs(a1) + delay;
+                } else {
+                    _time_to_reach_intersection = abs(a2) + delay;
+                }
+            } else {
+                _time_to_reach_intersection = abs(sqrt(2 * (normf(_intermediate_position - drone.pos())) / _thrust_factor * *_thrust) + delay);
+            }
+        }
+
+
 
         tracking::TrackData _future_drone = drone;
         _future_drone.state.pos = _intermediate_position;
@@ -161,7 +188,7 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
 
         _intersection = intersection_of_3_planes(&_first_plane, &_second_plane, &_third_plane);
         _intersection = _flight_area_config.move_inside(_intersection); // may still exceed the constraints of a 4+th plane
-        _time_to_reach_intersection = sqrt(4.f * normf(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay;
+        _time_to_reach_intersection = abs(sqrt(2.f * normf(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay); // doesnt consider current vel
         _target_position_after_time_to_reach = target.pos() + target.vel() * _time_to_reach_intersection;
 
         _resorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position_after_time_to_reach);
