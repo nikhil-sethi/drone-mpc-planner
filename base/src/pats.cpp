@@ -11,7 +11,7 @@ void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_d
     if (pparams.op_mode == op_mode_x) {
         flight_area.init(replay_dir, cam);
         drone.init(logger, rc_id, rc, &trackers, visdat, &flight_area, &interceptor, baseboard_link);
-        FlightAreaConfig *_config = flight_area.flight_area_config(strict);
+        FlightAreaConfig *_config = flight_area.flight_area_config(relaxed);
         interceptor.init(&trackers, visdat, &flight_area, &drone, _config);
     }
 }
