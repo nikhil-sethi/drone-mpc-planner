@@ -75,7 +75,7 @@ void FlightArea::update_bottom_plane_based_on_blink(float pad_height) {
 void FlightArea::set_vertical_camera_plane(float z) {
     if (z < 0) {
         for (auto &flight_area_config_pair : flight_area_configs) {
-            flight_area_config_pair.second.add_plane(cv::Point3f(0, 0, z), cv::Point3f(0, 0, -1), vertical_camera_plane);
+            flight_area_config_pair.second.add_plane(cv::Point3f(0, 0, z), cv::Point3f(0, 0, 1), vertical_camera_plane);
             flight_area_config_pair.second.update_config();
 #if FLIGHT_AREA_DEBUG
             flight_area_config_pair.second.cout_debug_info();
