@@ -113,7 +113,7 @@ cv::Point3f KeepInViewController::calc_correction_acceleration(safety_margin_typ
     FlightAreaConfig *_flight_area_config = _flight_area->flight_area_config(safety_margin_type);
     FlightAreaKIVStates *_flightarea_kiv_state = flight_area_kiv_state(safety_margin_type);
 
-    float control_mode_gain = 1.f;
+    float control_mode_gain = 2.f;
     if (control_mode == acceleration_feedforward)
         control_mode_gain = 2.f;
 
