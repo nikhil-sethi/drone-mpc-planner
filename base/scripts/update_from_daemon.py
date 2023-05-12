@@ -30,7 +30,7 @@ def update(logger_name):
         pats_settings_currently = lb.read_xml(lb.pats_xml_fn)
 
     rsync_cmd = 'rsync -aLz dash_upload:xml/' + pats_id + '.xml ' + lb.pats_xml_fn
-    result = subprocess.run(rsync_cmd, shell=True, capture_output=True, text=True)
+    result = subprocess.run(rsync_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     if result.returncode != 0:
         logger.error(result.stdout)
         logger.error(result.stderr)
@@ -46,7 +46,7 @@ def update(logger_name):
     if 'tag' not in pats_settings_currently or pats_settings_new['tag'] != pats_settings_currently['tag']:
         logger.info("Updating to: " + pats_settings_new['tag'])
         cmd = 'cd ~/pats/release && git co ' + pats_settings_new['tag'] + ' && kill $(pgrep -f daemon.py) && kill $(pgrep -f baseboardlink.py) && kill $(pgrep -f endless_wait.sh)'
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         if result.returncode != 0:
             logger.error(result.stdout)
             logger.error(result.stderr)
