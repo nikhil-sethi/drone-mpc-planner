@@ -45,7 +45,7 @@ def update(logger_name):
         return
     if 'tag' not in pats_settings_currently or pats_settings_new['tag'] != pats_settings_currently['tag']:
         logger.info("Updating to: " + pats_settings_new['tag'])
-        cmd = 'cd ~/pats/release && git co ' + pats_settings_new['tag'] + ' && kill $(pgrep -f daemon.py) && kill $(pgrep -f baseboardlink.py) && kill $(pgrep -f endless_wait.sh)'
+        cmd = 'cd ~/pats/release && git co ' + pats_settings_new['tag'] + ' && kill $(pgrep -f baseboardlink.py) && kill $(pgrep -f endless_wait.sh)'
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         if result.returncode != 0:
             logger.error(result.stdout)
@@ -75,6 +75,10 @@ def update(logger_name):
             logger.info("Enabling trap-eye")
         else:
             logger.info("Disabling trap-eye")
+
+    if 'tag' not in pats_settings_currently or pats_settings_new['tag'] != pats_settings_currently['tag']:
+        cmd = 'kill $(pgrep -f daemon.py)'
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
 
 if __name__ == "__main__":
