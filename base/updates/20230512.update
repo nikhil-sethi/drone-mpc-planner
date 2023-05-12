@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -ex
+
+/bin/su - pats -c "cd ~/pats/release && git reset --hard && git co master && git pr"
+kill -9 $(pgrep -f daemon.py)
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+/bin/su - pats -c "echo 20230512 > /home/pats/dependencies/last_update"
+
