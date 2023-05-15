@@ -96,7 +96,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
 
     float _time_to_reach_intersection = -1;
 
-    int MAX_ITERATIONS = 2;
+    int MAX_ITERATIONS = 1;
     while (_intermediate_pos_cnt < MAX_ITERATIONS) {
         if (!_flight_area_config.inside(_interception_position)) {
             _constraining_point = _interception_position;
