@@ -7,6 +7,8 @@ import os
 import time
 import socket
 from datetime import datetime
+import defusedxml.ElementTree as ET
+from typing import Dict
 
 flags_dir = os.path.expanduser('~/pats/flags/')
 log_dir = os.path.expanduser('~/pats/logs/')
@@ -18,6 +20,7 @@ trapeye_images_dir = os.path.expanduser('~/trapeye/images/')
 trapeye_db_dir = os.path.expanduser('~/trapeye/db/')
 trapeye_pkl = trapeye_db_dir + 'trapeye_ids.pkl'
 executor_log_dir = os.path.expanduser('~/pats/release/build/logging/')
+pats_xml_fn = os.path.expanduser('~/pats/xml/pats.xml')
 
 daily_errs_log = log_dir + 'all_errors.log'
 term_log_path = log_dir + 'term.log'
@@ -27,9 +30,10 @@ disable_tunnel_flag = flags_dir + 'disable_tunnel'
 disable_rendering_flag = flags_dir + 'disable_rendering'
 disable_daemonlink_flag = flags_dir + 'disable_daemonlink'
 disable_baseboard_flag = flags_dir + 'disable_baseboard'
-disable_charging_flag = flags_dir + 'disable_charging'
 disable_watchdog_flag = flags_dir + 'disable_watchdog'
 disable_executor_flag = flags_dir + 'disable_executor'
+last_update_tag = os.path.expanduser('~/dependencies/last_update')
+disable_updates = flags_dir + 'disable_updates'  # N.B. also hardcoded in update.py!
 disable_ir_led_flag = flags_dir + 'disable_ir_led'
 disable_fan_flag = flags_dir + 'disable_fan'
 disable_trapeye = flags_dir + 'disable_trapeye'
@@ -44,14 +48,9 @@ socket_executor2daemon = socket_dir + 'executor2daemon.socket'
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')
 local_status_im_file = os.path.expanduser('~/pats/status/monitor_tmp.jpg')
-local_xml_folder = os.path.expanduser('~/pats/release/xml/')
-local_pats_xml_override = os.path.expanduser('~/pats/pats.xml')
-
 remote_status_txt_file = 'status/' + socket.gethostname() + '/status.txt'
 remote_system_txt_file = 'status/' + socket.gethostname() + '/system.txt'
 remote_status_im_file = 'status/' + socket.gethostname() + '/status.jpg'
-remote_xml_folder = 'status/' + socket.gethostname() + '/'
-remote_pats_xml_override = 'status/' + socket.gethostname() + '/pats_override.xml'
 
 
 def str_to_datetime(string):
@@ -168,3 +167,16 @@ def read_results_txt(results_txt_path):
             if line.find('n_takeoffs') != -1:
                 n_takeoffs = int(line.split(':')[1])
     return n_hunts, n_takeoffs
+
+
+def read_xml(fn: str) -> Dict:
+    tree = ET.parse(fn)
+    root = tree.getroot()
+
+    result_dict = {}
+
+    for member in root.findall('Member'):
+        name = member.get('Name')
+        value = member.text
+        result_dict[name] = value
+    return result_dict

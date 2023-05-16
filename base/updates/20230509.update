@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -ex
+
+
+#if [[ $HOSTNAME != pats31 ]]; then
+#	echo "This test update is not intended for this system"
+#	exit 0
+#fi
+
+/bin/su - pats -c "pip3 install defusedxml"
+/bin/su - pats -c "cd ~/pats/release && git reset --hard && git co master && git pr"
+kill -9 $(pgrep -f daemon.py)
+kill -9 $(pgrep -f baseboardlink.py)
+# kill -9 $(pgrep -f endless_wait.sh)
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+/bin/su - pats -c "echo 20230509 > /home/pats/dependencies/last_update"
+
+sleep 3600 # to have a safety in case of unexpected bootloops, with this at least one should be able to login again
+/bin/su - pats -c "sudo rtcwake -m off -s 120"

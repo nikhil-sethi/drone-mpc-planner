@@ -559,7 +559,7 @@ bool check_att_bounds(cv::Point2f att, cv::Point2f att_min, cv::Point2f att_max)
     return att_check;
 }
 
-void DroneController::reset_attitude_pad_state() {
+void DroneController::reset_attitude_pad_filter() {
     att_somewhere_on_pad_cnt = 0;
     att_precisely_on_pad_cnt = 0;
     att_pad_calibration_ok_cnt = 0;

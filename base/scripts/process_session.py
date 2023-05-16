@@ -2,7 +2,6 @@
 from cmath import isinf
 from genericpath import exists
 import os
-import re
 import glob
 import json
 import math
@@ -389,7 +388,7 @@ def process_detection_log(log_fn: str, folder: str, session_start_datetime: date
         hunt_id_df = log['hunt_id'].dropna()
         hunt_id_df = hunt_id_df.drop(hunt_id_df[hunt_id_df <= 0].index)
         if not hunt_id_df.empty:
-            hunt_id = hunt_id_df.groupby(hunt_id_df).size().agg(['idxmax', 'max'])[0]
+            hunt_id = int(hunt_id_df.groupby(hunt_id_df).size().agg(['idxmax', 'max'])[0])
             drone_flight = list(filter(lambda item: item['flight_id'] == hunt_id, flights_in_folder))
             if not drone_flight:
                 hunt_id = -1
@@ -606,7 +605,7 @@ def run_ffmpeg(cuts, frames_fn, folder, video_in_fn, logger: logging.Logger):
             key_frame_ids = []
             for cut in cuts:
                 video_start_rs_id = cut['rs_id']
-                video_start_time = -1
+                video_start_time: float = -1
                 video_start_video_id = -1
                 while True:
                     frame_line = frames_log.readline()

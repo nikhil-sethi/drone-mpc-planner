@@ -288,7 +288,7 @@ void DroneNavigation::update(double time) {
                 _tracker->delete_landing_motion(time_out_after_landing);
                 _control->hover_mode(false);
                 _control->kiv_ctrl.enable();
-                _control->reset_attitude_pad_state();
+                _control->reset_attitude_pad_filter();
                 _flight_time = static_cast<float>(time - time_take_off);
                 [[fallthrough]];
         } case ns_wait_after_landed: {

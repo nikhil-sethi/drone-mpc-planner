@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.20">
+<SerializableClass Type="PatsParameters" Version="1.21">
     <Member Name="light_level_threshold">0.5</Member>
     <Member Name="has_screen">false</Member>
     <Member Name="periodic_restart_minutes">60</Member>
@@ -21,4 +21,7 @@
     <Member Name="max_cam_angle">30</Member>
     <Member Name="n_cams">1</Member>
     <Member Name="long_range_mode">false</Member>
+    <Member Name="charging">false</Member>
+    <Member Name="tag">v2.3.3</Member>
+    <Member Name="trapeye">false</Member>
 </SerializableClass>

@@ -10,4 +10,4 @@
       ignore_unreachable: yes
       async: yes
       poll: no
-      shell: "sleep 5 && sudo rtcwake -m no -s 120 &&  sudo systemctl poweroff"
+      shell: "sleep 5 && sudo rtcwake -m off -s 120"

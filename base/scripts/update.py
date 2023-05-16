@@ -6,6 +6,11 @@ import glob
 import time
 from datetime import datetime
 
+# This script runs as super on all basestations. It downloads update scripts from dash and runs them as root.
+# Very dangerous, so some annoying safeguards are in place. (e.g. the update folder must be root only, only admins can put updates on dash)
+# This updater should only be used for system upgrades that require root. It is not ran from within the daemon.py.
+# Daemon.py has a normal (non super user) updater called update_from_daemon.py.
+
 
 def update_now():
 
@@ -14,7 +19,7 @@ def update_now():
         print("Error: the update folder does not exist")
         return
 
-    if not os.path.isfile('/home/pats/flags/disable_updates'):
+    if not os.path.exists('/home/pats/pats/flags/disable_updates'):
 
         st = os.stat(update_dir)
         owner = st.st_uid
@@ -44,15 +49,13 @@ except Exception as e:  # pylint: disable=broad-except
 updated_today = True
 
 while True:
-
     now = datetime.now()
-    if now.hour == 11 and not updated_today:
+    if now.hour == 14 and not updated_today:
         updated_today = True
         try:
             update_now()
         except Exception as e:  # pylint: disable=broad-except
             print(e)
-    elif now.hour != 11 and updated_today:
+    elif now.hour != 14 and updated_today:
         updated_today = False
-    else:
-        time.sleep(300)
+    time.sleep(300)
