@@ -26,9 +26,9 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_inactive",
                                            "fm_wait",
                                            "fm_manual",
-                                           "fm_spinup",
+                                           "fm_init_spinup",
                                            "fm_start_takeoff",
-                                           "fm_take_off_aim",
+                                           "fm_remaining_spinup",
                                            "fm_max_burn",
                                            "fm_max_burn_spin_down",
                                            "fm_1g",
@@ -47,7 +47,8 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_start_shake",
                                            "fm_shake_it_baby",
                                            "fm_trim_accelerometer",
-                                           "fm_abort"
+                                           "fm_abort",
+                                           "fm_sleep"
                                          };
 
 
@@ -62,9 +63,9 @@ public:
         fm_inactive,
         fm_wait,
         fm_manual,
-        fm_spinup,
+        fm_init_spinup,
         fm_start_takeoff,
-        fm_take_off_aim,
+        fm_remaining_spinup,
         fm_max_burn,
         fm_max_burn_spin_down,
         fm_1g,
@@ -83,7 +84,8 @@ public:
         fm_start_shake,
         fm_shake_it_baby,
         fm_trim_accelerometer,
-        fm_abort
+        fm_abort,
+        fm_sleep
     };
     enum joy_mode_switch_modes { // raw switch modes
         jmsm_manual,
@@ -126,7 +128,6 @@ private:
 
     const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
-    const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     cv::Point3f vel_after_takeoff = {0};
@@ -149,8 +150,6 @@ private:
     float auto_burn_duration = 0;
     uint n_invalid_or_bad_telemetry_package = 0; // Counts when telemetry holds imposiible (invalid) data or (bad) data which will result in some undesired system state
     bool landing_att_calibration_msg_printed = false;
-
-    cv::Point3f _burn_direction_for_thrust_approx = {0};
 
     float _dist_to_setpoint = 999;
     double _time;
@@ -267,15 +266,15 @@ public:
     }
 
     bool ff_interception() {
-        return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g;
+        return _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g;
     }
 
     bool at_base() {
-        return _flight_mode <= fm_take_off_aim;
+        return _flight_mode <= fm_remaining_spinup;
     }
 
     bool ff_completed() {
-        return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_1g;
+        return _flight_mode != fm_max_burn && _flight_mode != fm_1g;
     }
 
     betaflight_arming joy_arm_switch() {
@@ -300,13 +299,13 @@ public:
         _log_auto_throttle = entry.auto_throttle;
     }
 
-    bool spinup() {  return _flight_mode == fm_spinup; }
+    bool spinup() {  return _flight_mode == fm_init_spinup || _flight_mode == fm_remaining_spinup; }
     bool landing() { return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start; }
     float in_flight_duration(double time) {
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
-        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort)
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_init_spinup || _flight_mode == fm_remaining_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_sleep)
             in_flight_start_time = -1;
 
         if (in_flight_start_time > 0)
@@ -440,7 +439,7 @@ public:
     void init_thrust_calibration();
     void save_thrust_calibration();
     void update_attitude_pad_state();
-    void reset_attitude_pad_state();
+    void reset_attitude_pad_filter();
     void invalidize_blink();
     void save_pad_pos_and_att_calibration();
     bool pad_calib_valid();

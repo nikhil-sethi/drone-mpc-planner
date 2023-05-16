@@ -25,6 +25,11 @@ bool Plane::on_normal_side(cv::Point3f p, float eps) {
     auto v = p - tmp_support;
     return v.dot(normal) > 0;
 }
+bool Plane::on_plane(cv::Point3f p) {
+    // Returns true if the point is on the plane.
+    auto v = p - support;
+    return v.dot(normal) == 0;
+}
 std::tuple<float, cv::Point3f> Plane::hesse_normal_form() {
     cv::Point3f n0 = normal * normf(normal);
     double d = support.dot(n0);

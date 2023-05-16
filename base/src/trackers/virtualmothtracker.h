@@ -50,6 +50,7 @@ public:
     moth_behavior_type init(int id, moth_behavior_type mothbehavior, VisionData *visdat, DroneController *dctrl);
     void init_logger();
     bool check_ignore_blobs(BlobProps *pbs [[maybe_unused]]) {return false;}
+    [[maybe_unused]] void match_template() {};
     void calc_world_item(BlobProps *pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
     void update(double time);
     void update_behavior_based(unsigned long long frame_number, double time);

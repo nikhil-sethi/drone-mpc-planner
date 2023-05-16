@@ -107,9 +107,8 @@ private:
     cv::Point3f takeoff_prediction_vel;
     cv::Point2f _takeoff_direction_predicted;
 
-    cv::Mat template_drone;
+    cv::Mat _template;
     bool template_deviation_detected;
-    ImageItem _image_template_item;
 
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
     float min_radius;
@@ -183,7 +182,13 @@ public:
         _takeoff_area.remove_plane(bottom_plane);
     }
     ImageItem image_template_item() {return _image_template_item;}
-
+    cv::Mat template_viz() {
+        if (enable_draw_stereo_viz) {
+            return _template.clone();
+        } else {
+            return cv::Mat{};
+        }
+    }
 };
 
 }

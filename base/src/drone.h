@@ -43,7 +43,9 @@ static const char *post_flight_state_names[] = {
     "lost",
     "aborted",
     "crash",
-    "crashed"
+    "crashed",
+    "init_sleep",
+    "sleeping"
 };
 class Drone {
 public:
@@ -85,6 +87,8 @@ public:
         post_aborted,
         post_init_crashed,
         post_crashed,
+        post_init_deep_sleep,
+        post_deep_sleep
     };
 private:
     Interceptor *_interceptor;
@@ -103,7 +107,7 @@ private:
     int n_locate_drone_attempts = 0;
     uint n_detected_blink_locations = 0;
 
-    bool confirm_drone_on_pad = false;
+    bool require_confirmation_drone_on_pad = true;
     double time_start_locating_drone = 0;
     double time_start_locating_drone_attempt = 0;
     double time_located_drone = 0;
@@ -135,6 +139,7 @@ private:
     double time_post_shake = 0;
     double time_shake_start = 0;
     double time_crashed = 0;
+    double time_low_voltage = 0;
     int n_shakes_sessions_after_landing = 0;
 
     const float max_safe_charging_telemetry_voltage = 4.35f; // safety overcharge flip happens at 4.4v
@@ -197,7 +202,7 @@ public:
     void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
     bool in_flight() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
-    bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost);}
+    bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost || post_flight_state == post_deep_sleep);}
     bool crashed() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost);}
     bool locate_fail() {return _state == ds_pre_flight && (pre_flight_state == pre_locate_time_out);}
     bool has_been_ready() {return _has_been_ready;}
@@ -206,6 +211,7 @@ public:
         control.invalidize_blink();
         _state = ds_pre_flight;
     }
+    bool low_voltage_timeout(double time, float voltage);
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
