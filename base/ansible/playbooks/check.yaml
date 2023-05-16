@@ -1,5 +1,5 @@
 ---
-- hosts: x,c,qc,rc,trapeye,blind
+- hosts: c,qc,rc,trapeye,blind
   strategy: free
   strategy: linear
   tasks:

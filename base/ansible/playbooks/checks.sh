@@ -18,6 +18,6 @@ if [ ! -f '/home/pats/pats/flags/disable_executor' ] && ( ! ps -aux  | grep -q "
 if ( ! ps -aux  | grep -q "[b]aseboardlink.py" ) ; then echo BASEBOARDLINK NOT RUNNING ; fi
 if ( ! ps -aux  | grep -q "[d]aemon.py" ) ; then echo DAEMON NOT RUNNING ; fi
 if ( ! ifconfig | grep -q "inet 10.13" ) ; then echo WIREGUARD NOT CONNECTED; fi
-if [ -f '/home/pats/dependencies/release_upgraded_20230405.done' ] ; then if ! ( cd /home/pats/pats/release && git describe --tags | grep -q "v2.3.3" ) ; then echo TAG DISCREPANCY; fi ; fi
+if [ -f '/home/pats/dependencies/release_upgraded_20230405.done' ] ; then if ! ( cd /home/pats/pats/release && git describe --tags | grep -q "v2.3.4" ) ; then echo TAG DISCREPANCY; fi ; fi
 if [ ! -f '/home/pats/dependencies/release_upgraded_20230405.done' ] && [ -f '/home/pats/dependencies/release_upgraded_P1_20230405.done' ] ; then echo 'RELEASE UPGRADE NOT FINISHED' ; fi
 if [ ! -f '/home/pats/dependencies/release_upgraded_20230405.done' ] && [ ! -f '/home/pats/dependencies/release_upgraded_P1_20230405.done' ] ; then echo 'RELEASE UPGRADE NOT DONE' ; fi
