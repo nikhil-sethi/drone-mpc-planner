@@ -383,17 +383,24 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
     std::vector<ScorePair> scores;
     for (auto trkr : _trackers) {
         if (trkr->tracking()) {
-            for (auto &blob : *pbs) {
-                auto *props = blob.props;
-                float score  = trkr->score(props);
-                blob.tracker_scores.push_back(pair<int, float>(trkr->uid(), score));
-                scores.push_back(ScorePair(score, trkr, &blob));
-                if (_enable_viz_blob && trkr->viz_id() < 6) {
-                    cv::Mat viz = vizs_blobs.at(blob.id);
-                    cv::Point2i pt(viz.cols / 5 + 2, viz.rows - 20 * (trkr->viz_id() + 1));
-                    putText(viz, "#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score, 2), pt, FONT_HERSHEY_SIMPLEX, 0.4, tracker_color(trkr));
+            if (trkr->template_tracking()) {
+                trkr->match_template();
+                BlobWorldProps w = {0};
+                trkr->calc_world_props_blob_template(&w);
+                tracking::WorldItem world_item(trkr->image_template_item(), w);
+                trkr->world_item(world_item);
+            } else {
+                for (auto &blob : *pbs) {
+                    auto *props = blob.props;
+                    float score  = trkr->score(props);
+                    blob.tracker_scores.push_back(pair<int, float>(trkr->uid(), score));
+                    scores.push_back(ScorePair(score, trkr, &blob));
+                    if (_enable_viz_blob && trkr->viz_id() < 6) {
+                        cv::Mat viz = vizs_blobs.at(blob.id);
+                        cv::Point2i pt(viz.cols / 5 + 2, viz.rows - 20 * (trkr->viz_id() + 1));
+                        putText(viz, "#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score, 2), pt, FONT_HERSHEY_SIMPLEX, 0.4, tracker_color(trkr));
+                    }
                 }
-
             }
         }
     }
@@ -506,11 +513,19 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                 float im_dist_to_drone = INFINITY;
                 for (auto drone : dronetrackers()) {
                     if (drone->tracking()) {
-                        float tmpf = normf(drone->image_item().pt() - props->pt_unscaled());
+                        float tmpf;
+                        if (drone->template_tracking())
+                            tmpf = normf(drone->image_item().pt() - props->pt_unscaled()) - (drone->image_item().size + props->size_unscaled()) / 2.f;
+                        else
+                            tmpf = normf(drone->image_item().pt() - props->pt_unscaled());
                         if (tmpf < im_dist_to_drone)
                             im_dist_to_drone = tmpf;
                     } else if (drone->image_predict_item().valid && drone->in_flight()) {
-                        float tmpf = normf(drone->image_predict_item().pt - props->pt_unscaled());
+                        float tmpf;
+                        if (drone->template_tracking())
+                            tmpf = normf(drone->image_item().pt() - props->pt_unscaled()) - (drone->image_item().size + props->size_unscaled()) / 2.f;
+                        else
+                            tmpf = normf(drone->image_predict_item().pt - props->pt_unscaled());
                         if (tmpf < im_dist_to_drone)
                             im_dist_to_drone = tmpf;
                     }

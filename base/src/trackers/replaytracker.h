@@ -16,6 +16,7 @@ public:
     void init(int id, string file, VisionData *_visdat);
     void init(int id, logging::InsectReader, VisionData *visdat);
     bool check_ignore_blobs(BlobProps *pbs [[maybe_unused]]) {return false;}
+    [[maybe_unused]] void match_template() {};
     void calc_world_item(BlobProps *pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
     void update(double time);
     void inject_log(unsigned long long frame_number, double time);

@@ -142,7 +142,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 yaw = joy_yaw;
                 joy_control = true;
                 break;
-        } case fm_spinup: {
+        } case fm_init_spinup: {
                 _rc->arm(bf_armed);
 #if ENABLE_SPINUP==true
                 start_takeoff_burn_time = 0;
@@ -160,9 +160,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 break;
         } case fm_start_takeoff: {
                 take_off_start_time = time;
-                remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(time));
-                _flight_mode = fm_take_off_aim;
-                _burn_direction_for_thrust_approx = {0};
+                remaining_spinup_duration_t0 = max(0.f, dparams.full_bat_and_throttle_spinup_duration - time_spent_spinning_up(time));
+                _flight_mode = fm_remaining_spinup;
                 auto_throttle = spinup_throttle();
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
@@ -173,16 +172,16 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     break;
                 }
                 [[fallthrough]];
-        } case fm_take_off_aim: {
-                cv::Point3f aim_acceleration = takeoff_acceleration(data_target, takeoff_aim_acceleration_factor * GRAVITY);
-                std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
+        } case fm_remaining_spinup: {
+                mode += bf_airmode;
                 auto_throttle = spinup_throttle();
+                auto_roll = RC_MIDDLE;
+                auto_pitch = RC_MIDDLE;
+                auto_yaw = RC_MIDDLE;
 
-                float aim_time = static_cast<float>(time - take_off_start_time);
-                if (aim_time > (aim_duration + remaining_spinup_duration_t0) / 2)
-                    mode += bf_airmode;
+                float spinup_time = static_cast<float>(time - take_off_start_time);
 
-                if (aim_time > aim_duration + remaining_spinup_duration_t0) {
+                if (spinup_time > remaining_spinup_duration_t0) {
                     auto_burn_duration = dparams.target_takeoff_velocity / calibration.max_thrust;
                     spin_up_start_time = 0;
                     _flight_mode = fm_max_burn;
@@ -199,8 +198,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, takeoff_aim_acceleration_factor * GRAVITY, 0});
                     _flight_mode = fm_1g;
                 } else {
-                    cv::Point3f aim_acceleration = takeoff_acceleration(data_target, 2.f * GRAVITY);
-                    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
+                    auto_roll = RC_MIDDLE;
+                    auto_pitch = RC_MIDDLE;
+                    auto_yaw = RC_MIDDLE;
+                    auto_throttle = calibration.max_thrust;
                 }
                 break;
         } case fm_max_burn_spin_down: {
@@ -490,6 +491,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_yaw = RC_MIDDLE;
                 _rc->arm(bf_disarmed);
                 break;
+        } case fm_sleep: {
+                mode += bf_sleep;
             }
     }
 
@@ -556,7 +559,7 @@ bool check_att_bounds(cv::Point2f att, cv::Point2f att_min, cv::Point2f att_max)
     return att_check;
 }
 
-void DroneController::reset_attitude_pad_state() {
+void DroneController::reset_attitude_pad_filter() {
     att_somewhere_on_pad_cnt = 0;
     att_precisely_on_pad_cnt = 0;
     att_pad_calibration_ok_cnt = 0;
@@ -944,18 +947,8 @@ void DroneController::fine_tune_thrust(float integration_error) {
 
 bool DroneController::abort_take_off() {
     //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
-
-    if (_flight_mode == fm_take_off_aim) {
-        float remaining_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(_time);
-        if (remaining_spinup_duration  < 0.05f)
-            return false;
-        _flight_mode = fm_spinup ;
-        if (spin_up_start_time < take_off_start_time)
-            spin_up_start_time = take_off_start_time;
-        return true;
-
-    } else if (_flight_mode == fm_spinup || _flight_mode == fm_start_takeoff) {
-        _flight_mode = fm_spinup;
+    if (_flight_mode == fm_init_spinup) {
+        _flight_mode = fm_init_spinup;
         return true;
     } else
         return false;

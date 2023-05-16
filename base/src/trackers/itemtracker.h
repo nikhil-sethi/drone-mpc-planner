@@ -94,6 +94,8 @@ protected:
     double _last_detection = 0;
 
     ImageItem _image_item;
+    ImageItem _image_template_item;
+    bool _template_tracking = false;
     ImagePredictItem _image_predict_item;
     WorldItem _world_item;
     uint _blobs_are_fused_cnt = 0;
@@ -110,6 +112,7 @@ protected:
 
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps *blob);
+    void calc_world_props(BlobWorldProps *w, cv::Point2f p, float size, float disparity);
     bool check_ignore_blobs_generic(BlobProps *blob);
     void cleanup_history();
     float score(BlobProps *blob, ImageItem *ref);
@@ -141,6 +144,8 @@ public:
     }
     virtual bool check_ignore_blobs(BlobProps *blob) = 0;
     virtual void calc_world_item(BlobProps *blob, double time) = 0;
+    void calc_world_props_blob_template(BlobWorldProps *w);
+    virtual void match_template() = 0;
     void append_log();
     void close(void);
     virtual bool delete_me() = 0;
@@ -162,6 +167,7 @@ public:
     int n_frames_lost() { return _n_frames_lost; }
 
     ImageItem image_item() {return _image_item;}
+    ImageItem image_template_item() {return _image_template_item;}
     ImagePredictItem image_predict_item() {return _image_predict_item;}
     WorldItem world_item() {return _world_item;}
     void world_item(WorldItem world_item) {
@@ -196,6 +202,8 @@ public:
         addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edge_im);
         return edge_im;
     }
+
+    bool template_tracking() {return _template_tracking;}
 
 };
 
