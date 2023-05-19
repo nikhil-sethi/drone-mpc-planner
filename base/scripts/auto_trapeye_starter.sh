@@ -8,7 +8,8 @@ do
 	for i in $(seq 1 $1)
 	do
 		echo $i $1
-		~/pats/release/build/trapeye &
+		DIR=$HOME/trapeye/logs/process_$i.log)
+		~/pats/release/build/trapeye | ts '[%a %H:%M]' | tee -a $DIR &
 	done
 
 	~/pats/release/scripts/endless_wait.sh # this is a seperate process, so that we can kill it as to trigger a restart of the trapeye processes
