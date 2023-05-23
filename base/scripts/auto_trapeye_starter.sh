@@ -8,7 +8,7 @@ do
 	for i in $(seq 1 $1)
 	do
 		echo $i $1
-		DIR=$HOME/trapeye/logs/process_$i.log)
+		DIR=$HOME/trapeye/logs/process_$i.log
 		~/pats/release/build/trapeye | ts '[%a %H:%M]' | tee -a $DIR &
 	done
 
