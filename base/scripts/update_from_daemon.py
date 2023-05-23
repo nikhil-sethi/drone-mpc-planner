@@ -3,6 +3,7 @@ import os
 import subprocess
 import socket
 import logging
+import json
 import lib_base as lb
 
 
@@ -71,7 +72,7 @@ def update(logger_name):
 
     if 'trapeye' not in pats_settings_currently or pats_settings_new['trapeye'] != pats_settings_currently['trapeye']:
         # todo, call configure trapeye script
-        if pats_settings_new['trapeye']:
+        if json.loads(pats_settings_new['trapeye']):
             logger.info("Enabling trap-eye")
         else:
             logger.info("Disabling trap-eye")
