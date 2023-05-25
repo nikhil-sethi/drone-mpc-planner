@@ -293,7 +293,6 @@ void Drone::pre_flight(double time) {
                     if (control.pad_calib_valid())
                         pre_flight_state = pre_check_pad_att;
                     else {
-
                         control.reset_attitude_pad_filter(); // avoids calibrating the pad attitude with corrupt telemetry
                         pre_flight_state = pre_calibrating_pad;
                     }

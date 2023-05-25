@@ -2,6 +2,7 @@
 from datetime import datetime
 import sys
 import xmltodict
+import json
 import os
 import subprocess
 import time
@@ -159,7 +160,7 @@ while True:
             wdt_pkg.watchdog_enabled = 0
             comm.write(wdt_pkg.pack())
             logger.info('Watchdog DISABLED')
-        if pats_settings['charging']:
+        if json.loads(pats_settings['charging']):
             chrg_pkg = ls.SerialNUC2BaseboardChargingPackage()
             chrg_pkg.enable_charging = 1
             comm.write(chrg_pkg.pack())

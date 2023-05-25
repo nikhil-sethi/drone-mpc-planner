@@ -14,8 +14,35 @@ fi
 cd ~/code/pats/
 if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ] || [ -n "$(git status --porcelain)" ]; then
   echo "PATS repo has unfinished business"
-  exit 1
+  #exit 1
 fi
+
+set +ex
+echo *----------*
+echo Current commit:
+git log -1 --pretty=%B
+echo *----------*
+echo Current tag:
+git describe --tags
+echo *----------*
+
+
+check_tagname_format() {
+  if [[ ! $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Invalid tagname format. Please use x.y.z format (e.g., 2.3.4)."
+    return 1
+  fi
+}
+
+while true; do
+  read -p "Specify new release tag (x.y.z format, e.g., 2.3.4): " tagname
+  check_tagname_format "$tagname"
+  if [[ $? -eq 0 ]]; then
+    break
+  fi
+done
+
+echo OK here we go
 
 cp -r ~/code/pats/base/install ~/code/release-18/
 cp -r ~/code/pats/base/scripts ~/code/release-18/
@@ -40,17 +67,6 @@ rsync ${UBUNTU_20_SYSTEM}:code/pats/base/build/executor ./ -az
 rsync ${UBUNTU_20_SYSTEM}:code/trapeye/basestation/build/trapeye ./ -az
 cd ..
 #rsync ${UBUNTU_20_SYSTEM}:dependencies/binaries.tar.gz ./ -az
-
-set +ex
-echo *----------*
-echo Current commit:
-git log -1 --pretty=%B
-echo *----------*
-echo Current tag:
-git describe --tags
-echo *----------*
-echo Specify new release tag:
-read tagname
 
 
 cd ~/code/pats

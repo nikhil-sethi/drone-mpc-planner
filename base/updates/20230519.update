@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -ex
+
+/bin/su - pats -c "cd ~/pats/release && git fetch --tags | true && git co 2.3.6"
+kill -9 $(pgrep -f daemon.py)
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+/bin/su - pats -c "echo 20230519 > /home/pats/dependencies/last_update"
+
