@@ -129,7 +129,8 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt && !_patser->trackers.monster_alert()) {
-                        _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        BenchmarkEntry _current_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        _patser->drone.benchmark_entry = _current_entry;
 
                         if (_patser->drone.benchmark_entry_id == 0) {
                             ofstream EntryFlag;
@@ -139,12 +140,12 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             EntryFlag.close();
                         }
 
-                        if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "replay") {
-                            _patser->trackers.init_replay_moth(benchmark_entries[_patser->drone.benchmark_entry_id].id);
+                        if (_current_entry.type == "replay") {
+                            _patser->trackers.init_replay_moth(_current_entry.id);
                             _n_replay_moth++;
-                        } else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
-                            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_trigger), tracking::VirtualMothTracker::evasion_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_type)};
-                            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {benchmark_entries[_patser->drone.benchmark_entry_id].pos_x, benchmark_entries[_patser->drone.benchmark_entry_id].pos_y, benchmark_entries[_patser->drone.benchmark_entry_id].pos_z}, {benchmark_entries[_patser->drone.benchmark_entry_id].vel_x, benchmark_entries[_patser->drone.benchmark_entry_id].vel_y, benchmark_entries[_patser->drone.benchmark_entry_id].vel_z});
+                        } else if (_current_entry.type == "virtual") {
+                            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(_current_entry.evasion_trigger), tracking::VirtualMothTracker::evasion_type(_current_entry.evasion_type)};
+                            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {_current_entry.pos_x, _current_entry.pos_y, _current_entry.pos_z}, {_current_entry.vel_x, _current_entry.vel_y, _current_entry.vel_z});
                             _n_replay_moth++;
                         } else {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
