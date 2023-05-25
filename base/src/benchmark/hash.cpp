@@ -1,6 +1,7 @@
 #include "hash.h"
 #include<fstream>
 #include <openssl/evp.h>
+#include <iostream>
 
 unsigned char getFileHash(std::string file) {
     std::ifstream fileStream(file, std::ios::binary);
@@ -13,6 +14,9 @@ unsigned char getFileHash(std::string file) {
     new_hash = EVP_MD_CTX_new();
     EVP_DigestInit_ex(new_hash, EVP_md5(), NULL);
 
+    if (fileStream.fail()) {
+        std::cout << "Warning: executor binary could not be found" << std::endl;
+    }
     while (fileStream.get(b))
     {
         EVP_DigestUpdate(new_hash, &b, 1);

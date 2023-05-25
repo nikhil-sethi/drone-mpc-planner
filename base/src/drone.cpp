@@ -20,7 +20,7 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
     tracker.commanded_acceleration(&control.commanded_acceleration);
     tracker.takeoff_area(flight_area);
 
-    executor_hash = getFileHash("/home/pats/code/pats/base/build/executor");
+    executor_hash = getFileHash("executor");
 
     (*main_logger) << "drone_state_str;";
     initialized = true;
