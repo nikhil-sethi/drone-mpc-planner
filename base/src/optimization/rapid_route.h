@@ -31,6 +31,7 @@ public:
     rapid_route_result alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result);
     rapid_route_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
     rapid_route_result find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
+    cv::Point3f find_stopping_position(rapid_route_result interception_result, const float safety_factor);
 private:
     float *_thrust;
     float _thrust_factor;
@@ -38,7 +39,6 @@ private:
     FlightAreaConfig _flight_area_config;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
     bool feasible_solution(rapid_route_result result);
-    cv::Point3f find_stopping_position(rapid_route_result interception_result, const float safety_factor);
     std::vector<Plane> _sorted_planes;
     std::vector<Plane> _resorted_planes;
 };
