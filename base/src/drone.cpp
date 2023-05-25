@@ -608,7 +608,6 @@ void Drone::save_flight_results() {
             if (benchmark_entry.type == "replay") {
                 results_log << "benchmark_type:replay" << '\n';
                 results_log << "benchmark_timestamp:" << benchmark_time << '\n';
-                results_log << "benchmark_replay_id:" << benchmark_entry.id << '\n';
             } else if (benchmark_entry.type == "virtual") {
                 results_log << "benchmark_type:virtual" << '\n';
                 results_log << "benchmark_timestamp:" << benchmark_time << '\n';
