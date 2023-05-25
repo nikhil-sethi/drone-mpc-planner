@@ -65,9 +65,11 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
         if (_flight_area_config->plane(plane_id).is_active) {
             if (violated_planes.at(plane_id) > 0) {
-                violated_planes_braking_distance.at(plane_id) = true;
-                speed_error_normal_to_plane.at(plane_id) = 1000;
-                braking_distance_ok = false;
+                if (_flight_area_config->plane(plane_id).on_normal_side(current_state.position_to_intercept)) {
+                    violated_planes_braking_distance.at(plane_id) = true;
+                    speed_error_normal_to_plane.at(plane_id) = 1000;
+                    braking_distance_ok = false;
+                }
             }
         }
     }
