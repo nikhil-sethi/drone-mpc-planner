@@ -106,6 +106,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
             if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
                 if (!_patser->drone.benchmark_mode) {
                     if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+                        std::cout << "Resuming benchmark!" << std::endl;
                         std::ifstream file("/home/pats/pats/flags/BenchmarkEntry.txt");
                         std::string str;
                         int _idx = 0;
