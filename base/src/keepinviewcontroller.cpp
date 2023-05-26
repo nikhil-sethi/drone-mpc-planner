@@ -82,12 +82,12 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
                     float allowed_velocity_normal_to_plane = required_braking_time * effective_acceleration;
                     speed_error_normal_to_plane.at(plane_id) = current_drone_speed_normal_to_plane - allowed_velocity_normal_to_plane;
                     if (speed_error_normal_to_plane.at(plane_id) > 0) {
-                    violated_planes_braking_distance.at(plane_id) = true;
-                    braking_distance_ok = false;
+                        violated_planes_braking_distance.at(plane_id) = true;
+                        braking_distance_ok = false;
+                    }
                 }
             }
         }
-    }
     }
     return std::tuple<std::vector<bool>, std::vector<float>, bool>(violated_planes_braking_distance, speed_error_normal_to_plane, braking_distance_ok);
 }
