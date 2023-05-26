@@ -23,6 +23,7 @@ from clean_hd import clean_hd
 from status_cc import send_status_update
 from render_videos import render_last_day
 from aggregate_jsons import aggregate_jsons, send_all_jsons
+from update_from_daemon import update
 import lib_serialization as ls
 sys.path.append('ai')  # noqa
 
@@ -424,6 +425,14 @@ class check_system_task(pats_task):
             self.logger.error('SSD almost full. Free space left: ' + str(free / (2**30)) + 'GB')
 
 
+class update_task(pats_task):
+    def __init__(self, error_file_handler):
+        super(update_task, self).__init__('update_from_daemon', timedelta(hours=14), timedelta(hours=24), True, error_file_handler)
+
+    def task_func(self):
+        update('update_from_daemon')
+
+
 def init_status_cc():
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     logger_status_cc = logging.getLogger('status_cc')
@@ -461,7 +470,7 @@ init_status_cc()
 
 rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)  # type: ignore
 error_file_handler.setFormatter(file_format)
 error_file_handler.level = logging.ERROR
 error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
@@ -483,8 +492,9 @@ baseboard_comm = socket_communication('baseboard', 'daemon', lb.socket_baseboard
 executor_comm = socket_communication('executor', 'daemon', lb.socket_executor2daemon, True, lb.disable_executor_flag, executor_receive)
 
 tasks: List[pats_task] = []
-tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
-lb.block_if_disabled()  # We need the wdt_pats to write to the baseboard, but the rest can wait until the disable flag is removed.
+tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))  # We need the wdt_pats to write to the baseboard, even if the disable flag is set
+tasks.append(update_task(error_file_handler))
+lb.block_if_disabled()
 tasks.append(clean_hd_task(error_file_handler))
 tasks.append(aggregate_jsons_task(error_file_handler))
 tasks.append(trapeye_task(error_file_handler))

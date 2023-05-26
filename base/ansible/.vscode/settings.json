@@ -23,5 +23,6 @@
         "--max-line-length=999",
         "--ignore=E402,W503"
     ],
-    "python.linting.mypyEnabled": true
+    "python.linting.mypyEnabled": true,
+    "ansible.python.interpreterPath": "/usr/bin/python3"
 }

@@ -179,6 +179,10 @@ void RGBLeds::run() {
                     rgb_setpoint_leds[1] = CRGB(0, 255 * light_level_, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
+            } case LED1_x_READY: { // solid purple
+                    rgb_setpoint_leds[1] = CRGB(255 * light_level_, 0, 255 * light_level_);
+                    rgb_leds[1] = rgb_setpoint_leds[1];
+                    break;
             } case LED1_blind_OK: { // solid White
                     rgb_setpoint_leds[1] = CRGB(255 * light_level_, 255 * light_level_, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];

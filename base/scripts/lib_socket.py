@@ -4,6 +4,7 @@ import threading
 import os
 import logging
 import struct
+import lib_base as lb
 from datetime import datetime, timedelta
 
 
@@ -37,7 +38,7 @@ class socket_communication:
     def __connecter(self):
         self.logger.info('Starting ' + self.target_name + ' communication thread!')
         while not self.exit_now:
-            while (os.path.exists(self.disable_flag_fn)):
+            while (os.path.exists(self.disable_flag_fn) or os.path.exists(lb.disable_flag)):
                 time.sleep(1)
             self.logger.info('Waiting for connection ' + self.target_name)
             if self.server:

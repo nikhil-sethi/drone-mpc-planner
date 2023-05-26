@@ -244,24 +244,25 @@ cv::Rect clamp_rect(cv::Rect r, int w, int h) {
 }
 
 cv::Rect clamp_rect(cv::Rect r, int w_min, int h_min, int w_max, int h_max) {
-    r.x = std::clamp(r.x, 0, w_max - 1); // rect width must be atleast 1, so w-1
-    r.y = std::clamp(r.y, 0, h_max - 1); // idem
+    r.x = std::clamp(r.x, 0, w_max - 1);
+    r.y = std::clamp(r.y, 0, h_max - 1);
+
     if (r.x + r.width >= w_max)
         r.width = w_max - r.x;
     if (r.y + r.height >= h_max)
         r.height = h_max - r.y;
 
-    // shift and increase size of rect if it is too small
     if (r.width < w_min) {
-        int delta = w_min - (r.width);
+        int delta = w_min - r.width;
         r.x = std::clamp(r.x - delta, 0, w_max - 1);
         r.width = w_min;
     }
     if (r.height < h_min) {
-        int delta = h_min - (r.height);
+        int delta = h_min - r.height;
         r.y = std::clamp(r.y - delta, 0, h_max - 1);
         r.height = h_min;
     }
+
     return r;
 }
 

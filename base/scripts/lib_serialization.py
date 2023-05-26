@@ -1,7 +1,7 @@
 from enum import Enum
 import struct
 
-BASEBOARD_FIRMWARE_VERSION = 22
+BASEBOARD_FIRMWARE_VERSION = 23
 BASEBOARD_PACKAGE_PRE_HEADER = '@'
 EXECUTOR_PACKAGE_PRE_HEADER = '@'
 
@@ -85,22 +85,23 @@ class executor_states(Enum):
     es_locate_drone = 11,
     es_pats_c = 12,
     es_pats_x = 13,
-    es_closing = 14,
-    es_periodic_restart = 15,
-    es_watchdog_restart = 16,
-    es_user_restart = 17,
-    es_light_level_restart = 18,
-    es_enable_window_restart = 19,
-    es_drone_version_mismatch = 20,
-    es_drone_config_restart = 21,
-    es_realsense_fps_problem = 22,
-    es_realsense_frame_loss_problem = 23,
-    es_rc_problem = 24,
-    es_baseboard_problem = 25,
-    es_daemon_problen = 26,
-    es_realsense_error = 27,
-    es_xml_config_problem = 28,
-    es_runtime_error = 29,
+    es_pats_x_ready = 14,
+    es_closing = 15,
+    es_periodic_restart = 16,
+    es_watchdog_restart = 17,
+    es_user_restart = 18,
+    es_light_level_restart = 19,
+    es_enable_window_restart = 20,
+    es_drone_version_mismatch = 21,
+    es_drone_config_restart = 22,
+    es_realsense_fps_problem = 23,
+    es_realsense_frame_loss_problem = 24,
+    es_rc_problem = 25,
+    es_baseboard_problem = 26,
+    es_daemon_problen = 27,
+    es_realsense_error = 28,
+    es_xml_config_problem = 29,
+    es_runtime_error = 30,
 
 
 class rgb_led_1_states(Enum):
@@ -113,8 +114,9 @@ class rgb_led_1_states(Enum):
     LED1_wait_for_light_level = 6,
     LED1_c_OK = 7,
     LED1_x_OK = 8,
-    LED1_blind_OK = 9,
-    LED1_unknown = 10,
+    LED1_x_READY = 9,
+    LED1_blind_OK = 10,
+    LED1_unknown = 11,
 
 
 class SerialBaseboard2NUCPackage:

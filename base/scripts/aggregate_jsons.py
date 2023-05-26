@@ -13,7 +13,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import lib_base as lb
 from process_session import process_session
-from retro_fix_size import retro_fix
 
 
 def check_if_system_at_office():
@@ -27,8 +26,6 @@ def check_if_system_at_office():
 
 
 def aggregate_jsons(data_folder, sys_str, aggregated_fn):
-    retro_fix()
-
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
     Path(data_folder + '/junk').mkdir(parents=True, exist_ok=True)
     Path(lb.json_dir).mkdir(parents=True, exist_ok=True)
@@ -44,6 +41,13 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
     cam_resets = 0
     t_start = datetime.max
     t_end = datetime.min + relativedelta(years=1000)
+
+    popen = subprocess.Popen('cd ~/pats/release/scripts && git describe --tags', stdout=subprocess.PIPE, shell=True)
+    release_tag = popen.stdout.readline().decode('utf-8').strip()
+    update_tag = '?'
+    if os.path.exists(lb.last_update_tag):
+        with open(lb.last_update_tag, "r", encoding="utf-8") as file:
+            update_tag = file.readline()
 
     logger = logging.getLogger('aggregate_jsons')
     for folder in ordered_dirs:
@@ -90,7 +94,9 @@ def aggregate_jsons(data_folder, sys_str, aggregated_fn):
                        "mode": statuss,
                        "errors": errors,
                        "cam_resets": cam_resets,
-                       "system": sys_str
+                       "system": sys_str,
+                       "release_tag": release_tag,
+                       "update_tag": update_tag
                        }
     aggregated_json_fn = aggregated_fn + '.json'
     with open(aggregated_json_fn, 'w', encoding="utf-8") as outfile:
@@ -147,7 +153,7 @@ if __name__ == "__main__":
     if args.filename:
         out_fn = args.filename
     else:
-        out_fn = lb.json_dir + lb.datetime_to_str_with_timezone(datetime.now())
+        out_fn = lb.json_dir + socket.gethostname().lower() + '_' + lb.datetime_to_str_with_timezone(datetime.now())
     if args.i:
         data_folder = args.i
     else:

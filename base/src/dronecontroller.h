@@ -439,7 +439,7 @@ public:
     void init_thrust_calibration();
     void save_thrust_calibration();
     void update_attitude_pad_state();
-    void reset_attitude_pad_state();
+    void reset_attitude_pad_filter();
     void invalidize_blink();
     void save_pad_pos_and_att_calibration();
     bool pad_calib_valid();
