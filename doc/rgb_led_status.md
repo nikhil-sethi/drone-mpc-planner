@@ -26,7 +26,7 @@
 | Yellow                | solid         | LED1_wait_for_lightlevel      |
 | Green                 | solid         | LED1_c_OK                     |
 | Cyan                  | solid         | LED1_x_OK                     |
-| Orange                | solid         | LED1_x_READY                  |
+| Purple                | solid         | LED1_x_READY                  |
 | White                 | solid         | LED1_blind_OK                 |
 | Off                   | solid         | No Power to system?           |
 
