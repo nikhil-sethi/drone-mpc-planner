@@ -226,6 +226,7 @@ private:
 public:
     LandingController land_ctrl;
     KeepInViewController kiv_ctrl;
+    cv::Point3f kiv_acc;
     AccelerometerTrim accelerometer_trim;
 
     cv::Point3f commanded_acceleration;

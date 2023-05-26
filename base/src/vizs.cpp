@@ -59,6 +59,11 @@ void Visualizer::add_plot_sample(void) {
             sposY.push_back(data.state.spos.y);
             sposZ.push_back(-data.state.spos.z);
 
+            cv::Point3f _correction_acc = _patser->drone.control.kiv_acc;
+            kiv_accX.push_back(-_correction_acc.x);
+            kiv_accY.push_back(_correction_acc.y);
+            kiv_accZ.push_back(-_correction_acc.z);
+
             if (generator_cam_set) {
                 gen_posX_drone.push_back(-generator_cam->generated_world_pos.x);
                 gen_posY_drone.push_back(generator_cam->generated_world_pos.y);
@@ -113,6 +118,7 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_velocity());
     // ims_trk.push_back(plot_all_acceleration());
     // ims_trk.push_back(plot_all_control());
+    ims_trk.push_back(plot_all_kiv_accelerations());
     plotframe = create_row_image(ims_trk, CV_8UC3);
 }
 
@@ -184,6 +190,14 @@ cv::Mat Visualizer::plot_all_position(void) {
     ims_pos.push_back(plot({posY_drone, sposY, setposY}, "PosY"));
     ims_pos.push_back(plot({posZ_drone, sposZ, setposZ}, "PosZ"));
     return create_column_image(ims_pos, CV_8UC3);
+}
+
+cv::Mat Visualizer::plot_all_kiv_accelerations(void) {
+    std::vector<cv::Mat> ims_kiv_acc;
+    ims_kiv_acc.push_back(plot({kiv_accX}, "KIVAccX"));
+    ims_kiv_acc.push_back(plot({kiv_accY}, "KIVAccY"));
+    ims_kiv_acc.push_back(plot({kiv_accZ}, "KIVAccZ"));
+    return create_column_image(ims_kiv_acc, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot(std::vector<cv::Mat> data, const std::string name) {

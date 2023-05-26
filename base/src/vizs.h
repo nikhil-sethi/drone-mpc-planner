@@ -27,6 +27,7 @@ private:
     cv::Mat plot_all_acceleration(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
+    cv::Mat plot_all_kiv_accelerations(void);
     void draw_target_text(cv::Mat resFrame, double time, float dis, float min_dis);
     cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::TrackData> path);
     void draw_tracker_viz();
@@ -130,6 +131,10 @@ public:
     cv::Mat saccX;
     cv::Mat saccY;
     cv::Mat saccZ;
+
+    cv::Mat kiv_accX;
+    cv::Mat kiv_accY;
+    cv::Mat kiv_accZ;
 
     cv::Mat gen_posX_drone;
     cv::Mat gen_posY_drone;
