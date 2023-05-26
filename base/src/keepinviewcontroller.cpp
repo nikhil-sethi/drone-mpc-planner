@@ -123,7 +123,8 @@ cv::Point3f KeepInViewController::calc_correction_acceleration(safety_margin_typ
 
         if (_flightarea_kiv_state->violated_planes_inview.at(plane_id)) {
             int d_against_p_error = (sign(_flightarea_kiv_state->d_pos_err_kiv.at(plane_id).current_output()) != sign(_flightarea_kiv_state->pos_err_kiv.at(plane_id)));
-            correction_acceleration += correction_direction * 100;
+            correction_acceleration += correction_direction * (violated_plane_control_mode_gain * dparams.kp_pos_kiv * _flightarea_kiv_state->pos_err_kiv.at(plane_id)
+                                       + d_against_p_error * violated_plane_control_mode_gain * dparams.kd_pos_kiv * _flightarea_kiv_state->d_pos_err_kiv.at(plane_id).current_output());
         }
         if (_flightarea_kiv_state->violated_planes_braking_distance.at(plane_id)) {
             correction_acceleration += correction_direction * (control_mode_gain * dparams.kp_vel_kiv * _flightarea_kiv_state->vel_err_kiv.at(plane_id)
