@@ -66,14 +66,29 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
         if (_flight_area_config->plane(plane_id).is_active) {
             if (violated_planes.at(plane_id) > 0) {
                 if (_flight_area_config->plane(plane_id).on_normal_side(current_state.position_to_intercept)) {
+                    Plane plane = _flight_area_config->plane(plane_id);
+                    float current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-plane.normal);
+                    float remaining_braking_distance_normal_to_plane = plane.distance(data_drone.pos()) - current_drone_speed_normal_to_plane * (drone_rotating_time + transmission_delay_duration);
+                    if (remaining_braking_distance_normal_to_plane < 0)
+                        remaining_braking_distance_normal_to_plane = 0;
+                    float effective_acceleration = (data_drone.vel() / norm(data_drone.vel())).dot(plane.normal) * _drone_calib->max_thrust / safety + cv::Point3f(0, -GRAVITY, 0).dot(plane.normal);
+                    float required_braking_time = sqrtf(2.f / 3.f * remaining_braking_distance_normal_to_plane / effective_acceleration);
+                    if (required_braking_time != required_braking_time) { // if required_braking_time is nan
+                        // drone max_thrust including the safety is not strong enough to compensate gravity!
+                        // assume drone can at least accelerate slightly against gravity:
+                        effective_acceleration = 2.5f;
+                        required_braking_time = sqrtf(2.f / 3.f * remaining_braking_distance_normal_to_plane / effective_acceleration);
+                    }
+                    float allowed_velocity_normal_to_plane = required_braking_time * effective_acceleration;
+                    speed_error_normal_to_plane.at(plane_id) = current_drone_speed_normal_to_plane - allowed_velocity_normal_to_plane;
+                    if (speed_error_normal_to_plane.at(plane_id) > 0) {
                     violated_planes_braking_distance.at(plane_id) = true;
-                    speed_error_normal_to_plane.at(plane_id) = 1000;
                     braking_distance_ok = false;
                 }
             }
         }
     }
-
+    }
     return std::tuple<std::vector<bool>, std::vector<float>, bool>(violated_planes_braking_distance, speed_error_normal_to_plane, braking_distance_ok);
 }
 
