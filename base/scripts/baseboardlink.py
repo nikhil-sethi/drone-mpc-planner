@@ -95,6 +95,8 @@ def executor_receiver(msg):
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_c_OK.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_pats_x.value[0]:
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_x_OK.value[0]
+                elif executor_state_pkg.executor_state == ls.executor_states.es_pats_x_ready.value[0]:
+                    rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_x_READY.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_realsense_reset.value[0]:
                     rgb_led_pkg.led1state = ls.rgb_led_1_states.LED1_realsense_reset.value[0]
                 elif executor_state_pkg.executor_state == ls.executor_states.es_init.value[0] \

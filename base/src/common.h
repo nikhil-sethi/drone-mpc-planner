@@ -985,6 +985,7 @@ enum executor_states { // don't forget to update the baseboardlink etc
     es_locate_drone,
     es_pats_c,
     es_pats_x,
+    es_pats_x_ready,
     es_closing,
     es_periodic_restart,
     es_watchdog_restart,
