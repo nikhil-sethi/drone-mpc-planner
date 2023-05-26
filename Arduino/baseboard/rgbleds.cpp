@@ -180,7 +180,7 @@ void RGBLeds::run() {
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_x_READY: { // solid orange
-                    rgb_setpoint_leds[1] = CRGB(255 * light_level_, 165 * light_level_, 0);
+                    rgb_setpoint_leds[1] = CRGB(255 * light_level_, 120 * light_level_, 0);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_blind_OK: { // solid White
