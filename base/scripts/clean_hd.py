@@ -2,6 +2,7 @@
 import os
 import shutil
 import glob
+import subprocess
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -24,12 +25,8 @@ def disk_space(logger):
 
 def strip_dir(dir_name: str, logger):
     logger.info('stripping: ' + dir_name)
-
     if os.path.isfile(dir_name + '/terminal.log'):
         os.remove(dir_name + '/terminal.log')
-
-    if os.path.exists(dir_name + '/logging/'):  # legacy
-        dir_name += '/logging'
     if os.path.isfile(dir_name + '/log.csv'):
         os.remove(dir_name + '/log.csv')
     if os.path.isfile(dir_name + '/frames.csv'):
@@ -37,14 +34,12 @@ def strip_dir(dir_name: str, logger):
     vids = glob.glob(dir_name + "/*.mkv")
     vids.extend(glob.glob(dir_name + "/*.mp4"))
     for vid in vids:
-        if 'render' not in vid:
-            os.remove(vid)
-        elif Path(vid).stat().st_size > 10 * 1024 * 1024:  # 10 MB
+        if Path(vid).stat().st_size > 100 * 1024 * 1024:  # 100 MB
             logger.info('removing: ' + vid)
             os.remove(vid)
     insect_logs = glob.glob(dir_name + '/log_itrk*.csv')
     for log in insect_logs:
-        if Path(log).stat().st_size > 5 * 1024 * 1024:  # 5 MB
+        if Path(log).stat().st_size > 15 * 1024 * 1024:  # 15 MB
             logger.info('removing: ' + log)
             os.remove(log)
     dir_name = dir_name.replace('/logging', '')
@@ -104,6 +99,23 @@ def clean_hd():
 
     if not os.path.exists(lb.data_dir):
         os.mkdir(lb.data_dir)
+
+    result = subprocess.run('sudo logrotate /etc/logrotate.d/termlog_rotate_config', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if result.returncode != 0:
+        logger.error(result.stdout)
+        logger.error(result.stderr)
+    result = subprocess.run('find /home/pats/pats/jsons/sent -type f -mtime +30 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if result.returncode != 0:
+        logger.error(result.stdout)
+        logger.error(result.stderr)
+    result = subprocess.run('find /home/pats/pats/images/ -type f -mtime +365 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if result.returncode != 0:
+        logger.error(result.stdout)
+        logger.error(result.stderr)
+    result = subprocess.run('find /home/pats/trapeye/images/sent/ -type f -mtime +60 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if result.returncode != 0:
+        logger.error(result.stdout)
+        logger.error(result.stderr)
 
     if disk_space(logger):
         return True
