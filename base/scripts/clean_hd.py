@@ -102,20 +102,24 @@ def clean_hd():
 
     result = subprocess.run('sudo logrotate /etc/logrotate.d/termlog_rotate_config', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     if result.returncode != 0:
-        logger.error(result.stdout)
-        logger.error(result.stderr)
-    result = subprocess.run('find /home/pats/pats/jsons/sent -type f -mtime +30 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    if result.returncode != 0:
-        logger.error(result.stdout)
-        logger.error(result.stderr)
-    result = subprocess.run('find /home/pats/pats/images/ -type f -mtime +365 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    if result.returncode != 0:
-        logger.error(result.stdout)
-        logger.error(result.stderr)
-    result = subprocess.run('find /home/pats/trapeye/images/sent/ -type f -mtime +60 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    if result.returncode != 0:
-        logger.error(result.stdout)
-        logger.error(result.stderr)
+        logger.error(result.stdout.decode('utf-8'))
+        logger.error(result.stderr.decode('utf-8'))
+    if os.path.exists(lb.json_dir):
+        result = subprocess.run('find ' + lb.json_dir + 'sent/ -type f -mtime +30 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        if result.returncode != 0:
+            logger.error(result.stdout.decode('utf-8'))
+            logger.error(result.stderr.decode('utf-8'))
+
+    if os.path.exists('/home/pats/pats/images/'):
+        result = subprocess.run('find /home/pats/pats/images/ -type f -mtime +365 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        if result.returncode != 0:
+            logger.error(result.stdout.decode('utf-8'))
+            logger.error(result.stderr.decode('utf-8'))
+    if os.path.exists(lb.trapeye_images_dir):
+        result = subprocess.run('find ' + lb.trapeye_images_dir + 'sent/ -type f -mtime +60 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        if result.returncode != 0:
+            logger.error(result.stdout.decode('utf-8'))
+            logger.error(result.stderr.decode('utf-8'))
 
     if disk_space(logger):
         return True
