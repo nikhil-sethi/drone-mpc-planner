@@ -72,7 +72,8 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
         _iteration++;
     }
     result.velocity_at_intercept = drone.vel() + (result.acceleration_to_intercept + _gravity) * result.time_to_intercept;
-    result.stopping_position = find_stopping_position(result, stopping_safety_factor);
+    stopping_position_result _stopping_position_result = find_stopping_position(result, stopping_safety_factor);
+    result.stopping_position = _stopping_position_result.position;
     result.intermediate_position = {0.f, 0.f, 0.f};
     result.via = false;
 
@@ -247,7 +248,7 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result) {
     return true;
 }
 
-cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, const float safety_factor) {
+stopping_position_result RapidRouteInterface::find_stopping_position(rapid_route_result interception_result, const float safety_factor) {
     cv::Point3f _velocity_at_interception = interception_result.velocity_at_intercept;
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / norm(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
@@ -282,5 +283,9 @@ cv::Point3f RapidRouteInterface::find_stopping_position(rapid_route_result inter
     // cv::Point3f _stopping_acceleration = _stopping_vector - _gravity;
     cv::Point3f _stopping_distance = _velocity_at_interception * _stopping_time_max + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
     cv::Point3f _stopping_position = interception_result.position_to_intercept + _stopping_distance;
-    return _stopping_position;
+    stopping_position_result _result;
+    _result.position = _stopping_position;
+    _result.time = _stopping_time_max;
+    _result.acceleration = _stopping_vector;
+    return _result;
 }

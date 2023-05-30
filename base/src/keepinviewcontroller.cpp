@@ -59,8 +59,8 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
     RapidRouteInterface stopping_position_rapid_route_interface;
     float thrust = _drone_calib->max_thrust;
     stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config);
-    cv::Point3f stopping_pos = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
-    auto [in_view, violated_planes] = _flight_area_config->find_violated_planes(stopping_pos);
+    stopping_position_result stopping_position_result = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
+    auto [in_view, violated_planes] = _flight_area_config->find_violated_planes(stopping_position_result.position);
 
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
         if (_flight_area_config->plane(plane_id).is_active) {
@@ -71,7 +71,7 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
                     float remaining_braking_distance_normal_to_plane = plane.distance(data_drone.pos()) - current_drone_speed_normal_to_plane * (drone_rotating_time + transmission_delay_duration);
                     if (remaining_braking_distance_normal_to_plane < 0)
                         remaining_braking_distance_normal_to_plane = 0;
-                    float effective_acceleration = (data_drone.vel() / norm(data_drone.vel())).dot(plane.normal) * _drone_calib->max_thrust / safety + cv::Point3f(0, -GRAVITY, 0).dot(plane.normal);
+                    float effective_acceleration = stopping_position_result.acceleration.dot(-plane.normal);
                     float required_braking_time = sqrtf(2.f / 3.f * remaining_braking_distance_normal_to_plane / effective_acceleration);
                     if (required_braking_time != required_braking_time) { // if required_braking_time is nan
                         // drone max_thrust including the safety is not strong enough to compensate gravity!
