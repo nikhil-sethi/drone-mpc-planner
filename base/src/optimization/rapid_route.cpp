@@ -116,7 +116,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
             break;
         }
 
-        _intermediate_position = _flight_area_config.project_onto_plane(_constraining_point, _most_constraining_plane);
+        _intermediate_position = _flight_area_config.project_onto_plane(target.pos(), _most_constraining_plane);
         _intermediate_position = _flight_area_config.move_inside(_intermediate_position);
 
 
