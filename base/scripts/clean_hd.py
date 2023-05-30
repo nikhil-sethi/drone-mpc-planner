@@ -104,7 +104,7 @@ def clean_hd():
     if result.returncode != 0:
         logger.error(result.stdout.decode('utf-8'))
         logger.error(result.stderr.decode('utf-8'))
-    if os.path.exists(lb.json_dir):
+    if os.path.exists(lb.json_dir + 'sent/'):
         result = subprocess.run('find ' + lb.json_dir + 'sent/ -type f -mtime +30 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         if result.returncode != 0:
             logger.error(result.stdout.decode('utf-8'))
@@ -115,7 +115,7 @@ def clean_hd():
         if result.returncode != 0:
             logger.error(result.stdout.decode('utf-8'))
             logger.error(result.stderr.decode('utf-8'))
-    if os.path.exists(lb.trapeye_images_dir):
+    if os.path.exists(lb.trapeye_images_dir + 'sent/'):
         result = subprocess.run('find ' + lb.trapeye_images_dir + 'sent/ -type f -mtime +60 -delete ', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         if result.returncode != 0:
             logger.error(result.stdout.decode('utf-8'))
