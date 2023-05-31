@@ -47,12 +47,10 @@ void Drone::update(double time) {
 #endif
     switch (_state) {
         case ds_pre_flight: {
-                communicate_state(es_pats_x);
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false); // TODO need better solution for this
                 pre_flight(time);
                 break;
         } case ds_charging: {
-                communicate_state(es_pats_x);
                 control.flight_mode(DroneController::fm_inactive);
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_baseboard_link->battery_ready_for_flight() || _baseboard_link->disabled())
@@ -71,12 +69,6 @@ void Drone::update(double time) {
                 }
                 break;
         } case ds_ready: {
-                if (!_trackers->monster_alert()){
-                    communicate_state(es_pats_x_ready);
-                }
-                else {
-                    communicate_state(es_pats_x);
-                }
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);

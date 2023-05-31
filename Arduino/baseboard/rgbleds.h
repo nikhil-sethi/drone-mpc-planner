@@ -18,7 +18,8 @@ public:
         LED0_telemetry_problem_no_charging,
         LED0_locate_fail,
         LED0_crashed,
-        LED0_unknown
+        LED0_unknown,
+        LED0_x_ready
     };
 
     enum rgb_led_1_states {
@@ -31,7 +32,6 @@ public:
         LED1_wait_for_lightlevel,
         LED1_c_OK,
         LED1_x_OK,
-        LED1_x_READY,
         LED1_blind_OK,
         LED1_unknown
     };
@@ -128,6 +128,10 @@ public:
                 break;
             case drone_issues_crashed:
                 _led0_state = LED0_crashed;
+                update_state[0] = true;
+                break;
+            case drone_issues_ready:
+                _led0_state = LED0_x_ready;
                 update_state[0] = true;
                 break;
             default:
