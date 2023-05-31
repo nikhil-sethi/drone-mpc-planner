@@ -58,7 +58,7 @@ private:
 public:
     // Parameter:
     float drone_rotating_time;
-    const float safety = 1.6f;
+    const float safety = 1.4f;
 
     // States:
     bool active = false;  //indicator for the log, whether kiv is active or not
