@@ -58,7 +58,7 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
     current_state.position_to_intercept = data_drone.pos() + data_drone.vel() * transmission_delay_duration;
     RapidRouteInterface stopping_position_rapid_route_interface;
     float thrust = _drone_calib->max_thrust;
-    stopping_position_rapid_route_interface.init(&thrust, 0.8f, _flight_area_config);
+    stopping_position_rapid_route_interface.init(&thrust, 0.9f, _flight_area_config);
     stopping_position_result stopping_position_result = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
     auto [in_view, violated_planes] = _flight_area_config->find_violated_planes(stopping_position_result.position);
 
