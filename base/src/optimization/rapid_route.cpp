@@ -119,6 +119,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
         _intermediate_position = _flight_area_config.project_onto_plane(_constraining_point, _most_constraining_plane);
         _intermediate_position = _flight_area_config.move_inside(_intermediate_position);
 
+        // this approximation can be improved by considering velocity in other directions
         cv::Point3f dir = (_intermediate_position - drone.pos()) / normf(_intermediate_position - drone.pos());
         float _vel_in_dir = drone.vel().dot(dir);
         float a = (_thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
