@@ -112,6 +112,7 @@ enum drone_issues {
     drone_issues_telemetry_problem,
     drone_issues_locate_fail,
     drone_issues_crashed,
+    drone_issues_ready,
 };
 
 struct __attribute__((packed)) SerialNUC2BaseboardRGBLEDPackage {

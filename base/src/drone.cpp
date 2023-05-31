@@ -73,12 +73,7 @@ void Drone::update(double time) {
                 }
                 break;
         } case ds_ready: {
-                if (!_trackers->monster_alert()){
-                    communicate_state(es_pats_x_ready);
-                }
-                else {
-                    communicate_state(es_pats_x);
-                }
+                communicate_state(es_pats_x);
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, cv::Point3f(0, 0, 0), time, false);
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
                     _baseboard_link->allow_charging(false);

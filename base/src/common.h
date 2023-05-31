@@ -985,7 +985,6 @@ enum executor_states { // don't forget to update the baseboardlink etc
     es_locate_drone,
     es_pats_c,
     es_pats_x,
-    es_pats_x_ready,
     es_closing,
     es_periodic_restart,
     es_watchdog_restart,
@@ -1010,6 +1009,7 @@ enum drone_issues {
     drone_issues_telemetry_time_out,
     drone_issues_locate_time_out,
     drone_issues_crashed,
+    drone_issues_ready,
 };
 struct __attribute__((packed)) SocketExecutorStatePackage {
     const char pre_header = EXECUTOR_PACKAGE_PRE_HEADER;

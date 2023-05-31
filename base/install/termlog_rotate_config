@@ -1,0 +1,10 @@
+su pats pats
+/home/pats/pats/logs/term.log {
+    size 1G
+    rotate 1
+    nocreate
+    nocompress
+    missingok
+    notifempty
+    copytruncate
+}

@@ -32,17 +32,6 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "render_videos.py",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/render_videos.py",
-      "args": [
-        "-i",
-        "~/pats/data/"
-      ],
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Baseboard tool",
       "type": "python",
       "args": [

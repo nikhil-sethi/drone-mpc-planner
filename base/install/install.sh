@@ -217,7 +217,7 @@ VPN_FLAG=vpn-v1.done
     touch $VPN_FLAG
 }
 
-SYMLINK_FLAG=symlinks-v2.2.done
+SYMLINK_FLAG=symlinks-v2.3.done
 # Create nice symlinks
 [ -f $SYMLINK_FLAG ] || {
 	[ -f ~/.screenrc ] && {
@@ -291,6 +291,9 @@ SYMLINK_FLAG=symlinks-v2.2.done
 	sudo cp /etc/sudoers{,.bak} --backup=numbered
 	sudo cp ~/pats/release/install/sudoers /etc/sudoers
 
+	sudo cp ~/pats/release/install/termlog_rotate_config /etc/logrotate.d/
+	sudo chown root:root /etc/logrotate.d/termlog_rotate_config
+	sudo chmod 644 /etc/logrotate.d/termlog_rotate_config
 
 	[ -f /etc/NetworkManager/NetworkManager.conf ] && {
 		sudo cp /etc/NetworkManager/NetworkManager.conf{,.bak} --backup=numbered

@@ -11,6 +11,7 @@
 | Orange                | 1s symmetric                | RC telemetry time out           |
 | Orange                | blink_1_short_blinks        | Blink locate fail               |
 | White                 | 1s symmetric                | Crashed                         |
+| Green                 | solid                       | Ready for hunt                  |
 
 
 # Led 1 (system)
@@ -26,7 +27,6 @@
 | Yellow                | solid         | LED1_wait_for_lightlevel      |
 | Green                 | solid         | LED1_c_OK                     |
 | Cyan                  | solid         | LED1_x_OK                     |
-| Purple                | solid         | LED1_x_READY                  |
 | White                 | solid         | LED1_blind_OK                 |
 | Off                   | solid         | No Power to system?           |
 

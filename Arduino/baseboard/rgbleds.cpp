@@ -129,6 +129,10 @@ void RGBLeds::run() {
                     rgb_leds[0] = rgb_setpoint_leds[0];
                     blink_leds[0] = blink_500ms;
                     break;
+            } case LED0_x_ready: { // solid green
+                    rgb_setpoint_leds[0] =  CRGB(0, 255 * light_level_, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
+                    break;
                 }
         }
         update_state[0] = false;
@@ -177,10 +181,6 @@ void RGBLeds::run() {
                     break;
             } case LED1_x_OK: { // solid cyan
                     rgb_setpoint_leds[1] = CRGB(0, 255 * light_level_, 255 * light_level_);
-                    rgb_leds[1] = rgb_setpoint_leds[1];
-                    break;
-            } case LED1_x_READY: { // solid purple
-                    rgb_setpoint_leds[1] = CRGB(255 * light_level_, 0, 255 * light_level_);
                     rgb_leds[1] = rgb_setpoint_leds[1];
                     break;
             } case LED1_blind_OK: { // solid White

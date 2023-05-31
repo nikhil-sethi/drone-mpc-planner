@@ -199,6 +199,8 @@ public:
                 return drone_issues_telemetry_time_out;
             else if (locate_fail())
                 return drone_issues_locate_time_out;
+            else if (drone_ready_and_waiting() && !_trackers->monster_alert())
+                return drone_issues_ready;
             else
                 return drone_issues_ok;
 

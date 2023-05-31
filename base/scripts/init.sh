@@ -3,6 +3,7 @@ python3 /home/pats/pats/release/scripts/hostname.py || true
 python3 /home/pats/pats/release/scripts/timezone.py || true
 /bin/su - pats -c "/usr/bin/screen -dm -S daemon ~/pats/release/scripts/screens.sh"
 [ -f /home/pats/pats/flags/disable_trapeye ] || {
-/home/pats/pats/release/scripts/trapeye_wifi_boot_setup.sh
+    /home/pats/pats/release/scripts/trapeye_wifi_boot_setup.sh
 }
 python3 /home/pats/pats/release/scripts/update.py || true &
+/home/pats/pats/release/scripts/wireguard_restarter.sh || true &
