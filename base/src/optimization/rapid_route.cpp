@@ -255,10 +255,9 @@ stopping_position_result RapidRouteInterface::find_stopping_position(rapid_route
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
 
     float _max_thrust = _thrust_factor * *_thrust / safety_factor;
-    if (_max_thrust < abs(GRAVITY)){
-        _max_thrust  = abs(GRAVITY) + .1f; // asume that drone thrust is at least gravity, 
-    } 
-    std::cout << "max thrust: " << _max_thrust << std::endl;
+    if (_max_thrust < abs(GRAVITY)) {
+        _max_thrust  = abs(GRAVITY) + .1f; // asume that drone thrust is at least gravity,
+    }
     int _iteration = 0;
     float _lower_bound = 0;
     float _upper_bound = 3 * _max_thrust;
