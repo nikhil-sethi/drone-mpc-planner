@@ -8,6 +8,7 @@ struct rapid_route_result {
         via = false;
         time_to_intercept = 0;
         position_to_intercept = {0, 0, 0};
+        velocity_at_intercept = {0, 0, 0};
         acceleration_to_intercept = {0, 0, 0};
         stopping_position = {0, 0, 0};
         intermediate_position = {0, 0, 0};
