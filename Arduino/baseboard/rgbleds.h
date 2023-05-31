@@ -63,6 +63,9 @@ public:
                 s = LED0_telemetry_problem_no_charging;
         }
 
+        if (_drone_issue == drone_issues_ready)
+            s = LED0_x_ready;
+
         if (s == _led0_state)
             return;
 
