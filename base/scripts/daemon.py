@@ -21,7 +21,6 @@ import lib_base as lb
 from trapeye import upload_images
 from clean_hd import clean_hd
 from status_cc import send_status_update
-from render_videos import render_last_day
 from aggregate_jsons import aggregate_jsons, send_all_jsons
 from update_from_daemon import update
 import lib_serialization as ls
@@ -235,19 +234,6 @@ class errors_to_vps_task(pats_task):
                 self.logger.error('Sending error file failed 5 times.')
         else:
             self.logger.warning('Error file rotation did not work')
-
-
-class render_task(pats_task):
-    def __init__(self, error_file_handler):
-        super(render_task, self).__init__('render', timedelta(hours=9), timedelta(hours=24), False, error_file_handler)
-
-    def task_func(self):
-        if not os.path.exists(lb.disable_rendering_flag):
-            daemon2baseboard_pkg.rendering = 1
-            render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
-            daemon2baseboard_pkg.rendering = 0
-        else:
-            self.logger.info('Rendering disabled.')
 
 
 class wdt_pats_task(pats_task):
@@ -498,7 +484,6 @@ lb.block_if_disabled()
 tasks.append(clean_hd_task(error_file_handler))
 tasks.append(aggregate_jsons_task(error_file_handler))
 tasks.append(trapeye_task(error_file_handler))
-tasks.append(render_task(error_file_handler))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))

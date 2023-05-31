@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -ex
+
+/bin/su - pats -c "cd ~/pats/release && git fetch --tags | true && git co 2.5.1"
+cp /home/pats/pats/release/install/sudoers /etc/sudoers
+cp /home/pats/pats/release/install/termlog_rotate_config /etc/logrotate.d/
+sudo chown root:root /etc/logrotate.d/termlog_rotate_config
+sudo chmod 644 /etc/logrotate.d/termlog_rotate_config
+
+kill -9 $(pgrep -f baseboardlink.py) | true
+kill -9 $(pgrep -f endless_wait.sh) | true
+kill -9 $(pgrep -f daemon.py) | true
+
+/bin/su - pats -c "touch /home/pats/dependencies/last_update"
+script_name=$(basename "$0")
+/bin/su - pats -c "echo $script_name > /home/pats/dependencies/last_update"
+
+sleep 3600 # to have a safety in case of unexpected bootloops, with this at least one should be able to login again
+/bin/su - pats -c "sudo rtcwake -m off -s 120 "

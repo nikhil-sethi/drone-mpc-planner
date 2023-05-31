@@ -2,6 +2,7 @@
 import lib_base as lb
 import logging
 import pickle
+import socket
 import glob
 import os
 from typing import List
@@ -26,6 +27,7 @@ def apply_ids_and_move_for_send(image_paths: List[str]):
             trap_nr = int(trap_ids[node_id])
         new_name_parts = os.path.basename(im).split('_')
         new_name_parts[2] = "trap{:03}".format(trap_nr)
+        new_name_parts.insert(2, socket.gethostname().lower())
         new_im = lb.trapeye_images_dir + 'to_send/' + "_".join(new_name_parts)
         os.rename(im, new_im)
 
