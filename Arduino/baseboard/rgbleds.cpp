@@ -130,8 +130,8 @@ void RGBLeds::run() {
                     blink_leds[0] = blink_500ms;
                     break;
             } case LED0_x_ready: { // solid green
-                    rgb_setpoint_leds[1] =  CRGB(0, 255 * light_level_, 0);
-                    rgb_leds[1] = rgb_setpoint_leds[1];
+                    rgb_setpoint_leds[0] =  CRGB(0, 255 * light_level_, 0);
+                    rgb_leds[0] = rgb_setpoint_leds[0];
                     break;
                 }
         }

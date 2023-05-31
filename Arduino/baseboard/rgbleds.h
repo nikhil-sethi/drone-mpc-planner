@@ -18,8 +18,8 @@ public:
         LED0_telemetry_problem_no_charging,
         LED0_locate_fail,
         LED0_crashed,
+        LED0_x_ready,
         LED0_unknown,
-        LED0_x_ready
     };
 
     enum rgb_led_1_states {
