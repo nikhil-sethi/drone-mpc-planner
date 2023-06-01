@@ -67,6 +67,8 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::up
             if (violated_planes.at(plane_id) > 0) {
                 if (_flight_area_config->plane(plane_id).on_normal_side(current_state.position_to_intercept)) {
                     Plane plane = _flight_area_config->plane(plane_id);
+                    if (plane.type == top_plane) //plane for which a transmission takes the longest
+                        plane.support += top_plane_correction * plane.normal;
                     float current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-plane.normal);
                     float remaining_braking_distance_normal_to_plane = plane.distance(data_drone.pos()) - current_drone_speed_normal_to_plane * (drone_rotating_time + transmission_delay_duration);
                     if (remaining_braking_distance_normal_to_plane < 0)
