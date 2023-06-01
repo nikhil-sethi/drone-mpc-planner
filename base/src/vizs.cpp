@@ -603,6 +603,10 @@ void Visualizer::draw_tracker_viz() {
         }
     }
 
+    cv::Point3f _current_stopping_pos = _patser->drone.control.kiv_ctrl.current_stopping_position.position;
+    cv::Point2f _current_stopping_pos_im = world2im_2d(_current_stopping_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
+    cv::circle(frameL_color, _current_stopping_pos_im, 2, white);
+
     if (enable_optimization_drawing) {
         cv::Point2i _pad_pos_im = _patser->drone.tracker.pad_im_location();
         cv::Point3f _aim_pos = _patser->interceptor.aim_pos();
