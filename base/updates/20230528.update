@@ -2,7 +2,7 @@
 
 set -ex
 
-/bin/su - pats -c "cd ~/pats/release && git fetch --tags | true && git co 2.5.1"
+/bin/su - pats -c "cd ~/pats/release && git fetch --tags | true && git co 2.5.4"
 cp /home/pats/pats/release/install/sudoers /etc/sudoers
 cp /home/pats/pats/release/install/termlog_rotate_config /etc/logrotate.d/
 sudo chown root:root /etc/logrotate.d/termlog_rotate_config
