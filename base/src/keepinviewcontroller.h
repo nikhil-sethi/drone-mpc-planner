@@ -3,6 +3,7 @@
 #include "flightarea/flightarea.h"
 #include "filtering/filtering.h"
 #include "tracking.h"
+#include "rapid_route.h"
 
 struct FlightAreaKIVStates {
     std::vector<float> pos_err_kiv;
@@ -62,6 +63,7 @@ public:
 
     // States:
     bool active = false;  //indicator for the log, whether kiv is active or not
+    stopping_position_result current_stopping_position;
 
     // Methods:
     void init(FlightArea *flight_area, xmls::DroneCalibration *dcalib);
