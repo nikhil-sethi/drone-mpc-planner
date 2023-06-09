@@ -35,8 +35,8 @@ led0_state_names = [
     'L0_telem_err',
     'L0_locate_err',
     'L0_crashed',
-    'L0_unknown',
     'L0_ready'
+    'L0_unknown',
 ]
 
 led1_state_names = [
