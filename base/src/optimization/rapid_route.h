@@ -52,7 +52,7 @@ private:
     cv::Point3f _gravity;
     FlightAreaConfig _flight_area_config;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
-    bool feasible_solution(rapid_route_result result);
+    bool feasible_solution(rapid_route_result result, cv::Point3f drone_pos);
     std::vector<Plane> _sorted_planes;
     std::vector<Plane> _resorted_planes;
 };

@@ -51,15 +51,16 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
 
     int _iteration = 0;
     float _lower_bound = 0;
-    float _upper_bound = abs(result.time_to_intercept * 100);
+    float _upper_bound = abs(result.time_to_intercept * 3);
     cv::Point3f _directionality = {1, 1, 1};
     while (_iteration < 100 && !(_iteration > 1 && normf(result.acceleration_to_intercept) > 0.99999f * (_thrust_factor * *_thrust) && normf(result.acceleration_to_intercept) < (_thrust_factor * *_thrust))) {
         result.time_to_intercept = (_lower_bound + _upper_bound) / 2;
         result.position_to_intercept = target.pos() + target.vel() * (result.time_to_intercept + delay); //todo: consider including target acceleration
         cv::Point3f _position_error = result.position_to_intercept - drone.pos();
         result.acceleration_to_intercept = 2 * (_position_error - drone.vel()  * result.time_to_intercept) / pow(result.time_to_intercept, 2) - _gravity;
-        _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / result.acceleration_to_intercept.y, _position_error.z / result.acceleration_to_intercept.z};
-        if (_directionality.x < 0 && _directionality.y < 0 && _directionality.z < 0) {
+        _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / (result.acceleration_to_intercept.y + 9.81f), _position_error.z / result.acceleration_to_intercept.z};
+        if (_directionality.x < -1e-1f || _directionality.z < -1e-1f) {
+            _lower_bound = _lower_bound / 2.f;
             _upper_bound = result.time_to_intercept;
         }
         else {
@@ -222,22 +223,25 @@ rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackDat
 rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
-    if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)))
+    _rapid_route_result.valid = feasible_solution(_rapid_route_result, drone.pos());
+    if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)) || !_rapid_route_result.valid) {
         _rapid_route_result = alt_find_interception_via(drone, target, delay, stopping_safety_factor, _rapid_route_result);
-
-    if (feasible_solution(_rapid_route_result))
-        _rapid_route_result.valid = true;
-    else
-        _rapid_route_result.valid = false;
+        _rapid_route_result.valid = feasible_solution(_rapid_route_result, drone.pos());
+    }
     return _rapid_route_result;
 }
 
-bool RapidRouteInterface::feasible_solution(rapid_route_result result) {
-    if (result.time_to_intercept < 0)
+bool RapidRouteInterface::feasible_solution(rapid_route_result result, cv::Point3f drone_pos) {
+    if (result.time_to_intercept < 0) {
         return false;
+    }
 
     if (normf(result.acceleration_to_intercept) > _thrust_factor * *_thrust) {
-        // std::cout << "acceleration too high: " << normf(result.acceleration_to_intercept) << std::endl;
+        return false;
+    }
+    cv::Point3f _position_error = result.position_to_intercept - drone_pos;
+    cv::Point3f _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / (result.acceleration_to_intercept.y + 9.81f), _position_error.z / result.acceleration_to_intercept.z};
+    if (_directionality.x < -1e-1f || _directionality.y < -1e-1f ||  _directionality.z < -1e-1f) {
         return false;
     }
 
