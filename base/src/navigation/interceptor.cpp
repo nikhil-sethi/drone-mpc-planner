@@ -226,9 +226,6 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _control_mode = position_control;
                 } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea && _res.valid) {
-                    float _gain = 1.f;
-                    float _scale = _gain * normf(drone.vel()) / dparams.kd_pos_throttle * dparams.kp_pos_throttle;
-                    _aim_pos += drone.pos() + drone.vel() * _scale * _tti + _aim_acc * (_scale * _tti) * (_scale * _tti) / 2.f;
                     _control_mode = position_control;
                 } else {
                     // Insect is currently not interceptable. Try to go in front of the target (and hope is target changing its path)
