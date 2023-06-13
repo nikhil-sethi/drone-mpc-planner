@@ -221,7 +221,6 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _control_mode = position_control;
                 } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
-                    _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
                     _control_mode = position_control;
                 } else {
