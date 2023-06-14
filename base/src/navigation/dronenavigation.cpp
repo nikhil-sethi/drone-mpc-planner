@@ -143,6 +143,10 @@ void DroneNavigation::update(double time) {
 
                 if (current_waypoint->mode == wfm_long_range)
                     _control->flight_mode(DroneController::fm_long_range_forth);
+                else if (current_waypoint->mode == wfm_vel) {
+                    _iceptor->switch_control_mode(velocity_control);
+                    _control->flight_mode(DroneController::fm_flying_pid);
+                }
                 else
                     _control->flight_mode(DroneController::fm_flying_pid);
 
@@ -392,6 +396,8 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world.x += calibration_offset(wp); // don't calibrate in between camera and pad if drone is not calibrated
 
         setpoint_pos_world_landing = setpoint_pos_world;
+    } else if (wp.mode == wfm_vel) {
+        setpoint_vel_world = wp.xyz;
     } else {
         setpoint_pos_world =  wp.xyz;
         setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);

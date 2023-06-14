@@ -54,6 +54,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     _tti = -1;
     interception_position_in_flightarea = false;
     stopping_position_in_flightarea = false;
+    _aim_vel = cv::Point3f(0, 0, 0);
     _aim_acc = cv::Point3f(0, 0, 0);
     _control_mode = position_control;
 

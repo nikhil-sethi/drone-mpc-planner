@@ -112,7 +112,7 @@ void DroneController::led_strength(float light_level) {
     std::cout << "Led strength set to: " << dparams.drone_led_strength << " with light level: " << light_level << std::endl;
 }
 
-void DroneController::control(TrackData data_drone, TrackData data_target, control_modes control_mode, cv::Point3f target_acceleration, double time, bool enable_logging) {
+void DroneController::control(TrackData data_drone, TrackData data_target, control_modes control_mode, cv::Point3f target_velocity, cv::Point3f target_acceleration, double time, bool enable_logging) {
 #ifdef PATS_PROFILING
     std::chrono::_V2::system_clock::time_point t_start_control = std::chrono::high_resolution_clock::now();
 #endif
@@ -125,6 +125,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 
     if (control_mode == acceleration_feedforward)
         _dtrk->update_target(data_drone.pos() + target_acceleration);
+    else if (control_mode == velocity_control)
+        _dtrk->update_target(data_drone.pos() + target_velocity);
     else
         _dtrk->update_target(data_target.pos());
 
@@ -252,6 +254,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 if (control_mode == acceleration_feedforward)
                     control_drone_acceleration_based(data_drone, data_target.pos(), target_acceleration);
+                if (control_mode == velocity_control)
+                    control_drone_velocity_based(data_drone, data_target.pos(), target_velocity);
                 else
                     control_drone_position_based(data_drone, data_target.pos());
 
@@ -779,6 +783,12 @@ void DroneController::control_drone_acceleration_based(TrackData data_drone, cv:
     mix_drone_accelerations(data_drone, setpoint_acc);
 }
 
+void DroneController::control_drone_velocity_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
+    update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
+    cv::Point3f pid_acc = update_vel_pid_controller(data_drone, setpoint_vel, false);
+    mix_drone_accelerations(data_drone, pid_acc);
+}
+
 void DroneController::control_drone_position_based(TrackData data_drone, cv::Point3f setpoint_pos) {
     cv::Point3f pid_acc = update_pid_controller(data_drone, setpoint_pos, false);
     mix_drone_accelerations(data_drone, pid_acc);
@@ -926,6 +936,45 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::pid_error(TrackData data_d
     }
 
     return std::tuple(pos_err_p, pos_err_d);
+}
+
+cv::Point3f DroneController::update_vel_pid_controller(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
+    //WARNING: this function is not allowed to store any information (or apply filters that store),
+    //because it is also being used for dummy calculations in the interceptor! See also the dry_run variable
+
+    auto [kp_pos, ki_pos, kd_pos] = adjust_vel_control_gains(data_drone);
+    auto [pos_err_p, pos_err_d] = vel_pid_error(data_drone, setpoint_vel, dry_run);
+
+    return multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
+}
+
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_vel_control_gains(TrackData data_drone) {
+    cv::Point3f kp_pos = {1.f, 1.f, 1.f};
+    cv::Point3f kd_pos = {1.f, 1.f, 1.f};
+    cv::Point3f ki_pos = {0.f, 0.f, 0.f};
+    return std::tuple(kp_pos, ki_pos, kd_pos);
+}
+
+std::tuple<cv::Point3f, cv::Point3f> DroneController::vel_pid_error(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
+
+    float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
+    if (data_drone.pos_valid) {
+        err_x_filtered = setpoint_vel.x - data_drone.state.vel.x;
+        err_y_filtered = setpoint_vel.y - data_drone.state.vel.y;
+        err_z_filtered = setpoint_vel.z - data_drone.state.vel.z;
+    }
+    cv::Point3f vel_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
+
+    float errDx = 0, errDy = 0, errDz = 0;
+    if (data_drone.vel_valid) {
+        errDx = -data_drone.state.acc.x;
+        errDy = -data_drone.state.acc.y;
+        errDz = -data_drone.state.acc.z;
+    }
+
+    cv::Point3f vel_err_d = {errDx, errDy, errDz};
+
+    return std::tuple(vel_err_p, vel_err_d);
 }
 
 void DroneController::correct_yaw(float deviation_angle) {

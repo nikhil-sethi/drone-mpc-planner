@@ -52,6 +52,7 @@ private:
     cv::Point3f interception_center;
     control_modes _control_mode = position_control;
     cv::Point3f _aim_pos;
+    cv::Point3f _aim_vel;
     cv::Point3f _aim_acc;
 
     float interception_max_thrust;
@@ -140,7 +141,9 @@ public:
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}
 
     control_modes control_mode() {return _control_mode;}
+    void switch_control_mode(control_modes mode) {_control_mode = mode;}
     cv::Point3f aim_pos() {return _aim_pos;}
+    cv::Point3f aim_vel() {return _aim_vel;}
     cv::Point3f aim_acc() {return _aim_acc;}
 
     cv::Point3f interception_pos() {return _rapid_route_result.position_to_intercept;}
