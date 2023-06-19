@@ -13,7 +13,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
 
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
 
-    rapid_route.init(&interception_max_thrust, 0.5f, flight_area_config);
+    rapid_route.init(&interception_max_thrust, 0.7f, flight_area_config);
     initialized = true;
 }
 
