@@ -1003,26 +1003,26 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_acc_co
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::acc_pid_error(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
+std::tuple<cv::Point3f, cv::Point3f> DroneController::acc_pid_error(TrackData data_drone, cv::Point3f setpoint_acc, bool dry_run) {
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
-    if (data_drone.pos_valid) {
-        err_x_filtered = setpoint_vel.x - data_drone.state.vel.x;
-        err_y_filtered = setpoint_vel.y - data_drone.state.vel.y;
-        err_z_filtered = setpoint_vel.z - data_drone.state.vel.z;
+    if (data_drone.acc_valid) {
+        err_x_filtered = setpoint_acc.x - data_drone.state.acc.x;
+        err_y_filtered = setpoint_acc.y - data_drone.state.acc.y;
+        err_z_filtered = setpoint_acc.z - data_drone.state.acc.z;
     }
-    cv::Point3f vel_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
+    cv::Point3f acc_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
     float errDx = 0, errDy = 0, errDz = 0;
-    if (data_drone.vel_valid) {
-        errDx = -data_drone.state.acc.x;
-        errDy = -data_drone.state.acc.y;
-        errDz = -data_drone.state.acc.z;
-    }
+    // if (data_drone.jerk_valid) {
+    //     errDx = -data_drone.state.jerk.x;
+    //     errDy = -data_drone.state.jerk.y;
+    //     errDz = -data_drone.state.jerk.z;
+    // }
 
-    cv::Point3f vel_err_d = {errDx, errDy, errDz};
+    cv::Point3f acc_err_d = {errDx, errDy, errDz};
 
-    return std::tuple(vel_err_p, vel_err_d);
+    return std::tuple(acc_err_p, acc_err_d);
 }
 
 void DroneController::correct_yaw(float deviation_angle) {
