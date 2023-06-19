@@ -118,7 +118,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 #endif
     _time = time;
     control_mode_hold_filter.update(control_mode, time);
-
+    std::cout << control_mode << std::endl;
     if (!log_replay_mode && pparams.joystick != rc_none)
         read_joystick();
     process_joystick();
@@ -949,8 +949,8 @@ cv::Point3f DroneController::update_vel_pid_controller(TrackData data_drone, cv:
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_vel_control_gains(TrackData data_drone) {
-    cv::Point3f kp_pos = {1.f, 1.f, 1.f};
-    cv::Point3f kd_pos = {1.f, 1.f, 1.f};
+    cv::Point3f kp_pos = {9.f, 9.f, 9.f};
+    cv::Point3f kd_pos = {0.1f, 0.1f, 0.1f};
     cv::Point3f ki_pos = {0.f, 0.f, 0.f};
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }
