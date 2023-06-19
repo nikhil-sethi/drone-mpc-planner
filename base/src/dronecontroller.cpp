@@ -997,7 +997,7 @@ cv::Point3f DroneController::update_acc_pid_controller(TrackData data_drone, cv:
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_acc_control_gains(TrackData data_drone) {
-    cv::Point3f kp_pos = {9.f, 9.f, 9.f};
+    cv::Point3f kp_pos = {0.8f, 0.8f, 0.8f};
     cv::Point3f kd_pos = {0.1f, 0.1f, 0.1f};
     cv::Point3f ki_pos = {0.f, 0.f, 0.f};
     return std::tuple(kp_pos, ki_pos, kd_pos);
