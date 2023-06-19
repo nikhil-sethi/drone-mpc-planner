@@ -74,6 +74,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         case  is_init: {
                 _interceptor_state = is_waiting_for_target;
                 _aim_pos = _flight_area->move_inside(cv::Point3f(0, 0, 0), strict);
+                _control_mode = position_control;
                 FlightAreaConfig *relaxed_flightareaconfig = _flight_area->flight_area_config(relaxed);
                 interception_center = cv::Point3f(0, _drone->tracker.pad_location().y / 2, _drone->tracker.pad_location().z + (relaxed_flightareaconfig->active_back_plane().support.z - _drone->tracker.pad_location().z) / 2);
                 _tti = -1;
@@ -81,6 +82,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         } case is_waiting_for_target: {
                 _n_frames_aim_in_range = 0;
                 _n_frames_aim_not_in_range++;
+                _control_mode = position_control;
 
                 if (!target_trkr)
                     break;
@@ -91,6 +93,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
                 [[fallthrough]];
         } case is_waiting_in_reach_zone: {
+                _control_mode = position_control;
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
@@ -110,6 +113,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 [[fallthrough]];
 
         } case is_lurking: {
+                _control_mode = position_control;
                 if (!target_trkr) {
                     _interceptor_state = is_waiting_for_target;
                     break;
