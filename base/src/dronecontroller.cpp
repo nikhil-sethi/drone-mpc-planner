@@ -967,7 +967,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_vel_co
 std::tuple<cv::Point3f, cv::Point3f> DroneController::vel_pid_error(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
-    if (data_drone.pos_valid) {
+    if (data_drone.vel_valid) {
         err_x_filtered = setpoint_vel.x - data_drone.state.vel.x;
         err_y_filtered = setpoint_vel.y - data_drone.state.vel.y;
         err_z_filtered = setpoint_vel.z - data_drone.state.vel.z;
