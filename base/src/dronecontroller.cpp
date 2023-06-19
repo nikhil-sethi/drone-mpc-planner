@@ -118,7 +118,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 #endif
     _time = time;
     control_mode_hold_filter.update(control_mode, time);
-    std::cout << control_mode << std::endl;
     if (!log_replay_mode && pparams.joystick != rc_none)
         read_joystick();
     process_joystick();

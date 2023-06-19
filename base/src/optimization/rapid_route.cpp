@@ -60,7 +60,6 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
         result.acceleration_to_intercept = 2 * (_position_error - drone.vel()  * result.time_to_intercept) / pow(result.time_to_intercept, 2) - _gravity;
 
         _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / (result.acceleration_to_intercept.y - 9.81f), _position_error.z / result.acceleration_to_intercept.z};
-        std::cout << "Directionality: " << _directionality << std::endl;
         bool _braking_x = _directionality.x < -1e-1f;
         bool _braking_y = _directionality.y < -1e-1f;
         bool _braking_z = _directionality.z < -1e-1f;
