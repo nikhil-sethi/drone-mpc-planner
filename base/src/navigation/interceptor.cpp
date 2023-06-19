@@ -169,7 +169,8 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
             _n_frames_aim_in_range++;
         } else if (!rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
             _aim_pos = rapid_route_res.position_to_intercept;
-            _aim_vel =  _drone->tracker.last_track_data().vel() + rapid_route_res.acceleration_to_intercept * 1.f / static_cast<float>(pparams.fps);
+            cv::Point3f _gravity_vector(0, GRAVITY, 0);
+            _aim_vel =  _drone->tracker.last_track_data().vel() + (rapid_route_res.acceleration_to_intercept - _gravity_vector) * 1.f / static_cast<float>(pparams.fps);
             _aim_acc = rapid_route_res.acceleration_to_intercept;
             _n_frames_aim_not_in_range = 0;
             _n_frames_aim_in_range++;
