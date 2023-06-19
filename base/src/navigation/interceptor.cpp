@@ -169,6 +169,7 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
             _n_frames_aim_in_range++;
         } else if (!rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
             _aim_pos = rapid_route_res.position_to_intercept;
+            _aim_vel =  _drone->tracker.last_track_data().vel() + rapid_route_res.acceleration_to_intercept * 1.f / static_cast<float>(pparams.fps);
             _aim_acc = rapid_route_res.acceleration_to_intercept;
             _n_frames_aim_not_in_range = 0;
             _n_frames_aim_in_range++;
@@ -225,15 +226,14 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
 
                 if (_res.via && interception_position_in_flightarea && _res.valid) {
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
-                    // _control_mode = position_control;
+                    _control_mode = position_control;
                 } else if (!_res.via && interception_position_in_flightarea && stopping_position_in_flightarea && _res.valid) {
-                    _aim_pos += 0.4f * (_aim_pos - drone.pos()) / normf(_aim_pos - drone.pos());
-                    // _control_mode = position_control;
+                    _control_mode = velocity_control;
                 } else {
                     // Insect is currently not interceptable. Try to go in front of the target (and hope is target changing its path)
                     _aim_pos = target.pos() + 3 * _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error;
                     _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
-                    // _control_mode = position_control;
+                    _control_mode = position_control;
                     return;
                 }
 
