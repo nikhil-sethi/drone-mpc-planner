@@ -131,6 +131,8 @@ void Drone::update(double time) {
                     control.control(state, nav.setpoint(),  acceleration_feedforward, cv::Point3f(0, 0, 0), _interceptor->aim_acc(), time, true);
                 else if (_interceptor->control_mode() == velocity_control)
                     control.control(state, nav.setpoint(), velocity_control, _interceptor->aim_vel(), cv::Point3f(0, 0, 0), time, true);
+                else if (_interceptor->control_mode() == acceleration_control)
+                    control.control(state, nav.setpoint(), acceleration_control,  cv::Point3f(0, 0, 0), _interceptor->aim_acc(), time, true);
                 else
                     control.control(state, nav.setpoint(), position_control, cv::Point3f(0, 0, 0), cv::Point3f(0, 0, 0), time, true);
 

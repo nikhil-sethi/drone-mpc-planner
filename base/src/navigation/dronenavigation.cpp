@@ -146,10 +146,12 @@ void DroneNavigation::update(double time) {
                 else if (current_waypoint->mode == wfm_vel) {
                     _iceptor->switch_control_mode(velocity_control);
                     _control->flight_mode(DroneController::fm_flying_pid);
+                } else if (current_waypoint->mode == wfm_acc) {
+                    _iceptor->switch_control_mode(acceleration_control);
+                    _control->flight_mode(DroneController::fm_flying_pid);
                 }
                 else
                     _control->flight_mode(DroneController::fm_flying_pid);
-
                 if (current_waypoint->mode != wfm_thrust_calib && current_waypoint->mode != wfm_yaw_reset && current_waypoint->mode != wfm_landing) {
                     _control->hover_mode(false);
                     _tracker->hover_mode(false);
@@ -398,15 +400,16 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world_landing = setpoint_pos_world;
     } else if (wp.mode == wfm_vel) {
         setpoint_vel_world = wp.xyz;
+    } else if (wp.mode == wfm_acc) {
+        setpoint_acc_world = wp.xyz;
     } else {
         setpoint_pos_world =  wp.xyz;
         setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
+        setpoint_vel_world = {0, 0, 0};
+        setpoint_acc_world = {0, 0, 0};
     }
     if (dist_to_new_wp > 0.1f)
         _control->nav_waypoint_moved(time);
-
-    setpoint_vel_world = {0, 0, 0};
-    setpoint_acc_world = {0, 0, 0};
 }
 
 void DroneNavigation::deserialize_settings() {

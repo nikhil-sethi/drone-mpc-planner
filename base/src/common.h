@@ -211,6 +211,7 @@ static const char *op_modes_str[] = {
 enum control_modes {
     position_control,
     velocity_control,
+    acceleration_control,
     acceleration_feedforward
 };
 namespace xmls {

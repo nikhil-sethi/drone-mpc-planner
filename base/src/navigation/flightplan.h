@@ -10,7 +10,8 @@ enum waypoint_flight_modes {
     wfm_yaw_reset,
     wfm_thrust_calib,
     wfm_long_range,
-    wfm_vel
+    wfm_vel,
+    wfm_acc
 };
 static const char *waypoint_flight_modes_str[] = {
     "wfm_takeoff",
@@ -21,6 +22,7 @@ static const char *waypoint_flight_modes_str[] = {
     "wfm_thrust_calib",
     "wfm_long_range",
     "wfm_vel",
+    "wfm_acc",
     "" // must be the last entry! (check in serializer)
 };
 const int hover_mode_wp_dist_threshold = 300;
@@ -95,6 +97,12 @@ struct Waypoint_Long_Range : Waypoint {
 struct Waypoint_Velocity : Waypoint {
     Waypoint_Velocity(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
         mode = wfm_vel;
+    }
+};
+
+struct Waypoint_Acceleration : Waypoint {
+    Waypoint_Acceleration(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
+        mode = wfm_acc;
     }
 };
 
@@ -192,6 +200,10 @@ public:
                     break;
             } case waypoint_flight_modes::wfm_vel: {
                     Waypoint_Velocity wp(cv::Point3f(x.value(), y.value(), z.value()), name.value());
+                    return wp;
+                    break;
+            } case waypoint_flight_modes::wfm_acc: {
+                    Waypoint_Acceleration wp(cv::Point3f(x.value(), y.value(), z.value()), name.value());
                     return wp;
                     break;
             } case waypoint_flight_modes::wfm_flying:

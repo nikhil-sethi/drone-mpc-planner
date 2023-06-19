@@ -206,8 +206,10 @@ private:
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, bool enable_horizontal_integrators);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_vel_control_gains(tracking::TrackData data_drone);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_acc_control_gains(tracking::TrackData data_drone);
     std::tuple<cv::Point3f, cv::Point3f> pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
     std::tuple<cv::Point3f, cv::Point3f> vel_pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run);
+    std::tuple<cv::Point3f, cv::Point3f> acc_pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_acc, bool dry_run);
 
     cv::Point3f kiv_update(tracking::TrackData data_drone);
     std::tuple<int, int, int> drone_commands(cv::Point3f desired_acceleration);
@@ -217,6 +219,7 @@ private:
     void control_drone_position_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos);
     void control_drone_velocity_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     void control_drone_acceleration_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc);
+    void control_drone_ff_acceleration_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc);
 
     void send_data_joystick(void);
     void read_joystick(void);
@@ -243,6 +246,7 @@ public:
 
     cv::Point3f update_pid_controller(tracking::TrackData data_drone, cv::Point3f setpoint_pos, bool choosing_insect);
     cv::Point3f update_vel_pid_controller(tracking::TrackData data_drone, cv::Point3f setpoint_vel, bool choosing_insect);
+    cv::Point3f update_acc_pid_controller(tracking::TrackData data_drone, cv::Point3f setpoint_acc, bool choosing_insect);
     void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
     void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength * 2, 5, 100); }
