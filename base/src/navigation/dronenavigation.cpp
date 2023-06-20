@@ -196,8 +196,7 @@ void DroneNavigation::update(double time) {
                     _tracker->hover_mode(true);
                 }
 
-                if (_iceptor->target_acquired(time) && (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset)) {
-                    _nav_flight_mode = nfm_hunt;
+                if (_nav_flight_mode == nfm_hunt && _iceptor->target_acquired(time) && (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset)) {
                     _navigation_status = ns_start_the_chase;
                     _control->hover_mode(false);
                     _tracker->hover_mode(false);
