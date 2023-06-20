@@ -92,6 +92,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
 
     Plane _previous_most_constraining_plane = Plane(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, unspecified_plane);
     Plane _most_constraining_plane = Plane(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, unspecified_plane);
+    int _identical_count = 0;
 
     rapid_route_result _direct_result;
 
@@ -99,24 +100,24 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
 
     int MAX_ITERATIONS = 1;
     while (_intermediate_pos_cnt < MAX_ITERATIONS) {
-        if (!_flight_area_config.inside(_interception_position)) {
-            _constraining_point = _interception_position;
-        }
-        else if (!_flight_area_config.inside(_stopping_position)) {
-            _constraining_point = _stopping_position;
-        }
-        else {
+        _constraining_point = _interception_position;
+        if (_flight_area_config.inside(_interception_position) && _flight_area_config.inside(_stopping_position)) {
             // found solution
             break;
         }
 
         _most_constraining_plane = _flight_area_config.find_most_constraining_plane(_constraining_point);
         if (_most_constraining_plane == _previous_most_constraining_plane) {
+            _identical_count ++;
             // no solution
-            break;
+            if (_identical_count > 3) {
+                break;
+            }
         }
+        else
+            _identical_count = 0;
 
-        _intermediate_position = _flight_area_config.project_onto_plane(_constraining_point, _most_constraining_plane);
+        _intermediate_position = _flight_area_config.project_towards_plane(_constraining_point, _most_constraining_plane, 0.5);
         _intermediate_position = _flight_area_config.move_inside(_intermediate_position);
 
         // this approximation can be improved by considering velocity in other directions

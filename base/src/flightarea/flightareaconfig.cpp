@@ -242,6 +242,10 @@ cv::Point3f FlightAreaConfig::project_inside_plane_polygon(cv::Point3f point, st
     return closest_point;
 }
 
+cv::Point3f FlightAreaConfig::project_towards_plane(cv::Point3f point, Plane plane, float distance) {
+    return point - distance * plane.normal;
+}
+
 cv::Point3f FlightAreaConfig::project_onto_plane(cv::Point3f point, Plane plane) {
     return point + fabs(plane.distance(point)) * plane.normal;
 }
