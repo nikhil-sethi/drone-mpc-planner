@@ -363,7 +363,15 @@ bool DroneNavigation::drone_close_to_wp() {
 }
 
 bool DroneNavigation::drone_at_wp() {
-    return (_control->dist_to_setpoint() * 1000 < current_waypoint->threshold_mm
+    float _setpoint_error;
+    if (current_waypoint->mode == wfm_vel) {
+        _setpoint_error = _control->relative_velocity_to_setpoint() * 1000;
+    } else if (current_waypoint->mode == wfm_acc) {
+        _setpoint_error = _control->relative_acceleration_to_setpoint() * 1000;
+    } else {
+        _setpoint_error = _control->dist_to_setpoint() * 1000;
+    }
+    return (_setpoint_error < current_waypoint->threshold_mm
             && normf(_tracker->last_track_data().state.vel) < current_waypoint->threshold_v
             && _tracker->properly_tracking());
 }

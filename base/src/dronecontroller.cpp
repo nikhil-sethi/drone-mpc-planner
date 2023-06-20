@@ -132,6 +132,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         _dtrk->update_target(data_target.pos());
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target.state.pos);
+    _relative_velocity_to_setpoint = normf(data_drone.state.vel - data_target.state.vel);
+    _relative_acceleration_to_setpoint = normf(data_drone.state.acc - data_target.state.acc);
 
     int throttle = 0, roll = 0, pitch = 0, yaw = 0, mode = RC_BOUND_MIN;
     bool joy_control = false;

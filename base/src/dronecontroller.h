@@ -152,6 +152,8 @@ private:
     bool landing_att_calibration_msg_printed = false;
 
     float _dist_to_setpoint = 999;
+    float _relative_velocity_to_setpoint = 999;
+    float _relative_acceleration_to_setpoint = 999;
     double _time;
     double time_waypoint_moved = 0;
 
@@ -394,6 +396,8 @@ public:
     std::vector<ControlData> control_history;
 
     float dist_to_setpoint() { return _dist_to_setpoint; }
+    float relative_velocity_to_setpoint() { return _relative_velocity_to_setpoint; }
+    float relative_acceleration_to_setpoint() { return _relative_acceleration_to_setpoint; }
 
     void close(void);
     void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area);
