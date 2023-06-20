@@ -239,11 +239,7 @@ bool RapidRouteInterface::feasible_solution(rapid_route_result result, cv::Point
         return false;
     }
     cv::Point3f _position_error = result.position_to_intercept - drone_pos;
-    cv::Point3f _directionality = {_position_error.x / result.acceleration_to_intercept.x, _position_error.y / (result.acceleration_to_intercept.y + 9.81f), _position_error.z / result.acceleration_to_intercept.z};
-    bool _braking_x = _directionality.x < -1e-1f;
-    bool _braking_y = _directionality.y < -1e-1f;
-    bool _braking_z = _directionality.z < -1e-1f;
-    if ((_braking_x && _braking_y) || (_braking_x && _braking_z) || (_braking_y && _braking_z)) {
+    if (_position_error.dot(result.acceleration_to_intercept) < 0) {
         return false;
     }
 
