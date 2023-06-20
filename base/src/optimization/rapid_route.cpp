@@ -100,8 +100,11 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
 
     int MAX_ITERATIONS = 1;
     while (_intermediate_pos_cnt < MAX_ITERATIONS) {
-        _constraining_point = _interception_position;
-        if (_flight_area_config.inside(_interception_position) && _flight_area_config.inside(_stopping_position)) {
+        if (!_flight_area_config.inside(_interception_position))
+            _constraining_point = _interception_position;
+        else if (!_flight_area_config.inside(_stopping_position))
+            _constraining_point = _stopping_position;
+        else {
             // found solution
             break;
         }
@@ -117,7 +120,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
         else
             _identical_count = 0;
 
-        _intermediate_position = _flight_area_config.project_towards_plane(_constraining_point, _most_constraining_plane, 0.5);
+        _intermediate_position = _flight_area_config.project_towards_plane(_interception_position, _most_constraining_plane, 0.5);
         _intermediate_position = _flight_area_config.move_inside(_intermediate_position);
 
         // this approximation can be improved by considering velocity in other directions
