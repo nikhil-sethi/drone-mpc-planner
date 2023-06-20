@@ -357,7 +357,15 @@ void DroneNavigation::close() {
 }
 
 bool DroneNavigation::drone_close_to_wp() {
-    return (_control->dist_to_setpoint() < 0.1f
+    float _setpoint_error;
+    if (current_waypoint->mode == wfm_vel) {
+        _setpoint_error = _control->relative_velocity_to_setpoint();
+    } else if (current_waypoint->mode == wfm_acc) {
+        _setpoint_error = _control->relative_acceleration_to_setpoint();
+    } else {
+        _setpoint_error = _control->dist_to_setpoint();
+    }
+    return (_setpoint_error < 0.1f
             && normf(_tracker->last_track_data().state.vel) < 0.5f
             && _tracker->properly_tracking());
 }
