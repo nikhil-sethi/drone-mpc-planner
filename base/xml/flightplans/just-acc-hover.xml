@@ -29,7 +29,7 @@
             <Member Name="x"> 0.0</Member>
             <Member Name="y"> 0.0</Member>
             <Member Name="z"> 0.0</Member>
-            <Member Name="name">WP_vel</Member>
+            <Member Name="name">WP_acc</Member>
         </Class>
 
 
