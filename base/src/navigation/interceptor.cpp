@@ -168,7 +168,10 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
             stopping_position_in_flightarea = false;
 
         if (rapid_route_res.via && interception_position_in_flightarea) {
-            _aim_pos = _drone->tracker.last_track_data().pos() + 0.3f * (rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) / normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos());;
+            if (normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) > 0.3f)
+                _aim_pos = _drone->tracker.last_track_data().pos() + 0.3f * (rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) / normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos());
+            else
+                _aim_pos = rapid_route_res.intermediate_position;
             _n_frames_aim_not_in_range = 0;
             _n_frames_aim_in_range++;
         } else if (!rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
