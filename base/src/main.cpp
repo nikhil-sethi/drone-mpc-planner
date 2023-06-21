@@ -92,6 +92,7 @@ bool generator_mode = false;
 bool airsim_mode = false;
 bool airsim_wp_mode = false;
 bool render_mode = false;
+int max_render_duration = 0;
 bool watchdog_skip_video_delay_override = false;
 uint16_t rc_id = 0;
 std::string replay_dir, replay_video_fn;
@@ -477,6 +478,11 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
         communicate_state(es_user_restart);
         exit_now = true;
     }
+    if (render_mode && max_render_duration && time > max_render_duration) {
+        std::cout << "Max render time exceeded" << std::endl;
+        communicate_state(es_user_restart);
+        exit_now = true;
+    }
     if (escape_key_pressed) {
         communicate_state(es_user_restart);
         exit_now = true;
@@ -807,6 +813,10 @@ void process_arg(int argc, char **argv) {
             } else if (s.compare("--render") == 0) {
                 arg_recognized = true;
                 render_mode = true;
+            } else if (s.compare("--max-render-duration") == 0) {
+                arg_recognized = true;
+                i++;
+                max_render_duration = std::stoi(argv[i]);
             } else if (s.compare("--airsim") == 0) {
                 arg_recognized = true;
                 i++;
