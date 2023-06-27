@@ -51,9 +51,9 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
 
     int _iteration = 0;
     float _lower_bound = 0;
-    float _upper_bound = abs(result.time_to_intercept * 3);
+    float _upper_bound = abs(result.time_to_intercept * 3.f);
     while (_iteration < 100 && !(_iteration > 1 && normf(result.acceleration_to_intercept) > 0.99999f * (_thrust_factor * *_thrust) && normf(result.acceleration_to_intercept) < (_thrust_factor * *_thrust))) {
-        result.time_to_intercept = (_lower_bound + _upper_bound) / 2;
+        result.time_to_intercept = (_lower_bound + _upper_bound) / 2.f;
         result.position_to_intercept = target.pos() + target.vel() * (result.time_to_intercept + delay); //todo: consider including target acceleration
         cv::Point3f _position_error = result.position_to_intercept - drone.pos();
         result.acceleration_to_intercept = 2 * (_position_error - drone.vel()  * result.time_to_intercept) / pow(result.time_to_intercept, 2) - _gravity;
@@ -88,40 +88,33 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
     cv::Point3f _stopping_position = previous_result.stopping_position;
 
     cv::Point3f _constraining_point = {0.f, 0.f, 0.f};
-    cv::Point3f _intermediate_position;
+
+    cv::Point3f _previous_intermediate_position = drone.pos();
+    cv::Point3f _intermediate_position = drone.pos();
 
     Plane _previous_most_constraining_plane = Plane(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, unspecified_plane);
     Plane _most_constraining_plane = Plane(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, unspecified_plane);
-    int _identical_count = 0;
 
     rapid_route_result _direct_result;
 
     float _time_to_reach_intersection = -1;
 
-    int MAX_ITERATIONS = 1;
+    int MAX_ITERATIONS = 100;
     while (_intermediate_pos_cnt < MAX_ITERATIONS) {
-        if (!_flight_area_config.inside(_interception_position))
+        if (!_flight_area_config.inside(_interception_position)) {
             _constraining_point = _interception_position;
-        else if (!_flight_area_config.inside(_stopping_position))
+        }
+        else if (!_flight_area_config.inside(_stopping_position)) {
             _constraining_point = _stopping_position;
+        }
         else {
             // found solution
             break;
         }
 
         _most_constraining_plane = _flight_area_config.find_most_constraining_plane(_constraining_point);
-        if (_most_constraining_plane == _previous_most_constraining_plane) {
-            _identical_count ++;
-            // no solution
-            if (_identical_count > 3) {
-                break;
-            }
-        }
-        else
-            _identical_count = 0;
-
-        _intermediate_position = _flight_area_config.project_towards_plane(_interception_position, _most_constraining_plane, 0.5);
-        _intermediate_position = _flight_area_config.move_inside(_intermediate_position);
+        _intermediate_position = _flight_area_config.move_inside(_flight_area_config.project_towards_plane(_previous_intermediate_position, _most_constraining_plane, 0.05f));
+        _previous_intermediate_position = _intermediate_position;
 
         // this approximation can be improved by considering velocity in other directions
         cv::Point3f dir = (_intermediate_position - drone.pos()) / normf(_intermediate_position - drone.pos());
@@ -151,8 +144,6 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
                 _time_to_reach_intersection = abs(sqrt(2 * (normf(_intermediate_position - drone.pos())) / _thrust_factor * *_thrust) + delay);
             }
         }
-
-
 
         tracking::TrackData _future_drone = drone;
         _future_drone.state.pos = _intermediate_position;
