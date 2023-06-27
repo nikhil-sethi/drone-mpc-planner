@@ -349,7 +349,20 @@ std::vector<Plane> FlightAreaConfig::sort_planes_by_proximity(cv::Point3f point)
 }
 
 Plane FlightAreaConfig::find_most_constraining_plane(cv::Point3f point) {
-    std::vector<Plane> _sorted_planes_by_proximity = sort_planes_by_proximity(point);
+    std::vector<Plane> _sorted_planes_by_proximity = _planes;
+    std::sort(_sorted_planes_by_proximity.begin(), _sorted_planes_by_proximity.end(), [point](Plane p1, Plane p2) {
+        if (p1.is_active && !p2.is_active)
+            return true;
+        else if (!p1.is_active && p2.is_active)
+            return false;
+
+        if (!(p1.on_normal_side(point) || p1.on_plane(point)) && (p2.on_normal_side(point) || p2.on_plane(point)))
+            return true;
+        else if ((p1.on_normal_side(point) || p1.on_plane(point)) && !(p2.on_normal_side(point) || p2.on_plane(point)))
+            return false;
+        else
+            return normf(p1.support - point) < normf(p2.support - point);
+    });
     for (auto plane : _sorted_planes_by_proximity) {
         if (plane.is_active)
             return plane;
