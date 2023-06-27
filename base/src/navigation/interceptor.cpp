@@ -62,7 +62,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     if (_drone->in_flight())
         _delay = 0.f;
     else
-        _delay = 0.f;
+        _delay = 0.5f;
     auto target_trkr = update_target_insecttracker(_delay);
 
     interception_max_thrust = *_drone->control.max_thrust();
@@ -104,7 +104,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 if (_drone->in_flight())
                     update_hunt_strategy(drone_at_base, target_trkr->last_track_data(), time);
                 else
-                    _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.f);
+                    _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), _delay);
                 if (!_n_frames_aim_not_in_range)
                     _interceptor_state = is_lurking;
                 else
@@ -122,7 +122,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
-                _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), 0.f);
+                _rapid_route_result = update_aim_and_target_in_flightarea(drone_at_base, target_trkr->last_track_data(), _delay);
 
                 if ((!delay_takeoff_for_better_interception()) && !_n_frames_aim_not_in_range) {
                     _interceptor_state = is_intercepting;
