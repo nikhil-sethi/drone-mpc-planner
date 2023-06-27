@@ -50,7 +50,7 @@ void FlightAreaConfig::update_bottom_plane_based_on_blink(float pad_height) {
     update_config();
 }
 
-void FlightAreaConfig::rotate_hoirzontal_planes_inwards(float angle) {
+void FlightAreaConfig::rotate_horizontal_planes_inwards(float angle) {
     for (auto &plane : _planes) {
         if (plane.type == top_plane) {
             plane.normal = rotate_vector_around_x_axis(plane.normal, -angle);
@@ -71,7 +71,7 @@ void FlightAreaConfig::rotate_vertical_planes_inwards(float angle) {
 }
 
 void FlightAreaConfig::apply_safety_angle(float angle) {
-    //rotate_hoirzontal_planes_inwards(angle);
+    //rotate_horizontal_planes_inwards(angle);
     rotate_vertical_planes_inwards(angle);
 }
 

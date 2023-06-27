@@ -46,7 +46,7 @@ private:
 
     //Methods
     void create_camera_planes();
-    void rotate_hoirzontal_planes_inwards(float angle);
+    void rotate_horizontal_planes_inwards(float angle);
     void rotate_vertical_planes_inwards(float angle);
     void apply_safety_angle(float angle);
     void find_active_planes_and_their_corner_points();
