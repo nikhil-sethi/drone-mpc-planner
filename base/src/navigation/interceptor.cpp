@@ -168,7 +168,7 @@ void Interceptor::update_aim_in_flightarea(rapid_route_result rapid_route_res) {
             stopping_position_in_flightarea = false;
 
         if (rapid_route_res.via && interception_position_in_flightarea && stopping_position_in_flightarea) {
-            if (normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) > 0.5f)
+            if (normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) > 0.25f)
                 _aim_pos = _drone->tracker.last_track_data().pos() + 0.5f * (rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos()) / normf(rapid_route_res.intermediate_position - _drone->tracker.last_track_data().pos());
             else
                 _aim_pos = rapid_route_res.intermediate_position;
