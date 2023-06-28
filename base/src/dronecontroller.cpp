@@ -806,15 +806,13 @@ void DroneController::control_drone_position_based(TrackData data_drone, cv::Poi
 }
 
 cv::Point3f DroneController::kiv_update(TrackData data_drone) {
-    kiv_ctrl.update(data_drone, transmission_delay_duration, _time);
-
     bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
 
     if (data_drone.pos_valid && data_drone.vel_valid && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
         if (control_mode_hold_filter.output()) //feedforward was active in the close past
-            return kiv_ctrl.correction_acceleration(strict, data_drone, acceleration_feedforward);
+            return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, strict);
         else
-            return kiv_ctrl.correction_acceleration(relaxed, data_drone, position_control);
+            return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, relaxed);
     }
     else
         return {0, 0, 0};
