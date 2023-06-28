@@ -197,17 +197,15 @@ void DroneNavigation::update(double time) {
                     _tracker->hover_mode(true);
                 }
 
-                if (current_waypoint->try_time >= 0) {
-                    if (time_attempt_wp < 0) {
-                        time_attempt_wp = time;
-                    } else if ((time - time_attempt_wp) > current_waypoint->try_time) {
-                        if (wpid < waypoints.size()) { // next waypoint in flight plan
-                            wpid++;
-                            _navigation_status = ns_set_waypoint;
-                        } else if (wpid == waypoints.size()) {
-                            wpid = 0; // another round
-                            _navigation_status = ns_set_waypoint;
-                        }
+                if (time_attempt_wp < 0) {
+                    time_attempt_wp = time;
+                } else if ((time - time_attempt_wp) > current_waypoint->try_time) {
+                    if (wpid < waypoints.size()) { // next waypoint in flight plan
+                        wpid++;
+                        _navigation_status = ns_set_waypoint;
+                    } else if (wpid == waypoints.size()) {
+                        wpid = 0; // another round
+                        _navigation_status = ns_set_waypoint;
                     }
                 }
 
