@@ -27,18 +27,20 @@ static const char *waypoint_flight_modes_str[] = {
 };
 const int hover_mode_wp_dist_threshold = 300;
 struct Waypoint {
-    Waypoint(cv::Point3f p, int distance_threshold_mm, float vel_thresh, float hover_pause_time, std::string wp_name) {
+    Waypoint(cv::Point3f p, int distance_threshold_mm, float vel_thresh, float hover_pause_time, float try_time_time, std::string wp_name) {
         xyz = p;
         name = wp_name;
         threshold_mm = distance_threshold_mm;
         threshold_v = vel_thresh;
         hover_pause = hover_pause_time;
+        try_time = try_time_time;
         mode  = wfm_flying;
     }
     cv::Point3f xyz = {0};
     int threshold_mm = 50;
     float threshold_v = 1.7;
     float hover_pause = 0;
+    float try_time = 0;
     float pitch_duration = 0;
     waypoint_flight_modes mode;
     std::string name;
@@ -83,25 +85,25 @@ struct Waypoint_Takeoff : Waypoint {
     }
 };
 struct Waypoint_Stay : Waypoint {
-    Waypoint_Stay(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
+    Waypoint_Stay(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, 0, wp_name) {
         mode = wfm_wp_stay;
     }
 };
 struct Waypoint_Long_Range : Waypoint {
-    Waypoint_Long_Range(cv::Point3f p, std::string wp_name, float pitch_duration_) : Waypoint(p, 0, 0, 0, wp_name) {
+    Waypoint_Long_Range(cv::Point3f p, std::string wp_name, float pitch_duration_) : Waypoint(p, 0, 0, 0, 0, wp_name) {
         mode = wfm_long_range;
         pitch_duration = pitch_duration_;
     }
 };
 
 struct Waypoint_Velocity : Waypoint {
-    Waypoint_Velocity(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
+    Waypoint_Velocity(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, 0, wp_name) {
         mode = wfm_vel;
     }
 };
 
 struct Waypoint_Acceleration : Waypoint {
-    Waypoint_Acceleration(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
+    Waypoint_Acceleration(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, 0, wp_name) {
         mode = wfm_acc;
     }
 };
@@ -136,6 +138,7 @@ public:
     xmls::xInt threshold_mm;
     xmls::xFloat threshold_v;
     xmls::xFloat hover_pause;
+    xmls::xFloat try_time;
     xmls::xFloat pitch_duration;
     xmls::xFloat x;
     xmls::xFloat y;
@@ -149,6 +152,7 @@ public:
         Register("threshold_mm", &threshold_mm);
         Register("threshold_v", &threshold_v);
         Register("hover_pause", &hover_pause);
+        Register("try_time", &try_time);
         Register("pitch_duration", &pitch_duration);
         Register("x", &x);
         Register("y", &y);
@@ -165,6 +169,7 @@ public:
             threshold_mm = wp.threshold_mm;
             threshold_v = wp.threshold_v;
             hover_pause = wp.hover_pause;
+            try_time = wp.try_time;
         }
         if (wp.mode == wfm_long_range)
             pitch_duration = static_cast<Waypoint_Long_Range *>(&wp)->pitch_duration;
@@ -208,7 +213,7 @@ public:
                     break;
             } case waypoint_flight_modes::wfm_flying:
             default: {
-                    Waypoint wp(cv::Point3f(x.value(), y.value(), z.value()), threshold_mm.value(), threshold_v.value(), hover_pause.value(), name.value());
+                    Waypoint wp(cv::Point3f(x.value(), y.value(), z.value()), threshold_mm.value(), threshold_v.value(), hover_pause.value(), try_time.value(), name.value());
                     return wp;
                     break;
                 }

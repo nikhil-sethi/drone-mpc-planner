@@ -36,6 +36,7 @@ private:
     double time_start_wait_after_landing = -1;
     double time_prev_wp_reached = -1;
     double time_wp_reached = -1;
+    double time_attempt_wp = -1;
     double time_start_landing = -1;
     double time_landed = 0;
     double time_drone_problem = -1;
