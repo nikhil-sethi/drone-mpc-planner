@@ -18,7 +18,7 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
     float thrust = _drone_calib->max_thrust;
     stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config);
     current_stopping_position = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
-    if (enabled && (!_flight_area_config->inside(current_stopping_position.position) || !_flight_area_config->inside(data_drone.pos()))) {
+    if (enabled && !_flight_area_config->inside(current_stopping_position.position) && _flight_area_config->inside(data_drone.pos())) {
         // oh no! we have to brake!
         active = true;
         return current_stopping_position.acceleration;
