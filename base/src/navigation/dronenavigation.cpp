@@ -159,7 +159,6 @@ void DroneNavigation::update(double time) {
 
                 time_prev_wp_reached = time;
                 time_wp_reached = -1;
-                time_attempt_wp = -1;
                 break;
         } case ns_approach_waypoint: {
                 if (current_waypoint->mode == wfm_long_range) {
@@ -195,18 +194,6 @@ void DroneNavigation::update(double time) {
                 if (drone_close_to_wp() && current_waypoint->threshold_mm <= hover_mode_wp_dist_threshold && current_waypoint->threshold_mm > 0) {
                     _control->hover_mode(true);
                     _tracker->hover_mode(true);
-                }
-
-                if (time_attempt_wp < 0) {
-                    time_attempt_wp = time;
-                } else if ((time - time_attempt_wp) > current_waypoint->try_time) {
-                    if (wpid < waypoints.size()) { // next waypoint in flight plan
-                        wpid++;
-                        _navigation_status = ns_set_waypoint;
-                    } else if (wpid == waypoints.size()) {
-                        wpid = 0; // another round
-                        _navigation_status = ns_set_waypoint;
-                    }
                 }
 
                 if (_nav_flight_mode == nfm_hunt && _iceptor->target_acquired(time) && (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset)) {
