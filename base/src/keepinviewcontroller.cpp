@@ -18,14 +18,27 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
     float thrust = _drone_calib->max_thrust;
     stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config);
     current_stopping_position = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
-    if (enabled && !_flight_area_config->inside(current_stopping_position.position) && _flight_area_config->inside(data_drone.pos())) {
-        // oh no! we have to brake!
-        active = true;
-        return current_stopping_position.acceleration;
+    if (enabled) {
+        if (!_flight_area_config->inside(data_drone.pos())) {
+            // oh no! we are outside the flight area!
+            active = true;
+            auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
+            cv::Point3f correction_acceleration = {0, 0, 0};
+            for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
+                cv::Point3f correction_direction = _flight_area_config->planes().at(plane_id).normal;
+                if (violated_planes_inview.at(plane_id)) {
+                    correction_acceleration += correction_direction * thrust; // acceleration mixer will mix magnitudes
+                }
+            }
+            return correction_acceleration;
+
+        } else if (!_flight_area_config->inside(current_stopping_position.position)) {
+            // oh no! we have to brake!
+            active = true;
+            return current_stopping_position.acceleration;
+        }
     }
-    else {
-        // we are safe
-        active = false;
-        return {0, 0, 0};
-    }
+    // we are safe
+    active = false;
+    return {0, 0, 0};
 }
