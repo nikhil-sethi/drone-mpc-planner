@@ -119,7 +119,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
         // this approximation can be improved by considering velocity in other directions
         cv::Point3f dir = (_intermediate_position - drone.pos()) / normf(_intermediate_position - drone.pos());
         float _vel_in_dir = drone.vel().dot(dir);
-        float a = (0.56f * _thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
+        float a = (0.1f * _thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
         float b = _vel_in_dir;
         float c = -normf(_intermediate_position - drone.pos());
         float a1, a2, valid;
