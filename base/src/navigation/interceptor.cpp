@@ -238,7 +238,7 @@ void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData t
                     return;
                 }
 
-                if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel())) {
+                if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel()) && !_res.via && interception_position_in_flightarea && stopping_position_in_flightarea && _res.valid) {
                     enter_is_intercept_maneuvering(time, drone);
                 } else {
                     break;
