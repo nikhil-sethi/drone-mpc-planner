@@ -131,8 +131,7 @@ public:
             return false;
         if (_target_insecttracker->type() == tracking::tt_insect && pparams.disable_real_hunts)
             return false;
-        return !_n_frames_aim_not_in_range
-               && _visdat->no_recent_brightness_events(time)
+        return _visdat->no_recent_brightness_events(time)
                && !_trackers->monster_alert()
                && !_target_insecttracker->false_positive()
                && _target_insecttracker->properly_tracking();
