@@ -94,10 +94,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                 [[fallthrough]];
         } case is_waiting_in_reach_zone: {
                 _control_mode = position_control;
-                if (!target_trkr) {
-                    _interceptor_state = is_waiting_for_target;
-                    break;
-                } if (!target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert() || !target_trkr->go_for_terminate()) {
+                if (!target_trkr || !target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert() || !target_trkr->go_for_terminate()) {
                     _interceptor_state = is_waiting_for_target;
                     break;
                 }
@@ -114,10 +111,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
         } case is_lurking: {
                 _control_mode = position_control;
-                if (!target_trkr) {
-                    _interceptor_state = is_waiting_for_target;
-                    break;
-                } if (!target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert() || !target_trkr->go_for_terminate()) {
+                if (!target_trkr || !target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert() || !target_trkr->go_for_terminate()) {
                     _interceptor_state = is_waiting_for_target;
                     break;
                 }
