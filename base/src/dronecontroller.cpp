@@ -158,7 +158,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_throttle = JOY_BOUND_MIN;
                 spin_up_start_time = 0;
 #endif
-                mode += bf_PID_loop_disabled;
+                mode += bf_airmode;
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
