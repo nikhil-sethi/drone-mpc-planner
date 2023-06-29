@@ -59,10 +59,12 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     // _control_mode = position_control;
 
     float _delay;
-    if (_drone->in_flight())
-        _delay = 0.f;
-    else
-        _delay = 0.5f;
+    _delay = _drone->control.transmission_delay();
+    if (!_drone->in_flight()) {
+        if (_drone->control.spinup()) {
+            _delay += _drone->control.remaining_spinup_duration();
+        }
+    }
     auto target_trkr = update_target_insecttracker(_delay);
 
     interception_max_thrust = *_drone->control.max_thrust();

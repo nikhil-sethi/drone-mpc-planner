@@ -311,6 +311,7 @@ public:
     }
 
     bool spinup() {  return _flight_mode == fm_init_spinup || _flight_mode == fm_remaining_spinup; }
+    float remaining_spinup_duration() { return remaining_spinup_duration_t0; }
     bool landing() { return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start; }
     float in_flight_duration(double time) {
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
@@ -329,6 +330,8 @@ public:
             return 0;
         return  static_cast<float>(time - start_takeoff_burn_time) ;
     }
+
+    float transmission_delay() { return transmission_delay_duration; }
 
     void nav_waypoint_moved(double time) { time_waypoint_moved = time; }
 
