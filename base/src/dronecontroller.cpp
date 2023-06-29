@@ -203,10 +203,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, takeoff_aim_acceleration_factor * GRAVITY, 0});
                     _flight_mode = fm_1g;
                 } else {
-                    auto_roll = RC_MIDDLE;
-                    auto_pitch = RC_MIDDLE;
-                    auto_yaw = RC_MIDDLE;
-                    auto_throttle = calibration.max_thrust;
+                    std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, calibration.max_thrust, 0});
                 }
                 break;
         } case fm_max_burn_spin_down: {
