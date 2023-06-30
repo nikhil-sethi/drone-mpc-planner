@@ -16,7 +16,7 @@
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
     <Member Name="static_shakeit_thrust">-1</Member>
-    <Member Name="target_takeoff_velocity">2.2</Member>
+    <Member Name="target_takeoff_velocity">1.8</Member>
     <Member Name="led_type">led_none</Member>
 
     <Member Name="kp_pos_roll">10.90</Member>
