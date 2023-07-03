@@ -119,9 +119,15 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
         // this approximation can be improved by considering velocity in other directions
         cv::Point3f dir = (_intermediate_position - drone.pos()) / normf(_intermediate_position - drone.pos());
         float _vel_in_dir = drone.vel().dot(dir);
-        float a = (0.1f * _thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
-        float b = _vel_in_dir;
-        float c = -normf(_intermediate_position - drone.pos());
+        float _time_to_stop = 0;
+        float _distance_to_stop = 0;
+        if (_vel_in_dir < 0) {
+            _time_to_stop = abs(_vel_in_dir / (_thrust_factor * *_thrust));
+            _distance_to_stop = abs(_vel_in_dir) * _time_to_stop - _thrust_factor * *_thrust * pow(_time_to_stop, 2) / 2.f;
+        }
+        float a = (_thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
+        float b = (_vel_in_dir > 0) ? _vel_in_dir : 0;
+        float c = -normf(_intermediate_position - drone.pos() - dir * _distance_to_stop) / 2.f;
         float a1, a2, valid;
         std::tie(a1, a2, valid) = solve_quadratic_solution(a, b, c);
         if (valid < 0) {
@@ -144,6 +150,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
                 _time_to_reach_intersection = abs(sqrt(2 * (normf(_intermediate_position - drone.pos())) / _thrust_factor * *_thrust) + delay);
             }
         }
+        _time_to_reach_intersection += _time_to_stop;
 
         tracking::TrackData _future_drone = drone;
         _future_drone.state.pos = _intermediate_position;
