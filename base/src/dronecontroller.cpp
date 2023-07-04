@@ -787,13 +787,13 @@ void DroneController::control_drone_ff_acceleration_based(TrackData data_drone, 
 
 void DroneController::control_drone_acceleration_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc) {
     update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
-    cv::Point3f pid_acc = update_acc_pid_controller(data_drone, setpoint_acc, false);
+    cv::Point3f pid_acc = update_acc_pid_controller(data_drone, setpoint_acc);
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
 void DroneController::control_drone_velocity_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
-    cv::Point3f pid_acc = update_vel_pid_controller(data_drone, setpoint_vel, false);
+    cv::Point3f pid_acc = update_vel_pid_controller(data_drone, setpoint_vel);
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
@@ -944,24 +944,21 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::pid_error(TrackData data_d
     return std::tuple(pos_err_p, pos_err_d);
 }
 
-cv::Point3f DroneController::update_vel_pid_controller(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
-    //WARNING: this function is not allowed to store any information (or apply filters that store),
-    //because it is also being used for dummy calculations in the interceptor! See also the dry_run variable
-
-    auto [kp_pos, ki_pos, kd_pos] = adjust_vel_control_gains(data_drone);
-    auto [pos_err_p, pos_err_d] = vel_pid_error(data_drone, setpoint_vel, dry_run);
+cv::Point3f DroneController::update_vel_pid_controller(TrackData data_drone, cv::Point3f setpoint_vel) {
+    auto [kp_pos, ki_pos, kd_pos] = adjust_vel_control_gains();
+    auto [pos_err_p, pos_err_d] = vel_pid_error(data_drone, setpoint_vel);
 
     return multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_vel_control_gains(TrackData data_drone) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_vel_control_gains() {
     cv::Point3f kp_pos = {9.f, 9.f, 9.f};
     cv::Point3f kd_pos = {0.1f, 0.1f, 0.1f};
     cv::Point3f ki_pos = {0.f, 0.f, 0.f};
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::vel_pid_error(TrackData data_drone, cv::Point3f setpoint_vel, bool dry_run) {
+std::tuple<cv::Point3f, cv::Point3f> DroneController::vel_pid_error(TrackData data_drone, cv::Point3f setpoint_vel) {
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if (data_drone.vel_valid) {
@@ -983,24 +980,21 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::vel_pid_error(TrackData da
     return std::tuple(vel_err_p, vel_err_d);
 }
 
-cv::Point3f DroneController::update_acc_pid_controller(TrackData data_drone, cv::Point3f setpoint_acc, bool dry_run) {
-    //WARNING: this function is not allowed to store any information (or apply filters that store),
-    //because it is also being used for dummy calculations in the interceptor! See also the dry_run variable
-
-    auto [kp_pos, ki_pos, kd_pos] = adjust_acc_control_gains(data_drone);
-    auto [pos_err_p, pos_err_d] = acc_pid_error(data_drone, setpoint_acc, dry_run);
+cv::Point3f DroneController::update_acc_pid_controller(TrackData data_drone, cv::Point3f setpoint_acc) {
+    auto [kp_pos, ki_pos, kd_pos] = adjust_acc_control_gains();
+    auto [pos_err_p, pos_err_d] = acc_pid_error(data_drone, setpoint_acc);
 
     return multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_acc_control_gains(TrackData data_drone) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_acc_control_gains() {
     cv::Point3f kp_pos = {0.8f, 0.8f, 0.8f};
     cv::Point3f kd_pos = {0.1f, 0.1f, 0.1f};
     cv::Point3f ki_pos = {0.f, 0.f, 0.f};
     return std::tuple(kp_pos, ki_pos, kd_pos);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::acc_pid_error(TrackData data_drone, cv::Point3f setpoint_acc, bool dry_run) {
+std::tuple<cv::Point3f, cv::Point3f> DroneController::acc_pid_error(TrackData data_drone, cv::Point3f setpoint_acc) {
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if (data_drone.acc_valid) {
