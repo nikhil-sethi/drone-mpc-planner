@@ -68,9 +68,6 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     auto target_trkr = update_target_insecttracker(_delay);
 
     interception_max_thrust = *_drone->control.max_thrust();
-    if (!_drone->nav.drone_hunting()) {
-        interception_max_thrust = 2 * (*_drone->control.max_thrust()); // COmpensate ground effect
-    }
 
     switch (_interceptor_state) {
         case  is_init: {
