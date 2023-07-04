@@ -56,15 +56,16 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     stopping_position_in_flightarea = false;
     _aim_vel = cv::Point3f(0, 0, 0);
     _aim_acc = cv::Point3f(0, 0, 0);
-    // _control_mode = position_control;
 
     float _delay;
     _delay = _drone->control.transmission_delay();
     if (!_drone->in_flight()) {
         if (_drone->control.spinup()) {
             _delay += _drone->control.remaining_spinup_duration();
+            _delay += _drone->control.takeoff_delay();
         }
     }
+
     auto target_trkr = update_target_insecttracker(_delay);
 
     interception_max_thrust = *_drone->control.max_thrust();
