@@ -28,6 +28,7 @@ if [[ $1 -eq 1 ]] ; then
     sudo cp dhcpd.conf /etc/dhcp/dhcpd.conf
     sudo cp isc-dhcp-server /etc/default/isc-dhcp-server
     sudo cp hostapd.conf /etc/hostapd/hostapd.conf
+    sudo cp hostapd /etc/default/hostapd
     sudo cp rfkill-unblock.service /etc/systemd/system/rfkill-unblock.service
     sudo rm /etc/network/interfaces
     sudo cp interfaces /etc/network/interfaces

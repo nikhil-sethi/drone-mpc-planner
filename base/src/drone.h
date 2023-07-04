@@ -211,7 +211,11 @@ public:
     void shake_drone() {_state = ds_post_flight; post_flight_state = post_start_shaking;}
     bool in_flight() {return _state == ds_flight;}
     bool drone_ready_and_waiting() {return _state == ds_ready;}
-    bool program_restart_allowed() {return _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_crashed || post_flight_state == post_lost || post_flight_state == post_deep_sleep);}
+    bool program_restart_allowed() {
+        bool correct_state = _state != ds_flight && (_state != ds_post_flight || post_flight_state == post_deep_sleep);
+        bool not_waiting_for_sleep = !control.telemetry_OK() && ((_state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost)) || (_state == ds_pre_flight && pre_flight_state == pre_locate_time_out));
+        return correct_state || not_waiting_for_sleep;
+    }
     bool crashed() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost);}
     bool locate_fail() {return _state == ds_pre_flight && (pre_flight_state == pre_locate_time_out);}
     bool has_been_ready() {return _has_been_ready;}

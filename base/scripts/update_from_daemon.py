@@ -48,7 +48,7 @@ def update(logger_name):
         logger.info("Updating to: " + pats_settings_new['tag'])
         ssh_command = 'ssh -F /home/pats/.ssh/config'
 
-        result = subprocess.run(['git', 'fetch', '--tags'], cwd='/home/pats/pats/release/', env={'GIT_SSH_COMMAND': ssh_command}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(['git', 'fetch', '--tags', '--force'], cwd='/home/pats/pats/release/', env={'GIT_SSH_COMMAND': ssh_command}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             logger.error(result.stdout.decode('utf-8'))
             logger.error(result.stderr.decode('utf-8'))
