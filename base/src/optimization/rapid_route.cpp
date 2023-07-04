@@ -123,7 +123,7 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
         float _distance_to_stop = 0;
         if (_vel_in_dir < 0) {
             _time_to_stop = abs(_vel_in_dir / (_thrust_factor * *_thrust));
-            _distance_to_stop = abs(_vel_in_dir) * _time_to_stop - _thrust_factor * *_thrust * pow(_time_to_stop, 2) / 2.f;
+            _distance_to_stop = abs(_vel_in_dir) * _time_to_stop - _thrust_factor * *_thrust * powf(_time_to_stop, 2) / 2.f;
         }
         float a = (_thrust_factor * *_thrust + _gravity.dot(dir)) / 2.f;
         float b = (_vel_in_dir > 0) ? _vel_in_dir : 0;
