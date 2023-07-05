@@ -104,6 +104,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 }
             }
             if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
+                BenchmarkReader benchmark_reader;
                 if (!_patser->drone.benchmark_mode) {
                     if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
                         std::cout << "Resuming benchmark!" << std::endl;
@@ -119,7 +120,6 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             _idx++;
                         }
                         file.close();
-                        BenchmarkReader benchmark_reader;
                         _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                         _patser->drone.benchmark_len = benchmark_entries.size();
                         _patser->drone.benchmark_mode = true;
@@ -134,11 +134,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         _patser->drone.benchmark_entry = _current_entry;
 
                         if (_patser->drone.benchmark_entry_id == 0) {
-                            ofstream EntryFlag;
-                            EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
-                            EntryFlag << _patser->drone.benchmark_entry_id << "\n";
-                            EntryFlag << _patser->drone.benchmark_time << "\n";
-                            EntryFlag.close();
+                            benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
                         }
 
                         if (_current_entry.type == "replay") {
@@ -153,11 +149,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         }
                         _patser->drone.benchmark_entry_id++;
 
-                        ofstream EntryFlag;
-                        EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
-                        EntryFlag << _patser->drone.benchmark_entry_id << "\n";
-                        EntryFlag << _patser->drone.benchmark_time << "\n";
-                        EntryFlag.close();
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
                     }
                 } else {
                     remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");

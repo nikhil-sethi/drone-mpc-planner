@@ -43,3 +43,11 @@ size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {
     }
     return new_benchmark_hash;
 }
+
+void BenchmarkReader::WriteBenchmarkEntry(int benchmark_entry_id, std::string benchmark_time) {
+    std::ofstream EntryFlag;
+    EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
+    EntryFlag << benchmark_entry_id << "\n";
+    EntryFlag << benchmark_time << "\n";
+    EntryFlag.close();
+}
