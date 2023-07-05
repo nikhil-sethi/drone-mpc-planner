@@ -89,9 +89,9 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     remove(benchmark_fn.c_str());
                 } else {
                     std::cout << "Parsing benchmark!" << std::endl;
-                    rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    rename(benchmark_fn.c_str(), (pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
                     BenchmarkReader benchmark_reader;
-                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
                     _patser->drone.benchmark_len = benchmark_entries.size();
                     time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
                     std::ostringstream oss;
@@ -103,12 +103,12 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     remove(benchmark_fn.c_str());
                 }
             }
-            if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
+            if (file_exist(pats_flags_folder + "pats_benchmark_trigger.csv")) {
                 BenchmarkReader benchmark_reader;
                 if (!_patser->drone.benchmark_mode) {
-                    if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+                    if (file_exist(pats_flags_folder + "BenchmarkEntry.txt")) {
                         std::cout << "Resuming benchmark!" << std::endl;
-                        std::ifstream file("/home/pats/pats/flags/BenchmarkEntry.txt");
+                        std::ifstream file((pats_flags_folder + "BenchmarkEntry.txt").c_str());
                         std::string str;
                         int _idx = 0;
                         while (std::getline(file, str))
@@ -120,16 +120,16 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             _idx++;
                         }
                         file.close();
-                        _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                        _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
                         _patser->drone.benchmark_len = benchmark_entries.size();
                         _patser->drone.benchmark_mode = true;
                     } else
-                        remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                        remove((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
                 }
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
 
                     if (_patser->drone.benchmark_entry_id == 0) {
-                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
                     }
 
                     static int _ready_cnt = 0;
@@ -150,14 +150,14 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         }
                         _patser->drone.benchmark_entry_id++;
 
-                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
                     }
                 } else {
-                    remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                    remove("/home/pats/pats/flags/BenchmarkEntry.txt");
+                    remove((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
+                    remove((pats_flags_folder + "BenchmarkEntry.txt").c_str());
                     _patser->drone.benchmark_mode = false;
                 }
-            } else if (!file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+            } else if (!file_exist(pats_flags_folder + "BenchmarkEntry.txt")) {
                 _patser->drone.benchmark_mode = false;
             }
         }

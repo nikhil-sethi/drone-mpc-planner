@@ -16,14 +16,15 @@ public :
     };
 
 private:
-    std::string demo_waypoint_fn = "/home/pats/pats/flags/pats_demo.xml";
-    std::string demo_insect_fn = "/home/pats/pats/flags/insect_demo";
-    std::string virtual_insect_fn = "/home/pats/pats/flags/virtual_insect";
-    std::string calib_fn = "/home/pats/pats/flags/calib_now";
-    std::string beep_fn = "/home/pats/pats/flags/beep_now";
-    std::string shake_fn = "/home/pats/pats/flags/shake_now";
-    std::string blink_fn = "/home/pats/pats/flags/blink_now";
-    std::string benchmark_fn = "/home/pats/pats/flags/benchmark.csv";
+    std::string pats_flags_folder = "/home/pats/pats/flags/";
+    std::string demo_waypoint_fn = pats_flags_folder + "pats_demo.xml";
+    std::string demo_insect_fn = pats_flags_folder + "insect_demo";
+    std::string virtual_insect_fn = pats_flags_folder + "virtual_insect";
+    std::string calib_fn = pats_flags_folder + "calib_now";
+    std::string beep_fn = pats_flags_folder + "beep_now";
+    std::string shake_fn = pats_flags_folder + "shake_now";
+    std::string blink_fn = pats_flags_folder + "blink_now";
+    std::string benchmark_fn = pats_flags_folder + "benchmark.csv";
     std::thread thread;
     bool initialized = false;
     bool _never_overwrite = false;
