@@ -3,6 +3,7 @@ import os
 import subprocess
 import socket
 import logging
+import json
 import lib_base as lb
 
 
@@ -45,11 +46,18 @@ def update(logger_name):
         return
     if 'tag' not in pats_settings_currently or pats_settings_new['tag'] != pats_settings_currently['tag']:
         logger.info("Updating to: " + pats_settings_new['tag'])
-        cmd = 'cd ~/pats/release && git fetch --tags | true && git co ' + pats_settings_new['tag'] + ' && kill $(pgrep -f baseboardlink.py) && kill $(pgrep -f endless_wait.sh)'
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        ssh_command = 'ssh -F /home/pats/.ssh/config'
+
+        result = subprocess.run(['git', 'fetch', '--tags', '--force'], cwd='/home/pats/pats/release/', env={'GIT_SSH_COMMAND': ssh_command}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
-            logger.error(result.stdout)
-            logger.error(result.stderr)
+            logger.error(result.stdout.decode('utf-8'))
+            logger.error(result.stderr.decode('utf-8'))
+            return
+        result = subprocess.run(['git', 'checkout', pats_settings_new['tag']], cwd='/home/pats/pats/release/', env={'GIT_SSH_COMMAND': ssh_command}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode != 0:
+            logger.error(result.stdout.decode('utf-8'))
+            logger.error(result.stderr.decode('utf-8'))
+            return
 
     if pats_settings_new['op_mode'] != pats_settings_currently['op_mode']:
         logger.info("Changing mode to: " + pats_settings_new['op_mode'])
@@ -71,7 +79,7 @@ def update(logger_name):
 
     if 'trapeye' not in pats_settings_currently or pats_settings_new['trapeye'] != pats_settings_currently['trapeye']:
         # todo, call configure trapeye script
-        if pats_settings_new['trapeye']:
+        if json.loads(pats_settings_new['trapeye']):
             logger.info("Enabling trap-eye")
         else:
             logger.info("Disabling trap-eye")

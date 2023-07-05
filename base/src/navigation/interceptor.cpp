@@ -193,8 +193,14 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
                     break;
                 }
 
+                TrackData target = target_trkr->last_track_data();
+                TrackData drone = _drone->tracker.last_track_data();
+
                 if (_intercepting_state == is_approaching)
-                    update_hunt_strategy(drone_at_base, target_trkr->last_track_data(), time);
+                    update_hunt_strategy(drone_at_base, drone, target, time);
+
+                if (_drone->nav.drone_hunting() && drone.pos_valid && target.pos_valid)
+                    update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
                 break;
 
             }
@@ -251,18 +257,15 @@ void Interceptor::update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos
     }
 }
 
-void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time) {
+void Interceptor::update_hunt_strategy(bool drone_at_base, tracking::TrackData drone, tracking::TrackData target, double time) {
 
     switch (_intercepting_state) {
         case is_approaching: {
-
-                TrackData drone = _drone->tracker.last_track_data();
                 if (drone_at_base || normf(drone.pos()) < 0.1f) {
                     drone.state.pos = _drone->tracker.pad_location();
                     drone.state.vel = cv::Point3f(0, 0, 0);
                 }
 
-                update_hunt_distance(drone_at_base, drone.pos(), target.pos(), time);
                 update_aim_and_target_in_flightarea(drone_at_base, target);
 
                 if (!aim_in_flightarea) {

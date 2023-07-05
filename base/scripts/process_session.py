@@ -283,7 +283,7 @@ def process_flight_log(log_fn: str, folder: str, session_start_datetime: datetim
 
 def process_detection_log(log_fn: str, folder: str, session_start_datetime: datetime, flights_in_folder: list, logger: logging.Logger):
     try:
-        log = pd.read_csv(log_fn, sep=";", converters={'fp': str})
+        log = pd.read_csv(log_fn, sep=";", converters={'fp': str}, dtype=float) # dtype=float converts everything to float, gives error for faulty logs, e.g. the strings of fp end up in another column.
     except Exception as e:  # pylint: disable=broad-except
         logger.info(log_fn + ': ' + str(e))
         return {}

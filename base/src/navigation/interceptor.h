@@ -82,7 +82,7 @@ private:
     void update_aim_in_flightarea(tti_result tti_res);
     void update_aim_and_target_in_flightarea(bool drone_at_base, tracking::TrackData target);
 
-    void update_hunt_strategy(bool drone_at_base, tracking::TrackData target, double time);
+    void update_hunt_strategy(bool drone_at_base, tracking::TrackData drone, tracking::TrackData target, double time);
     void update_hunt_distance(bool drone_at_base, cv::Point3f drone_pos, cv::Point3f target_pos, double time);
     bool delay_takeoff_for_better_interception(tracking::InsectTracker *target_tracker);
     void enter_is_intercept_maneuvering(double time, tracking::TrackData drone) {
