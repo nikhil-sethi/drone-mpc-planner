@@ -127,15 +127,16 @@ void CommandCenterLink::check_commandcenter_triggers() {
                         remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
                 }
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
+
+                    if (_patser->drone.benchmark_entry_id == 0) {
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
+                    }
+
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (30); // wait 30 seconds before initializing the next moth, to give quadcopter time to start the chase
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt && !_patser->trackers.monster_alert()) {
                         BenchmarkEntry _current_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
                         _patser->drone.benchmark_entry = _current_entry;
-
-                        if (_patser->drone.benchmark_entry_id == 0) {
-                            benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time);
-                        }
 
                         if (_current_entry.type == "replay") {
                             _patser->trackers.init_replay_moth(_current_entry.id);
