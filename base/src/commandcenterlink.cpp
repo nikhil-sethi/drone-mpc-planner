@@ -88,26 +88,20 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     std::cout << "Benchmark already running!" << std::endl;
                     remove(benchmark_fn.c_str());
                 } else {
-                    std::cout << "Parsing benchmark!" << std::endl;
                     rename(benchmark_fn.c_str(), (pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
-                    BenchmarkReader benchmark_reader;
-                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
-                    _patser->drone.benchmark_len = benchmark_entries.size();
-                    time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-                    std::ostringstream oss;
-                    oss << std::put_time(std::localtime(&_time_now), "%Y%m%d_%H%M%S");
-                    auto str = oss.str();
-                    _patser->drone.benchmark_time = str;
-                    _patser->drone.benchmark_entry_id = 0;
-                    _patser->drone.benchmark_mode = true;
                     remove(benchmark_fn.c_str());
                 }
             }
             if (file_exist(pats_flags_folder + "pats_benchmark_trigger.csv")) {
                 BenchmarkReader benchmark_reader;
                 if (!_patser->drone.benchmark_mode) {
+                    std::cout << "Parsing benchmark" << std::endl;
+                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
+                    _patser->drone.benchmark_len = benchmark_entries.size();
+                    _patser->drone.benchmark_mode = true;
+
                     if (file_exist(pats_flags_folder + "benchmark_entry.txt")) {
-                        std::cout << "Resuming benchmark!" << std::endl;
+                        std::cout << "Resuming benchmark" << std::endl;
                         std::ifstream file((pats_flags_folder + "benchmark_entry.txt").c_str());
                         std::string str;
                         int _idx = 0;
@@ -120,18 +114,19 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             _idx++;
                         }
                         file.close();
-                        _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
-                        _patser->drone.benchmark_len = benchmark_entries.size();
-                        _patser->drone.benchmark_mode = true;
-                    } else
-                        remove((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
-                }
-                if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
-
-                    if (_patser->drone.benchmark_entry_id == 0) {
+                    } else {
+                        std::cout << "Starting benchmark" << std::endl;
+                        time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+                        std::ostringstream oss;
+                        oss << std::put_time(std::localtime(&_time_now), "%Y%m%d_%H%M%S");
+                        auto str = oss.str();
+                        _patser->drone.benchmark_time = str;
+                        _patser->drone.benchmark_entry_id = 0;
                         benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
                     }
+                }
 
+                if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
                     static int _ready_cnt = 0;
                     _ready_cnt = (_ready_cnt + 1) % (30); // wait 30 seconds before initializing the next moth, to give quadcopter time to start the chase
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt && !_patser->trackers.monster_alert()) {
@@ -149,7 +144,6 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
                         }
                         _patser->drone.benchmark_entry_id++;
-
                         benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
                     }
                 } else {
