@@ -106,9 +106,9 @@ void CommandCenterLink::check_commandcenter_triggers() {
             if (file_exist(pats_flags_folder + "pats_benchmark_trigger.csv")) {
                 BenchmarkReader benchmark_reader;
                 if (!_patser->drone.benchmark_mode) {
-                    if (file_exist(pats_flags_folder + "BenchmarkEntry.txt")) {
+                    if (file_exist(pats_flags_folder + "benchmark_entry.txt")) {
                         std::cout << "Resuming benchmark!" << std::endl;
-                        std::ifstream file((pats_flags_folder + "BenchmarkEntry.txt").c_str());
+                        std::ifstream file((pats_flags_folder + "benchmark_entry.txt").c_str());
                         std::string str;
                         int _idx = 0;
                         while (std::getline(file, str))
@@ -154,10 +154,10 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     }
                 } else {
                     remove((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
-                    remove((pats_flags_folder + "BenchmarkEntry.txt").c_str());
+                    remove((pats_flags_folder + "benchmark_entry.txt").c_str());
                     _patser->drone.benchmark_mode = false;
                 }
-            } else if (!file_exist(pats_flags_folder + "BenchmarkEntry.txt")) {
+            } else if (!file_exist(pats_flags_folder + "benchmark_entry.txt")) {
                 _patser->drone.benchmark_mode = false;
             }
         }

@@ -46,7 +46,7 @@ size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {
 
 void BenchmarkReader::WriteBenchmarkEntry(int benchmark_entry_id, std::string benchmark_time, std::string pats_flags_folder) {
     std::ofstream EntryFlag;
-    EntryFlag.open(pats_flags_folder + "BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
+    EntryFlag.open(pats_flags_folder + "benchmark_entry.txt", std::ofstream::out | std::ofstream::trunc);
     EntryFlag << benchmark_entry_id << "\n";
     EntryFlag << benchmark_time << "\n";
     EntryFlag.close();
