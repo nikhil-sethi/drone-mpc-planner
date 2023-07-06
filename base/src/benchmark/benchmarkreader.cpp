@@ -1,7 +1,6 @@
 #include "benchmarkreader.h"
 #include "hash.h"
-#include<fstream>
-#include <iostream>
+#include <fstream>
 #include <sstream>
 
 std::vector<BenchmarkEntry> benchmark_entries;

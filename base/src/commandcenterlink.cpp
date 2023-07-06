@@ -3,11 +3,6 @@
 #include "trackermanager.h"
 #include "benchmarkreader.h"
 
-#include <thread>
-#include <unistd.h> //usleep
-#include<iostream>
-#include <experimental/filesystem>
-
 void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *visdat) {
     _log_replay_mode = log_replay_mode;
     _visdat = visdat;
