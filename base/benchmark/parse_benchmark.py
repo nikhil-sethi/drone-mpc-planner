@@ -303,10 +303,7 @@ if __name__ == "__main__":
         '-i', help="Path to the folder with log folders", required=True)
     args = parser.parse_args()
 
-    TOTAL_BENCHMARK_ENTRIES = 16
-    DROP_DUPLICATES = False
     MAX_KILL_DISTANCE = 0.05
-    MEAN_VAR_PER_INSECT = False
 
     entry_parser = EntryParser(args.i)
     entry_parser.find_entries()
