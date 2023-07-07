@@ -22,11 +22,7 @@ class EntryParser:
                 "pos_best_interception",
                 "vel_best_interception",
                 "acc_best_interception",
-                "voltage_reduction",
-                "n_monsters",
-                "n_insects",
                 "executor_hash",
-                "benchmark_type",
                 "benchmark_timestamp",
                 "benchmark_entry_id",
                 "benchmark_hash",
@@ -101,16 +97,8 @@ class EntryParser:
                 ) = (
                     line.strip().split(":")[1].split(",")
                 )
-            if line.find("voltage_reduction") != -1:
-                voltage_reduction = line.strip().split(":")[1]
-            if line.find("n_monsters") != -1:
-                n_monsters = line.strip().split(":")[1]
-            if line.find("n_insects") != -1:
-                n_insects = line.strip().split(":")[1]
             if line.find("executor_hash") != -1:
                 executor_hash = line.strip().split(":")[1]
-            if line.find("benchmark_type") != -1:
-                benchmark_type = line.strip().split(":")[1]
             if line.find("benchmark_timestamp") != -1:
                 benchmark_timestamp = datetime.datetime.strptime(
                     line.strip().split(":")[1], '%Y%m%d_%H%M%S')
@@ -144,11 +132,7 @@ class EntryParser:
                         acc_best_interception_y,
                         acc_best_interception_z,
                     ],
-                    "voltage_reduction": voltage_reduction,
-                    "n_monsters": n_monsters,
-                    "n_insects": n_insects,
                     "executor_hash": executor_hash,
-                    "benchmark_type": benchmark_type,
                     "benchmark_timestamp": benchmark_timestamp,
                     "benchmark_entry_id": int(benchmark_entry_id),
                     "benchmark_hash": benchmark_hash,
@@ -273,8 +257,8 @@ pats`     \(/|\)/       `
                 entry_id, benchmark_df)
             try:
                 self.results_string += self.dataframe_to_orgmode_table(
-                    per_entry_results_df_dict[entry_id][['benchmark_timestamp', 'benchmark_type', 'best_interception_distance',
-                                                         'time_to_best_interception', 'flight_time', 'crashed', 'voltage_reduction', 'n_insects', 'n_monsters', 'entry_file_path']]
+                    per_entry_results_df_dict[entry_id][['benchmark_timestamp', 'best_interception_distance',
+                                                         'time_to_best_interception', 'flight_time', 'crashed', 'entry_file_path']]
                 )
             except:
                 self.results_string += "\n"

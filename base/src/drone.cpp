@@ -417,9 +417,6 @@ void Drone::post_flight(double time) {
                 flight_logger.close();
                 land_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
                 _trackers->stop_drone_tracking(&tracker);
-                voltage_post_flight = _rc->telemetry.batt_cell_v;
-                n_monsters_post_flight = _trackers->fp_monsters_count();
-                n_insects_post_flight = _trackers->insects_count();
                 save_flight_results();
                 time_reset_yaw_on_pad = time;
                 control.freeze_attitude_reset_yaw_on_pad();
@@ -504,9 +501,6 @@ void Drone::post_flight(double time) {
                 flight_logger.close();
                 _trackers->stop_drone_tracking(&tracker);
                 _baseboard_link->allow_charging(true);
-                voltage_post_flight = _rc->telemetry.batt_cell_v;
-                n_monsters_post_flight = _trackers->fp_monsters_count();
-                n_insects_post_flight = _trackers->insects_count();
                 save_flight_results();
                 post_flight_state = post_crashed;
                 communicate_state(es_pats_x);
@@ -571,9 +565,6 @@ void Drone::take_off(bool hunt, double time) {
     flight_logger.open(data_output_dir  + "log_flight" + to_string(_n_take_offs) + ".csv", std::ofstream::out);
     tracker.init_flight(&flight_logger, time);
     flight_logger << "rs_id;elapsed;dt;drone_state_str;";
-    voltage_pre_flight = _rc->telemetry.batt_cell_v;
-    n_monsters_pre_flight = _trackers->fp_monsters_count();
-    n_insects_pre_flight = _trackers->insects_count();
     _trackers->start_drone_tracking(&tracker);
     nav.init_flight(hunt, &flight_logger);
     if (!hunt) {
@@ -598,25 +589,12 @@ void Drone::save_flight_results() {
     results_log << "pos_best_interception_xyz:" << _interceptor->pos_best_distance().x << "," << _interceptor->pos_best_distance().y << "," << _interceptor->pos_best_distance().z << '\n';
     results_log << "vel_best_interception_xyz:" << _interceptor->vel_best_distance().x << "," << _interceptor->vel_best_distance().y << "," << _interceptor->vel_best_distance().z << '\n';
     results_log << "acc_best_interception_xyz:" << _interceptor->acc_best_distance().x << "," << _interceptor->acc_best_distance().y << "," << _interceptor->acc_best_distance().z << '\n';
-    results_log << "voltage_reduction:" << voltage_pre_flight - voltage_post_flight << '\n';
-    results_log << "n_monsters:" << n_monsters_post_flight - n_monsters_pre_flight << '\n';
-    results_log << "n_insects:" << n_insects_post_flight - n_insects_pre_flight << '\n';
     results_log << "executor_hash:" << executor_hash << '\n';
     if (benchmark_len) {
         if (benchmark_entry_id <= benchmark_len) {
-            if (benchmark_entry.type == "replay") {
-                results_log << "benchmark_type:replay" << '\n';
-                results_log << "benchmark_timestamp:" << benchmark_time << '\n';
-            } else if (benchmark_entry.type == "virtual") {
-                results_log << "benchmark_type:virtual" << '\n';
-                results_log << "benchmark_timestamp:" << benchmark_time << '\n';
-                results_log << "benchmark_insect_pos_xyz:" << benchmark_entry.pos_x << "," << benchmark_entry.pos_y << "," << benchmark_entry.pos_z << '\n';
-                results_log << "benchmark_insect_vel_xyz:" << benchmark_entry.vel_x << "," << benchmark_entry.vel_y << "," << benchmark_entry.vel_z << '\n';
-                results_log << "benchmark_insect_evasion_trigger:" << benchmark_entry.evasion_trigger << '\n';
-                results_log << "benchmark_insect_evasion_type:" << benchmark_entry.evasion_type << '\n';
-            }
-            results_log << "benchmark_entry_id:" << benchmark_entry_id << '\n';
+            results_log << "benchmark_timestamp:" << benchmark_time << '\n';
             results_log << "benchmark_hash:" << benchmark_hash << '\n';
+            results_log << "benchmark_entry_id:" << benchmark_entry_id << '\n';
         }
         else {
             benchmark_len = 0;
