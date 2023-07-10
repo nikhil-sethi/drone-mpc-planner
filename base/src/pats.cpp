@@ -74,7 +74,7 @@ void Patser::update(double time) {
                     maintain_motion_map(time);
 
                 trackers.update(time);
-                interceptor.update(drone.control.at_base(), time);
+                interceptor.update(time);
                 drone.update(time);
                 break;
             }

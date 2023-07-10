@@ -342,7 +342,7 @@ void DroneNavigation::update(double time) {
                 break;
             }
     }
-    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";" << _iceptor->tti() << ";";
+    (*_logger) << navigation_status() << ";" << static_cast<uint16_t>(_nav_flight_mode)  << ";" << _iceptor->insect_id() << ";" << _baseboard_link->charging_state_str() << ";" << static_cast<uint16_t>(_baseboard_link->charging_state()) << ";" << _iceptor->time_to_intercept() << ";";
 
 #ifdef PATS_PROFILING
     std::chrono::_V2::system_clock::time_point t_end_navigation = std::chrono::high_resolution_clock::now();

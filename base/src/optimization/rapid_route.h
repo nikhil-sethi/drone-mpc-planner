@@ -13,6 +13,8 @@ struct rapid_route_result {
         stopping_position = {0, 0, 0};
         intermediate_position = {0, 0, 0};
         time_to_intermediate = 0;
+        interception_position_in_flightarea = false;
+        stopping_position_in_flightarea = false;
     };
     bool valid;
     bool via;
@@ -23,6 +25,8 @@ struct rapid_route_result {
     cv::Point3f stopping_position;
     cv::Point3f intermediate_position;
     float time_to_intermediate;
+    bool interception_position_in_flightarea;
+    bool stopping_position_in_flightarea;
 };
 
 struct stopping_position_result {
