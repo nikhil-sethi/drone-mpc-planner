@@ -652,7 +652,7 @@ void DroneTracker::recenter_template() {
             template_deviation_detected = false;
         } else
             template_deviation_detected = true;
-    } else {
+    } else if (template_tracking()) {
         const uint8_t minimal_drone_brightness = 200;
         if (_template.at<uint8_t>(_template.cols / 2, _template.cols / 2) > minimal_drone_brightness) {
             cv::Moments template_drone_moments = cv::moments(_template);
