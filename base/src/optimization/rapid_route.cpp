@@ -21,11 +21,12 @@ float largestRoot(float a, float b, float c) {
     }
 }
 
-void RapidRouteInterface::init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config) {
+void RapidRouteInterface::init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config, float transmission_delay) {
     _thrust = thrust;
     _thrust_factor = MAX(thrust_factor, *_thrust / 9.80f);
     _gravity = {0, -GRAVITY, 0};
     _flight_area_config = *flight_area_config;
+    _transmission_delay = transmission_delay;
 }
 
 rapid_route_result RapidRouteInterface::update_initial_guess(tracking::TrackData drone, tracking::TrackData target, rapid_route_result result) {
@@ -288,8 +289,7 @@ stopping_position_result RapidRouteInterface::find_stopping_position(rapid_route
     if (_stopping_vector.z != 0)
         _stopping_time.z = -_velocity_at_interception.z / _stopping_vector.z;
     float _stopping_time_max = abs(std::max(std::max(_stopping_time.x, _stopping_time.y), _stopping_time.z));
-    // cv::Point3f _stopping_acceleration = _stopping_vector - _gravity;
-    cv::Point3f _stopping_distance = _velocity_at_interception * _stopping_time_max + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
+    cv::Point3f _stopping_distance = _velocity_at_interception * (_stopping_time_max + static_cast<float>(dparams.drone_rotation_delay) + _transmission_delay) + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
     cv::Point3f _stopping_position = interception_result.position_to_intercept + _stopping_distance;
     stopping_position_result _result;
     _result.position = _stopping_position;

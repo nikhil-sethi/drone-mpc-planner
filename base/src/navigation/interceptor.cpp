@@ -11,7 +11,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     _drone = drone;
     interception_max_thrust = *drone->control.max_thrust();
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
-    rapid_route.init(&interception_max_thrust, 0.7f, flight_area_config);
+    rapid_route.init(&interception_max_thrust, 0.7f, flight_area_config, drone->control.transmission_delay());
     initialized = true;
 }
 

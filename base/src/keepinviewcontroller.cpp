@@ -16,7 +16,7 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
     current_state.position_to_intercept = data_drone.pos() + data_drone.vel() * transmission_delay_duration;
     RapidRouteInterface stopping_position_rapid_route_interface;
     float thrust = _drone_calib->max_thrust;
-    stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config);
+    stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config, transmission_delay_duration);
     current_stopping_position = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
     if (enabled) {
         if (!_flight_area_config->inside(data_drone.pos())) {

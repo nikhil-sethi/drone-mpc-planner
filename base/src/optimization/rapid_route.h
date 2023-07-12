@@ -44,7 +44,7 @@ struct stopping_position_result {
 
 class RapidRouteInterface {
 public:
-    void init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config);
+    void init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config, float transmission_delay);
     rapid_route_result find_interception_direct(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
     rapid_route_result alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result);
     rapid_route_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
@@ -53,6 +53,7 @@ public:
 private:
     float *_thrust;
     float _thrust_factor;
+    float _transmission_delay;
     cv::Point3f _gravity;
     FlightAreaConfig _flight_area_config;
     rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
