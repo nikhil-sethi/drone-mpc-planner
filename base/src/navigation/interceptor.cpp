@@ -99,12 +99,14 @@ void Interceptor::update(double time[[maybe_unused]]) {
                     break;
                 }
 
-                if (_hunt_strategy_state == is_approaching) {
-                    check_if_aim_in_flightarea();
-                    update_hunt_strategy(_target_insecttracker->last_track_data(), time);
+                if (_target_insecttracker) {
+                    if (_hunt_strategy_state == is_approaching) {
+                        check_if_aim_in_flightarea();
+                        update_hunt_strategy(_target_insecttracker->last_track_data(), time);
+                    }
+                    if (_drone->nav.drone_hunting() && _drone->tracker.last_track_data().pos_valid && _target_insecttracker->last_track_data().pos_valid)
+                        update_hunt_distance(_drone->tracker.last_track_data().pos(), _target_insecttracker->last_track_data().pos(), time);
                 }
-                if (_drone->nav.drone_hunting() && _drone->tracker.last_track_data().pos_valid && _target_insecttracker->last_track_data().pos_valid)
-                    update_hunt_distance(_drone->tracker.last_track_data().pos(), _target_insecttracker->last_track_data().pos(), time);
                 break;
             }
     }
