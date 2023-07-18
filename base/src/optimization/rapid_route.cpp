@@ -23,7 +23,7 @@ float largestRoot(float a, float b, float c) {
 
 void RapidRouteInterface::init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config, float transmission_delay) {
     _thrust = thrust;
-    _thrust_factor = MAX(thrust_factor, *_thrust / 9.80f);
+    _thrust_factor = MAX(thrust_factor, 9.80f / *_thrust);
     _gravity = {0, -GRAVITY, 0};
     _flight_area_config = *flight_area_config;
     _transmission_delay = transmission_delay;
