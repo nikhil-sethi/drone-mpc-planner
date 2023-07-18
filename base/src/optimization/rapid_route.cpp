@@ -81,7 +81,7 @@ rapid_route_result RapidRouteInterface::find_interception_direct(tracking::Track
     return result;
 }
 
-rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result) {
+rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result) {
     cv::Point3f _original_target_position = target.pos();
     int _intermediate_pos_cnt = 0;
 
@@ -177,57 +177,12 @@ rapid_route_result RapidRouteInterface::alt_find_interception_via(tracking::Trac
     return _direct_result;
 }
 
-rapid_route_result RapidRouteInterface::find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
-    rapid_route_result result;
-    cv::Point3f _intersection;
-    cv::Point3f _target_position_after_time_to_reach;
-    int _iteration_counter = 0;
-    cv::Point3f _target_position = target.pos();
-    float _time_to_reach_intersection;
-    int _cnt = 0;
-    while (_cnt < 100) {
-        _sorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position);
-        Plane _first_plane = _sorted_planes[0];
-        int _second_plane_idx = _flight_area_config.find_next_non_parallel_plane(_sorted_planes, 0);
-        Plane _second_plane = _sorted_planes[_second_plane_idx];
-        int _third_plane_idx = _flight_area_config.find_next_non_parallel_plane(_sorted_planes, 0, _second_plane_idx);
-        Plane _third_plane = _sorted_planes[_third_plane_idx];
-
-        _intersection = intersection_of_3_planes(&_first_plane, &_second_plane, &_third_plane);
-        _intersection = _flight_area_config.move_inside(_intersection); // may still exceed the constraints of a 4+th plane
-        _time_to_reach_intersection = abs(sqrt(2.f * normf(_intersection - drone.pos()) / (_thrust_factor * *_thrust)) + delay); // doesnt consider current vel
-        _target_position_after_time_to_reach = target.pos() + target.vel() * _time_to_reach_intersection;
-
-        _resorted_planes = _flight_area_config.sort_planes_by_proximity(_target_position_after_time_to_reach);
-
-        if (_sorted_planes == _resorted_planes || _iteration_counter > 20)
-            break;
-        else
-            _iteration_counter++;
-    }
-    tracking::TrackData _future_drone = drone;
-    _future_drone.state.pos = _intersection;
-    _future_drone.state.vel = {0, 0, 0};
-    _future_drone.state.acc = {0, 0, 0};
-
-    tracking::TrackData _future_target = target;
-    _future_target.state.pos = _target_position_after_time_to_reach;
-
-    result = find_interception_direct(_future_drone, _future_target, 0.f, stopping_safety_factor);
-    result.intermediate_position = _intersection;
-    result.time_to_intermediate = _time_to_reach_intersection;
-    result.via = true;
-    // std::vector<CornerPoint> _corners = _flight_area_config.corner_points()
-
-    return result;
-}
-
 rapid_route_result RapidRouteInterface::find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor) {
     rapid_route_result _rapid_route_result;
     _rapid_route_result = find_interception_direct(drone, target, delay, stopping_safety_factor);
     _rapid_route_result.valid = feasible_solution(_rapid_route_result, drone.pos());
     if (!(_flight_area_config.inside(_rapid_route_result.position_to_intercept) && _flight_area_config.inside(_rapid_route_result.stopping_position)) || !_rapid_route_result.valid) {
-        _rapid_route_result = alt_find_interception_via(drone, target, delay, stopping_safety_factor, _rapid_route_result);
+        _rapid_route_result = find_interception_via(drone, target, delay, stopping_safety_factor, _rapid_route_result);
         _rapid_route_result.valid = feasible_solution(_rapid_route_result, _rapid_route_result.intermediate_position);
     }
     return _rapid_route_result;
