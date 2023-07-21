@@ -404,7 +404,8 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
     } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset || wp.mode == wfm_thrust_calib) {
-        _control->kiv_ctrl.disable();
+        if (wp.mode != wfm_landing)
+            _control->kiv_ctrl.disable();
         cv::Point3f p = _tracker->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
