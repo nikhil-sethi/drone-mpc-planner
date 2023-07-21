@@ -127,7 +127,7 @@ void Interceptor::check_if_aim_in_flightarea() {
     } else if (!_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.stopping_position_in_flightarea) {
         _aim_pos = _rapid_route_result.position_to_intercept;
         _aim_vel =  _drone->tracker.last_track_data().vel() + _rapid_route_result.acceleration_to_intercept * 1.f / static_cast<float>(pparams.fps);
-        _aim_acc = _rapid_route_result.acceleration_to_intercept;
+        _aim_acc = _rapid_route_result.acceleration_to_intercept + cv::Point3f(0, -GRAVITY, 0);
         _n_frames_aim_not_in_range = 0;
         _n_frames_aim_in_range++;
     } else {
