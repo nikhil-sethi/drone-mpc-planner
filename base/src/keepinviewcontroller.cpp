@@ -11,13 +11,13 @@ void KeepInViewController::init(FlightArea *flight_area, xmls::DroneCalibration 
 
 cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData data_drone, float transmission_delay_duration, safety_margin_types safety_margin_type) {
     FlightAreaConfig *_flight_area_config = _flight_area->flight_area_config(safety_margin_type);
-    rapid_route_result current_state;
+    trajectory_optimization_result current_state;
     current_state.velocity_at_intercept = data_drone.vel();
     current_state.position_to_intercept = data_drone.pos() + data_drone.vel() * transmission_delay_duration;
-    RapidRouteInterface stopping_position_rapid_route_interface;
+    TrajectoryOptimizer stopping_position_optimizer;
     float thrust = _drone_calib->max_thrust;
-    stopping_position_rapid_route_interface.init(&thrust, 1.f, _flight_area_config, transmission_delay_duration);
-    current_stopping_position = stopping_position_rapid_route_interface.find_stopping_position(current_state, safety);
+    stopping_position_optimizer.init(&thrust, 1.f, _flight_area_config, transmission_delay_duration);
+    current_stopping_position = stopping_position_optimizer.find_stopping_position(current_state, safety);
     if (enabled) {
         if (!_flight_area_config->inside(data_drone.pos())) {
             // oh no! we are outside the flight area!

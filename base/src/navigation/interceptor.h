@@ -8,7 +8,7 @@
 #include "dronetracker.h"
 #include "trackermanager.h"
 #include "visiondata.h"
-#include "rapid_route.h"
+#include "trajectory_optimization.h"
 #include "drone.h"
 #ifdef OPTI_ROSVIS
 #include "rosvisualizerinterface.h"
@@ -57,7 +57,7 @@ private:
     float interception_max_thrust;
 
 
-    rapid_route_result _rapid_route_result;
+    trajectory_optimization_result _optimization_result;
     double _tti = -1;
 
     uint _n_frames_aim_not_in_range = 0;
@@ -99,7 +99,7 @@ private:
     };
 
 public:
-    RapidRouteInterface rapid_route;
+    TrajectoryOptimizer trajectory_optimizer;
 
     void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, FlightAreaConfig *flight_area_config);
     void close();
@@ -142,10 +142,10 @@ public:
     cv::Point3f aim_vel() {return _aim_vel;}
     cv::Point3f aim_acc() {return _aim_acc;}
 
-    cv::Point3f interception_pos() {return _rapid_route_result.position_to_intercept;}
-    cv::Point3f stopping_pos() {return _rapid_route_result.stopping_position;}
-    bool via() {return _rapid_route_result.via;}
-    cv::Point3f intermediate_pos() {return _rapid_route_result.intermediate_position;}
+    cv::Point3f interception_pos() {return _optimization_result.position_to_intercept;}
+    cv::Point3f stopping_pos() {return _optimization_result.stopping_position;}
+    bool via() {return _optimization_result.via;}
+    cv::Point3f intermediate_pos() {return _optimization_result.intermediate_position;}
     double time_to_intercept() {return _tti;}
 
     float best_distance() {return _best_hunt_error;}

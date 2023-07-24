@@ -2,8 +2,8 @@
 #include "tracking.h"
 #include "flightareaconfig.h"
 
-struct rapid_route_result {
-    rapid_route_result() {
+struct trajectory_optimization_result {
+    trajectory_optimization_result() {
         valid = false;
         via = false;
         time_to_intercept = 0;
@@ -42,21 +42,21 @@ struct stopping_position_result {
     cv::Point3f acceleration;
 };
 
-class RapidRouteInterface {
+class TrajectoryOptimizer {
 public:
     void init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config, float transmission_delay);
-    rapid_route_result find_interception_direct(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
-    rapid_route_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, rapid_route_result previous_result);
-    rapid_route_result find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
-    stopping_position_result find_stopping_position(rapid_route_result interception_result, const float safety_factor);
+    trajectory_optimization_result find_interception_direct(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, float delay, const float stopping_safety_factor);
+    trajectory_optimization_result find_interception_via(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor, trajectory_optimization_result previous_result);
+    trajectory_optimization_result find_interception(tracking::TrackData drone, tracking::TrackData target, float delay, const float stopping_safety_factor);
+    stopping_position_result find_stopping_position(trajectory_optimization_result interception_result, const float safety_factor);
 private:
     float *_thrust;
     float _thrust_factor;
     float _transmission_delay;
     cv::Point3f _gravity;
     FlightAreaConfig _flight_area_config;
-    rapid_route_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, rapid_route_result result);
-    bool feasible_solution(rapid_route_result result, cv::Point3f drone_pos);
+    trajectory_optimization_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, trajectory_optimization_result result);
+    bool feasible_solution(trajectory_optimization_result result, cv::Point3f drone_pos);
     std::vector<Plane> _sorted_planes;
     std::vector<Plane> _resorted_planes;
 };

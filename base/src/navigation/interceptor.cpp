@@ -11,7 +11,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, F
     _drone = drone;
     interception_max_thrust = *drone->control.max_thrust();
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
-    rapid_route.init(&interception_max_thrust, 0.7f, flight_area_config, drone->control.transmission_delay());
+    trajectory_optimizer.init(&interception_max_thrust, 0.7f, flight_area_config, drone->control.transmission_delay());
     initialized = true;
 }
 
@@ -117,17 +117,17 @@ void Interceptor::update(double time[[maybe_unused]]) {
 }
 
 void Interceptor::check_if_aim_in_flightarea() {
-    if (_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.stopping_position_in_flightarea) {
-        if (normf(_rapid_route_result.intermediate_position - _drone->tracker.last_track_data().pos()) > 0.25f)
-            _aim_pos = _drone->tracker.last_track_data().pos() + 0.5f * (_rapid_route_result.intermediate_position - _drone->tracker.last_track_data().pos()) / normf(_rapid_route_result.intermediate_position - _drone->tracker.last_track_data().pos());
+    if (_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.stopping_position_in_flightarea) {
+        if (normf(_optimization_result.intermediate_position - _drone->tracker.last_track_data().pos()) > 0.25f)
+            _aim_pos = _drone->tracker.last_track_data().pos() + 0.5f * (_optimization_result.intermediate_position - _drone->tracker.last_track_data().pos()) / normf(_optimization_result.intermediate_position - _drone->tracker.last_track_data().pos());
         else
-            _aim_pos = _rapid_route_result.intermediate_position;
+            _aim_pos = _optimization_result.intermediate_position;
         _n_frames_aim_not_in_range = 0;
         _n_frames_aim_in_range++;
-    } else if (!_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.stopping_position_in_flightarea) {
-        _aim_pos = _rapid_route_result.position_to_intercept;
-        _aim_vel =  _drone->tracker.last_track_data().vel() + _rapid_route_result.acceleration_to_intercept * 1.f / static_cast<float>(pparams.fps);
-        _aim_acc = _rapid_route_result.acceleration_to_intercept + cv::Point3f(0, -GRAVITY, 0);
+    } else if (!_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.stopping_position_in_flightarea) {
+        _aim_pos = _optimization_result.position_to_intercept;
+        _aim_vel =  _drone->tracker.last_track_data().vel() + _optimization_result.acceleration_to_intercept * 1.f / static_cast<float>(pparams.fps);
+        _aim_acc = _optimization_result.acceleration_to_intercept + cv::Point3f(0, -GRAVITY, 0);
         _n_frames_aim_not_in_range = 0;
         _n_frames_aim_in_range++;
     } else {
@@ -155,10 +155,10 @@ void Interceptor::update_hunt_strategy(tracking::TrackData target, double time) 
                     drone.state.pos = _drone->tracker.pad_location();
                     drone.state.vel = cv::Point3f(0, 0, 0);
                 }
-                if (_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.valid) {
+                if (_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.valid) {
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     _control_mode = position_control;
-                } else if (!_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.stopping_position_in_flightarea && _rapid_route_result.valid) {
+                } else if (!_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.stopping_position_in_flightarea && _optimization_result.valid) {
                     _control_mode = acceleration_control;
                 } else {
                     // Insect is currently not interceptable. Try to go in front of the target (and hope is target changing its path)
@@ -167,7 +167,7 @@ void Interceptor::update_hunt_strategy(tracking::TrackData target, double time) 
                     _control_mode = position_control;
                     return;
                 }
-                if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel()) && !_rapid_route_result.via && _rapid_route_result.interception_position_in_flightarea && _rapid_route_result.stopping_position_in_flightarea && _rapid_route_result.valid) {
+                if (hunt_error < static_cast<float>(dparams.drone_rotation_delay) * normf(drone.vel()) && !_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.stopping_position_in_flightarea && _optimization_result.valid) {
                     enter_is_intercept_maneuvering(time, drone);
                 } else {
                     break;
@@ -185,7 +185,7 @@ void Interceptor::choose_target_and_find_interception(float delay) {
     float best_time_to_intercept = INFINITY;
     bool best_aim_inview = false;
     bool best_stop_inview = false;
-    rapid_route_result best_optim_result;
+    trajectory_optimization_result best_optim_result;
     InsectTracker *best_itrkr = NULL;
     auto all_trackers = _trackers->all_target_trackers();
 
@@ -208,7 +208,7 @@ void Interceptor::choose_target_and_find_interception(float delay) {
             if (!insect_state.vel_valid)
                 insect_state.state.vel = {0};
 
-            rapid_route_result _optim_result = rapid_route.find_interception(tracking_data, insect_state, delay, _drone->control.kiv_ctrl.safety);
+            trajectory_optimization_result _optim_result = trajectory_optimizer.find_interception(tracking_data, insect_state, delay, _drone->control.kiv_ctrl.safety);
             if (_optim_result.valid) {
                 _optim_result.interception_position_in_flightarea = _flight_area->inside(_optim_result.position_to_intercept, relaxed);
                 _optim_result.stopping_position_in_flightarea = _flight_area->inside(_optim_result.stopping_position, relaxed);
@@ -228,11 +228,11 @@ void Interceptor::choose_target_and_find_interception(float delay) {
     }
     _target_insecttracker = best_itrkr;
     _tti = best_time_to_intercept;
-    _rapid_route_result = best_optim_result;
+    _optimization_result = best_optim_result;
 }
 
 bool Interceptor::delay_takeoff_for_better_interception() {
-    if (_rapid_route_result.valid && !_n_frames_aim_not_in_range && _n_frames_aim_in_range > 2)
+    if (_optimization_result.valid && !_n_frames_aim_not_in_range && _n_frames_aim_in_range > 2)
         return false;
     else
         return true;

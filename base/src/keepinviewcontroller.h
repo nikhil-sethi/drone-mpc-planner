@@ -3,7 +3,7 @@
 #include "flightarea/flightarea.h"
 #include "filtering/filtering.h"
 #include "tracking.h"
-#include "rapid_route.h"
+#include "trajectory_optimization.h"
 
 class KeepInViewController {
 private:

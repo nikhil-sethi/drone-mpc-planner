@@ -1,5 +1,5 @@
 #include <chrono>
-#include "rapid_route.h"
+#include "trajectory_optimization.h"
 #include "flightarea.h"
 
 #include <CppUTest/TestHarness.h> //include at last!
@@ -17,8 +17,8 @@ std::vector<Plane> return_plane_box(float size) {
     return _planes;
 }
 
-TEST_GROUP(RapidRoute) {
-    RapidRouteInterface opti;
+TEST_GROUP(TrajectoryOptimization) {
+    TrajectoryOptimizer opti;
 
     std::vector<Plane> _planes;
     FlightArea flightarea;
@@ -26,8 +26,8 @@ TEST_GROUP(RapidRoute) {
     tracking::TrackData drone;
     tracking::TrackData insect;
 
-    rapid_route_result result;
-    RapidRouteInterface rr;
+    trajectory_optimization_result result;
+    TrajectoryOptimizer rr;
 
     TEST_SETUP() {
         _planes.clear();
@@ -57,7 +57,7 @@ TEST_GROUP(RapidRoute) {
     }
 };
 
-TEST(RapidRoute, takesDirectRouteIfPossible) {
+TEST(TrajectoryOptimization, takesDirectRouteIfPossible) {
     flightarea.init(return_plane_box(1e2f));
     _config = flightarea.flight_area_config(bare);
 
@@ -90,7 +90,7 @@ TEST(RapidRoute, takesDirectRouteIfPossible) {
     CHECK(!result.via);
 }
 
-TEST(RapidRoute, triesToFindViaRouteIfUnreachable) {
+TEST(TrajectoryOptimization, triesToFindViaRouteIfUnreachable) {
     flightarea.init(return_plane_box(1e2f)); // 2*100m width, height, depth box
     _config = flightarea.flight_area_config(bare);
 
@@ -103,7 +103,7 @@ TEST(RapidRoute, triesToFindViaRouteIfUnreachable) {
     CHECK(result.via);
 }
 
-TEST(RapidRoute, returnInvalidWhenThrustTooLowToReachTargetOverGravity) {
+TEST(TrajectoryOptimization, returnInvalidWhenThrustTooLowToReachTargetOverGravity) {
     flightarea.init(return_plane_box(1e2f));
     _config = flightarea.flight_area_config(bare);
 
@@ -115,7 +115,7 @@ TEST(RapidRoute, returnInvalidWhenThrustTooLowToReachTargetOverGravity) {
     CHECK(!result.valid);
 }
 
-TEST (RapidRoute, ensureStoppingDistanceIsEqualToHuntDistance) {
+TEST(TrajectoryOptimization, ensureStoppingDistanceIsEqualToHuntDistance) {
     flightarea.init(return_plane_box(1e2f));
     _config = flightarea.flight_area_config(bare);
 
@@ -129,7 +129,7 @@ TEST (RapidRoute, ensureStoppingDistanceIsEqualToHuntDistance) {
     CHECK(abs(norm(result.position_to_intercept) - norm(result.stopping_position - result.position_to_intercept)) < 1e-3); // 1mm error margin
 }
 
-TEST (RapidRoute, ensureStoppingDistanceIsLongerThanHuntIfSafetyFactorIsUsed) {
+TEST(TrajectoryOptimization, ensureStoppingDistanceIsLongerThanHuntIfSafetyFactorIsUsed) {
     flightarea.init(return_plane_box(1e2f));
     _config = flightarea.flight_area_config(bare);
 
@@ -143,8 +143,8 @@ TEST (RapidRoute, ensureStoppingDistanceIsLongerThanHuntIfSafetyFactorIsUsed) {
     CHECK(abs(norm(result.position_to_intercept) / norm(result.stopping_position - result.position_to_intercept)) < 0.5); // stopping distance should be more than 2x hunt distance
 }
 
-TEST (RapidRoute, ensureIntermediatePointIsACorner) {
-    for (int exponent=-1; exponent<3; exponent++) {
+TEST(TrajectoryOptimization, ensureIntermediatePointIsACorner) {
+    for (int exponent = -1; exponent < 3; exponent++) {
         flightarea.init(return_plane_box(powf(10, exponent)));
         float _thrust = 24.5f;
         rr.init(&_thrust, 1.f, _config);
@@ -158,7 +158,7 @@ TEST (RapidRoute, ensureIntermediatePointIsACorner) {
     }
 }
 
-TEST(RapidRoute, stopping_distance) {
+TEST(TrajectoryOptimization, stopping_distance) {
     float _thrust = 24.5f;
     rr.init(&_thrust, 1.f, _config);
 
