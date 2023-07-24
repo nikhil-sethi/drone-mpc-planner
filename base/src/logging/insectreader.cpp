@@ -9,7 +9,6 @@ namespace logging
 {
 
 void InsectReader::init(string file) {
-    std::cout << "file: " << file << std::endl;
     if (!file_exist(file)) {
         throw std::runtime_error("log file not found!");
     }

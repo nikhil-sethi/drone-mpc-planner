@@ -3,11 +3,6 @@
 #include "trackermanager.h"
 #include "benchmarkreader.h"
 
-#include <thread>
-#include <unistd.h> //usleep
-#include<iostream>
-#include <experimental/filesystem>
-
 void CommandCenterLink::init(bool log_replay_mode, Patser *patser, VisionData *visdat) {
     _log_replay_mode = log_replay_mode;
     _visdat = visdat;
@@ -88,25 +83,21 @@ void CommandCenterLink::check_commandcenter_triggers() {
                     std::cout << "Benchmark already running!" << std::endl;
                     remove(benchmark_fn.c_str());
                 } else {
-                    std::cout << "Parsing benchmark!" << std::endl;
-                    rename(benchmark_fn.c_str(), "/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                    BenchmarkReader benchmark_reader;
-                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                    _patser->drone.benchmark_len = benchmark_entries.size();
-                    time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-                    std::ostringstream oss;
-                    oss << std::put_time(std::localtime(&_time_now), "%Y%m%d_%H%M%S");
-                    auto str = oss.str();
-                    _patser->drone.benchmark_time = str;
-                    _patser->drone.benchmark_entry_id = 0;
-                    _patser->drone.benchmark_mode = true;
+                    rename(benchmark_fn.c_str(), (pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
                     remove(benchmark_fn.c_str());
                 }
             }
-            if (file_exist("/home/pats/pats/flags/pats_benchmark_trigger.csv")) {
+            if (file_exist(pats_flags_folder + "pats_benchmark_trigger.csv")) {
+                BenchmarkReader benchmark_reader;
                 if (!_patser->drone.benchmark_mode) {
-                    if (file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
-                        std::ifstream file("/home/pats/pats/flags/BenchmarkEntry.txt");
+                    std::cout << "Parsing benchmark" << std::endl;
+                    _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
+                    _patser->drone.benchmark_len = benchmark_entries.size();
+                    _patser->drone.benchmark_mode = true;
+
+                    if (file_exist(pats_flags_folder + "benchmark_entry.txt")) {
+                        std::cout << "Resuming benchmark" << std::endl;
+                        std::ifstream file((pats_flags_folder + "benchmark_entry.txt").c_str());
                         std::string str;
                         int _idx = 0;
                         while (std::getline(file, str))
@@ -118,51 +109,44 @@ void CommandCenterLink::check_commandcenter_triggers() {
                             _idx++;
                         }
                         file.close();
-                        BenchmarkReader benchmark_reader;
-                        _patser->drone.benchmark_hash = benchmark_reader.ParseBenchmarkCSV("/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                        _patser->drone.benchmark_len = benchmark_entries.size();
-                        _patser->drone.benchmark_mode = true;
-                    } else
-                        remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
+                    } else {
+                        std::cout << "Starting benchmark" << std::endl;
+                        time_t _time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+                        std::ostringstream oss;
+                        oss << std::put_time(std::localtime(&_time_now), "%Y%m%d_%H%M%S");
+                        auto str = oss.str();
+                        _patser->drone.benchmark_time = str;
+                        _patser->drone.benchmark_entry_id = 0;
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
+                    }
                 }
+
                 if (_patser->drone.benchmark_entry_id < _patser->drone.benchmark_len && _patser->drone.benchmark_mode) {
                     static int _ready_cnt = 0;
-                    _ready_cnt = (_ready_cnt + 1) % (10); // wait 10 seconds before initializing the next moth, to give quadcopter time to start the chase, note that demo_div_cnt is 1 second
+                    _ready_cnt = (_ready_cnt + 1) % (30); // wait 30 seconds before initializing the next moth, to give quadcopter time to start the chase
                     if (_patser->drone.drone_ready_and_waiting() && !_ready_cnt && !_patser->trackers.monster_alert()) {
-                        _patser->drone.benchmark_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        BenchmarkEntry _current_entry = benchmark_entries[_patser->drone.benchmark_entry_id];
+                        _patser->drone.benchmark_entry = _current_entry;
 
-                        if (_patser->drone.benchmark_entry_id == 0) {
-                            ofstream EntryFlag;
-                            EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
-                            EntryFlag << _patser->drone.benchmark_entry_id << "\n";
-                            EntryFlag << _patser->drone.benchmark_time << "\n";
-                            EntryFlag.close();
-                        }
-
-                        if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "replay") {
-                            _patser->trackers.init_replay_moth(benchmark_entries[_patser->drone.benchmark_entry_id].id);
+                        if (_current_entry.type == "replay") {
+                            _patser->trackers.init_replay_moth(_current_entry.id);
                             _n_replay_moth++;
-                        } else if (benchmark_entries[_patser->drone.benchmark_entry_id].type == "virtual") {
-                            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_trigger), tracking::VirtualMothTracker::evasion_type(benchmark_entries[_patser->drone.benchmark_entry_id].evasion_type)};
-                            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {benchmark_entries[_patser->drone.benchmark_entry_id].pos_x, benchmark_entries[_patser->drone.benchmark_entry_id].pos_y, benchmark_entries[_patser->drone.benchmark_entry_id].pos_z}, {benchmark_entries[_patser->drone.benchmark_entry_id].vel_x, benchmark_entries[_patser->drone.benchmark_entry_id].vel_y, benchmark_entries[_patser->drone.benchmark_entry_id].vel_z});
+                        } else if (_current_entry.type == "virtual") {
+                            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(_current_entry.evasion_trigger), tracking::VirtualMothTracker::evasion_type(_current_entry.evasion_type)};
+                            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {_current_entry.pos_x, _current_entry.pos_y, _current_entry.pos_z}, {_current_entry.vel_x, _current_entry.vel_y, _current_entry.vel_z});
                             _n_replay_moth++;
                         } else {
                             std::cout << "Unknown benchmark type: " << benchmark_entries[0].type << std::endl;
                         }
                         _patser->drone.benchmark_entry_id++;
-
-                        ofstream EntryFlag;
-                        EntryFlag.open("/home/pats/pats/flags/BenchmarkEntry.txt", std::ofstream::out | std::ofstream::trunc);
-                        EntryFlag << _patser->drone.benchmark_entry_id << "\n";
-                        EntryFlag << _patser->drone.benchmark_time << "\n";
-                        EntryFlag.close();
+                        benchmark_reader.WriteBenchmarkEntry(_patser->drone.benchmark_entry_id, _patser->drone.benchmark_time, pats_flags_folder);
                     }
                 } else {
-                    remove("/home/pats/pats/flags/pats_benchmark_trigger.csv");
-                    remove("/home/pats/pats/flags/BenchmarkEntry.txt");
+                    remove((pats_flags_folder + "pats_benchmark_trigger.csv").c_str());
+                    remove((pats_flags_folder + "benchmark_entry.txt").c_str());
                     _patser->drone.benchmark_mode = false;
                 }
-            } else if (!file_exist("/home/pats/pats/flags/BenchmarkEntry.txt")) {
+            } else if (!file_exist(pats_flags_folder + "benchmark_entry.txt")) {
                 _patser->drone.benchmark_mode = false;
             }
         }
@@ -177,16 +161,6 @@ void CommandCenterLink::check_commandcenter_triggers() {
             std::cout << "Virtual insect!" << std::endl;
             _patser->trackers.init_virtual_moth(&(_patser->drone.control));
             remove(virtual_insect_fn.c_str());
-        }
-        if (file_exist(static_target_fn)) {
-            _n_replay_moth++;
-            std::cout << "Static target!" << std::endl;
-            tracking::VirtualMothTracker::moth_behavior_type _moth_behavior = {tracking::VirtualMothTracker::trigger_type(0), tracking::VirtualMothTracker::evasion_type(2)};
-            float _rand_x = -1.f + static_cast <float>(rand()) / (RAND_MAX / (1.f - -1.f));
-            float _rand_y = 0.f + static_cast <float>(rand()) / (RAND_MAX / (2.f - 0.f));
-            float _rand_z = 0.f + static_cast <float>(rand()) / (RAND_MAX / (0.f - - 3.f));
-            _patser->trackers.init_virtual_moth(&(_patser->drone.control), _moth_behavior, {-_rand_x, -_rand_y, -_rand_z}, {0, 0.1, 0});
-            remove(static_target_fn.c_str());
         }
     }
 }

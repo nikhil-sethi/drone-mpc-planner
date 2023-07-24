@@ -1,7 +1,6 @@
 #include "benchmarkreader.h"
 #include "hash.h"
-#include<fstream>
-#include <iostream>
+#include <fstream>
 #include <sstream>
 
 std::vector<BenchmarkEntry> benchmark_entries;
@@ -42,4 +41,12 @@ size_t BenchmarkReader::ParseBenchmarkCSV(std::string file) {
         benchmark_entries.push_back(entry);
     }
     return new_benchmark_hash;
+}
+
+void BenchmarkReader::WriteBenchmarkEntry(int benchmark_entry_id, std::string benchmark_time, std::string pats_flags_folder) {
+    std::ofstream EntryFlag;
+    EntryFlag.open(pats_flags_folder + "benchmark_entry.txt", std::ofstream::out | std::ofstream::trunc);
+    EntryFlag << benchmark_entry_id << "\n";
+    EntryFlag << benchmark_time << "\n";
+    EntryFlag.close();
 }

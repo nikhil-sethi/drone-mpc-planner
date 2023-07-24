@@ -115,9 +115,6 @@ private:
     double time_waiting_for_charge = 0;
     double time_led_init = 0;
     double time_start_att_wait_pad = 0;
-    float voltage_pre_flight;
-    int n_monsters_pre_flight;
-    int n_insects_pre_flight;
 
     // flight
     bool _has_been_ready = false;
@@ -138,9 +135,6 @@ private:
     const float wait_charging_response_duration = 10;
     const float att_wait_pad_timeout = 10;
     float confirm_drone_on_pad_delta_distance;
-    float voltage_post_flight;
-    int n_monsters_post_flight;
-    int n_insects_post_flight;
     double time_reset_yaw_on_pad = 0;
     double time_start_shaking = 0;
     double time_post_shake = 0;
@@ -224,7 +218,6 @@ public:
         control.invalidize_blink();
         _state = ds_pre_flight;
     }
-    size_t executor_hash;
     bool low_voltage_timeout(double time, float voltage);
 
     bool benchmark_mode = false;
@@ -233,6 +226,7 @@ public:
     size_t benchmark_hash;
     string benchmark_time;
     BenchmarkEntry benchmark_entry;
+    size_t executor_hash;
 
     void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard);
     void init_flight_replay(std::string replay_dir, int flight_id);
