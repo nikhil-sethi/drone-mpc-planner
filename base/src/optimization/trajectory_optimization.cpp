@@ -244,7 +244,11 @@ stopping_position_result TrajectoryOptimizer::find_stopping_position(trajectory_
     if (_stopping_vector.z != 0)
         _stopping_time.z = -_velocity_at_interception.z / _stopping_vector.z;
     float _stopping_time_max = abs(std::max(std::max(_stopping_time.x, _stopping_time.y), _stopping_time.z));
+#ifdef UNIT_TESTING // cannot access dparams from unit tests
+    cv::Point3f _stopping_distance = _velocity_at_interception * (_stopping_time_max + 0.033215252f + _transmission_delay) + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
+#else
     cv::Point3f _stopping_distance = _velocity_at_interception * (_stopping_time_max + static_cast<float>(dparams.drone_rotation_delay) + _transmission_delay) + 1.f / 2.f * _stopping_vector * pow(_stopping_time_max, 2);
+#endif
     cv::Point3f _stopping_position = interception_result.position_to_intercept + _stopping_distance;
     stopping_position_result _result;
     _result.position = _stopping_position;

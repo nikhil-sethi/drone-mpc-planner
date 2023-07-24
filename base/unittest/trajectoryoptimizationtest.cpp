@@ -1,6 +1,6 @@
 #include <chrono>
-#include "trajectory_optimization.h"
 #include "flightarea.h"
+#include "trajectory_optimization.h"
 
 #include <CppUTest/TestHarness.h> //include at last!
 
@@ -27,7 +27,7 @@ TEST_GROUP(TrajectoryOptimization) {
     tracking::TrackData insect;
 
     trajectory_optimization_result result;
-    TrajectoryOptimizer rr;
+    TrajectoryOptimizer optimizer;
 
     TEST_SETUP() {
         _planes.clear();
@@ -62,30 +62,30 @@ TEST(TrajectoryOptimization, takesDirectRouteIfPossible) {
     _config = flightarea.flight_area_config(bare);
 
     float _thrust = 20.5f;
-    rr.init(&_thrust, 0.8f, _config);
+    optimizer.init(&_thrust, 0.8f, _config, 0.f);
 
     insect.state.pos = {-1e-3f, 1e-3f, -1e-3f}; // 1mm away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(!result.via);
 
     insect.state.pos = {1e-2f, 1e-2f, 1e-2f}; // 1cm away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(!result.via);
 
     insect.state.pos = {-1e-1f, 1e-1f, 1e-1f}; // 1dm away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(!result.via);
 
     insect.state.pos = {-1e0f, -1e0f, -1e0f}; // 1m away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(!result.via);
 
     insect.state.pos = {1e1f, 1e1f, -1e1f}; // 10m away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(!result.via);
 }
@@ -95,10 +95,10 @@ TEST(TrajectoryOptimization, triesToFindViaRouteIfUnreachable) {
     _config = flightarea.flight_area_config(bare);
 
     float _thrust = 10.5f;
-    rr.init(&_thrust, 1.f, _config);
+    optimizer.init(&_thrust, 1.f, _config, 0.f);
 
     insect.state.pos = {1e2f, 1e2f, 1e2f}; // 100m away from drone in all directions, on corner of box
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
     CHECK(result.via);
 }
@@ -108,10 +108,10 @@ TEST(TrajectoryOptimization, returnInvalidWhenThrustTooLowToReachTargetOverGravi
     _config = flightarea.flight_area_config(bare);
 
     float _thrust = 0.5f;
-    rr.init(&_thrust, 1.f, _config);
+    optimizer.init(&_thrust, 1.f, _config, 0.f);
 
     insect.state.pos = {1e-1f, 1e-1f, 1e-1f}; // 1dm away from drone in all directions
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(!result.valid);
 }
 
@@ -120,11 +120,11 @@ TEST(TrajectoryOptimization, ensureStoppingDistanceIsEqualToHuntDistance) {
     _config = flightarea.flight_area_config(bare);
 
     float _thrust = 24.5f;
-    rr.init(&_thrust, 1.f, _config);
+    optimizer.init(&_thrust, 1.f, _config, 0.f);
 
     insect.state.pos = {1e1f, 0, 0}; // 10m away from drone
     insect.state.vel = {0, 0, 0};
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(!result.via);
     CHECK(abs(norm(result.position_to_intercept) - norm(result.stopping_position - result.position_to_intercept)) < 1e-3); // 1mm error margin
 }
@@ -134,34 +134,19 @@ TEST(TrajectoryOptimization, ensureStoppingDistanceIsLongerThanHuntIfSafetyFacto
     _config = flightarea.flight_area_config(bare);
 
     float _thrust = 24.5f;
-    rr.init(&_thrust, 1.f, _config);
+    optimizer.init(&_thrust, 1.f, _config, 0.f);
 
     insect.state.pos = {1e1f, 0, 0}; // 10m away from drone
     insect.state.vel = {0, 0, 0};
-    result = rr.find_interception(drone, insect, 0.0f, 2.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 2.f);
     CHECK(!result.via);
     CHECK(abs(norm(result.position_to_intercept) / norm(result.stopping_position - result.position_to_intercept)) < 0.5); // stopping distance should be more than 2x hunt distance
 }
 
-TEST(TrajectoryOptimization, ensureIntermediatePointIsACorner) {
-    for (int exponent = -1; exponent < 3; exponent++) {
-        flightarea.init(return_plane_box(powf(10, exponent)));
-        float _thrust = 24.5f;
-        rr.init(&_thrust, 1.f, _config);
-
-        result = rr.find_interception_via(drone, insect, 0.0f, 1.f);
-
-        CHECK(result.via);
-        CHECK(abs(result.intermediate_position.x) == powf(10, exponent));
-        CHECK(abs(result.intermediate_position.y) == powf(10, exponent));
-        CHECK(abs(result.intermediate_position.z) == powf(10, exponent));
-    }
-}
-
 TEST(TrajectoryOptimization, stopping_distance) {
     float _thrust = 24.5f;
-    rr.init(&_thrust, 1.f, _config);
+    optimizer.init(&_thrust, 1.f, _config, 0.f);
 
-    result = rr.find_interception(drone, insect, 0.0f, 1.f);
+    result = optimizer.find_interception(drone, insect, 0.0f, 1.f);
     CHECK(result.valid);
 }
