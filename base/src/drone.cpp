@@ -461,6 +461,7 @@ void Drone::post_flight(double time) {
                 control.reset_attitude_pad_filter();
                 [[fallthrough]];
         } case post_wait_after_shake: {
+                _baseboard_link->allow_charging(false); // TODO: this is a hack to ensure that the charging is re-enabled on the baseboard since packages seemed to be lost
                 _baseboard_link->allow_charging(true);
                 if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait && control.att_telemetry_valid()) {
                     if (_baseboard_link->charging_waits_until_drone_ready()) { /* wait some more until we receive new data the baseboard */ }
