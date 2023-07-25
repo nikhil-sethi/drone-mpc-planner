@@ -6,7 +6,7 @@
 void KeepInViewController::init(FlightArea *flight_area, xmls::DroneCalibration *drone_calib,  safety_margin_types safety_margin_type) {
     _safety_margin_type = safety_margin_type;
     _flight_area = flight_area;
-    _flight_area_config = *_flight_area->flight_area_config(_safety_margin_type);
+    _flight_area_config = _flight_area->flight_area_config(_safety_margin_type);
     _drone_calib = drone_calib;
     drone_rotating_time = dparams.drone_rotation_delay;
 }
@@ -23,11 +23,11 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
         if (!_flight_area->inside(data_drone.pos(), _safety_margin_type)) {
             // oh no! we are outside the flight area!
             active = true;
-            auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config.find_violated_planes(data_drone.pos());
+            auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
             cv::Point3f correction_acceleration = {0, 0, 0};
-            for (uint plane_id = 0; plane_id < _flight_area_config.n_planes(); plane_id++) {
-                cv::Point3f plane_normal = _flight_area_config.planes().at(plane_id).normal;
-                float _distance_to_plane = abs(_flight_area_config.planes().at(plane_id).distance(data_drone.pos()));
+            for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
+                cv::Point3f plane_normal = _flight_area_config->planes().at(plane_id).normal;
+                float _distance_to_plane = abs(_flight_area_config->planes().at(plane_id).distance(data_drone.pos()));
                 float _velocity_normal_to_plane = data_drone.vel().dot(plane_normal);
                 if (violated_planes_inview.at(plane_id)) {
                     correction_acceleration += plane_normal * (dparams.kp_pos_kiv * _distance_to_plane + dparams.kd_pos_kiv * _velocity_normal_to_plane);

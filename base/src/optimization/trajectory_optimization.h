@@ -54,8 +54,8 @@ private:
     float _thrust_factor;
     float _transmission_delay;
     cv::Point3f _gravity;
-    FlightArea _flight_area;
-    FlightAreaConfig _flight_area_config;
+    FlightArea *_flight_area;
+    FlightAreaConfig *_flight_area_config;
     safety_margin_types _safety_margin_type;
     trajectory_optimization_result update_initial_guess(tracking::TrackData track_data_drone, tracking::TrackData track_data_insect, trajectory_optimization_result result);
     bool feasible_solution(trajectory_optimization_result result, cv::Point3f drone_pos);

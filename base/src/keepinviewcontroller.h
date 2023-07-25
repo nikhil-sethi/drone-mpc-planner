@@ -28,7 +28,7 @@ public:
 
     safety_margin_types _safety_margin_type;
     FlightArea *_flight_area;
-    FlightAreaConfig _flight_area_config;
+    FlightAreaConfig *_flight_area_config;
 
 
     // Methods:
