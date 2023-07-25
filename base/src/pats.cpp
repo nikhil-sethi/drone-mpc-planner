@@ -11,8 +11,9 @@ void Patser::init(std::ofstream *logger, int rc_id, RC *rc, std::string replay_d
     if (pparams.op_mode == op_mode_x) {
         flight_area.init(replay_dir, cam);
         safety_margin_types _safety_margin_type = relaxed;
-        drone.init(logger, rc_id, rc, &trackers, visdat, &flight_area, &interceptor, baseboard_link, _safety_margin_type);
-        interceptor.init(&trackers, visdat, &flight_area, &drone, _safety_margin_type);
+        float _thrust_factor = 1.f;
+        drone.init(logger, rc_id, rc, &trackers, visdat, &flight_area, &interceptor, baseboard_link, _safety_margin_type, _thrust_factor);
+        interceptor.init(&trackers, visdat, &flight_area, &drone, _safety_margin_type, _thrust_factor);
     }
 }
 

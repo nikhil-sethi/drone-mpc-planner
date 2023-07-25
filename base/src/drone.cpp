@@ -4,7 +4,7 @@
 #include "navigation.h"
 #include "hash.h"
 
-void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard_link, safety_margin_types _safety_margin_type) {
+void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard_link, safety_margin_types _safety_margin_type, float thrust_factor) {
     _rc_id = rc_id;
     _rc = rc;
     main_logger = logger;
@@ -16,7 +16,7 @@ void Drone::init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerMana
 
     tracker.init(visdat, _trackers->motion_thresh(), 1);
     nav.init(&tracker, &control, visdat, flight_area, interceptor, baseboard_link);
-    control.init(_rc, &tracker, flight_area, _safety_margin_type);
+    control.init(_rc, &tracker, flight_area, _safety_margin_type, thrust_factor);
     tracker.commanded_acceleration(&control.commanded_acceleration);
     tracker.takeoff_area(flight_area);
 

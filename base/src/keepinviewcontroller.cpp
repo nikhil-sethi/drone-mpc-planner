@@ -11,13 +11,13 @@ void KeepInViewController::init(FlightArea *flight_area, xmls::DroneCalibration 
     drone_rotating_time = dparams.drone_rotation_delay;
 }
 
-cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData data_drone, float transmission_delay_duration) {
+cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData data_drone, float transmission_delay_duration, float thrust_factor) {
     trajectory_optimization_result current_state;
     current_state.velocity_at_intercept = data_drone.vel();
     current_state.position_to_intercept = data_drone.pos() + data_drone.vel() * transmission_delay_duration;
     TrajectoryOptimizer stopping_position_optimizer;
     float thrust = _drone_calib->max_thrust;
-    stopping_position_optimizer.init(&thrust, 1.f, _flight_area, _safety_margin_type, transmission_delay_duration);
+    stopping_position_optimizer.init(&thrust, thrust_factor, _flight_area, _safety_margin_type, transmission_delay_duration);
     current_stopping_position = stopping_position_optimizer.find_stopping_position(current_state, safety);
     if (enabled) {
         if (!_flight_area->inside(data_drone.pos(), _safety_margin_type)) {

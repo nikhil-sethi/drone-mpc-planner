@@ -135,6 +135,7 @@ private:
     float burn_thrust = -1;
 
     const float _takeoff_delay = 0.5f;
+    float _thrust_factor;
 
     const float lift_off_dist_take_off_aim = 0.02f;
     const float min_takeoff_angle = 80.f / 180.f * static_cast<float>(M_PI); //A takeoff angle of ~45 is possible if the ir-led is just above the pad (such that the drone enters the light beam even with a "horizontal" takeoff)
@@ -216,7 +217,7 @@ private:
     std::tuple<cv::Point3f, cv::Point3f> vel_pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_vel);
     std::tuple<cv::Point3f, cv::Point3f> acc_pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_acc);
 
-    cv::Point3f kiv_update(tracking::TrackData data_drone);
+    cv::Point3f kiv_update(tracking::TrackData data_drone, float thrust_factor);
     std::tuple<int, int, int> drone_commands(cv::Point3f desired_acceleration);
     cv::Point3f takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y);
     cv::Point3f combine_drone_accelerations_with_priority(cv::Point3f prio_acc, cv::Point3f trivil_acc);
@@ -407,7 +408,7 @@ public:
     float relative_acceleration_to_setpoint() { return _relative_acceleration_to_setpoint; }
 
     void close(void);
-    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type);
+    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type, float thrust_factor);
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
