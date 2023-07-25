@@ -216,7 +216,7 @@ stopping_position_result TrajectoryOptimizer::find_stopping_position(trajectory_
     cv::Point3f _velocity_at_interception_hat = _velocity_at_interception / normf(_velocity_at_interception);
     cv::Point3f _stopping_vector_hat = -1 * _velocity_at_interception_hat;
 
-    float _max_thrust = _thrust_factor * *_thrust / safety_factor;
+    float _max_thrust = *_thrust / safety_factor;
     if (_max_thrust < abs(GRAVITY)) {
         _max_thrust  = abs(GRAVITY) + .1f; // asume that drone thrust is at least gravity,
     }

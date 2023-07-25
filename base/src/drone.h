@@ -228,7 +228,7 @@ public:
     BenchmarkEntry benchmark_entry;
     size_t executor_hash;
 
-    void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard, safety_margin_types _safety_margin_type, float thrust_factor);
+    void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, BaseboardLink *baseboard, safety_margin_types _safety_margin_type);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
     void update(double time);

@@ -17,12 +17,11 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type, float thrust_factor) {
+void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type) {
     _rc = rc;
     _dtrk = dtrk;
     _flight_area = flight_area;
     _safety_margin_type = safety_margin_type;
-    _thrust_factor = thrust_factor;
     control_history_max_size = pparams.fps;
     control_mode_hold_filter.init(.25);
 
@@ -768,7 +767,7 @@ void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f 
     }
 
     cv::Point3f gravity_compensation = cv::Point3f(0, GRAVITY, 0);
-    kiv_acc = kiv_update(data_drone, _thrust_factor);
+    kiv_acc = kiv_update(data_drone);
     cv::Point3f acceleration_mix = {0, 0, 0};
     if (normf(kiv_acc) > 0) {
         acceleration_mix = combine_drone_accelerations_with_priority(gravity_compensation, kiv_acc);
@@ -804,14 +803,14 @@ void DroneController::control_drone_position_based(TrackData data_drone, cv::Poi
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
-cv::Point3f DroneController::kiv_update(TrackData data_drone, float thrust_factor) {
+cv::Point3f DroneController::kiv_update(TrackData data_drone) {
     bool flight_mode_with_kiv = _flight_mode == fm_flying_pid || _flight_mode == fm_reset_headless_yaw || _flight_mode == fm_correct_yaw;
 
     if (data_drone.pos_valid && data_drone.vel_valid && flight_mode_with_kiv && !(_time - start_takeoff_burn_time < 0.45)) {
         // if (control_mode_hold_filter.output()) //feedforward was active in the close past
         //     return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, strict);
         // else
-        return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, thrust_factor);
+        return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration);
     }
     else
         return {0, 0, 0};

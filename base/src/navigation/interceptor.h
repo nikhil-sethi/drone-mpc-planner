@@ -101,7 +101,7 @@ private:
 public:
     TrajectoryOptimizer trajectory_optimizer;
 
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, safety_margin_types safety_margin_type, float thrust_factor);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, safety_margin_types safety_margin_type);
     void close();
     void init_flight(std::ofstream *logger);
     void log(std::ostream *logger);

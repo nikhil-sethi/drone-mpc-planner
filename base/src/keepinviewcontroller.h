@@ -33,7 +33,7 @@ public:
 
     // Methods:
     void init(FlightArea *flight_area, xmls::DroneCalibration *dcalib, safety_margin_types safety_margin_type);
-    cv::Point3f correction_acceleration(tracking::TrackData data_drone, float transmission_delay_duration, float thrust_factor);
+    cv::Point3f correction_acceleration(tracking::TrackData data_drone, float transmission_delay_duration);
     void enable() {enabled = true;};
     void disable() {enabled = false;};
 };

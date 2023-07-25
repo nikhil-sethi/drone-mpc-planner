@@ -3,14 +3,14 @@
 
 using namespace tracking;
 
-void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, safety_margin_types safety_margin_type, float thrust_factor) {
+void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone, safety_margin_types safety_margin_type) {
     _trackers = trackers;
     _flight_area = flight_area;
     _visdat = visdat;
     _drone = drone;
     interception_max_thrust = *drone->control.max_thrust();
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
-    trajectory_optimizer.init(&interception_max_thrust, thrust_factor, flight_area, safety_margin_type, drone->control.transmission_delay());
+    trajectory_optimizer.init(&interception_max_thrust, 0.7f, flight_area, safety_margin_type, drone->control.transmission_delay());
     initialized = true;
 }
 
