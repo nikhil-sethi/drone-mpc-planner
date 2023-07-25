@@ -21,11 +21,13 @@ float largestRoot(float a, float b, float c) {
     }
 }
 
-void TrajectoryOptimizer::init(float *thrust, float thrust_factor, FlightAreaConfig *flight_area_config, float transmission_delay) {
+void TrajectoryOptimizer::init(float *thrust, float thrust_factor, FlightArea *flight_area, safety_margin_types safety_margin_type, float transmission_delay) {
     _thrust = thrust;
     _thrust_factor = MAX(thrust_factor, 9.80f / *_thrust);
     _gravity = {0, -GRAVITY, 0};
-    _flight_area_config = *flight_area_config;
+    _safety_margin_type = safety_margin_type;
+    _flight_area = *flight_area;
+    _flight_area_config = *_flight_area.flight_area_config(_safety_margin_type);
     _transmission_delay = transmission_delay;
 }
 
@@ -102,10 +104,10 @@ trajectory_optimization_result TrajectoryOptimizer::find_interception_via(tracki
 
     int MAX_ITERATIONS = 100;
     while (_intermediate_pos_cnt < MAX_ITERATIONS) {
-        if (!_flight_area_config.inside(_interception_position)) {
+        if (!_flight_area.inside(_interception_position, _safety_margin_type)) {
             _constraining_point = _interception_position;
         }
-        else if (!_flight_area_config.inside(_stopping_position)) {
+        else if (!_flight_area.inside(_stopping_position, _safety_margin_type)) {
             _constraining_point = _stopping_position;
         }
         else {
@@ -114,7 +116,7 @@ trajectory_optimization_result TrajectoryOptimizer::find_interception_via(tracki
         }
 
         _most_constraining_plane = _flight_area_config.find_most_constraining_plane(_constraining_point);
-        _intermediate_position = _flight_area_config.move_inside(_flight_area_config.project_towards_plane(_previous_intermediate_position, _most_constraining_plane, 0.05f));
+        _intermediate_position = _flight_area.move_inside(_flight_area_config.project_towards_plane(_previous_intermediate_position, _most_constraining_plane, 0.05f), _safety_margin_type);
         _previous_intermediate_position = _intermediate_position;
 
         // this approximation can be improved by considering velocity in other directions
@@ -181,7 +183,7 @@ trajectory_optimization_result TrajectoryOptimizer::find_interception(tracking::
     trajectory_optimization_result _result;
     _result = find_interception_direct(drone, target, delay, stopping_safety_factor);
     _result.valid = feasible_solution(_result, drone.pos());
-    if (!(_flight_area_config.inside(_result.position_to_intercept) && _flight_area_config.inside(_result.stopping_position)) || !_result.valid) {
+    if (!(_flight_area.inside(_result.position_to_intercept, _safety_margin_type) && _flight_area.inside(_result.stopping_position, _safety_margin_type)) || !_result.valid) {
         _result = find_interception_via(drone, target, delay, stopping_safety_factor, _result);
         _result.valid = feasible_solution(_result, _result.intermediate_position);
     }

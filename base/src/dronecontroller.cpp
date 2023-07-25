@@ -17,10 +17,11 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area) {
+void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type) {
     _rc = rc;
     _dtrk = dtrk;
     _flight_area = flight_area;
+    _safety_margin_type = safety_margin_type;
     control_history_max_size = pparams.fps;
     control_mode_hold_filter.init(.25);
 
@@ -620,7 +621,7 @@ void DroneController::save_pad_pos_and_att_calibration() {
     calibration.pad_calib_date = ss.str();
     save_calibration();
     _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
-    kiv_ctrl.init(_flight_area, &calibration); //See comment at alternative initialization call
+    kiv_ctrl.init(_flight_area, &calibration, _safety_margin_type); //See comment at alternative initialization call
 }
 
 void DroneController::init_thrust_calibration() {
@@ -809,7 +810,7 @@ cv::Point3f DroneController::kiv_update(TrackData data_drone) {
         // if (control_mode_hold_filter.output()) //feedforward was active in the close past
         //     return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, strict);
         // else
-        return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration, relaxed);
+        return kiv_ctrl.correction_acceleration(data_drone, transmission_delay_duration);
     }
     else
         return {0, 0, 0};
@@ -1165,7 +1166,7 @@ void DroneController::load_calibration() {
     _dtrk->set_pad_location(calibration.pad_pos());
     _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
     _flight_area->set_vertical_camera_plane(calibration.pad_pos_z);
-    kiv_ctrl.init(_flight_area, &calibration);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane) since filter initialization is dependent on the number of planes in the flight area
+    kiv_ctrl.init(_flight_area, &calibration, _safety_margin_type);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane) since filter initialization is dependent on the number of planes in the flight area
 }
 
 void DroneController::save_calibration() {

@@ -111,6 +111,7 @@ private:
     RC *_rc;
     tracking::DroneTracker *_dtrk;
     FlightArea *_flight_area;
+    safety_margin_types _safety_margin_type;
     std::ofstream *_logger;
 
     const std::string calib_fn = "drone_calibration.xml";
@@ -406,7 +407,7 @@ public:
     float relative_acceleration_to_setpoint() { return _relative_acceleration_to_setpoint; }
 
     void close(void);
-    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area);
+    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, safety_margin_types safety_margin_type);
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
