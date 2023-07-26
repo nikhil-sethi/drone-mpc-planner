@@ -463,7 +463,7 @@ void Drone::post_flight(double time) {
         } case post_wait_after_shake: {
                 _baseboard_link->allow_charging(true);
                 if (static_cast<float>(time - time_post_shake) > duration_post_shake_wait && control.att_telemetry_valid()) {
-                    if (_baseboard_link->charging_waits_until_drone_ready()) { /* wait some more until we receive new data the baseboard */ }
+                    if (_baseboard_link->charging_waits_until_drone_ready() && static_cast<float>(time - time_post_shake) < duration_post_shake_timeout) { /* wait some more until we receive new data the baseboard */ }
                     else if (control.att_precisely_on_pad() && _baseboard_link->charging()) {
                         if (control.accelerometer_trim.ready()) {
                             control.flight_mode(DroneController::fm_trim_accelerometer);
