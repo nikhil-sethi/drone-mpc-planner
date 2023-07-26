@@ -66,7 +66,6 @@ void Charger::run() {
                 mah_charged = 0;
                 if (battery_volts > min_volts_detection) {
                     if (executor_disallow_charging_time) {
-                        debugln("Charging disallowed by executor and voltage too high");
                         _charging_state = state_wait_until_drone_ready;
                     } else {
                         measure_during_charge_start_time = millis();
@@ -195,14 +194,10 @@ void Charger::run() {
                 mah_charged = 0;
                 volt_mode_pv_initialised = false;
                 rgbleds->led0_state(RGBLeds::LED0_disabled);
-                if (!executor_disallow_charging_time) {
+                if (!executor_disallow_charging_time)
                     _charging_state = state_measure;
-                    debugln("not executor disallow charging time!")
-                }
-                else if (millis() - executor_disallow_charging_time > executor_disallow_charging_timeout){
+                else if (millis() - executor_disallow_charging_time > executor_disallow_charging_timeout)
                     executor_disallow_charging_time = 0;
-                    debugln("executor disallow charging timeout!")
-                }
                 break;
         } case state_calibrating: {
                 no_charging();
@@ -399,7 +394,6 @@ void Charger::handle_serial_input_package(SerialExecutor2BaseboardAllowChargingP
     if (_charging_state == state_disabled)
         return;
     else if (executor_disallow_charging_time && _charging_state != state_drone_not_on_pad) {
-        debugln("Charging disabled by executor");
         _charging_state = state_wait_until_drone_ready;
     }
 }
