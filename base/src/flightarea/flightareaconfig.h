@@ -29,7 +29,7 @@ inline const char *safety_margin_types_str[] = {
 class FlightAreaConfig {
 private:
     // Params:
-    float bottom_plane_above_pad = 0.f;
+    float bottom_plane_above_pad = 0.1f;
 
     // Data;
 #ifndef UNIT_TESTING
