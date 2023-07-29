@@ -218,11 +218,14 @@ void CommandCenterLink::write_commandcenter_status_image() {
                     std::stringstream date_ss;
                     date_ss << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T");
                     putText(out_rgb, date_ss.str(), cv::Point(5, 17), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
-                    putText(out_rgb, "State: " +  _patser->state_str() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode_str() + " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 34), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
-                    putText(out_rgb, "Runtime: " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 50), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
+                    putText(out_rgb, "State: " +  _patser->state_str() + " " + _patser->trackers.mode_str() + " " + _patser->drone.control.flight_mode_str() + " "  + _patser->trackers.drone_tracking_state(), cv::Point(5, 37), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
+                    putText(out_rgb, "Runtime: " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 57), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
 
-                    if (pparams.op_mode == op_mode_x)
+                    if (pparams.op_mode == op_mode_x) {
                         cv::circle(out_rgb, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
+                        std::string drone_str = "Drone: " + _patser->baseboard()->charging_state_str() ;
+                        putText(out_rgb, drone_str, cv::Point(5, 77), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
+                    }
                     cv::imwrite(pats_folder + "status/live.jpg", out_rgb);
                 }
                 new_frame_request = 1;

@@ -1091,9 +1091,6 @@ void save_periodic_images(cv::Mat frame_bgr, cv::Mat frameL, cv::Mat frameR) {
     }
 }
 
-
-
-
 void write_live_status_image(cv::Mat frame, string state_str) {
     if (frame.cols) {
         cv::Mat out_rgb;
@@ -1102,15 +1099,15 @@ void write_live_status_image(cv::Mat frame, string state_str) {
         std::stringstream date_ss;
         date_ss << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T");
         putText(out_rgb, date_ss.str(), cv::Point(5, 17), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
-        putText(out_rgb, state_str, cv::Point(5, 34), cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255));
-
-
-        if (pparams.op_mode == op_mode_x)
+        putText(out_rgb, state_str, cv::Point(5, 37), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
+        if (pparams.op_mode == op_mode_x) {
+            std::string drone_str = "Drone: " + baseboard_link.charging_state_str() ;
+            putText(out_rgb, drone_str, cv::Point(5, 57), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 0, 255), 2);
             cv::circle(out_rgb, patser.drone.tracker.pad_im_location(), patser.drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
+        }
         cv::imwrite(pats_folder + "status/live.jpg", out_rgb);
     }
 }
-
 
 void wait_for_start_conditions() {
     bool enable_window_ok = false;
@@ -1142,11 +1139,11 @@ void wait_for_start_conditions() {
             std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ", waiting for\t";
             std::stringstream buf;
             if (!enable_window_ok)
-                buf << "enable window [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
+                buf << "Enable window: [" << std::chrono::duration_cast<std::chrono::minutes>(std::chrono::seconds(enable_window_start_time - time_now)).count() << " minutes]\t";
             if (!cam_angles_ok)
-                buf << "cam angle [" << roll << ", " << pitch - 35 << ">" << pparams.max_cam_angle << "]\t";
+                buf << "Cam angle: [" << roll << ", " << pitch - 35 << ">" << pparams.max_cam_angle << "]\t";
             if (!light_conditions_ok)
-                buf << "Light level [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
+                buf << "Light level: [" << to_string_with_precision(light_level_, 2) << ">" << pparams.light_level_threshold << "]";
             std::cout << buf.str() << std::endl;
             if (!cam_angles_ok)
                 communicate_state(es_wait_for_cam_angle);

@@ -382,12 +382,12 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
     warning_color_cnt++;
     warning_color_cnt = warning_color_cnt % 255;
 
-    if (not _visdat->no_recent_brightness_events(time))
-        warnings += "BRIGHTNESS ";
+    if (! _visdat->no_recent_brightness_events(time))
+        warnings += "BRIGHTNESS ALERT";
     if (_patser->trackers.monster_alert())
-        warnings += "MONSTER ALERT ";
+        warnings += "ANOMOLY ALERT ";
     if (_fromfile)
-        warnings += "POPCORN TIME ";
+        warnings += "REPLAY ";
 
     if (warnings != "") {
         int baseline = 0;
@@ -397,7 +397,6 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
 }
 
 cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::TrackData> path) {
-
     cv::Mat frameL_small_drone;
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
@@ -519,10 +518,12 @@ void Visualizer::draw_tracker_viz() {
         cv::circle(frameL_color, p.pt(), p.size / 2, cv::Scalar(0, 0, 255));
     }
 
-    putText(frameL_color, "Drone prediction replay", cv::Point(3, frameL_color.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
-    putText(frameL_color, "Drone detection live", cv::Point(3, frameL_color.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
-    putText(frameL_color, "Drone detection replay", cv::Point(3, frameL_color.rows - 36), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
-    putText(frameL_color, "Drone detection template match", cv::Point(3, frameL_color.rows - 48), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 0, 128));
+    if (pparams.op_mode == op_mode_x) {
+        putText(frameL_color, "Drone prediction replay", cv::Point(3, frameL_color.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
+        putText(frameL_color, "Drone detection live", cv::Point(3, frameL_color.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
+        putText(frameL_color, "Drone detection replay", cv::Point(3, frameL_color.rows - 36), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
+        putText(frameL_color, "Drone detection template match", cv::Point(3, frameL_color.rows - 48), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 0, 128));
+    }
 
     cv::Scalar itrkr_color = cv::Scalar(0, 0, 128);
     if (last_insect_detection.predicted_image_item.valid) {
@@ -666,16 +667,18 @@ void Visualizer::draw_tracker_viz() {
         _patser->trackers.diff_viz_buf.copyTo(ext_res_frame(cv::Rect(resFrame.cols - 1, frameL_small_drone.rows - 1, _patser->trackers.diff_viz_buf.cols, _patser->trackers.diff_viz_buf.rows)));
         cv::Mat diff = ext_res_frame(cv::Rect(resFrame.cols, frameL_small_drone.rows, _patser->trackers.diff_viz_buf.cols, _patser->trackers.diff_viz_buf.rows));
 
-        putText(diff, "Drone", cv::Point(3, diff.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
-        putText(diff, "Drone template", cv::Point(3, diff.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 0, 128));
+        if (pparams.op_mode == op_mode_x) {
+            putText(diff, "Drone", cv::Point(3, diff.rows - 120), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
+            putText(diff, "Drone template", cv::Point(3, diff.rows - 108), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 0, 128));
+            putText(diff, "Blink", cv::Point(3, diff.rows - 96), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 255));
+        }
         putText(diff, "Insect blb->trk", cv::Point(3, diff.rows - 36), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
         putText(diff, "Replay/Virtual", cv::Point(3, diff.rows - 48), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 180));
-        putText(diff, "Blink", cv::Point(3, diff.rows - 60), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 255));
         putText(diff, "Ignored", cv::Point(3, diff.rows - 72), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 128, 0));
         putText(diff, "Untracked", cv::Point(3, diff.rows - 84), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 55));
-        putText(diff, "Multitracked", cv::Point(3, diff.rows - 96), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 128, 255));
-        putText(diff, "False positive", cv::Point(3, diff.rows - 108), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
-        putText(diff, "Overexposed noise", cv::Point(3, diff.rows - 120), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 128, 128));
+        putText(diff, "Multitracked", cv::Point(3, diff.rows - 60), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 128, 255));
+        putText(diff, "False positive", cv::Point(3, diff.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
+        putText(diff, "Overexposed noise", cv::Point(3, diff.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 128, 128));
 
         trackframe = ext_res_frame;
     } else
