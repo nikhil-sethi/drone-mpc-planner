@@ -142,9 +142,14 @@ public:
     bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge || _charging_state == state_calibrating;};
     charging_states charging_state() {return _charging_state;};
     std::string charging_state_str() {
-        if (!_disabled)
-            return charging_state_names[_charging_state];
-        else
+        if (!_disabled) {
+            std::stringstream ss;
+            ss << charging_state_names[_charging_state] << " " << to_string_with_precision(_bat_voltage, 1) << "v";
+            if (_charging_state == state_normal_charging || _charging_state == state_revive_charging) {
+                return ss.str();
+            } else
+                return charging_state_names[_charging_state];
+        } else
             return "baseboard disabled";
     }
     float uptime() { return _uptime;}
