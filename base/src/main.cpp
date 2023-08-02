@@ -144,7 +144,7 @@ void print_warnings();
 void print_terminal(StereoPair *frame);
 void encode_video(StereoPair *frame);
 void update_enable_window();
-void check_exit_conditions(double time, bool escape_key_pressed);
+void check_exit_conditions(double frame_time, bool escape_key_pressed);
 void close(bool sig_kill);
 void watchdog_worker(void);
 void communicate_state(executor_states s);
@@ -471,14 +471,16 @@ void encode_video(StereoPair *frame) {
     }
 }
 
-void check_exit_conditions(double time, bool escape_key_pressed) {
+void check_exit_conditions(double frame_time, bool escape_key_pressed) {
+
 
     if (render_mode && flight_replay_mode && patser.drone.nav.drone_resetting_yaw()) {
         std::cout << "Render mode: yaw reset detected. Stopping." << std::endl;
         communicate_state(es_user_restart);
         exit_now = true;
     }
-    if (render_mode && max_render_duration && time > max_render_duration) {
+    double run_time = received_img_count / pparams.fps;
+    if (render_mode && max_render_duration && run_time > max_render_duration) {
         std::cout << "Max render time exceeded" << std::endl;
         communicate_state(es_user_restart);
         exit_now = true;
@@ -505,12 +507,12 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
         update_enable_window();
         if (patser.drone.program_restart_allowed()) {
             if (!log_replay_mode && !generator_mode && !airsim_mode) {
-                if ((fabs(time - received_img_count / pparams.fps)) > 60) {
+                if ((fabs(frame_time - received_img_count / pparams.fps)) > 60) {
                     std::cout << "Error: more then 60s of frameloss detected. Assuming there's some camera problem. Cowardly exiting." << std::endl;
                     communicate_state(es_realsense_fps_problem);
                     exit_now = true;
                 }
-                else if ((fps_smoothed.latest() < pparams.fps / 6 * 5 && fps_smoothed.ready() && time < 5)) {
+                else if ((fps_smoothed.latest() < pparams.fps / 6 * 5 && fps_smoothed.ready() && frame_time < 5)) {
                     std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
                     communicate_state(es_realsense_fps_problem);
                     exit_now = true;
@@ -576,11 +578,11 @@ void check_exit_conditions(double time, bool escape_key_pressed) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 communicate_state(es_periodic_restart);
                 exit_now = true;
-            } else if (light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && time > 10 && !baseboard_link.contact_problem()) {
+            } else if (light_level > pparams.light_level_threshold * 1.05f && pparams.light_level_threshold > 0 && frame_time > 10 && !baseboard_link.contact_problem()) {
                 std::cout << "Initiating restart because light level (" << light_level << ") is higher than threshold (" << pparams.light_level_threshold * 1.05f << ")" << std::endl;
                 communicate_state(es_light_level_restart);
                 exit_now = true;
-            } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && time > 10 && !baseboard_link.contact_problem()) {
+            } else if (enable_window_mode && !log_replay_mode && (std::difftime(time_now, enable_window_start_time) < 0 || std::difftime(time_now, enable_window_end_time) > 0) && frame_time > 10 && !baseboard_link.contact_problem()) {
                 communicate_state(es_enable_window_restart);
                 std::cout << "Initiating restart because not in enable window" << std::endl;
                 exit_now = true;
