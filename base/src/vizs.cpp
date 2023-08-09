@@ -44,20 +44,20 @@ void Visualizer::add_plot_sample(void) {
         dt.push_back(data.dt);
         dt_target.push_back(1.f / pparams.fps);
 
-        TrackData data_target = _patser->interceptor.target_last_trackdata();
+        TrackData insect = _patser->interceptor.target_last_trackdata();
         auto nav = &_patser->drone.nav;
 
         if (data.pos_valid) {
-            posX_drone.push_back(-data.state.pos.x);
-            posY_drone.push_back(data.state.pos.y);
-            posZ_drone.push_back(-data.state.pos.z);
-            im_posX_drone.push_back(dtrkr->image_item().x / im_scaler);
-            im_posY_drone.push_back(dtrkr->image_item().y / im_scaler);
+            pos_x_drone.push_back(-data.state.pos.x);
+            pos_y_drone.push_back(data.state.pos.y);
+            pos_z_drone.push_back(-data.state.pos.z);
+            im_pos_x_drone.push_back(dtrkr->image_item().x / im_scaler);
+            im_pos_y_drone.push_back(dtrkr->image_item().y / im_scaler);
             im_size_drone.push_back(dtrkr->image_item().size / im_scaler);
             im_disp_drone.push_back(dtrkr->image_item().disparity);
-            sposX.push_back(-data.state.spos.x);
-            sposY.push_back(data.state.spos.y);
-            sposZ.push_back(-data.state.spos.z);
+            smoothed_pos_x_drone.push_back(-data.state.spos.x);
+            smoothed_pos_y_drone.push_back(data.state.spos.y);
+            smoothed_pos_z_drone.push_back(-data.state.spos.z);
 
             cv::Point3f _correction_acc = _patser->drone.control.kiv_acc;
             kiv_accX.push_back(-_correction_acc.x);
@@ -65,45 +65,45 @@ void Visualizer::add_plot_sample(void) {
             kiv_accZ.push_back(-_correction_acc.z);
 
             if (generator_cam_set) {
-                gen_posX_drone.push_back(-generator_cam->generated_world_pos.x);
-                gen_posY_drone.push_back(generator_cam->generated_world_pos.y);
-                gen_posZ_drone.push_back(-generator_cam->generated_world_pos.z);
-                gen_im_posX_drone.push_back(generator_cam->generated_im_pos.x / im_scaler);
-                gen_im_posY_drone.push_back(generator_cam->generated_im_pos.y / im_scaler);
-                gen_im_size_drone.push_back(generator_cam->generated_im_size / im_scaler);
-                gen_im_disp_drone.push_back(generator_cam->generated_im_pos.z);
+                generated_pos_x_drone.push_back(-generator_cam->generated_world_pos.x);
+                generated_pos_y_drone.push_back(generator_cam->generated_world_pos.y);
+                generated_pos_z_drone.push_back(-generator_cam->generated_world_pos.z);
+                generated_im_pos_x_drone.push_back(generator_cam->generated_im_pos.x / im_scaler);
+                generated_im_pos_y_drone.push_back(generator_cam->generated_im_pos.y / im_scaler);
+                generated_im_size_drone.push_back(generator_cam->generated_im_size / im_scaler);
+                generated_im_disparity_drone.push_back(generator_cam->generated_im_pos.z);
             }
 
-            if (_patser->drone.control.Joy_State() != DroneController::js_hunt) {
-                posX_target.push_back(-nav->setpoint().pos().x);
-                posY_target.push_back(-nav->setpoint().pos().y);
-                posZ_target.push_back(-nav->setpoint().pos().z);
-            } else {
-                posX_target.push_back(-data_target.state.pos.x);
-                posY_target.push_back(data_target.state.pos.y);
-                posZ_target.push_back(-data_target.state.pos.z);
-            }
+            pos_x_insect.push_back(-insect.pos().x);
+            pos_y_insect.push_back(-insect.pos().y);
+            pos_z_insect.push_back(-insect.pos().z);
 
-            setposX.push_back(-nav->setpoint().pos().x);
-            setposY.push_back(nav->setpoint().pos().y);
-            setposZ.push_back(-nav->setpoint().pos().z);
+            setpoint_pos_x.push_back(-nav->setpoint().pos().x);
+            setpoint_pos_y.push_back(nav->setpoint().pos().y);
+            setpoint_pos_z.push_back(-nav->setpoint().pos().z);
         }
         if (data.vel_valid) {
-            svelX.push_back(-data.state.vel.x);
-            svelY.push_back(data.state.vel.y);
-            svelZ.push_back(-data.state.vel.z);
+            smooted_vel_x_drone.push_back(-data.state.vel.x);
+            smoothed_vel_y_drone.push_back(data.state.vel.y);
+            smoothed_vel_z_drone.push_back(-data.state.vel.z);
 
-            velX.push_back(-data.state.vel_unfiltered.x);
-            velY.push_back(data.state.vel_unfiltered.y);
-            velZ.push_back(-data.state.vel_unfiltered.z);
+            vel_x_drone.push_back(-data.state.vel_unfiltered.x);
+            vel_y_drone.push_back(data.state.vel_unfiltered.y);
+            vel_z_drone.push_back(-data.state.vel_unfiltered.z);
 
         }
         if (data.acc_valid) {
-            saccX.push_back(-data.state.acc.x);
-            saccY.push_back(data.state.acc.y);
-            saccZ.push_back(-data.state.acc.z);
+            smoothed_acc_x_drone.push_back(-data.state.acc.x);
+            smooted_acc_y_drone.push_back(data.state.acc.y);
+            smoothed_acc_z_drone.push_back(-data.state.acc.z);
+        } else {
+            smoothed_acc_x_drone.push_back(0.f);
+            smooted_acc_y_drone.push_back(9.81f);
+            smoothed_acc_z_drone.push_back(0.f);
         }
-
+        commanded_acc_x_drone.push_back(-_patser->drone.control.commanded_acceleration.x);
+        commanded_acc_y_drone.push_back(_patser->drone.control.commanded_acceleration.y);
+        commanded_acc_z_drone.push_back(-_patser->drone.control.commanded_acceleration.z);
 
         lock_plot_data.unlock();
         newdata.notify_all();
@@ -113,27 +113,27 @@ void Visualizer::add_plot_sample(void) {
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
     // ims_trk.push_back(plot_xyd());
-    ims_trk.push_back(plot_all_im_drone_pos());
+    // ims_trk.push_back(plot_all_im_drone_pos());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
-    // ims_trk.push_back(plot_all_acceleration());
+    ims_trk.push_back(plot_all_acceleration());
     // ims_trk.push_back(plot_all_control());
-    ims_trk.push_back(plot_all_kiv_accelerations());
+    //ims_trk.push_back(plot_all_kiv_accelerations());
     plotframe = create_row_image(ims_trk, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_im_drone_pos(void) {
     std::vector<cv::Mat> ims;
-    if (gen_im_posX_drone.rows == im_posX_drone.rows) {
-        ims.push_back(plot({im_posX_drone, gen_im_posX_drone}, "Im drone X"));
-        ims.push_back(plot({im_posY_drone, gen_im_posY_drone}, "Im drone Y"));
-        ims.push_back(plot({im_disp_drone, gen_im_disp_drone}, "Disparity"));
+    if (generated_im_pos_x_drone.rows == im_pos_x_drone.rows) {
+        ims.push_back(plot({im_pos_x_drone, generated_im_pos_x_drone}, "Im drone X"));
+        ims.push_back(plot({im_pos_y_drone, generated_im_pos_y_drone}, "Im drone Y"));
+        ims.push_back(plot({im_disp_drone, generated_im_disparity_drone}, "Disparity"));
     } else {
-        ims.push_back(plot({im_posX_drone}, "Im drone X"));
-        ims.push_back(plot({im_posY_drone}, "Im drone Y"));
+        ims.push_back(plot({im_pos_x_drone}, "Im drone X"));
+        ims.push_back(plot({im_pos_y_drone}, "Im drone Y"));
         ims.push_back(plot({im_disp_drone}, "Disparity"));
     }
-    // ims.push_back(plot({im_size_drone,gen_im_size_drone},"Size"));
+    // ims.push_back(plot({im_size_drone,generated_im_size_drone},"Size"));
     return create_column_image(ims, CV_8UC3);
 }
 cv::Mat Visualizer::plot_xyd(void) {
@@ -147,7 +147,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.x = 2000;
     min_xz_range.y = 0; // z
     max_xz_range.y = 4000; // z
-    ims_xyd.push_back(plotxy(posX_drone, posZ_drone, posX_target, posZ_target, sp1, "PosXZ", min_xz_range, max_xz_range));
+    ims_xyd.push_back(plotxy(pos_x_drone, pos_z_drone, setpoint_pos_x, setpoint_pos_z, sp1, "PosXZ", min_xz_range, max_xz_range));
 
     cv::Point sp2(-_patser->drone.control.viz_drone_pos_after_burn.x * 1000.f, _patser->drone.control.viz_drone_pos_after_burn.y * 1000.f);
     cv::Point min_xy_range, max_xy_range;
@@ -155,7 +155,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xy_range.x = 2000;
     min_xy_range.y = -2000;
     max_xy_range.y = 2000;
-    ims_xyd.push_back(plotxy(posX_drone, posY_drone, posX_target, posY_target, sp2, "PosXY", min_xy_range, max_xy_range));
+    ims_xyd.push_back(plotxy(pos_x_drone, pos_y_drone, setpoint_pos_x, setpoint_pos_y, sp2, "PosXY", min_xy_range, max_xy_range));
 
     return create_column_image(ims_xyd, CV_8UC3);
 }
@@ -170,25 +170,29 @@ cv::Mat Visualizer::plot_all_control(void) {
 
 cv::Mat Visualizer::plot_all_velocity(void) {
     std::vector<cv::Mat> ims_vel;
-    ims_vel.push_back(plot({velX, svelX}, "VelX"));
-    ims_vel.push_back(plot({velY, svelY}, "VelY"));
-    ims_vel.push_back(plot({velZ, svelZ}, "VelZ"));
+    ims_vel.push_back(plot({vel_x_drone, smooted_vel_x_drone}, "VelX"));
+    ims_vel.push_back(plot({vel_y_drone, smoothed_vel_y_drone}, "VelY"));
+    ims_vel.push_back(plot({vel_z_drone, smoothed_vel_z_drone}, "VelZ"));
     return create_column_image(ims_vel, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_acceleration(void) {
     std::vector<cv::Mat> ims_acc;
-    ims_acc.push_back(plot({saccX}, "AccX"));
-    ims_acc.push_back(plot({saccY}, "AccY"));
-    ims_acc.push_back(plot({saccZ}, "AccZ"));
+    // ims_acc.push_back(plot({smoothed_acc_x_drone, commanded_acc_x_drone}, "AccX"));
+    // ims_acc.push_back(plot({smooted_acc_y_drone, commanded_acc_y_drone}, "AccY"));
+    // ims_acc.push_back(plot({smoothed_acc_z_drone, commanded_acc_z_drone}, "AccZ"));
+    ims_acc.push_back(plot({ commanded_acc_x_drone}, "AccX"));
+    ims_acc.push_back(plot({ commanded_acc_y_drone}, "AccY"));
+    ims_acc.push_back(plot({ commanded_acc_z_drone}, "AccZ"));
+
     return create_column_image(ims_acc, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_position(void) {
     std::vector<cv::Mat> ims_pos;
-    ims_pos.push_back(plot({posX_drone, sposX, setposX}, "PosX"));
-    ims_pos.push_back(plot({posY_drone, sposY, setposY}, "PosY"));
-    ims_pos.push_back(plot({posZ_drone, sposZ, setposZ}, "PosZ"));
+    ims_pos.push_back(plot({pos_x_drone, smoothed_pos_x_drone, setpoint_pos_x, pos_x_insect}, "PosX"));
+    ims_pos.push_back(plot({pos_y_drone, smoothed_pos_y_drone, setpoint_pos_y, pos_y_insect}, "PosY"));
+    ims_pos.push_back(plot({pos_z_drone, smoothed_pos_z_drone, setpoint_pos_z, pos_z_insect}, "PosZ"));
     return create_column_image(ims_pos, CV_8UC3);
 }
 
@@ -607,6 +611,7 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f _current_stopping_pos = _patser->drone.control.kiv_ctrl.current_stopping_position.position;
     cv::Point2f _current_stopping_pos_im = world2im_2d(_current_stopping_pos, _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch());
     cv::circle(frameL_color, _current_stopping_pos_im, 2, white);
+    cv::circle(frameL_color, world2im_2d(_patser->drone.nav.setpoint().pos(), _visdat->Qfi, _visdat->camera_roll(), _visdat->camera_pitch()), 3, red);
 
     if (enable_optimization_drawing) {
         cv::Point2i _pad_pos_im = _patser->drone.tracker.pad_im_location();

@@ -1,5 +1,6 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
+#include "flightplan.h"
 
 using namespace tracking;
 
@@ -49,6 +50,7 @@ void Interceptor::update(double time[[maybe_unused]]) {
 #endif
     _time = time;
     _tti = -1;
+    //_aim_pos = _flight_area->move_inside(_drone->tracker.pad_location() + navigation::Waypoint_Thrust_Calibration().xyz, strict);
     _aim_pos = _flight_area->move_inside(cv::Point3f(0, 0, 0), strict);
     _aim_vel = cv::Point3f(0, 0, 0);
     _aim_acc = cv::Point3f(0, 0, 0);
@@ -156,13 +158,16 @@ void Interceptor::update_hunt_strategy(tracking::TrackData target, double time) 
                 }
                 if (_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.valid) {
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
+                    std::cout << "AIM 1: " << _aim_pos << std::endl;
                     _control_mode = position_control;
                 } else if (!_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.stopping_position_in_flightarea && _optimization_result.valid) {
                     _control_mode = acceleration_control;
                 } else {
                     // Insect is currently not interceptable. Try to go in front of the target (and hope is target changing its path)
                     _aim_pos = target.pos() + 3 * _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error;
-                    _aim_pos = _flight_area->move_inside(_aim_pos, strict, drone.pos());
+                    std::cout << "AIM 2: " << _aim_pos;
+                    _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
+                    std::cout << " inside --> " << _aim_pos << std::endl;
                     _control_mode = position_control;
                     return;
                 }

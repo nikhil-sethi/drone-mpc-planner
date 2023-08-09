@@ -88,14 +88,14 @@ public:
     }
 
     tracking::TrackData setpoint() {
-        tracking::TrackData data_target;
-        data_target.state.pos = setpoint_pos_world;
-        data_target.state.vel = setpoint_vel_world;
-        data_target.state.acc = setpoint_acc_world;
-        data_target.pos_valid = true;
-        data_target.vel_valid = true;
-        data_target.acc_valid = true;
-        return data_target;
+        tracking::TrackData data_setpoint;
+        data_setpoint.state.pos = setpoint_pos_world;
+        data_setpoint.state.vel = setpoint_vel_world;
+        data_setpoint.state.acc = setpoint_acc_world;
+        data_setpoint.pos_valid = true;
+        data_setpoint.vel_valid = true;
+        data_setpoint.acc_valid = true;
+        return data_setpoint;
     }
 
     void manual_trigger_next_wp() {

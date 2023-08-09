@@ -96,54 +96,58 @@ public:
 
     cv::Mat dt;
     cv::Mat dt_target;
-    cv::Mat posX_drone;
-    cv::Mat posY_drone;
-    cv::Mat posZ_drone;
+    cv::Mat pos_x_drone;
+    cv::Mat pos_y_drone;
+    cv::Mat pos_z_drone;
 
     bool pos_log_drone_valid = false;
     cv::Point pos_log_drone;
 
-    cv::Mat posX_target;
-    cv::Mat posY_target;
-    cv::Mat posZ_target;
+    cv::Mat pos_x_insect;
+    cv::Mat pos_y_insect;
+    cv::Mat pos_z_insect;
 
-    cv::Mat im_posX_drone;
-    cv::Mat im_posY_drone;
+    cv::Mat setpoint_pos_x;
+    cv::Mat setpoint_pos_y;
+    cv::Mat setpoint_pos_z;
+
+    cv::Mat im_pos_x_drone;
+    cv::Mat im_pos_y_drone;
     cv::Mat im_disp_drone;
     cv::Mat im_size_drone;
 
-    cv::Mat sposX;
-    cv::Mat sposY;
-    cv::Mat sposZ;
+    cv::Mat smoothed_pos_x_drone;
+    cv::Mat smoothed_pos_y_drone;
+    cv::Mat smoothed_pos_z_drone;
 
-    cv::Mat setposX;
-    cv::Mat setposY;
-    cv::Mat setposZ;
+    cv::Mat vel_x_drone;
+    cv::Mat vel_y_drone;
+    cv::Mat vel_z_drone;
 
-    cv::Mat velX;
-    cv::Mat velY;
-    cv::Mat velZ;
+    cv::Mat smooted_vel_x_drone;
+    cv::Mat smoothed_vel_y_drone;
+    cv::Mat smoothed_vel_z_drone;
 
-    cv::Mat svelX;
-    cv::Mat svelY;
-    cv::Mat svelZ;
+    cv::Mat smoothed_acc_x_drone;
+    cv::Mat smooted_acc_y_drone;
+    cv::Mat smoothed_acc_z_drone;
 
-    cv::Mat saccX;
-    cv::Mat saccY;
-    cv::Mat saccZ;
+    cv::Mat commanded_acc_x_drone;
+    cv::Mat commanded_acc_y_drone;
+    cv::Mat commanded_acc_z_drone;
 
     cv::Mat kiv_accX;
     cv::Mat kiv_accY;
     cv::Mat kiv_accZ;
 
-    cv::Mat gen_posX_drone;
-    cv::Mat gen_posY_drone;
-    cv::Mat gen_posZ_drone;
+    cv::Mat generated_pos_x_drone;
+    cv::Mat generated_pos_y_drone;
+    cv::Mat generated_pos_z_drone;
 
-    cv::Mat gen_im_posX_drone;
-    cv::Mat gen_im_posY_drone;
-    cv::Mat gen_im_disp_drone;
-    cv::Mat gen_im_size_drone;
+    cv::Mat generated_im_pos_x_drone;
+    cv::Mat generated_im_pos_y_drone;
+    cv::Mat generated_im_disparity_drone;
+    cv::Mat generated_im_size_drone;
 
     static cv::Size viz_frame_size() {
         return cv::Size(IMG_W + IMG_W, IMG_H + IMG_H / 4);

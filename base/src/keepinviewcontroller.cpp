@@ -26,11 +26,16 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
             auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
             cv::Point3f correction_acceleration = {0, 0, 0};
             for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
-                cv::Point3f plane_normal = _flight_area_config->planes().at(plane_id).normal;
-                float _distance_to_plane = abs(_flight_area_config->planes().at(plane_id).distance(data_drone.pos()));
+                auto plane = _flight_area_config->planes().at(plane_id);
+                cv::Point3f plane_normal = plane.normal;
+                float _distance_to_plane = abs(plane.distance(data_drone.pos()));
                 float _velocity_normal_to_plane = data_drone.vel().dot(plane_normal);
                 if (violated_planes_inview.at(plane_id)) {
-                    correction_acceleration += plane_normal * (dparams.kp_pos_kiv * _distance_to_plane + dparams.kd_pos_kiv * _velocity_normal_to_plane);
+                    if (plane.type == bottom_plane) {
+                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * 2 * _distance_to_plane + dparams.kd_pos_kiv * 10 * _velocity_normal_to_plane);
+                    } else {
+                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * _distance_to_plane + dparams.kd_pos_kiv * _velocity_normal_to_plane);
+                    }
                 }
             }
             return correction_acceleration;
