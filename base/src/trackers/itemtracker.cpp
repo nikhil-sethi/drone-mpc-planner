@@ -112,37 +112,34 @@ void ItemTracker::calc_world_props_blob_template(BlobWorldProps *w) {
 }
 
 void ItemTracker::calc_world_props(BlobWorldProps *w, cv::Point2f p, float size, float disparity) {
-    if (disparity < params.min_disparity.value() || disparity > params.max_disparity.value()) {
+    if (disparity < params.min_disparity.value() || disparity > params.max_disparity.value())
         w->disparity_in_range = false;
-        w->disparity  = NAN;
-    } else {
+    else
         w->disparity_in_range = true;
 
-        if (disparity_prev > 0 && _n_frames_tracking > 5)
-            w->disparity = (disparity_filter_rate * disparity) + ((1 - disparity_filter_rate) * disparity_prev); // moving average on disparity
-        else
-            w->disparity = disparity;
+    if (disparity_prev > 0 && _n_frames_tracking > 5)
+        w->disparity = (disparity_filter_rate * disparity) + ((1 - disparity_filter_rate) * disparity_prev); // moving average on disparity
+    else
+        w->disparity = disparity;
 
-        cv::Point3f world_coordinates = im2world(p, w->disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
-        w->x = world_coordinates.x;
-        w->y = world_coordinates.y;
-        w->z = world_coordinates.z;
+    cv::Point3f world_coordinates = im2world(p, w->disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
+    w->x = world_coordinates.x;
+    w->y = world_coordinates.y;
+    w->z = world_coordinates.z;
 
-        cv::Point2f p_size = p;
-        p_size.x += size;
-        cv::Point3f world_coordinates_size = im2world(p_size, w->disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
+    cv::Point2f p_size = p;
+    p_size.x += size;
+    cv::Point3f world_coordinates_size = im2world(p_size, w->disparity, _visdat->Qf, _visdat->camera_roll(), _visdat->camera_pitch());
 
-        w->radius = static_cast<float>(cv::norm(world_coordinates_size - world_coordinates)) / 2.f;
-        w->radius_in_range = w->radius < max_radius;
+    w->radius = static_cast<float>(cv::norm(world_coordinates_size - world_coordinates)) / 2.f;
+    w->radius_in_range = w->radius < max_radius;
 
-        w->distance_bkg = _visdat->depth_background_mm.at<float>(p.y, p.x);
-        w->distance = sqrtf(powf(w->x, 2) + powf(w->y, 2) + powf(w->z, 2));
-        if ((w->distance > w->distance_bkg * (static_cast<float>(background_subtract_zone_factor) / 100.f)))
-            w->bkg_check_ok = false;
-        else
-            w->bkg_check_ok = true;
-
-    }
+    w->distance_bkg = _visdat->depth_background_mm.at<float>(p.y, p.x);
+    w->distance = sqrtf(powf(w->x, 2) + powf(w->y, 2) + powf(w->z, 2));
+    if ((w->distance > w->distance_bkg * (static_cast<float>(background_subtract_zone_factor) / 100.f)))
+        w->bkg_check_ok = false;
+    else
+        w->bkg_check_ok = true;
 }
 
 void ItemTracker::update_blob_filters() {
