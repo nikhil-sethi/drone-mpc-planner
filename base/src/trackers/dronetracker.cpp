@@ -242,7 +242,11 @@ float DroneTracker::score(BlobProps *blob) {
         return score * angle_diff;
     }
 }
-
+float DroneTracker::score_threshold() {
+    if (taking_off())
+        return 0.3;
+    return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
+}
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
     if (enable_motion_shadow_delete) {
         _image_predict_item = ImagePredictItem(_image_template_item.ptd(), _image_template_item.size, 255, _visdat->frame_id);

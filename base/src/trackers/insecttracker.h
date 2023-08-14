@@ -30,6 +30,7 @@ public:
     void update(double time);
     bool delete_me();
     void hunt_id(int hunt_id) {_hunt_id = hunt_id;}
+    float score_threshold();
 
     int16_t insect_trkr_id() {return _insect_trkr_id;}
     tracking::false_positive_type false_positive();

@@ -186,9 +186,7 @@ public:
     }
 
     virtual float score(BlobProps *blob) { return score(blob, &_image_item); }
-    float score_threshold() {
-        if (_blobs_are_fused_cnt && type() == tt_insect)
-            return _score_threshold * 2;
+    virtual float score_threshold() {
         return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
     }
 

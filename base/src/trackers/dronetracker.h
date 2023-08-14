@@ -155,6 +155,7 @@ public:
 
     tracker_type type() { return tt_drone;}
     float score(BlobProps *blob);
+    float score_threshold();
     double time_since_take_off() {return start_take_off_time - _time;}
     cv::Point3f pad_location(bool landing_hack);
     cv::Point3f pad_location() { return _pad_world_location; };

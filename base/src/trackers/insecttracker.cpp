@@ -173,4 +173,10 @@ bool InsectTracker::delete_me() {
         return false;
 }
 
+float InsectTracker::score_threshold() {
+    if (_blobs_are_fused_cnt)
+        return _score_threshold * 2;
+    return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
+}
+
 }
