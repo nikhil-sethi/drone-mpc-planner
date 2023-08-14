@@ -88,8 +88,6 @@ void DroneTracker::update(double time) {
                         data.dt = static_cast<float>(time - _track.back().time);
                     _track.push_back(data);
                 }
-                match_template();
-                calc_takeoff_prediction(time);
 
                 if (enable_viz_motion) {
                     cv::Point2f tmpp = _pad_im_location;
@@ -97,6 +95,20 @@ void DroneTracker::update(double time) {
                     cv::circle(diff_viz, _pad_im_location, 1, cv::Scalar(0, 0, 255), 1);
                     cv::circle(diff_viz, _world_item.image_coordinates(), 3, cv::Scalar(0, 255, 0), 2);
                 }
+
+                match_template();
+                cv::Point3f acc = *_commanded_acceleration;
+                acc.y = std::max(0.f, acc.y - GRAVITY);
+                if (normf(acc) > GRAVITY && start_burn_time == 0) {
+                    start_burn_time = time;
+                    std::cout << "Expecting drone movement in about 10 frames from now" << std::endl;
+                }
+
+                if (!post_burn_start(time))
+                    break;;
+
+                calc_takeoff_prediction(time, acc);
+
                 float takeoff_duration = static_cast<float>(time - start_take_off_time);
                 if (_world_item.valid) {
                     spinup_detected++;
@@ -355,21 +367,21 @@ void DroneTracker::delete_landing_motion(float duration) {
     _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, delete_dst, duration * pparams.fps);
 }
 
-void DroneTracker::calc_takeoff_prediction(double time) {
-    std::vector<tracking::TrackData> drone_path = track();
+void DroneTracker::calc_takeoff_prediction(double time, cv::Point3f acc) {
+
+
+
+
     tracking::TrackData last_drone_detection;
-    if (drone_path.size())
-        last_drone_detection = drone_path.back();
+    if (_track.size())
+        last_drone_detection = _track.back();
 
     if (last_drone_detection.pos_valid) {
         last_valid_trackdata_for_prediction = last_drone_detection;
         if (last_drone_detection.vel_valid)
             last_vel_valid_trackdata_for_prediction = last_drone_detection;
     }
-    cv::Point3f acc = *_commanded_acceleration;
-    acc.y = std::max(0.f, acc.y - GRAVITY);//Compensate for gravity, but never having a negative acceleration
-    if ((normf(acc) < 0.1f && takeoff_prediction_pos == pad_location()) || time < start_take_off_time + 0.2)
-        return;
+
     float dt;
     if (last_drone_detection.time)
         dt = static_cast<float>(time - last_drone_detection.time) + 1.f / pparams.fps;

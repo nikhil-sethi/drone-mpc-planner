@@ -115,7 +115,7 @@ private:
     float min_radius;
     FlightArea _takeoff_area;
 
-    void calc_takeoff_prediction(double time);
+    void calc_takeoff_prediction(double time, cv::Point3f acc);
     void reset_takeoff_im_prediction_if_direction_bad(cv::Point2f takeoff_direction_measured, float measured_versus_predicted_angle_diff);
     void handle_brightness_change(double time);
     void delete_motion_shadow(cv::Point2f im_location, float im_size, float disparity);
@@ -151,7 +151,7 @@ public:
 
     void manual_flight_mode(bool value) { _manual_flight_mode = value; }
     void hover_mode(bool value);
-    bool post_burn_start(double time) {return time > start_burn_time + 0.2;}
+    bool post_burn_start(double time) {return time > start_burn_time + 0.1;}
 
 
     void delete_landing_motion(float duration);
