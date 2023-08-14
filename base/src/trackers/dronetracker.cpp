@@ -643,7 +643,7 @@ void DroneTracker::recenter_template() {
                 _image_template_item.x += move_direction.x;
                 _image_template_item.y += move_direction.y;
                 bool template_size_larger_than_blob = _image_template_item.size > _image_item.size;
-                _image_template_item.size += (-1 + 2 * template_size_larger_than_blob);//converge to blob size
+                _image_template_item.size += (-2 * template_size_larger_than_blob);//converge to blob size
                 _image_template_item.size = std::max(_image_template_item.size, 2.f);// >0
             }
         } else if (template_deviation_detected) {
