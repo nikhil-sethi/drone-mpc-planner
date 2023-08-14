@@ -617,7 +617,7 @@ void DroneTracker::match_template() {
     cv::minMaxLoc(result_template_match_R, &min_val_R, &max_val_R, &min_loc_R, &max_loc_R);
 
     float temp_size = _image_template_item.size;
-    _image_template_item = ImageItem(last_im_pos.x - crop_L.width / 2 + max_loc_L.x + _template.cols / 2, last_im_pos.y - crop_L.height / 2 + max_loc_L.y + _template.rows / 2, last_im_pos.z, _visdat->frame_id);
+    _image_template_item = ImageItem(last_im_pos.x - roi_size / 2 + max_loc_L.x + ceilf(_template.cols / 2.f), last_im_pos.y - roi_size / 2 + max_loc_L.y + ceilf(_template.rows / 2.f), last_im_pos.z, _visdat->frame_id);
     _image_template_item.size = temp_size;
     _image_template_item.disparity += (crop_R.width / 2 - max_loc_R.x - _template.cols / 2);
     if (!taking_off()) {
