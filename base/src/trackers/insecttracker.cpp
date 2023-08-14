@@ -126,7 +126,7 @@ void InsectTracker::update(double time) {
 
     if (_tracking) {
         update_prediction(time);
-        if (_image_item.valid) {
+        if (_image_item.valid && _image_item.disparity == _image_item.disparity) {
             min_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
             max_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
         }
