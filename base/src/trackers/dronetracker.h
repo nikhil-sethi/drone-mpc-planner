@@ -70,6 +70,7 @@ private:
     bool _hover_mode = false;
 
     double start_take_off_time = 0;
+    double start_burn_time = 0;
     double spinup_detect_time = 0;
     double takeoff_is_aborted_time = 0;
     double _time = 0;
@@ -150,6 +151,8 @@ public:
 
     void manual_flight_mode(bool value) { _manual_flight_mode = value; }
     void hover_mode(bool value);
+    bool post_burn_start(double time) {return time > start_burn_time + 0.2;}
+
 
     void delete_landing_motion(float duration);
 

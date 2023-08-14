@@ -43,6 +43,7 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     _drone_tracking_status = dts_detecting_takeoff;
     start_take_off_time = time;
     takeoff_is_aborted_time = 0;
+    start_burn_time = 0;
     _tracking = false;
     delete_motion_shadow(_pad_im_location, _pad_im_size, _pad_disparity);
     ignores_for_other_trkrs.clear();

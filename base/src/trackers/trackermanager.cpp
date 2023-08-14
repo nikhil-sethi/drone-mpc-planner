@@ -427,7 +427,7 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, do
 
 void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs, double time) {
     for (auto dtrkr : dronetrackers()) {
-        if (!dtrkr->tracking()) {
+        if (!dtrkr->tracking() && dtrkr->post_burn_start(time)) {
             for (auto &blob : *pbs) {
                 if (!blob.tracked() && (!blob.props->false_positive)) {
 
