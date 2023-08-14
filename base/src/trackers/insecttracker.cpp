@@ -104,7 +104,7 @@ tracking::false_positive_type InsectTracker::false_positive() {
             return tracking::false_positive_type::fp_too_far;
     }
 
-    if (!_world_item.valid && _n_frames_tracked < n_frames_lost_threshold && _n_frames)
+    if (!_image_item.valid && _n_frames_tracked < n_frames_lost_threshold && _n_frames >= n_frames_lost_threshold)
         return tracking::false_positive_type::fp_short_detection;
     else
         return tracking::false_positive_type::fp_not_a_fp;
