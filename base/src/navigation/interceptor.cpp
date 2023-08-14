@@ -164,7 +164,7 @@ void Interceptor::update_hunt_strategy(tracking::TrackData target, double time) 
                     _control_mode = acceleration_control;
                 } else {
                     // Insect is currently not interceptable. Try to go in front of the target (and hope is target changing its path)
-                    _aim_pos = target.pos() + 3 * _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error;
+                    _aim_pos = target.pos(); // + 3 * _tti * target.vel(); //+ 0.4 * (target.pos() - drone.pos()) * hunt_error; //@rik, tempered this down because I think it causes volatile behavior. However, the line here is not the root cause, that would be the switching behavior in the first place...
                     std::cout << "AIM 2: " << _aim_pos;
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
                     std::cout << " inside --> " << _aim_pos << std::endl;
