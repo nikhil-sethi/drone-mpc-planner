@@ -117,7 +117,7 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
     ims_trk.push_back(plot_all_acceleration());
-    // ims_trk.push_back(plot_all_control());
+    ims_trk.push_back(plot_all_control());
     //ims_trk.push_back(plot_all_kiv_accelerations());
     plotframe = create_row_image(ims_trk, CV_8UC3);
 }
@@ -190,9 +190,9 @@ cv::Mat Visualizer::plot_all_acceleration(void) {
 
 cv::Mat Visualizer::plot_all_position(void) {
     std::vector<cv::Mat> ims_pos;
-    ims_pos.push_back(plot({pos_x_drone, smoothed_pos_x_drone, setpoint_pos_x, pos_x_insect}, "PosX"));
-    ims_pos.push_back(plot({pos_y_drone, smoothed_pos_y_drone, setpoint_pos_y, pos_y_insect}, "PosY"));
-    ims_pos.push_back(plot({pos_z_drone, smoothed_pos_z_drone, setpoint_pos_z, pos_z_insect}, "PosZ"));
+    ims_pos.push_back(plot({pos_x_drone, smoothed_pos_x_drone, setpoint_pos_x}, "PosX"));
+    ims_pos.push_back(plot({pos_y_drone, smoothed_pos_y_drone, setpoint_pos_y}, "PosY"));
+    ims_pos.push_back(plot({pos_z_drone, smoothed_pos_z_drone, setpoint_pos_z}, "PosZ"));
     return create_column_image(ims_pos, CV_8UC3);
 }
 

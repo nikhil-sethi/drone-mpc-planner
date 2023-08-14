@@ -32,9 +32,9 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
                 float _velocity_normal_to_plane = data_drone.vel().dot(plane_normal);
                 if (violated_planes_inview.at(plane_id)) {
                     if (plane.type == bottom_plane) {
-                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * 2 * _distance_to_plane + dparams.kd_pos_kiv * 10 * _velocity_normal_to_plane);
+                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * 2 * _distance_to_plane + dparams.kd_pos_kiv * -2 * _velocity_normal_to_plane);
                     } else {
-                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * _distance_to_plane + dparams.kd_pos_kiv * _velocity_normal_to_plane);
+                        correction_acceleration += plane_normal * (dparams.kp_pos_kiv * _distance_to_plane + dparams.kd_pos_kiv * -_velocity_normal_to_plane);
                     }
                 }
             }
