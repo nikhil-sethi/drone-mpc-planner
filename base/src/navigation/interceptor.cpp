@@ -256,9 +256,9 @@ bool Interceptor::insect_in_pad_area() {
         for (auto insect_trkr : _trackers->insecttrackers()) {
             if (insect_trkr->tracking() && insect_trkr->image_item().valid) {
                 cv::Point2f insect_direction_from_pad = insect_trkr->image_item().pt() - drone_trkr->pad_im_location();
-                if (normf(insect_direction_from_pad) < drone_trkr->pad_im_size() * 1.5f) {
+                if (normf(insect_direction_from_pad) < drone_trkr->pad_im_size() * 0.75f) {
                     float measured_versus_predicted_angle_diff = acosf((drone_trkr->takeoff_direction_predicted().dot(insect_direction_from_pad)) / (normf(drone_trkr->takeoff_direction_predicted()) * normf(insect_direction_from_pad)));
-                    if (measured_versus_predicted_angle_diff < M_PIf32 / 4.f)
+                    if (measured_versus_predicted_angle_diff < M_PIf32 / 8.f)
                         return true;
                 }
             }
