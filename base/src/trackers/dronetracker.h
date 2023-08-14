@@ -75,11 +75,10 @@ private:
     double takeoff_is_aborted_time = 0;
     double _time = 0;
     double time_yaw_not_ok = -1;
-    const float max_allowed_takeoff_duration = 3.f;
+    const float max_allowed_takeoff_duration = 2.f;
 
     double takeoff_location_ignore_timeout = 1;
     double landing_ignore_timeout = 5;
-    int spinup_detected = 0;
     bool liftoff_detected = false;
     uint16_t take_off_frame_cnt = 0;
 
@@ -151,7 +150,7 @@ public:
 
     void manual_flight_mode(bool value) { _manual_flight_mode = value; }
     void hover_mode(bool value);
-    bool post_burn_start(double time) {return time > start_burn_time + 0.1;}
+    bool post_burn_start(double time) {return time > start_burn_time + 0.15 && start_burn_time > 0 ;}
 
 
     void delete_landing_motion(float duration);

@@ -49,7 +49,6 @@ void DroneTracker::init_flight(std::ofstream *logger, double time) {
     ignores_for_other_trkrs.clear();
     ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / im_scaler, _pad_im_size / im_scaler, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
     liftoff_detected = false;
-    spinup_detected = 0;
     take_off_frame_cnt = 0;
     min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
     max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
@@ -104,35 +103,20 @@ void DroneTracker::update(double time) {
                     std::cout << "Expecting drone movement in about 10 frames from now" << std::endl;
                 }
 
-                if (!post_burn_start(time))
-                    break;;
-
-                calc_takeoff_prediction(time, acc);
-
                 float takeoff_duration = static_cast<float>(time - start_take_off_time);
-                if (_world_item.valid) {
-                    spinup_detected++;
-                    if (spinup_detected == 3) {
-                        spinup_detect_time = time;
-                        std::cout << "Spin up detected after: " << takeoff_duration << "s" << std::endl;
-                        drone_on_pad = false;
+                if (post_burn_start(time)) {
+                    calc_takeoff_prediction(time, acc);
+                    if (_world_item.valid) {
+                        if (detect_lift_off()) {
+                            if (!liftoff_detected)
+                                std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
+                            liftoff_detected = true;
+                            _visdat->disable_cloud_rejection = false;
+                            _drone_tracking_status = dts_tracking;
+                        }
                     }
-                    if (detect_lift_off()) {
-                        if (!liftoff_detected)
-                            std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
-                        liftoff_detected = true;
-                        _visdat->disable_cloud_rejection = false;
-                        _drone_tracking_status = dts_tracking;
-                    }
-                } else if (spinup_detected < 3) {
-                    spinup_detected = std::max(0, spinup_detected - 1);
                 }
-
-                if (spinup_detected < 3 && (takeoff_duration > max_allowed_takeoff_duration || takeoff_is_aborted(time))) {
-                    _drone_tracking_status = dts_detecting_takeoff_failure;
-                    _visdat->disable_cloud_rejection = false;
-                    std::cout << "No spin up detected in time!" << std::endl;
-                } else if (takeoff_duration > max_allowed_takeoff_duration || takeoff_is_aborted(time)) {
+                if (takeoff_duration > max_allowed_takeoff_duration || takeoff_is_aborted(time)) {
                     _visdat->disable_cloud_rejection = false;
                     _drone_tracking_status = dts_detecting_takeoff_failure;
                     if (liftoff_detected)
@@ -257,7 +241,7 @@ float DroneTracker::score(BlobProps *blob) {
 }
 float DroneTracker::score_threshold() {
     if (taking_off())
-        return 0.3;
+        return 0.25f;
     return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
 }
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
