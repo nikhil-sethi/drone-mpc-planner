@@ -643,7 +643,7 @@ void TrackerManager::update_trackers(double time, long long frame_number) {
             }
             trkr->close();
             _trackers.erase(_trackers.begin() + i);
-            std::cout << "Deleting tracker: " << trkr->uid() << std::endl;
+            // std::cout << "Deleting tracker: " << trkr->uid() << std::endl;
             delete trkr;
         } else if (_trackers.at(i)->type() == tt_drone) {
             DroneTracker *dtrkr = static_cast<DroneTracker *>(_trackers.at(i));
