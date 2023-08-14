@@ -1042,7 +1042,7 @@ void DroneController::fine_tune_thrust(float integration_error) {
 
 bool DroneController::abort_take_off() {
     //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
-    if (_flight_mode == fm_init_spinup) {
+    if (_flight_mode == fm_init_spinup || _flight_mode == fm_start_takeoff || _flight_mode == fm_remaining_spinup) {
         _flight_mode = fm_init_spinup;
         return true;
     } else
