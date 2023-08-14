@@ -560,7 +560,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
 
                         if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                             it->init_logger();
-                            std::cout << "Keeping insecttracker: " << next_insecttrkr_id << " uid: " << it->uid() << std::endl;
+                            std::cout << "Insecttracker: " << next_insecttrkr_id << " uid: " << it->uid() << std::endl;
                             next_insecttrkr_id++;
                             tracking::WorldItem w(tracking::ImageItem(*props, _visdat->frame_id, 0, blob.id), props->world_props);
                             it->world_item(w);

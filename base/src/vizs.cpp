@@ -524,7 +524,7 @@ void Visualizer::draw_tracker_viz() {
 
     if (pparams.op_mode == op_mode_x) {
         putText(frameL_color, "Drone prediction replay", cv::Point(3, frameL_color.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
-        putText(frameL_color, "Drone detection live", cv::Point(3, frameL_color.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
+        putText(frameL_color, "Drone detection log", cv::Point(3, frameL_color.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0));
         putText(frameL_color, "Drone detection replay", cv::Point(3, frameL_color.rows - 36), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
         putText(frameL_color, "Drone detection template match", cv::Point(3, frameL_color.rows - 48), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(128, 0, 128));
     }
