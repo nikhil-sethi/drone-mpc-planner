@@ -111,6 +111,7 @@ void DroneTracker::update(double time) {
                             if (!liftoff_detected)
                                 std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
                             liftoff_detected = true;
+                            drone_on_pad = false;
                             _visdat->disable_cloud_rejection = false;
                             _drone_tracking_status = dts_tracking;
                         }
