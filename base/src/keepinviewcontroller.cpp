@@ -43,7 +43,11 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
         } else if (!_flight_area->inside(current_stopping_position.position, _safety_margin_type)) {
             // oh no! we have to brake!
             active = true;
-            return current_stopping_position.acceleration;
+            if (current_stopping_position.acceleration.y > 0) {
+                return current_stopping_position.acceleration + cv::Point3f(0, current_stopping_position.acceleration.y, 0);
+            } else {
+                return current_stopping_position.acceleration;
+            }
         }
     }
     // we are safe
