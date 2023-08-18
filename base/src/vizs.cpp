@@ -38,6 +38,8 @@ void Visualizer::add_plot_sample(void) {
         throttle_min_bound.push_back(static_cast<float>(RC_BOUND_MIN));
         throttle_max_bound.push_back(static_cast<float>(RC_BOUND_MAX));
 
+        zero_mat.push_back(0.f);
+
 
         auto dtrkr = &_patser->drone.tracker;
         TrackData data = dtrkr->last_track_data();
@@ -198,9 +200,9 @@ cv::Mat Visualizer::plot_all_position(void) {
 
 cv::Mat Visualizer::plot_all_kiv_accelerations(void) {
     std::vector<cv::Mat> ims_kiv_acc;
-    ims_kiv_acc.push_back(plot({kiv_accX}, "KIVAccX"));
-    ims_kiv_acc.push_back(plot({kiv_accY}, "KIVAccY"));
-    ims_kiv_acc.push_back(plot({kiv_accZ}, "KIVAccZ"));
+    ims_kiv_acc.push_back(plot({kiv_accX, zero_mat}, "KIVAccX"));
+    ims_kiv_acc.push_back(plot({kiv_accY, zero_mat}, "KIVAccY"));
+    ims_kiv_acc.push_back(plot({kiv_accZ, zero_mat}, "KIVAccZ"));
     return create_column_image(ims_kiv_acc, CV_8UC3);
 }
 

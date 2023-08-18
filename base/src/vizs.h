@@ -139,6 +139,7 @@ public:
     cv::Mat kiv_accX;
     cv::Mat kiv_accY;
     cv::Mat kiv_accZ;
+    cv::Mat zero_mat;
 
     cv::Mat generated_pos_x_drone;
     cv::Mat generated_pos_y_drone;
