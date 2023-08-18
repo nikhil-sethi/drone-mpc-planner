@@ -359,7 +359,7 @@ bool handle_key(double time [[maybe_unused]]) {
             patser.drone.nav.nav_flight_mode(navigation::nfm_manual);
             break;
         case '1':
-            init_insect_log(56);
+            init_insect_log(1);
             break;
         case '!':
             if (patser.drone.drone_ready_and_waiting()) {
@@ -369,7 +369,7 @@ bool handle_key(double time [[maybe_unused]]) {
             }
             break;
         case '2':
-            init_insect_log(66);
+            init_insect_log(2);
             break;
         case '@':
             if (patser.drone.drone_ready_and_waiting()) {
@@ -379,7 +379,7 @@ bool handle_key(double time [[maybe_unused]]) {
             }
             break;
         case '3':
-            init_insect_log(58);
+            init_insect_log(3);
             break;
         case '#':
             if (patser.drone.drone_ready_and_waiting()) {
@@ -396,25 +396,25 @@ bool handle_key(double time [[maybe_unused]]) {
             }
             break;
         case '4':
-            init_insect_log(54);
+            init_insect_log(4);
             break;
         case '5':
-            init_insect_log(63);
+            init_insect_log(5);
             break;
         case '6':
-            init_insect_log(64);
+            init_insect_log(6);
             break;
         case '7':
-            init_insect_log(20);
+            init_insect_log(7);
             break;
         case '8':
-            init_insect_log(61);
+            init_insect_log(8);
             break;
         case '9':
             init_insect_log(9);
             break;
         case '0':
-            init_insect_log(62);
+            // init_insect_log(10);
             break;
         case 'v':
             patser.trackers.init_virtual_moth(&patser.drone.control);
