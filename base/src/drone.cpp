@@ -112,7 +112,7 @@ void Drone::update(double time) {
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
                     _state = ds_pre_flight;
                     require_confirmation_drone_on_pad = true;
-                } else if (((_baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v && !control.spinup()) || _baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v - 0.5f) && !_baseboard_link->disabled()) { // alternative: charge if below min hunt cel v and not spinup or spinup and like 0.5 volts below hunt cell v
+                } else if ((_baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v && !control.spinup()) && !_baseboard_link->disabled()) {
                     _state = ds_charging;
                     _baseboard_link->allow_charging(true);
                 } else if (!control.rc_ok(time)) {
