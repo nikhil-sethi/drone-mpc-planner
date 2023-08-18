@@ -23,7 +23,6 @@ public:
     const float safety = 2.f;
 
     // States:
-    bool active = false;  //indicator for the log, whether kiv is active or not
     stopping_position_result current_stopping_position;
 
     safety_margin_types _safety_margin_type;

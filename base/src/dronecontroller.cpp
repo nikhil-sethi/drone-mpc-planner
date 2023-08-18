@@ -44,7 +44,7 @@ void DroneController::init_flight(std::ofstream *logger, int flight_id) {
                "joy_throttle;joy_roll;joy_pitch;joy_yaw; " <<
                "joy_arm_switch;joy_mode_switch;joy_takeoff_switch;" <<
                "mm_arm_switch;mm_mode_switch;" <<
-               "kiv;" <<
+               "accX_kiv;accY_kiv;accZ_kiv;" <<
                "max_thrust; integrator_x;integrator_y;integrator_z;" <<
                "batt_cell_v;rssi;";
 
@@ -553,7 +553,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                    static_cast<int>(_joy_takeoff_switch) << ";" <<
                    _rc->arm_switch << ";" <<
                    _rc->mode << ";" <<
-                   kiv_ctrl.active << ";" <<
+                   kiv_acc.x << ";" << kiv_acc.y << ";" << kiv_acc.z << ";" <<
                    calibration.max_thrust << ";" <<
                    pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                    _rc->telemetry.batt_cell_v  << ";" <<

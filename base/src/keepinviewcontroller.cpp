@@ -22,7 +22,6 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
     if (enabled) {
         if (!_flight_area->inside(data_drone.pos(), _safety_margin_type)) {
             // oh no! we are outside the flight area!
-            active = true;
             auto [drone_in_boundaries, violated_planes_inview] = _flight_area_config->find_violated_planes(data_drone.pos());
             cv::Point3f correction_acceleration = {0, 0, 0};
             for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
@@ -42,7 +41,6 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
 
         } else if (!_flight_area->inside(current_stopping_position.position, _safety_margin_type)) {
             // oh no! we have to brake!
-            active = true;
             if (current_stopping_position.acceleration.y > 0) {
                 return current_stopping_position.acceleration + cv::Point3f(0, current_stopping_position.acceleration.y, 0);
             } else {
@@ -51,6 +49,5 @@ cv::Point3f KeepInViewController::correction_acceleration(tracking::TrackData da
         }
     }
     // we are safe
-    active = false;
     return {0, 0, 0};
 }
