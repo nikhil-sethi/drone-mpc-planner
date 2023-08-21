@@ -212,6 +212,7 @@ public:
         return correct_state || not_waiting_for_sleep;
     }
     bool crashed() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost);}
+    bool waiting_for_post_crash_restart() {return _state == ds_post_flight && (post_flight_state == post_crashed || post_flight_state == post_lost || post_flight_state == post_deep_sleep) && _baseboard_link->charging() && (control.telemetry_OK());}
     bool locate_fail() {return _state == ds_pre_flight && (pre_flight_state == pre_locate_time_out);}
     bool has_been_ready() {return _has_been_ready;}
     void beep_drone() {_state = ds_beep;}

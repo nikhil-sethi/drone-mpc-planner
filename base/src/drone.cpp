@@ -514,44 +514,23 @@ void Drone::post_flight(double time) {
                 communicate_state(es_pats_x);
                 break;
         } case post_crashed: {
-                if (_baseboard_link->charging() && (time - time_crashed > 5)) { // baseboard charging detection can be slower a fast crash, so give it a few seconds
-                    post_flight_state = post_init;
-                    communicate_state(es_pats_x);
-                    _state = ds_pre_flight;
-                    pre_flight_state = pre_init;
-                } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
+                if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
                 }
                 break;
         } case post_lost: {
-                if (_baseboard_link->charging() || _baseboard_link->disabled()) {
-                    post_flight_state = post_init;
-                    pre_flight_state = pre_init;
-                    _state = ds_pre_flight;
-                } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
+                if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
                 }
                 break;
         } case post_init_deep_sleep: {
-                if (_baseboard_link->charging() && (control.telemetry_OK())) {
-                    post_flight_state = post_init;
-                    pre_flight_state = pre_init;
-                    _state = ds_pre_flight;
-                } else {
-                    control.LED(false);
-                    post_flight_state = post_deep_sleep;
-                }
+                control.LED(false);
+                post_flight_state = post_deep_sleep;
                 break;
         } case post_deep_sleep: {
-                if (_baseboard_link->charging() && (control.telemetry_OK())) {
-                    post_flight_state = post_init;
-                    pre_flight_state = pre_init;
-                    _state = ds_pre_flight;
-                } else {
-                    control.flight_mode(DroneController::fm_sleep);
-                }
+                control.flight_mode(DroneController::fm_sleep);
                 break;
             }
     }

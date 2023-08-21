@@ -593,6 +593,11 @@ void check_exit_conditions(double frame_time, bool escape_key_pressed) {
                 exit_now = true;
             }
         }
+        if (patser.drone.waiting_for_post_crash_restart()) {
+            std::cout << "Error: Drone crashed and recovered, exiting." << std::endl;
+            // communicate_state(es_drone_crash);
+            exit_now = true;
+        }
     }
 }
 
