@@ -11,7 +11,7 @@ void FlightAreaConfig::create_camera_planes() {
     _planes.push_back(Plane(1, view_data.point_right_bottom, view_data.point_right_top,    right_plane, _planes.size()));
 
     cv::Point3f camera_normal(cv::Point3f(0, -sinf(_cam->camera_pitch()* deg2rad), -cosf(_cam->camera_pitch()* deg2rad)));
-    add_plane(0.85f * camera_normal, camera_normal, camera_protector_plane);
+    add_plane(0.7f * camera_normal, camera_normal, camera_protector_plane);
     apply_safety_angle(1.f * deg2rad);
 }
 #endif
