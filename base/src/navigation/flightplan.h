@@ -101,7 +101,7 @@ struct Waypoint_Velocity : Waypoint {
 };
 
 struct Waypoint_Acceleration : Waypoint {
-    Waypoint_Acceleration(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
+    Waypoint_Acceleration(cv::Point3f p, int distance_threshold_mm, float vel_thresh, float hover_pause_time, std::string wp_name) : Waypoint(p, distance_threshold_mm, vel_thresh, hover_pause_time, wp_name) {
         mode = wfm_acc;
     }
 };
@@ -203,7 +203,7 @@ public:
                     return wp;
                     break;
             } case waypoint_flight_modes::wfm_acc: {
-                    Waypoint_Acceleration wp(cv::Point3f(x.value(), y.value(), z.value()), name.value());
+                    Waypoint_Acceleration wp(cv::Point3f(x.value(), y.value(), z.value()), threshold_mm.value(), threshold_v.value(), hover_pause.value(), name.value());
                     return wp;
                     break;
             } case waypoint_flight_modes::wfm_flying:
