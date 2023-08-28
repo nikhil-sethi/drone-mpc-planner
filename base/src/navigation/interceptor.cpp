@@ -62,14 +62,12 @@ void Interceptor::update(double time[[maybe_unused]]) {
     switch (_interceptor_state) {
         case  is_init: {
                 _interceptor_state = is_waiting_for_target;
-                _control_mode = position_control;
                 FlightAreaConfig *relaxed_flightareaconfig = _flight_area->flight_area_config(relaxed);
                 interception_center = cv::Point3f(0, _drone->tracker.pad_location().y / 2, _drone->tracker.pad_location().z + (relaxed_flightareaconfig->active_back_plane().support.z - _drone->tracker.pad_location().z) / 2);
                 [[fallthrough]];
         } case is_waiting_for_target: {
                 _n_frames_aim_in_range = 0;
                 _n_frames_aim_not_in_range++;
-                _control_mode = position_control;
                 if (!_target_insecttracker)
                     break;
                 else  if (_target_insecttracker->tracking() && !_target_insecttracker->false_positive() && !_trackers->monster_alert() && _target_insecttracker->go_for_terminate()) {
@@ -155,6 +153,7 @@ void Interceptor::update_hunt_strategy(tracking::TrackData target, double time) 
                 if (_drone->control.at_base()) {
                     drone.state.pos = _drone->tracker.pad_location();
                     drone.state.vel = cv::Point3f(0, 0, 0);
+                    _control_mode = position_control;
                 }
                 if (_optimization_result.via && _optimization_result.interception_position_in_flightarea && _optimization_result.valid) {
                     _aim_pos = _flight_area->move_inside(_aim_pos, relaxed, drone.pos());
