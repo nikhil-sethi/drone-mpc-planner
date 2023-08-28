@@ -150,8 +150,10 @@ void DroneNavigation::update(double time) {
                     _iceptor->switch_control_mode(acceleration_control);
                     _control->flight_mode(DroneController::fm_flying_pid);
                 }
-                else
+                else {
+                    _iceptor->switch_control_mode(position_control);
                     _control->flight_mode(DroneController::fm_flying_pid);
+                }
                 if (current_waypoint->mode != wfm_thrust_calib && current_waypoint->mode != wfm_yaw_reset && current_waypoint->mode != wfm_landing) {
                     _control->hover_mode(false);
                     _tracker->hover_mode(false);
