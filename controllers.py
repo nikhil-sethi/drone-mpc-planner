@@ -52,7 +52,7 @@ class MPCController():
           
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
 
-        Q_mat = 0.1*np.diag([20, 20, 50, 10, 10, 10])
+        Q_mat = 0.1*np.diag([20, 20, 20, 4, 4, 5])
         R_mat = 0.0001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
@@ -90,7 +90,7 @@ class MPCController():
         # a value of zero means that the optimization of N steps happens just in the 
         # a very high value is like planning backwards from the final reference setpoint back to the drone's position. Like more of global planning than local. but this clearly might have disadvantages because the plan might not be executed even if it is planned well in theory.
         # I've found 1 to be a good tradeoff between planning in the dark and with some direction.
-        ocp.cost.W_e = 1*Q_mat
+        ocp.cost.W_e = 0*Q_mat
 
 
         # The mapping matrix for states.
@@ -144,6 +144,14 @@ class MPCController():
         # set current state 
         self.solver.set(0, "lbx", state_c)
         self.solver.set(0, "ubx", state_c)
+
+        # warm start with heuristic
+        v_t = state_d[:-3] - state_c
+        v_t_cap = v_t/np.linalg.norm(v_t)
+        theta = np.arcsin(v_t_cap[2])
+        roll = np.arcsin(v_t_cap[1]/np.cos(theta))
+
+        self.solver.set(0, "u", np.array([16, roll, theta]))
 
         # set current setpoint
         for j in range(self.N):
