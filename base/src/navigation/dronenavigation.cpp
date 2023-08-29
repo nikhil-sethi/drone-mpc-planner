@@ -82,6 +82,8 @@ void DroneNavigation::update(double time) {
                 } else if (_iceptor->target_acquired(time) && _nav_flight_mode == nfm_hunt) {
                     setpoint_pos_world = _iceptor->aim_pos();
                     setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->pad_location(false));
+                    setpoint_vel_world = {0, 0, 0};
+                    setpoint_acc_world = {0, 0, 0};
                 }
                 break;
         } case ns_take_off_completed: {
@@ -111,6 +113,8 @@ void DroneNavigation::update(double time) {
                 break;
         } case ns_chasing_insect: {
                 setpoint_pos_world = _iceptor->aim_pos();
+                setpoint_vel_world = _iceptor->aim_vel();
+                setpoint_acc_world = _iceptor->aim_acc();
                 // setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _tracker->last_track_data().pos());
 
                 if (_iceptor->target_cleared())

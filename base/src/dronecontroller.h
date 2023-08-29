@@ -221,10 +221,10 @@ private:
     cv::Point3f takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y);
     cv::Point3f combine_drone_accelerations_with_priority(cv::Point3f prio_acc, cv::Point3f trivil_acc);
     void mix_drone_accelerations(tracking::TrackData data_drone, cv::Point3f target_acc);
-    void control_drone_position_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos);
-    void control_drone_velocity_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-    void control_drone_acceleration_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc);
-    void control_drone_ff_acceleration_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc);
+    void control_drone_position_based(tracking::TrackData data_drone, tracking::TrackData setpoint);
+    void control_drone_velocity_based(tracking::TrackData data_drone, tracking::TrackData setpoint);
+    void control_drone_acceleration_based(tracking::TrackData data_drone, tracking::TrackData setpoint);
+    void control_drone_ff_acceleration_based(tracking::TrackData data_drone, tracking::TrackData setpoint);
 
     void send_data_joystick(void);
     void read_joystick(void);
@@ -411,7 +411,7 @@ public:
     void init_flight(std::ofstream *logger, int flight_id);
     void init_flight_replay(std::string replay_dir, int flight_id);
     void init_full_log_replay(std::string replay_dir);
-    void control(tracking::TrackData data_drone, tracking::TrackData data_target, control_modes control_mode, cv::Point3f target_velocity, cv::Point3f target_acceleration, double time, bool enable_logging);
+    void control(tracking::TrackData data_drone, tracking::TrackData data_target, control_modes control_mode, double time, bool enable_logging);
     bool landed() {return _landed; }
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }

@@ -113,7 +113,7 @@ void DroneController::led_strength(float light_level) {
     std::cout << "Led strength set to: " << dparams.drone_led_strength << " with light level: " << light_level << std::endl;
 }
 
-void DroneController::control(TrackData data_drone, TrackData data_target, control_modes control_mode, cv::Point3f target_velocity, cv::Point3f target_acceleration, double time, bool enable_logging) {
+void DroneController::control(TrackData data_drone, TrackData data_target, control_modes control_mode, double time, bool enable_logging) {
 #ifdef PATS_PROFILING
     std::chrono::_V2::system_clock::time_point t_start_control = std::chrono::high_resolution_clock::now();
 #endif
@@ -124,11 +124,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
     process_joystick();
 
     if (control_mode == acceleration_feedforward)
-        _dtrk->update_target(data_drone.pos() + target_acceleration);
+        _dtrk->update_target(data_drone.pos() + data_target.acc());
     else if (control_mode == velocity_control)
-        _dtrk->update_target(data_drone.pos() + target_velocity);
+        _dtrk->update_target(data_drone.pos() + data_target.vel());
     else if (control_mode == acceleration_control)
-        _dtrk->update_target(data_drone.pos() + target_velocity + target_acceleration);
+        _dtrk->update_target(data_drone.pos() + data_target.acc());
     else
         _dtrk->update_target(data_target.pos());
 
@@ -260,25 +260,25 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                         data_drone.state.pos = _dtrk->pad_location();
                 }
                 if (control_mode == acceleration_feedforward)
-                    control_drone_ff_acceleration_based(data_drone, data_target.pos(), target_acceleration);
+                    control_drone_ff_acceleration_based(data_drone, data_target);
                 else if (control_mode == velocity_control)
-                    control_drone_velocity_based(data_drone, data_target.pos(), target_velocity);
+                    control_drone_velocity_based(data_drone, data_target);
                 else if (control_mode == acceleration_control)
-                    control_drone_acceleration_based(data_drone, data_target.pos(), target_acceleration);
+                    control_drone_acceleration_based(data_drone, data_target);
                 else
-                    control_drone_position_based(data_drone, data_target.pos());
+                    control_drone_position_based(data_drone, data_target);
 
                 break;
         } case fm_long_range_forth: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_drone_position_based(data_drone, data_target.pos());
+                control_drone_position_based(data_drone, data_target);
                 auto_pitch = RC_MIDDLE + RC_BOUND_RANGE / 2 / 8;
                 break;
         } case fm_long_range_back: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_drone_position_based(data_drone, data_target.pos());
+                control_drone_position_based(data_drone, data_target);
                 auto_pitch = RC_MIDDLE - RC_BOUND_RANGE / 2 / 8;
                 break;
         } case fm_calib_thrust:
@@ -287,7 +287,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         case fm_headed: {
                 mode += bf_headless_disabled;
                 auto_yaw = RC_MIDDLE;
-                control_drone_position_based(data_drone, data_target.pos());
+                control_drone_position_based(data_drone, data_target);
                 break;
         } case fm_reset_yaw_on_pad: {
                 mode += bf_headless_disabled;
@@ -298,7 +298,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 break;
         } case fm_correct_yaw: {
                 mode += bf_headless_disabled;
-                control_drone_position_based(data_drone, data_target.pos());
+                control_drone_position_based(data_drone, data_target);
                 if (data_drone.yaw_deviation_valid)
                     correct_yaw(data_drone.yaw_deviation);
                 break;
@@ -311,7 +311,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 [[fallthrough]];
         } case fm_ff_landing: {
                 mode += bf_headless_disabled;
-                control_drone_position_based(data_drone, data_drone.pos());
+                control_drone_position_based(data_drone, data_target);
                 float dt = static_cast<float>(time - ff_land_start_time);
                 auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, dt);
 
@@ -787,25 +787,25 @@ void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f 
     std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(acceleration_mix);
 }
 
-void DroneController::control_drone_ff_acceleration_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc) {
-    update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
-    mix_drone_accelerations(data_drone, setpoint_acc);
+void DroneController::control_drone_ff_acceleration_based(TrackData data_drone, TrackData setpoint) {
+    update_pid_controller(data_drone, setpoint.pos(), false); //pid controller must be called to update filters (to be ready for switching back to position control)
+    mix_drone_accelerations(data_drone, setpoint.acc());
 }
 
-void DroneController::control_drone_acceleration_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_acc) {
-    update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
-    cv::Point3f pid_acc = update_acc_pid_controller(data_drone, setpoint_acc);
+void DroneController::control_drone_acceleration_based(TrackData data_drone, TrackData setpoint) {
+    update_pid_controller(data_drone, setpoint.pos(), false); //pid controller must be called to update filters (to be ready for switching back to position control)
+    cv::Point3f pid_acc = update_acc_pid_controller(data_drone, setpoint.acc());
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
-void DroneController::control_drone_velocity_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-    update_pid_controller(data_drone, setpoint_pos, false); //pid controller must be called to update filters (to be ready for switching back to position control)
-    cv::Point3f pid_acc = update_vel_pid_controller(data_drone, setpoint_vel);
+void DroneController::control_drone_velocity_based(TrackData data_drone, TrackData setpoint) {
+    update_pid_controller(data_drone, setpoint.pos(), false); //pid controller must be called to update filters (to be ready for switching back to position control)
+    cv::Point3f pid_acc = update_vel_pid_controller(data_drone, setpoint.vel());
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
-void DroneController::control_drone_position_based(TrackData data_drone, cv::Point3f setpoint_pos) {
-    cv::Point3f pid_acc = update_pid_controller(data_drone, setpoint_pos, false);
+void DroneController::control_drone_position_based(TrackData data_drone, TrackData setpoint) {
+    cv::Point3f pid_acc = update_pid_controller(data_drone, setpoint.pos(), false);
     mix_drone_accelerations(data_drone, pid_acc);
 }
 
