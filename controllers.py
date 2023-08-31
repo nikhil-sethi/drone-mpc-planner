@@ -21,7 +21,7 @@ def create_model(agent):
 
     # explicit expression. the actual derivative xdot = f(x,u)
     # f_expl = agent.xdot_linear(x,u)
-    f_expl = ca.vertcat(*agent.xdot_trp(x,u))
+    f_expl = ca.vertcat(*agent.xdot(x,u))
     
     model = AcadosModel()
     model.x = x
@@ -52,8 +52,8 @@ class MPCController():
           
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
 
-        Q_mat = 0.1*np.diag([20, 20, 50, 10, 10, 10])
-        R_mat = 0.0001*np.diag([1, 1, 1])
+        Q_mat = 1*np.diag([10, 10, 15, 1, 1, 3])
+        R_mat = 0.000001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
         self.u0 = np.array([0,0,0])
@@ -78,7 +78,7 @@ class MPCController():
         # ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint) 
 
         # initial setpoint
-        ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, agent.hov_T, 0, 0])
+        ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, 0, 0, agent.hov_T])
 
         ocp.cost.yref_e = np.array([0, 0.2, 0.5, 0, 0, 0])
 # 
@@ -90,7 +90,7 @@ class MPCController():
         # a value of zero means that the optimization of N steps happens just in the 
         # a very high value is like planning backwards from the final reference setpoint back to the drone's position. Like more of global planning than local. but this clearly might have disadvantages because the plan might not be executed even if it is planned well in theory.
         # I've found 1 to be a good tradeoff between planning in the dark and with some direction.
-        ocp.cost.W_e = 1*Q_mat
+        ocp.cost.W_e = 0*Q_mat
 
 
         # The mapping matrix for states.
@@ -113,10 +113,10 @@ class MPCController():
         # this is a limitation and probably better tuning could allow more room
         
         phi_max = theta_max = pi/2
-        T_max = agent.g0*1.2/cos(theta_max)
+        T_max = agent.g0*1.2
 
-        ocp.constraints.lbu = np.array([-T_max, -phi_max, -theta_max])
-        ocp.constraints.ubu = np.array([+T_max, +phi_max, +theta_max])
+        ocp.constraints.lbu = np.array([-T_max, -T_max, -T_max])
+        ocp.constraints.ubu = np.array([+T_max, +T_max, +T_max])
 
         # ocp.constraints.lbu = np.array([-T_max, -T_max, -T_max])
         # ocp.constraints.ubu = np.array([+T_max, +T_max, +T_max])
