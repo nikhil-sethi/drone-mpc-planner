@@ -5,13 +5,18 @@ from matplotlib import animation
 from models import PATSX
 from controllers import MPCController
 import scipy
-from math import pi
+from math import pi, sin, cos
+import matplotlib.pyplot as plt
+plt.switch_backend('QTAgg')
+
+
 
 
 # setup agent and controller
 
-agent = PATSX()
-controller = MPCController(agent)
+agent = PATSX(dt = 0.035)
+setpoint = np.array([3.0, 2.5, 3.0, 0,0,0, agent.hov_T, 0, 0])
+controller = MPCController(agent, init_setpoint = setpoint)
 
 # SIMULATION
 
@@ -34,7 +39,8 @@ acados_integrator.set("x", agent.x0)
 sim_x = np.zeros((controller.N+1, controller.nx))
 
 # animation
-fig = plt.figure()
+fig = plt.figure(figsize=(15,15))
+
 ax = plt.axes(projection='3d', xlim=(-3.3, 3), ylim=(-3.3, 3), zlim=(-3.3, 3))
 ax.view_init(elev=35, azim=-135)
 pos, = ax.plot(0,0,0, 'bo', markersize=5)
@@ -42,7 +48,27 @@ target_plot, = ax.plot(0,0,0, 'rx', markersize=5)
 x_pred_plots = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.N)]
 motor_plots = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
 
+agent.ax = ax
 
+v_t = setpoint[:-6] - agent.x0[:-3]
+v_t_cap = v_t/np.linalg.norm(v_t)
+
+pitch = np.arcsin(v_t_cap[0])
+
+roll = np.arctan2(-v_t_cap[1], v_t_cap[2])
+
+target_arrow = scipy.spatial.transform.Rotation.from_euler('xy',[roll, pitch]).apply(np.array([0,0,1]))
+
+ax.quiver(0, 0, 0,
+          target_arrow[0] , target_arrow[1] , target_arrow[2] ,
+          color='blue', arrow_length_ratio=0.1)
+
+
+figManager = plt.get_current_fig_manager()
+# if px=0, plot will display on 1st screen
+figManager.window.move(500, 0)
+# figManager.window.showMaximized()
+figManager.window.setFocus()
 
 def ani_update(i):
     # get new state from observer. Ground truth here
@@ -51,10 +77,10 @@ def ani_update(i):
     acados_integrator.set("x", sim_x)
 
     # get a new setpoint
-    setpoint = np.array([-5.0,0.5,-3.5, 0,0,0, agent.hov_T, 0, 0])
+    # setpoint = np.array([1.0,3.5,-0.5, 0,0,0, agent.hov_T, 0, 0])
 
     # calculate optimal control problem
-    action = controller.get_action(state_c=sim_x, state_d=setpoint)
+    action = controller.get_action(state_c=sim_x, state_d=setpoint, iter=i)
 
     # action = np.array([10, 0, -0.01])
     # print(sim_x)
@@ -72,6 +98,13 @@ def ani_update(i):
 
     # for i in range(4):
     #     motor_plots[i].set_data_3d(motor_pts_t[i,0], motor_pts_t[i,1], motor_pts_t[i,2])
+
+    # dvx = action[0] * (sin(action[2]) * cos(action[1]))
+    # dvy = -action[0] * (sin(action[1]))
+    # dvz = action[0] * (cos(action[2]) * cos(action[1])) 
+
+
+
 
     for i in range(controller.N):
         x_pred = controller.solver.get(i, "x")

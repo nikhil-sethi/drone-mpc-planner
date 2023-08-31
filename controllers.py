@@ -49,7 +49,7 @@ def create_model(agent):
     return model
 
 class MPCController():
-    def __init__(self, agent=None) -> None:
+    def __init__(self, agent=None, init_setpoint=None) -> None:
         ocp = AcadosOcp()
         self.model = create_model(agent)
         ocp.model = self.model
@@ -92,9 +92,9 @@ class MPCController():
         # ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint) 
 
         # initial setpoint
-        ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, agent.hov_T, 0, 0])
+        ocp.cost.yref   = init_setpoint
 
-        ocp.cost.yref_e = np.array([0, 0.2, 0.5, 0, 0, 0])
+        ocp.cost.yref_e = init_setpoint[:-nu]
 # 
 
         ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
@@ -116,7 +116,7 @@ class MPCController():
 
         # Mapping matrix for control inputs
         Vu = np.zeros((ny, nu))
-        Vu[-3:, -3:] = 1.0
+        Vu[-nu:, -nu:] = 1.0
         ocp.cost.Vu = Vu
 
         Vx_e = np.zeros((ny_e, nx))
@@ -151,7 +151,23 @@ class MPCController():
 
         self.solver = AcadosOcpSolver(ocp, json_file = 'acados_ocp.json')
 
-    def get_action(self, state_c, state_d):
+
+        # warm start
+        v_t = init_setpoint[:-6] - self.x0[:-3]
+        v_t_cap = v_t/np.linalg.norm(v_t)
+        pitch = np.arcsin(v_t_cap[2])
+        roll = np.arcsin(v_t_cap[1]/np.cos(pitch))
+
+        # pitch = np.arcsin(v_t_cap[0])
+        # roll = np.arctan2(-v_t_cap[1], v_t_cap[2])
+
+        self.prev_u = np.array([16, roll, pitch])
+        # self.prev_u = np.array([0, 0, 0])
+        print(self.prev_u)
+        # self.solver.set(0, "u", self.prev_u)
+
+
+    def get_action(self, state_c, state_d, iter):
 
         start = time.time()
 
@@ -160,14 +176,28 @@ class MPCController():
         self.solver.set(0, "ubx", state_c)
 
         # warm start with heuristic
+        # print(iter)
+
+        # if iter==0:
         v_t = state_d[:-6] - state_c[:-3]
         v_t_cap = v_t/np.linalg.norm(v_t)
-        # theta = np.arcsin(v_t_cap[2])
-        # roll = np.arcsin(v_t_cap[1]/np.cos(theta))
+        # # theta = np.arcsin(v_t_cap[2])
+        # # roll = np.arcsin(v_t_cap[1]/np.cos(theta))
 
-        quat = rot_quat(v_t_cap)        
+        pitch = np.arcsin(v_t_cap[2])
+        roll = np.arcsin(v_t_cap[1]/np.cos(pitch))
 
-        self.solver.set(0, "u", np.array([16, quat[1], quat[2]]))
+        # pitch = np.arcsin(v_t_cap[0])
+    
+        # Calculate the roll angle (rotation around z-axis)
+        # roll = np.arctan2(-v_t_cap[1], v_t_cap[2])
+
+        self.solver.set(0, "u", np.array([16, roll, pitch]))
+    
+        # print(roll, pitch)
+        # self.solver.set(0, "u", self.prev_u)
+
+        
 
         # set current setpoint
         for j in range(self.N):
@@ -178,6 +208,8 @@ class MPCController():
         # the perfect MPC predicted state. not sure which one to use.
         self.x = self.solver.get(1, "x")
         self.u = self.solver.get(0, "u")
-        
+
+        self.prev_u = self.solver.get(1, "u")
+
         return self.u
 

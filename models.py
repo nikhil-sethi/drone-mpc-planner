@@ -10,12 +10,12 @@ from casadi import sin, cos, tan
 np.set_printoptions(precision=5)
 
 class Particle:
-    def __init__(self) -> None:
+    def __init__(self, dt) -> None:
         self.N_STATES = 4
         self.N_ACTIONS = 2 # motor speeds
         self.m = 1
         self.g0  = 9.81     # [m.s^2] accerelation of gravity
-        self.dt = 0.035 # timestep
+        self.dt = dt # timestep
 
     def xdot(self, x,u):
 
@@ -183,14 +183,16 @@ class Crazyflie(Drone):
         super().__init__()
 
 class PATSX(Particle):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, dt=0.035, ax=None) -> None:
+        super().__init__(dt)
         self.N_STATES = 6   
         self.N_ACTIONS = 3 #
         self.mq = 0.0306
         self.hov_T = self.g0
 
         self.x0 = np.zeros(self.N_STATES)
+
+        self.ax = ax
         
     def xdot_trp(self, _x, _u):
         dx = _x[3]
