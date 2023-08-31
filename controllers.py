@@ -6,6 +6,20 @@ import scipy
 import numpy as np
 from math import pi, cos
 
+def rot_quat(vec1):
+    vec0 = np.array([0,0,1])
+    dot = vec0.dot(vec1)
+    if (dot < -0.999999):
+        ret = np.array([0, 0, -1, 0])
+    else:
+        ret = np.zeros(4)
+        ret[0] = 1 + dot
+        ret[1:] = np.cross(vec0, vec1)
+        ret /= np.linalg.norm(ret)
+        return ret
+
+
+
 def create_model(agent):
     name = "particle_ode"
     # Create the CasADi symbols for the function definition
@@ -146,12 +160,14 @@ class MPCController():
         self.solver.set(0, "ubx", state_c)
 
         # warm start with heuristic
-        v_t = state_d[:-3] - state_c
+        v_t = state_d[:-6] - state_c[:-3]
         v_t_cap = v_t/np.linalg.norm(v_t)
-        theta = np.arcsin(v_t_cap[2])
-        roll = np.arcsin(v_t_cap[1]/np.cos(theta))
+        # theta = np.arcsin(v_t_cap[2])
+        # roll = np.arcsin(v_t_cap[1]/np.cos(theta))
 
-        self.solver.set(0, "u", np.array([16, roll, theta]))
+        quat = rot_quat(v_t_cap)        
+
+        self.solver.set(0, "u", np.array([16, quat[1], quat[2]]))
 
         # set current setpoint
         for j in range(self.N):

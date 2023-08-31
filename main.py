@@ -35,7 +35,7 @@ sim_x = np.zeros((controller.N+1, controller.nx))
 
 # animation
 fig = plt.figure()
-ax = plt.axes(projection='3d', xlim=(-0.3, 6), ylim=(-0.3, 6), zlim=(-0.3, 6))
+ax = plt.axes(projection='3d', xlim=(-3.3, 3), ylim=(-3.3, 3), zlim=(-3.3, 3))
 ax.view_init(elev=35, azim=-135)
 pos, = ax.plot(0,0,0, 'bo', markersize=5)
 target_plot, = ax.plot(0,0,0, 'rx', markersize=5)
@@ -51,7 +51,7 @@ def ani_update(i):
     acados_integrator.set("x", sim_x)
 
     # get a new setpoint
-    setpoint = np.array([5.0,0.5,3.5, 0,0,0, agent.hov_T, 0, 0])
+    setpoint = np.array([-5.0,0.5,-3.5, 0,0,0, agent.hov_T, 0, 0])
 
     # calculate optimal control problem
     action = controller.get_action(state_c=sim_x, state_d=setpoint)
