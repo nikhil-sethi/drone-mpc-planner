@@ -2,10 +2,12 @@ from acados_template import  AcadosSim, AcadosSimSolver
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from models import PATSX
 from controllers import MPCController
 import scipy
 from math import pi
+import time
 
 
 # setup agent and controller
@@ -34,8 +36,9 @@ acados_integrator.set("x", agent.x0)
 sim_x = np.zeros((controller.N+1, controller.nx))
 
 # animation
-fig = plt.figure()
-ax = plt.axes(projection='3d', xlim=(-3.3, 3), ylim=(-3.3, 3), zlim=(-3.3, 3))
+
+fig = plt.figure(figsize=(10,10))
+ax = plt.axes(projection='3d', xlim=(-4, 4), ylim=(-4, 4), zlim=(-4, 4))
 ax.view_init(elev=35, azim=-135)
 pos, = ax.plot(0,0,0, 'bo', markersize=5)
 target_plot, = ax.plot(0,0,0, 'rx', markersize=5)
@@ -43,21 +46,55 @@ x_pred_plots = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.
 motor_plots = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
 
 
+gf = (3,3,3)
+x = [gf[0],gf[0],gf[0],gf[0]],   [-gf[0],-gf[0],-gf[0],-gf[0]], [gf[0], -gf[0], -gf[0], gf[0]], [ gf[0], -gf[0],-gf[0], gf[0]]
+y = [gf[1],-gf[1],-gf[1],gf[1]], [gf[1],-gf[1],-gf[1], gf[1]],  [gf[1], gf[1],gf[1], gf[1]],    [-gf[1], -gf[1],-gf[1], -gf[1]]
+z = [gf[2],gf[2],-gf[2],-gf[2]], [gf[2], gf[2],-gf[2],-gf[2]],  [gf[2], gf[2],-gf[2],-gf[2]],   [ gf[2],  gf[2],-gf[2],-gf[2]]
+surfaces = []
 
+for i in range(len(x)):
+    surfaces.append( [list(zip(x[i],y[i],z[i]))] )
+
+for surface in surfaces:
+    ax.add_collection3d(Poly3DCollection(surface, alpha=0.2))
+
+
+
+new_pos = np.array([1.5,1,-2.5, 0,0,0, 0, 0, agent.hov_T])
+
+moth_pos = np.array([1.5,1,-2.5])
+moth_vel = np.zeros(3)
 def ani_update(i):
+    global new_pos, moth_pos, moth_vel
     # get new state from observer. Ground truth here
     sim_x = acados_integrator.get("x")    
 
     acados_integrator.set("x", sim_x)
 
     # get a new setpoint
-    setpoint = np.array([3.0,-3.2,-3.5, 0,0,0, 0, 0, agent.hov_T])
+    # print(i)
+    
+    # moth changes it's velocity every 1 second almost
+    if i%15 ==0:
+        # new_pos = -5 + 10*np.random.rand(3)
+        # sampled from a gaussian distribution
+        moth_vel = np.random.normal(loc=[0,0,0], scale=[1,1,1],size=(3))
+        
+    moth_pos += moth_vel*0.035
 
+    setpoint = np.array([moth_pos[0], moth_pos[1], moth_pos[2], 0,0,0, 0, 0, agent.hov_T])
+
+    # if i>=20:
+    #     setpoint = np.array([4.5,1,-2.5, 0,0,0, 0, 0, agent.hov_T])
+    # else:
+    #     setpoint = np.array([3,-1,-2.5, 0,0,0, 2*agent.hov_T, 2*agent.hov_T, 2*agent.hov_T])
     # calculate optimal control problem
+    start = time.time()
     action = controller.get_action(state_c=sim_x, state_d=setpoint)
-
+    # print(time.time()-start)
     # action = np.array([10, 0, -0.01])
-    print(sim_x)
+    # print(action)
+    print(np.linalg.norm(action))
     # update dynamics in simulation/real life
     acados_integrator.set("u", action)
     acados_integrator.solve()
