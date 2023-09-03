@@ -10,12 +10,13 @@ from casadi import sin, cos, tan
 np.set_printoptions(precision=5)
 
 class Particle:
-    def __init__(self) -> None:
-        self.N_STATES = 4
-        self.N_ACTIONS = 2 # motor speeds
+    def __init__(self, n_states=6, n_actions=3) -> None:
+        self.N_STATES = n_states
+        self.N_ACTIONS = n_actions # motor speeds
         self.m = 1
         self.g0  = 9.81     # [m.s^2] accerelation of gravity
         self.dt = 0.035 # timestep
+        self.x = np.zeros(n_states)
 
     def xdot(self, x,u):
 
@@ -30,6 +31,23 @@ class Particle:
         dvz = u[2] - self.g0
 
         return [dx, dy, dz, dvx, dvy, dvz]
+
+    def update(self, u):
+        """Simple integration"""
+        self.x += np.array(self.xdot(self.x, u))*self.dt
+        return self.x
+    
+    @property
+    def pos(self):
+        return self.x[:3]
+
+    @property
+    def vel(self):
+        return self.x[3:6]
+
+    @property
+    def acc(self):
+        return self.x[6:9]
 
 class Drone(Particle):
     def __init__(self) -> None:
@@ -184,14 +202,13 @@ class Crazyflie(Drone):
 
 class PATSX(Particle):
     def __init__(self) -> None:
-        super().__init__()
-        self.N_STATES = 6   
-        self.N_ACTIONS = 3 #
+        super().__init__(n_states=6, n_actions=3)
         self.mq = 0.0306
         self.hov_T = self.g0
 
         self.x0 = np.zeros(self.N_STATES)
         
+
     def xdot_trp(self, _x, _u):
         dx = _x[3]
         dy = _x[4]
@@ -201,3 +218,33 @@ class PATSX(Particle):
         dvz = _u[0] * (cos(_u[2]) * cos(_u[1])) - self.g0
         
         return [dx, dy, dz, dvx, dvy, dvz]
+
+
+class Moth(Particle):
+    def __init__(self) -> None:
+        super().__init__(n_states=3, n_actions=3)
+        self.i = 0 # counter for state updates of moth
+        self.v_max = 2 # maximum speed of the moth
+
+        self.switch_time = 1 # (seconds) random direction every switch time seconds
+
+        self.u = np.zeros(self.N_ACTIONS) 
+        
+    def xdot(self, _x, _u):
+
+        dx = _u[0]
+        dy = _u[1]
+        dz = _u[2]
+       
+        return [dx, dy, dz]
+    
+    def get_action(self):
+        self.i += 1
+        if self.i  % (self.switch_time//self.dt) == 0:
+            self.u = np.random.normal(loc=[0,0,0], scale=[self.v_max/2, self.v_max/2, self.v_max/2],size=(3)) # divide by two because we want 95% of the velocities to be under v_max
+        
+        
+        return self.u
+
+    def reset(self):
+        self.x = -2 + 2*np.random.rand(self.N_STATES)

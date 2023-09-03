@@ -48,12 +48,12 @@ def create_model(agent):
 
 class MPCController():
     def __init__(self, agent=None) -> None:
-        ocp = AcadosOcp()
+        self.ocp = AcadosOcp()
         self.model = create_model(agent)
-        ocp.model = self.model
+        self.ocp.model = self.model
 
-        nx = ocp.model.x.size()[0]
-        nu = ocp.model.u.size()[0]
+        nx = self.ocp.model.x.size()[0]
+        nu = self.ocp.model.u.size()[0]
         self.nx = nx
         self.nu = nu
         
@@ -64,45 +64,45 @@ class MPCController():
           
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
 
-        Q_mat = 1*np.diag([100, 100, 1000, 1, 1, 1])
-        R_mat = 0.00001*np.diag([1, 1, 1])
+        Q_mat = 1*np.diag([600, 600, 600, 10, 10, 10])
+        R_mat = 0.001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
         self.u0 = np.array([0,0,0])
 
         # set simulation time
-        ocp.dims.N = self.N
-        ocp.dims.nx = nx
-        ocp.dims.ny = ny
-        ocp.dims.ny_e = ny_e
+        self.ocp.dims.N = self.N
+        self.ocp.dims.nx = nx
+        self.ocp.dims.ny = ny
+        self.ocp.dims.ny_e = ny_e
         # set options
-        ocp.solver_options.integrator_type = 'ERK' # explicit Runge kutta integration
-        ocp.solver_options.num_stages = 4 # number of RK4 integration steps
-        ocp.solver_options.num_steps = 3
-        ocp.solver_options.newton_iter = 3 # for implicit integrator
-        ocp.solver_options.collocation_type = "GAUSS_RADAU_IIA"
+        self.ocp.solver_options.integrator_type = 'ERK' # explicit Runge kutta integration
+        self.ocp.solver_options.num_stages = 4 # number of RK4 integration steps
+        self.ocp.solver_options.num_steps = 3
+        self.ocp.solver_options.newton_iter = 3 # for implicit integrator
+        self.ocp.solver_options.collocation_type = "GAUSS_RADAU_IIA"
 
 
         # Use the following equations if you're using a custom cost function and not the non linear least sqares matrix that I use
         # path cost
-        # ocp.model.cost_expr_ext_cost = (model.x - setpoint).T @ Q_mat @ (model.x - setpoint) + (model.u-u_setpoint).T @ R_mat @ (model.u-u_setpoint)
+        # self.ocp.model.cost_expr_ext_cost = (model.x - setpoint).T @ Q_mat @ (model.x - setpoint) + (model.u-u_setpoint).T @ R_mat @ (model.u-u_setpoint)
         # terminal cost
-        # ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint) 
+        # self.ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint) 
 
         # initial setpoint
-        ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, 0, 0, 0])
+        self.ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, 0, 0, 0])
 
-        ocp.cost.yref_e = np.array([0, 0.2, 0.5, 0, 0, 0])
+        self.ocp.cost.yref_e = np.array([0, 0.2, 0.5, 0, 0, 0])
 # 
 
-        ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
+        self.ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
 
         # MPC terminal cost. Higher values of the weight imply that a lot of focus is given to arriving at the reference state accurately.
         # Depending on the sampling time and the expected distances between the reference and tht drone's position this might need to be tuned
         # a value of zero means that the optimization of N steps happens just in the 
         # a very high value is like planning backwards from the final reference setpoint back to the drone's position. Like more of global planning than local. but this clearly might have disadvantages because the plan might not be executed even if it is planned well in theory.
         # I've found 1 to be a good tradeoff between planning in the dark and with some direction.
-        ocp.cost.W_e = 0*Q_mat
+        self.ocp.cost.W_e = 0*Q_mat
 
 
         # The mapping matrix for states.
@@ -110,16 +110,16 @@ class MPCController():
         # this matrix converts the state to a representation which we give our reference in
         Vx = np.zeros((ny, nx))
         Vx[:nx, :nx] = np.eye(nx)
-        ocp.cost.Vx = Vx
+        self.ocp.cost.Vx = Vx
 
         # Mapping matrix for control inputs
         Vu = np.zeros((ny, nu))
         # Vu[-3:, -3:] = 1.0
-        ocp.cost.Vu = Vu
+        self.ocp.cost.Vu = Vu
 
         Vx_e = np.zeros((ny_e, nx))
         Vx_e[:nx, :nx] = np.eye(nx)
-        ocp.cost.Vx_e = Vx_e
+        self.ocp.cost.Vx_e = Vx_e
 
         # Constraints on the RPMs is what helps keep the drone corrected
         # this is a limitation and probably better tuning could allow more room
@@ -127,52 +127,52 @@ class MPCController():
         phi_max = theta_max = pi/2
         T_max = agent.g0*1.2
 
-        # ocp.constraints.lbu = np.array([-10, -10, -0])
-        # ocp.constraints.ubu = np.array([+10, +10, +T_max])
+        # self.ocp.constraints.lbu = np.array([-10, -10, -0])
+        # self.ocp.constraints.ubu = np.array([+10, +10, +T_max])
 
-        # ocp.dims.np = 1
-        ocp.constraints.constr_type = 'BGH'
-        # ocp.model.con_h_expr = ca.vertcat(*[ocp.model.u[0]**2 + ocp.model.u[1]**2 + ocp.model.u[2]**2])
-        ocp.model.con_h_expr = ocp.model.u[0]**2 + ocp.model.u[1]**2 + ocp.model.u[2]**2
-        ocp.constraints.lh = np.array([0])
-        ocp.constraints.uh = np.array([15**2])
+        # self.ocp.dims.np = 1
+        self.ocp.constraints.constr_type = 'BGH'
+        # self.ocp.model.con_h_expr = ca.vertcat(*[self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 + self.ocp.model.u[2]**2])
+        self.ocp.model.con_h_expr = self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 #+ self.ocp.model.u[2]**2
+        self.ocp.constraints.lh = np.array([0])
+        self.ocp.constraints.uh = np.array([15**2])
 
         nsh = 1
-        ocp.constraints.lsh = np.zeros(nsh)             # Lower bounds on slacks corresponding to soft lower bounds for nonlinear constraints
-        ocp.constraints.ush = np.zeros(nsh)             # Lower bounds on slacks corresponding to soft upper bounds for nonlinear constraints
-        ocp.constraints.idxsh = np.array(range(nsh))    # Jsh
+        self.ocp.constraints.lsh = np.zeros(nsh)             # Lower bounds on slacks corresponding to soft lower bounds for nonlinear constraints
+        self.ocp.constraints.ush = np.zeros(nsh)             # Lower bounds on slacks corresponding to soft upper bounds for nonlinear constraints
+        self.ocp.constraints.idxsh = np.array(range(nsh))    # Jsh
         ns = 1
-        ocp.cost.zl = 0 * np.ones((ns,)) # gradient wrt lower slack at intermediate shooting nodes (1 to N-1)
-        ocp.cost.Zl = 0 * np.ones((ns,)) # diagonal of Hessian wrt lower slack at intermediate shooting nodes (1 to N-1)
-        ocp.cost.zu = 10 * np.ones((ns,))    
-        ocp.cost.Zu = 0 * np.ones((ns,))  
+        self.ocp.cost.zl = 0 * np.ones((ns,)) # gradient wrt lower slack at intermediate shooting nodes (1 to N-1)
+        self.ocp.cost.Zl = 0 * np.ones((ns,)) # diagonal of Hessian wrt lower slack at intermediate shooting nodes (1 to N-1)
+        self.ocp.cost.zu = 0 * np.ones((ns,))    
+        self.ocp.cost.Zu = 0 * np.ones((ns,))  
         
         # geofencing
-        ocp.constraints.lbx = np.array([-3, -3, -3, -2.5, -2.5, -2.5])
-        ocp.constraints.ubx = np.array([+3, +3, +3, +2.5, +2.5, +2.5])
-        ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
+        self.ocp.constraints.lbx = np.array([-3, -3, -3, -2.5, -2.5, -2.5])
+        self.ocp.constraints.ubx = np.array([+3, +3, +3, +2.5, +2.5, +2.5])
+        self.ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
 
         u_max = 15
 
-        ocp.constraints.lbu = np.array([-u_max, -u_max, -u_max])
-        ocp.constraints.ubu = np.array([+u_max, +u_max, +u_max])
+        self.ocp.constraints.lbu = np.array([-u_max, -u_max, -u_max])
+        self.ocp.constraints.ubu = np.array([+u_max, +u_max, +u_max])
 
-        ocp.constraints.idxbu = np.array([0, 1, 2])
+        self.ocp.constraints.idxbu = np.array([0, 1, 2])
 
         # set options
-        ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM' # FULL_CONDENSING_QPOASES
+        self.ocp.solver_options.qp_solver = 'PARTIAL_CONDENSING_HPIPM' # FULL_CONDENSING_QPOASES
         # PARTIAL_CONDENSING_HPIPM, FULL_CONDENSING_QPOASES, FULL_CONDENSING_HPIPM,
         # PARTIAL_CONDENSING_QPDUNES, PARTIAL_CONDENSING_OSQP, FULL_CONDENSING_DAQP
-        ocp.solver_options.hessian_approx = 'GAUSS_NEWTON' # 'GAUSS_NEWTON', 'EXACT'
-        # ocp.solver_options.print_level = 1
-        ocp.solver_options.nlp_solver_type = 'SQP_RTI' # SQP_RTI, SQP
-        ocp.solver_options.qp_solver_cond_N = self.N
-        ocp.solver_options.print_level = 0 # SQP_RTI, SQP
-        ocp.constraints.x0 = self.x0
+        self.ocp.solver_options.hessian_approx = 'GAUSS_NEWTON' # 'GAUSS_NEWTON', 'EXACT'
+        # self.ocp.solver_options.print_level = 1
+        self.ocp.solver_options.nlp_solver_type = 'SQP_RTI' # SQP_RTI, SQP
+        self.ocp.solver_options.qp_solver_cond_N = self.N
+        self.ocp.solver_options.print_level = 0 # SQP_RTI, SQP
+        self.ocp.constraints.x0 = self.x0
 
-        ocp.solver_options.tf = Tf
+        self.ocp.solver_options.tf = Tf
 
-        self.solver = AcadosOcpSolver(ocp, json_file = 'acados_ocp.json')
+        self.solver = AcadosOcpSolver(self.ocp, json_file = 'acados_json')
 
     def get_action(self, state_c, state_d):
 
@@ -182,9 +182,9 @@ class MPCController():
         self.solver.set(0, "lbx", state_c)
         self.solver.set(0, "ubx", state_c)
 
-        v_t = state_d[:-6] - state_c[:-3]
-        v_t_cap = v_t/np.linalg.norm(v_t)
-        self.solver.set(1, "u", v_t_cap*10)
+        # v_t = state_d[:-6] - state_c[:-3]
+        # v_t_cap = v_t/np.linalg.norm(v_t)
+        # self.solver.set(1, "u", v_t_cap*10)
 
         # set current setpoint
         for j in range(self.N):
