@@ -241,8 +241,6 @@ float DroneTracker::score(BlobProps *blob) {
     }
 }
 float DroneTracker::score_threshold() {
-    if (taking_off())
-        return 0.25f;
     return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
 }
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
