@@ -63,9 +63,8 @@ class MPCController():
         self.N = 20  # number of optimization predictions
           
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
-
-        Q_mat = 1*np.diag([600, 600, 600, 10, 10, 10])
-        R_mat = 0.001*np.diag([1, 1, 1])
+        Q_mat = 1*np.diag([30, 30, 50, 5, 5, 5])
+        R_mat = 0.0001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
         self.u0 = np.array([0,0,0])
@@ -133,9 +132,9 @@ class MPCController():
         # self.ocp.dims.np = 1
         self.ocp.constraints.constr_type = 'BGH'
         # self.ocp.model.con_h_expr = ca.vertcat(*[self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 + self.ocp.model.u[2]**2])
-        self.ocp.model.con_h_expr = self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 #+ self.ocp.model.u[2]**2
+        self.ocp.model.con_h_expr = self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 + self.ocp.model.u[2]**2
         self.ocp.constraints.lh = np.array([0])
-        self.ocp.constraints.uh = np.array([15**2])
+        self.ocp.constraints.uh = np.array([5**2])
 
         nsh = 1
         self.ocp.constraints.lsh = np.zeros(nsh)             # Lower bounds on slacks corresponding to soft lower bounds for nonlinear constraints
@@ -148,8 +147,9 @@ class MPCController():
         self.ocp.cost.Zu = 0 * np.ones((ns,))  
         
         # geofencing
-        self.ocp.constraints.lbx = np.array([-3, -3, -3, -2.5, -2.5, -2.5])
-        self.ocp.constraints.ubx = np.array([+3, +3, +3, +2.5, +2.5, +2.5])
+        max_speed = 2.5
+        self.ocp.constraints.lbx = np.array([-3, -3, -3, -max_speed, -max_speed, -max_speed])
+        self.ocp.constraints.ubx = np.array([+3, +3, +3, +max_speed, +max_speed, +max_speed])
         self.ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
 
         u_max = 15
@@ -174,9 +174,7 @@ class MPCController():
 
         self.solver = AcadosOcpSolver(self.ocp, json_file = 'acados_json')
 
-    def get_action(self, state_c, state_d):
-
-        start = time.time()
+    def get_action(self, state_c, traj, i=0):
 
         # set current state 
         self.solver.set(0, "lbx", state_c)
@@ -186,11 +184,41 @@ class MPCController():
         # v_t_cap = v_t/np.linalg.norm(v_t)
         # self.solver.set(1, "u", v_t_cap*10)
 
+        split = self.N-1
+
         # set current setpoint
+    
+        cid = np.argmin(np.linalg.norm(state_c[:3] - traj[:, :3], axis=1))
+        
+        idf = min(cid, i)
         for j in range(self.N):
-            self.solver.set(j, "yref", state_d)
-        self.solver.set(self.N, "yref", state_d[:-self.nu])
+            
+            idx = min(j + idf, len(traj)-1)
+            # print(idf, idx)
+            yref = traj[idx]
+            # yref = np.array([x_ref[idx][0], x_ref[idx][1], x_ref[idx][2], x_ref[idx][3], 0,0])
+
+            self.solver.set(j, "yref", yref)
+        
+        # for j in range(self.N-split, self.N):
+        #     self.solver.set(j, "yref", traj[1])
+        idx_n = min(idf + self.N, len(traj)-1)
+        yref_n = traj[idx_n][:-3]
+        # print(yref_n)
+        # print(np.linalg.norm(state_c[3:6]))
+
+        # for j in range(self.N):
+        #     yref = np.array([traj[0][j+i][0], traj[0][j+i][1], traj[0][j+i][2], traj[1][j+i][0], traj[1][j+i][1], traj[1][j+i][2], traj[2][j+i][0], traj[2][j+i][1], traj[2][j+i][2]])
+        #     self.solver.set(j, "yref", yref)
+        
+        # # for j in range(self.N-split, self.N):
+        # #     self.solver.set(j, "yref", traj[1])
+        # yref_n = np.array([traj[0][-1][0], traj[0][-1][1], traj[0][-1][2], traj[1][-1][0], traj[1][-1][1], traj[1][-1][2]])
+
+        self.solver.set(self.N, "yref", yref_n)
+
         status = self.solver.solve()
+        # print(state_c[3:], traj[min(idf, len(traj)-1), 3:6])
 
         # the perfect MPC predicted state. not sure which one to use.
         self.x = self.solver.get(1, "x")

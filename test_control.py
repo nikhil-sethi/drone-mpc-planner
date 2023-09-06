@@ -70,11 +70,11 @@ def main():
     ocp.cost.cost_type = 'LINEAR_LS'
     ocp.cost.cost_type_e = 'LINEAR_LS'
 
-    Q_mat = np.diag([1e1, 1e0, 1e1, 1e0])
+    Q_mat = np.diag([1e1, 1e0, 1e2, 1e0])
     R_mat = np.diag([1e-2, 1e-2])
 
     ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
-    ocp.cost.W_e = 1*Q_mat
+    ocp.cost.W_e = 0*Q_mat
 
     ocp.cost.Vx = np.zeros((ny, nx))
     ocp.cost.Vx[:nx,:nx] = np.eye(nx)

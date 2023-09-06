@@ -62,29 +62,29 @@ class TrajectoryManager():
         traj = (pvec@C).flatten()
         return traj
         
-    def plot(self, points)	:
+    def plot(self, points, ax=None)	:
         _, dims = points.shape
         if dims == 3: # 3D
-            self.ax = plt.axes(projection='3d')
+            # self.ax = plt.axes(projection='3d')
             # ax.set_xlim(-1.5,1.5)
             # ax.set_ylim(-1.5,1.5)
             # ax.set_zlim(-1.5,1.5)
-            self.ax.plot(self.wps[0],self.wps[1],self.wps[2],'b--')
-            self.ax.plot(points[:,0],points[:,1],points[:,2], 'r-', linewidth=6)
+            ax.plot(self.wps[0],self.wps[1],self.wps[2],'b--')
+            ax.plot(points[:,0],points[:,1],points[:,2], 'r-', linewidth=3)
         elif dims == 2:
-            plt.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
-            plt.plot(points[:,0],points[:,1], 'b-', linewidth=3)
-            plt.plot(self.wps[0],self.wps[1],'ko')
+            ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
+            ax.plot(points[:,0],points[:,1], 'b-', linewidth=3)
+            ax.plot(self.wps[0],self.wps[1],'ko')
         elif dims == 1:
             """plot against time"""
             pass
         #plt.show()
 
-    def plot_vec(self, pos, vec, color='k'):
+    def plot_vec(self, pos, vec, ax=None, color='k'):
         for i in range(len(pos)): 
             if i%2==0:
                 # plt.arrow(pos[i,0], pos[i,1], vec[i,0], vec[i,1], color=color)
-                self.ax.quiver(pos[i,0], pos[i,1], pos[i,2], vec[i,0], vec[i,1], vec[i,2], color=color, arrow_length_ratio=0.1)
+                ax.quiver(pos[i,0], pos[i,1], pos[i,2], vec[i,0], vec[i,1], vec[i,2], color=color, arrow_length_ratio=0.1)
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
     def __init__(self, order, waypoints, time = 1) -> None:
@@ -205,10 +205,10 @@ class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
 
 if __name__=="__main__":
     wps = np.array([
-        [0.,1.,4.,7.],
-        [0.,4.,2.,7.],
-        [0.,5.,5.,7.],
-    ]).T
+        [0., 1., 2],
+        [0., 2., 2.5],
+        [0., 2., 2.5],        
+        ]).T
 
     # wps = np.array([[ 0.6       , -0.6,         0.5       ],
     #                 [ 0.636843  , -0.33789508,  0.62039724],
@@ -219,21 +219,24 @@ if __name__=="__main__":
         wps = wps_sorted[idx[:-1],:]
     else:
         wps = wps_sorted[idx,:]
-    mvajscp = MinVelAccJerkSnapCrackPop(order=2, waypoints=wps.T, time=8)
+    mvajscp = MinVelAccJerkSnapCrackPop(order=2, waypoints=wps.T, time=2)
     # mvajscp = MinVelAccJerkSnapCrackPopCorridor(order=2, waypoints=wps.T, time=5)
     pos = mvajscp.optimize(plan_order = 0, num_pts=20)
     # Uncomment the following lines to plot further derivatives
     vel = mvajscp.optimize(plan_order = 1, num_pts=20)
-    #acc = mvajscp.optimize(plan_order = 2, num_pts=20)
+    acc = mvajscp.optimize(plan_order = 2, num_pts=20)
     # jerk = mvajscp.optimize(plan_order = 3, num_pts=200)
     # snap = mvajscp.optimize(plan_order = 4, num_pts=200)
-    
+    print(acc)
+    print(vel)
+
     #plt.figure()
     #mvajscp.plot_vec(pos, vel, color='gray')
     #mvajscp.plot(pos)
     
     plt.figure()
-    mvajscp.plot(pos)
-    mvajscp.plot_vec(pos, vel, color='gray')    
+    ax = plt.axes(projection='3d')
+    mvajscp.plot(pos, ax=ax)
+    mvajscp.plot_vec(pos, acc,ax=ax ,color='gray')    
     plt.show()
     

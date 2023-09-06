@@ -26,7 +26,7 @@ class Particle:
         dz = x[5]
 
         # velocity derivative
-        dvx = u[0]
+        dvx = u[0] 
         dvy = u[1]
         dvz = u[2] - self.g0
 
@@ -207,7 +207,7 @@ class PATSX(Particle):
         self.hov_T = self.g0
 
         self.x0 = np.zeros(self.N_STATES)
-        
+        self.x0[-3:] = np.array([0,0,0])
 
     def xdot_trp(self, _x, _u):
         dx = _x[3]
@@ -229,7 +229,8 @@ class Moth(Particle):
         self.switch_time = 1 # (seconds) random direction every switch time seconds
 
         self.u = np.zeros(self.N_ACTIONS) 
-        
+        self.x = np.array([1.,3.,4.])
+
     def xdot(self, _x, _u):
 
         dx = _u[0]
@@ -242,7 +243,7 @@ class Moth(Particle):
         self.i += 1
         if self.i  % (self.switch_time//self.dt) == 0:
             self.u = np.random.normal(loc=[0,0,0], scale=[self.v_max/2, self.v_max/2, self.v_max/2],size=(3)) # divide by two because we want 95% of the velocities to be under v_max
-        
+        self.u = np.zeros(self.N_ACTIONS)
         
         return self.u
 
