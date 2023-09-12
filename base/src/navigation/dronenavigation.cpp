@@ -122,6 +122,7 @@ void DroneNavigation::update(double time) {
                 check_abort_autonomous_flight_conditions();
                 break;
         } case ns_goto_yaw_waypoint: {
+                _iceptor->switch_control_mode(position_control);
                 _control->flight_mode(DroneController::fm_flying_pid);
                 _control->LED(true);
                 next_waypoint(Waypoint_Yaw_Reset(), time);
