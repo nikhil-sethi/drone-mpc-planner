@@ -22,11 +22,11 @@ def create_model(agent):
     # explicit expression. the actual derivative xdot = f(x,u)
     # f_expl = agent.xdot_linear(x,u)
     f_expl = ca.vertcat(*agent.xdot(x,u))
-    
+
     model = AcadosModel()
     model.x = x
     model.xdot = xdot
-    
+
     # this expression is set to 0 and solved. basically just saying that the explicit expression is just = xdot. extra steps
     model.f_impl_expr = xdot - f_expl
     model.f_expl_expr = f_expl
@@ -56,14 +56,14 @@ class MPCController():
         nu = self.ocp.model.u.size()[0]
         self.nx = nx
         self.nu = nu
-        
+
         ny = nx + nu
         ny_e = nx
 
-        self.N = 20  # number of optimization predictions
-          
+        self.N = 15  # number of optimization predictions
+
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
-        Q_mat = 1*np.diag([30, 30, 50, 5, 5, 5])
+        Q_mat = 1*np.diag([100, 100, 100, 40, 40, 40])
         R_mat = 0.0001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
@@ -86,19 +86,21 @@ class MPCController():
         # path cost
         # self.ocp.model.cost_expr_ext_cost = (model.x - setpoint).T @ Q_mat @ (model.x - setpoint) + (model.u-u_setpoint).T @ R_mat @ (model.u-u_setpoint)
         # terminal cost
-        # self.ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint) 
+        # self.ocp.model.cost_expr_ext_cost_e = (model.x - setpoint).T@ (100*Q_mat) @ (model.x - setpoint)
 
         # initial setpoint
-        self.ocp.cost.yref   = np.array([0, 0.2, 0.5, 0, 0, 0, 0, 0, 0])
+        self.ocp.cost.yref   = np.array([1, 0.2, 0.5, 0, 0, 0, 0, 0, 0])
 
-        self.ocp.cost.yref_e = np.array([0, 0.2, 0.5, 0, 0, 0])
-# 
+        self.ocp.cost.yref_e = np.array([1, 0.2, 0.5, 0, 0, 0])
+#
 
-        self.ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
+        # self.ocp.cost.W = scipy.linalg.block_diag(Q_mat, R_mat)
+        self.ocp.cost.W = np.block([[Q_mat,               np.zeros((nx, nu))],
+                                    [np.zeros((nu, nx)), R_mat               ]])
 
         # MPC terminal cost. Higher values of the weight imply that a lot of focus is given to arriving at the reference state accurately.
         # Depending on the sampling time and the expected distances between the reference and tht drone's position this might need to be tuned
-        # a value of zero means that the optimization of N steps happens just in the 
+        # a value of zero means that the optimization of N steps happens just in the
         # a very high value is like planning backwards from the final reference setpoint back to the drone's position. Like more of global planning than local. but this clearly might have disadvantages because the plan might not be executed even if it is planned well in theory.
         # I've found 1 to be a good tradeoff between planning in the dark and with some direction.
         self.ocp.cost.W_e = 0*Q_mat
@@ -122,7 +124,7 @@ class MPCController():
 
         # Constraints on the RPMs is what helps keep the drone corrected
         # this is a limitation and probably better tuning could allow more room
-        
+
         phi_max = theta_max = pi/2
         T_max = agent.g0*1.2
 
@@ -143,19 +145,19 @@ class MPCController():
         ns = 1
         self.ocp.cost.zl = 0 * np.ones((ns,)) # gradient wrt lower slack at intermediate shooting nodes (1 to N-1)
         self.ocp.cost.Zl = 0 * np.ones((ns,)) # diagonal of Hessian wrt lower slack at intermediate shooting nodes (1 to N-1)
-        self.ocp.cost.zu = 0 * np.ones((ns,))    
-        self.ocp.cost.Zu = 0 * np.ones((ns,))  
-        
+        self.ocp.cost.zu = 0 * np.ones((ns,))
+        self.ocp.cost.Zu = 0 * np.ones((ns,))
+
         # geofencing
         max_speed = 2.5
-        self.ocp.constraints.lbx = np.array([-3, -3, -3, -max_speed, -max_speed, -max_speed])
-        self.ocp.constraints.ubx = np.array([+3, +3, +3, +max_speed, +max_speed, +max_speed])
+        self.ocp.constraints.lbx = np.array([-0.4, -1.3, -3.5, -max_speed, -max_speed, -max_speed])
+        self.ocp.constraints.ubx = np.array([+0.4, +0, +0, +max_speed, +max_speed, +max_speed])
         self.ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
 
         u_max = 15
 
-        self.ocp.constraints.lbu = np.array([-u_max, -u_max, -u_max])
-        self.ocp.constraints.ubu = np.array([+u_max, +u_max, +u_max])
+        self.ocp.constraints.lbu = np.array([-10, -0, -10])
+        self.ocp.constraints.ubu = np.array([+10, +15, +10])
 
         self.ocp.constraints.idxbu = np.array([0, 1, 2])
 
@@ -176,7 +178,7 @@ class MPCController():
 
     def get_action(self, state_c, traj, i=0):
 
-        # set current state 
+        # set current state
         self.solver.set(0, "lbx", state_c)
         self.solver.set(0, "ubx", state_c)
 
@@ -187,30 +189,31 @@ class MPCController():
         split = self.N-1
 
         # set current setpoint
-    
+
         cid = np.argmin(np.linalg.norm(state_c[:3] - traj[:, :3], axis=1))
-        
+
         idf = min(cid, i)
         for j in range(self.N):
-            
+
             idx = min(j + idf, len(traj)-1)
             # print(idf, idx)
             yref = traj[idx]
-            # yref = np.array([x_ref[idx][0], x_ref[idx][1], x_ref[idx][2], x_ref[idx][3], 0,0])
+            yref = np.array([0.85, -0.5,-1.04486, 0,0,0, 0,0,0])
 
             self.solver.set(j, "yref", yref)
-        
+
         # for j in range(self.N-split, self.N):
         #     self.solver.set(j, "yref", traj[1])
         idx_n = min(idf + self.N, len(traj)-1)
         yref_n = traj[idx_n][:-3]
-        # print(yref_n)
+        yref_n = np.array([0.85, -0.5,-1.04486, 0,0,0])
+        print(state_c)
         # print(np.linalg.norm(state_c[3:6]))
 
         # for j in range(self.N):
         #     yref = np.array([traj[0][j+i][0], traj[0][j+i][1], traj[0][j+i][2], traj[1][j+i][0], traj[1][j+i][1], traj[1][j+i][2], traj[2][j+i][0], traj[2][j+i][1], traj[2][j+i][2]])
         #     self.solver.set(j, "yref", yref)
-        
+
         # # for j in range(self.N-split, self.N):
         # #     self.solver.set(j, "yref", traj[1])
         # yref_n = np.array([traj[0][-1][0], traj[0][-1][1], traj[0][-1][2], traj[1][-1][0], traj[1][-1][1], traj[1][-1][2]])
@@ -227,3 +230,13 @@ class MPCController():
         #     self.u = self.u/np.linalg.norm(self.u)*15
         return self.u
 
+if __name__=="__main__":
+    import os
+    from agents import PATSX
+
+    # directory change magic so that there aren't a billion cgen code folders
+    print("========= Rebulding OCP problem... ======== ")
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    agent = PATSX()
+    controller = MPCController(agent=agent)
+    print("========== Done ============")

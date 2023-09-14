@@ -21,7 +21,7 @@ class Env():
 
         # RENDERING
         fig = plt.figure(figsize=(10,10))
-        ax = plt.axes(projection='3d', xlim=(-1, 3), ylim=(-1, 3), zlim=(-1, 3))
+        ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-3.5, 0), zlim=(-1.5, 0))
         ax.view_init(elev=25, azim=90)
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
         self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(2)]
@@ -62,10 +62,27 @@ class Env():
         # for i in range(len(self.traj)):
         #     ax.plot(self.traj[i][0], self.traj[i][1], self.traj[i][2], 'r.', markersize=3)
         
-        mvajscp.plot(pos, ax=ax)
-        mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
+        # mvajscp.plot(pos, ax=ax)
+        # mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
 
-        self.anim = animation.FuncAnimation(fig, self.update, frames=200, interval=agent.dt*1000, blit=True)
+        file_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230914_165615/log_flight1.csv"
+        cols = [12, 13, 14, 19, 20,21, 23, 24, 25, 47,48,49, 31, 30, 41,42,43]
+        cols.extend(range(72,117))
+        data = np.loadtxt(open(file_path, "rt").readlines()[1:-1], delimiter=";", usecols=cols) 
+
+        self.pos_log = data[:,:3]
+        self.vel_log = data[:,3:6]
+        self.acc_log = data[:,6:9]
+        self.control_log = data[:, 9:12]
+        # timesteps = data[:, 12]
+        self.time_log = data[:, 13]
+        self.pos_t_log = data[:, 14:17]
+        self.preds_log = data[:, 17:].reshape((len(data), self.controller.N, 3))
+        # dt = np.mean(timesteps)
+
+
+        # self.anim = animation.FuncAnimation(fig, self.update, frames=200, interval=agent.dt*1000, blit=True)
+        self.anim = animation.FuncAnimation(fig, self.replay_update, frames=len(data), interval=10, blit=True)
 
         plt.show()
 
@@ -86,10 +103,13 @@ class Env():
         # for i in range(4):
         #     motor_plots[i].set_data_3d(motor_pts_t[i,0], motor_pts_t[i,1], motor_pts_t[i,2])
 
-        for i in range(self.controller.N):
-            x_pred = self.controller.solver.get(i, "x")
-            self.x_pred_plts[i].set_data_3d(x_pred[0], x_pred[2], x_pred[1])
+        # for i in range(self.controller.N):
+        #     x_pred = self.controller.solver.get(i, "x")
+        #     self.x_pred_plts[i].set_data_3d(x_pred[0], x_pred[2], x_pred[1])
 
+        for i in range(self.controller.N):
+            self.x_pred_plts[i].set_data_3d(self.x_preds[i][0], self.x_preds[i][2], self.x_preds[i][1])
+        
         # return 
 
     def update(self, i):
@@ -139,4 +159,12 @@ class Env():
 
         return self.agent_plt, *self.motor_plts, *self.x_pred_plts, *self.traj_plt
 
+
+    def replay_update(self, i):
+        self.sim_x = self.pos_log[i]
+        self.x_preds = self.preds_log[i]
+        # action = self.controller.get_action(state_c=self.sim_x, traj=self.traj, i=i)
+        print(self.sim_x)
+        ani_tuple = self.render_update()
+        return self.agent_plt, *self.motor_plts, *self.x_pred_plts, *self.traj_plt
 
