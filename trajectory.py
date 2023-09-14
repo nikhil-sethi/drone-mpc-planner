@@ -69,8 +69,8 @@ class TrajectoryManager():
             # ax.set_xlim(-1.5,1.5)
             # ax.set_ylim(-1.5,1.5)
             # ax.set_zlim(-1.5,1.5)
-            ax.plot(self.wps[0],self.wps[1],self.wps[2],'b--')
-            ax.plot(points[:,0],points[:,1],points[:,2], 'r-', linewidth=3)
+            ax.plot(self.wps[0],self.wps[2],self.wps[1],'b--')
+            ax.plot(points[:,0],points[:,2],points[:,1], 'r-', linewidth=3)
         elif dims == 2:
             ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
             ax.plot(points[:,0],points[:,1], 'b-', linewidth=3)
@@ -84,7 +84,7 @@ class TrajectoryManager():
         for i in range(len(pos)): 
             if i%2==0:
                 # plt.arrow(pos[i,0], pos[i,1], vec[i,0], vec[i,1], color=color)
-                ax.quiver(pos[i,0], pos[i,1], pos[i,2], vec[i,0], vec[i,1], vec[i,2], color=color, arrow_length_ratio=0.1)
+                ax.quiver(pos[i,0], pos[i,2], pos[i,1], vec[i,0], vec[i,2], vec[i,1], color=color, arrow_length_ratio=0.1)
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
     def __init__(self, order, waypoints, time = 1) -> None:

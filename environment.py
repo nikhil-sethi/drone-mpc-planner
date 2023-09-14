@@ -22,7 +22,7 @@ class Env():
         # RENDERING
         fig = plt.figure(figsize=(10,10))
         ax = plt.axes(projection='3d', xlim=(-1, 3), ylim=(-1, 3), zlim=(-1, 3))
-        ax.view_init(elev=25, azim=-135)
+        ax.view_init(elev=25, azim=90)
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
         self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(2)]
         self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.N)]
@@ -44,9 +44,9 @@ class Env():
         np.random.seed(1)
 
         wps = np.array([
-        [0., 1., 2],
-        [0., 2., 2.5],
-        [0., 2., 2.5],        
+        [0., -1., 1],
+        [-0.5, -1., -0],        # y axis
+        [0., -2., -2.5],     # z axis
         ]).T
 
         tf = 1.6   # needs to be manually tuned right now within the control input limits
@@ -75,7 +75,7 @@ class Env():
 
     def render_update(self):
         # ========= Animation updates
-        self.agent_plt.set_data_3d(self.sim_x[0], self.sim_x[1], self.sim_x[2])
+        self.agent_plt.set_data_3d(self.sim_x[0], self.sim_x[2], self.sim_x[1])
         
         # for i in range(2):
         #     self.traj_plt[i].set_data_3d(self.traj[i][0], self.traj[i][1], self.traj[i][2])
@@ -88,7 +88,7 @@ class Env():
 
         for i in range(self.controller.N):
             x_pred = self.controller.solver.get(i, "x")
-            self.x_pred_plts[i].set_data_3d(x_pred[0], x_pred[1], x_pred[2])
+            self.x_pred_plts[i].set_data_3d(x_pred[0], x_pred[2], x_pred[1])
 
         # return 
 

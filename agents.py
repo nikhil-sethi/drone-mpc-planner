@@ -15,7 +15,7 @@ class Particle:
         self.N_ACTIONS = n_actions # motor speeds
         self.m = 1
         self.g0  = 9.81     # [m.s^2] accerelation of gravity
-        self.dt = 0.035 # timestep
+        self.dt = 0.1 # timestep
         self.x = np.zeros(n_states)
 
     def xdot(self, x,u):
@@ -27,8 +27,8 @@ class Particle:
 
         # velocity derivative
         dvx = u[0] 
-        dvy = u[1]
-        dvz = u[2] - self.g0
+        dvy = u[1] - self.g0
+        dvz = u[2] 
 
         return [dx, dy, dz, dvx, dvy, dvz]
 
@@ -207,6 +207,8 @@ class PATSX(Particle):
         self.hov_T = self.g0
 
         self.x0 = np.zeros(self.N_STATES)
+        self.x0[1] = -0.99 # starts at 0.5 meters below the camera
+        self.x0[2] = -0.99
         self.x0[-3:] = np.array([0,0,0])
 
     def xdot_trp(self, _x, _u):
