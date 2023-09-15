@@ -62,8 +62,8 @@ void Drone::update(double time) {
                 else if (_baseboard_link->charging_problem())
                     _state = ds_charging_failure;
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
+                    require_confirmation_drone_on_pad = false;
                     _state = ds_pre_flight;
-                    require_confirmation_drone_on_pad = true;
                 }
 
                 if (_rc->telemetry.batt_cell_v > max_safe_charging_telemetry_voltage) {
@@ -110,8 +110,8 @@ void Drone::update(double time) {
                 if (_baseboard_link->charging_problem())
                     _state = ds_charging_failure;
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
+                    require_confirmation_drone_on_pad = false;
                     _state = ds_pre_flight;
-                    require_confirmation_drone_on_pad = true;
                 } else if ((_baseboard_link->drone_battery_voltage() < dparams.min_hunt_cell_v && !control.spinup()) && !_baseboard_link->disabled()) {
                     _state = ds_charging;
                     _baseboard_link->allow_charging(true);
@@ -403,6 +403,7 @@ void Drone::pre_flight(double time) {
                     pre_flight_state =  pre_telemetry_time_out;
                     communicate_state(es_pats_x);
                 } else if (control.telemetry_OK() && low_voltage_timeout(time, _rc->telemetry.batt_cell_v)) {
+                    pre_flight_state = pre_init;
                     _state = ds_post_flight;
                     post_flight_state = post_init_deep_sleep;
                     communicate_state(es_pats_x);
@@ -477,7 +478,6 @@ void Drone::post_flight(double time) {
                         _state = ds_charging;
                     } else if (_baseboard_link->charging()) {
                         post_flight_state = post_init;
-                        pre_flight_state = pre_init;
                         _state = ds_pre_flight;
                     } else if (n_shakes_sessions_after_landing <= 30 && control.att_somewhere_on_pad()) {
                         post_flight_state = post_start_shaking;
