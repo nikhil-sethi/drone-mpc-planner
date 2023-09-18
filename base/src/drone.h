@@ -142,7 +142,7 @@ private:
     double time_shake_start = 0;
     double time_crashed = 0;
     double time_low_voltage = 0;
-    int n_shakes_sessions_after_landing = 0;
+    int n_shakes_sessions_after_charging = 0;
 
     const float max_safe_charging_telemetry_voltage = 4.35f; // safety overcharge flip happens at 4.4v
 

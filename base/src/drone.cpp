@@ -54,6 +54,7 @@ void Drone::update(double time) {
                 pre_flight(time);
                 break;
         } case ds_charging: {
+                n_shakes_sessions_after_charging = 0;
                 communicate_state(es_pats_x);
                 control.flight_mode(DroneController::fm_inactive);
                 control.control(tracker.last_track_data(), nav.setpoint(), position_control, time, false);
@@ -420,7 +421,6 @@ void Drone::pre_flight(double time) {
 void Drone::post_flight(double time) {
     switch (post_flight_state) {
         case post_init: {
-                n_shakes_sessions_after_landing = 0;
                 time_low_voltage = 0;
                 flight_logger.flush();
                 flight_logger.close();
@@ -456,7 +456,7 @@ void Drone::post_flight(double time) {
                 break;
         } case post_wait_after_shake_init: {
                 control.flight_mode(DroneController::fm_disarmed);
-                n_shakes_sessions_after_landing++;
+                n_shakes_sessions_after_charging++;
                 time_post_shake = time;
                 post_flight_state = post_wait_after_shake;
                 control.reset_attitude_pad_filter();
@@ -479,9 +479,9 @@ void Drone::post_flight(double time) {
                     } else if (_baseboard_link->charging()) {
                         post_flight_state = post_init;
                         _state = ds_pre_flight;
-                    } else if (n_shakes_sessions_after_landing <= 30 && control.att_somewhere_on_pad()) {
+                    } else if (n_shakes_sessions_after_charging <= 30 && control.att_somewhere_on_pad()) {
                         post_flight_state = post_start_shaking;
-                        std::cout << "Shake unsucessfull. Attempt " << n_shakes_sessions_after_landing << " of 30" << std::endl;
+                        std::cout << "Shake unsucessfull. Attempt " << n_shakes_sessions_after_charging << " of 30" << std::endl;
                         _baseboard_link->allow_charging(false);
                     }
                     else {
@@ -501,7 +501,7 @@ void Drone::post_flight(double time) {
                 _trackers->stop_drone_tracking(&tracker);
                 _baseboard_link->allow_charging(true);
                 post_flight_state = post_init;
-                _state = ds_ready;
+                _state = ds_charging;
                 break;
         } case post_init_crashed: {
                 time_crashed = time;
