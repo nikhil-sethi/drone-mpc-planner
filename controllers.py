@@ -60,8 +60,8 @@ class MPCController():
         ny = nx + nu
         ny_e = nx
 
-        self.N = 15  # number of optimization predictions
-
+        self.N = 10  # number of optimization predictions
+          
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
         Q_mat = 1*np.diag([100, 100, 100, 40, 40, 40])
         R_mat = 0.0001*np.diag([1, 1, 1])
@@ -196,7 +196,7 @@ class MPCController():
         for j in range(self.N):
 
             idx = min(j + idf, len(traj)-1)
-            # print(idf, idx)
+            print(idf, idx)
             yref = traj[idx]
             yref = np.array([0.85, -0.5,-1.04486, 0,0,0, 0,0,0])
 

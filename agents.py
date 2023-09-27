@@ -15,7 +15,7 @@ class Particle:
         self.N_ACTIONS = n_actions # motor speeds
         self.m = 1
         self.g0  = 9.81     # [m.s^2] accerelation of gravity
-        self.dt = 0.175 # timestep
+        self.dt = 0.19 # timestep
         self.x = np.zeros(n_states)
 
     def xdot(self, x,u):

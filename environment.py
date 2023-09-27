@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from trajectory import MinVelAccJerkSnapCrackPop
+import paramiko
 
 class Env():
     def __init__(self, agent, controller, target) -> None:
@@ -21,14 +22,14 @@ class Env():
 
         # RENDERING
         fig = plt.figure(figsize=(10,10))
-        ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-3.5, 0), zlim=(-1.5, 0))
+        ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-2.5, 0), zlim=(-1.5, 0))
         ax.view_init(elev=25, azim=90)
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
         self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(2)]
         self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.N)]
         self.motor_plts = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
         
-        gf = (3,3,3)
+        gf = (1,2,2)
         x = [gf[0],gf[0],gf[0],gf[0]],   [-gf[0],-gf[0],-gf[0],-gf[0]], [gf[0], -gf[0], -gf[0], gf[0]], [ gf[0], -gf[0],-gf[0], gf[0]]
         y = [gf[1],-gf[1],-gf[1],gf[1]], [gf[1],-gf[1],-gf[1], gf[1]],  [gf[1], gf[1],gf[1], gf[1]],    [-gf[1], -gf[1],-gf[1], -gf[1]]
         z = [gf[2],gf[2],-gf[2],-gf[2]], [gf[2], gf[2],-gf[2],-gf[2]],  [gf[2], gf[2],-gf[2],-gf[2]],   [ gf[2],  gf[2],-gf[2],-gf[2]]
@@ -43,46 +44,74 @@ class Env():
 
         np.random.seed(1)
 
-        wps = np.array([
-        [0., -1., 1],
-        [-0.5, -1., -0],        # y axis
-        [0., -2., -2.5],     # z axis
-        ]).T
+        replay = True
 
-        tf = 1.6   # needs to be manually tuned right now within the control input limits
-        dt_traj = self.agent.dt
-        n = int(tf/dt_traj)+1
-        mvajscp = MinVelAccJerkSnapCrackPop(order=2, waypoints=wps.T, time=tf)
-        pos = mvajscp.optimize(plan_order = 0, num_pts=n)
-        vel = mvajscp.optimize(plan_order = 1, num_pts=n)
-        acc = mvajscp.optimize(plan_order = 2, num_pts=n)
-        self.traj = np.hstack([pos, vel, acc])
-        u_ref = acc
+        if replay:
+            host = "pats84"
+            username = "pats"
+            key_path = "/home/nikhil/.ssh/pats_wg_id_ed25519"
+            key = paramiko.RSAKey(filename=key_path)
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(host, 22, username, pkey=key)
+            sftp = ssh.open_sftp()
 
-        # for i in range(len(self.traj)):
-        #     ax.plot(self.traj[i][0], self.traj[i][1], self.traj[i][2], 'r.', markersize=3)
+            folder_path = "/home/pats/pats/data/20230926_202036/"
+            # folder_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230922_180506/"
+
+            with sftp.file(folder_path + "trajectory.csv", 'r') as traj_file:
+                self.traj = np.loadtxt(traj_file, delimiter=",")
+
+            # ax.plot(self.wps[0],self.wps[2],self.wps[1],'b--')
+            ax.plot(self.traj[:,0],self.traj[:,2],self.traj[:,1], 'r.', linewidth=3)
+            
+            # relevant columns from the log file
+            cols = [12, 13, 14, 19, 20,21, 23, 24, 25, 47,48,49, 31, 30, 41,42,43]
+            cols.extend(range(72,102))
+
+            with sftp.file(folder_path + "log_flight1.csv", 'r') as log_file:
+                data = np.loadtxt(log_file.readlines()[1:-1], delimiter=";", usecols=cols) 
+
+            self.pos_log = data[:,:3]
+            self.vel_log = data[:,3:6]
+            self.acc_log = data[:,6:9]
+            print("max_vel: ", np.max(np.linalg.norm(self.vel_log[90:], axis=1)))
+            print("max_acc: ", np.max(np.linalg.norm(self.acc_log[90:], axis=1)))
+            self.control_log = data[:, 9:12]
+            # timesteps = data[:, 12]
+            self.time_log = data[:, 13]
+            self.pos_t_log = data[:, 14:17]
+            self.preds_log = data[:, 17:].reshape((len(data), self.controller.N, 3))  
+
+            self.anim = animation.FuncAnimation(fig, self.replay_update, frames=len(data), interval=200, blit=True)
         
-        # mvajscp.plot(pos, ax=ax)
-        # mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
+        else:
+            wps = np.array([
+            [0., -1., 1],
+            [-0.5, -1., -0],        # y axis
+            [0., -2., -2.5],     # z axis
+            ]).T
 
-        file_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230914_165615/log_flight1.csv"
-        cols = [12, 13, 14, 19, 20,21, 23, 24, 25, 47,48,49, 31, 30, 41,42,43]
-        cols.extend(range(72,117))
-        data = np.loadtxt(open(file_path, "rt").readlines()[1:-1], delimiter=";", usecols=cols) 
+            tf = 1.6   # needs to be manually tuned right now within the control input limits
+            dt_traj = self.agent.dt
+            n = int(tf/dt_traj)+1
+            mvajscp = MinVelAccJerkSnapCrackPop(order=2, waypoints=wps.T, time=tf)
+            pos = mvajscp.optimize(plan_order = 0, num_pts=n)
+            vel = mvajscp.optimize(plan_order = 1, num_pts=n)
+            acc = mvajscp.optimize(plan_order = 2, num_pts=n)
+            self.traj = np.hstack([pos, vel, acc])
+            u_ref = acc
 
-        self.pos_log = data[:,:3]
-        self.vel_log = data[:,3:6]
-        self.acc_log = data[:,6:9]
-        self.control_log = data[:, 9:12]
-        # timesteps = data[:, 12]
-        self.time_log = data[:, 13]
-        self.pos_t_log = data[:, 14:17]
-        self.preds_log = data[:, 17:].reshape((len(data), self.controller.N, 3))
+            mvajscp.plot(pos, ax=ax)
+            mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
+
+            self.anim = animation.FuncAnimation(fig, self.update, frames=200, interval=agent.dt*1000, blit=True)
+        
         # dt = np.mean(timesteps)
 
 
-        # self.anim = animation.FuncAnimation(fig, self.update, frames=200, interval=agent.dt*1000, blit=True)
-        self.anim = animation.FuncAnimation(fig, self.replay_update, frames=len(data), interval=10, blit=True)
+            
+        
 
         plt.show()
 
@@ -164,7 +193,7 @@ class Env():
         self.sim_x = self.pos_log[i]
         self.x_preds = self.preds_log[i]
         # action = self.controller.get_action(state_c=self.sim_x, traj=self.traj, i=i)
-        print(self.sim_x)
+        # print(self.sim_x)
         ani_tuple = self.render_update()
         return self.agent_plt, *self.motor_plts, *self.x_pred_plts, *self.traj_plt
 
