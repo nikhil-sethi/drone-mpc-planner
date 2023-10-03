@@ -164,6 +164,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
+                std::cout << "dronecontroller: start spinup" << std::endl;
                 break;
         } case fm_start_takeoff: {
                 take_off_start_time = time;
@@ -1044,6 +1045,7 @@ bool DroneController::abort_take_off() {
     //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
     if (_flight_mode == fm_init_spinup || _flight_mode == fm_start_takeoff || _flight_mode == fm_remaining_spinup) {
         _flight_mode = fm_init_spinup;
+        std::cout << "dronecontroller: abort take-off" << std::endl;
         return true;
     } else
         return false;
