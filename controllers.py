@@ -47,7 +47,7 @@ def create_model(agent):
     return model
 
 class MPCController():
-    def __init__(self, agent=None) -> None:
+    def __init__(self, gf, agent=None) -> None:
         self.ocp = AcadosOcp()
         self.model = create_model(agent)
         self.ocp.model = self.model
@@ -63,7 +63,7 @@ class MPCController():
         self.N = 10  # number of optimization predictions
           
         Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
-        Q_mat = 1*np.diag([100, 100, 100, 40, 40, 40])
+        Q_mat = 1*np.diag([550, 550, 550, 40, 40, 40])
         R_mat = 0.0001*np.diag([1, 1, 1])
 
         self.x0 = agent.x0
@@ -148,16 +148,17 @@ class MPCController():
         self.ocp.cost.zu = 0 * np.ones((ns,))
         self.ocp.cost.Zu = 0 * np.ones((ns,))
 
-        # geofencing
-        max_speed = 2.5
-        self.ocp.constraints.lbx = np.array([-0.4, -1.3, -3.5, -max_speed, -max_speed, -max_speed])
-        self.ocp.constraints.ubx = np.array([+0.4, +0, +0, +max_speed, +max_speed, +max_speed])
+        # state constraints
+        max_speed = 3
+        self.gf = gf
+        self.ocp.constraints.lbx = np.array([self.gf[0][0], self.gf[1][0], self.gf[2][0], -max_speed, -max_speed, -max_speed])
+        self.ocp.constraints.ubx = np.array([self.gf[0][1], self.gf[1][1], self.gf[2][1], +max_speed, +max_speed, +max_speed])
         self.ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
 
         u_max = 15
 
-        self.ocp.constraints.lbu = np.array([-10, -0, -10])
-        self.ocp.constraints.ubu = np.array([+10, +15, +10])
+        self.ocp.constraints.lbu = np.array([-20, -0, -20])
+        self.ocp.constraints.ubu = np.array([+20, +18, +20])
 
         self.ocp.constraints.idxbu = np.array([0, 1, 2])
 
@@ -174,7 +175,9 @@ class MPCController():
 
         self.ocp.solver_options.tf = Tf
 
-        self.solver = AcadosOcpSolver(self.ocp, json_file = 'acados_json')
+        self.solver = AcadosOcpSolver(self.ocp, json_file = 'acados_json', verbose=False)
+
+        self.preds = np.zeros((self.N, self.nx))
 
     def get_action(self, state_c, traj, i=0):
 
@@ -196,9 +199,9 @@ class MPCController():
         for j in range(self.N):
 
             idx = min(j + idf, len(traj)-1)
-            print(idf, idx)
+            # print(idf, idx)
             yref = traj[idx]
-            yref = np.array([0.85, -0.5,-1.04486, 0,0,0, 0,0,0])
+            # yref = np.array([0.85, -0.5,-1.04486, 0,0,0, 0,0,0])
 
             self.solver.set(j, "yref", yref)
 
@@ -206,8 +209,9 @@ class MPCController():
         #     self.solver.set(j, "yref", traj[1])
         idx_n = min(idf + self.N, len(traj)-1)
         yref_n = traj[idx_n][:-3]
-        yref_n = np.array([0.85, -0.5,-1.04486, 0,0,0])
-        print(state_c)
+        # yref_n = np.array([0.85, -0.5,-1.04486, 0,0,0])
+
+        # print(state_c)
         # print(np.linalg.norm(state_c[3:6]))
 
         # for j in range(self.N):
@@ -225,6 +229,12 @@ class MPCController():
 
         # the perfect MPC predicted state. not sure which one to use.
         self.x = self.solver.get(1, "x")
+
+        # store predictions
+        self.preds = np.zeros((self.N, self.nx))
+        for i in range(self.N):
+            self.preds[i] = self.solver.get(i, "x")
+
         self.u = self.solver.get(0, "u")
         # if np.linalg.norm(self.u)>15:
         #     self.u = self.u/np.linalg.norm(self.u)*15
