@@ -7,6 +7,15 @@ import scipy
 from matplotlib.backend_bases import MouseButton
 from matplotlib import patches
 from matplotlib.widgets import Slider
+import time
+import enum
+
+class LogLevel(enum.IntEnum):
+    NONE = 0
+    INFO = 1
+    DEBUG = 2
+    ERROR = 3
+ 
 
 def fact(j, i):
     """factorial of j upto i. Used for derivatives"""
@@ -22,7 +31,7 @@ def pow(n, k):
 np.set_printoptions(precision=4, suppress=True)
 np. set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
 class TrajectoryManager():
-    def __init__(self, order, waypoints, time=1) -> None:
+    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO) -> None:
         
         self.wps = waypoints
         
@@ -44,6 +53,7 @@ class TrajectoryManager():
         elif type(time) is list:
             assert len(time) == self.m+1, "Number of timestamps must be equal to the number of waypoints."
             self.t = time
+        self.log_level = log_level
 
     def set_segment_times(self, times):
         """Set externally from an outer optimizer"""
@@ -102,15 +112,17 @@ class TrajectoryManager():
         
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
-    def __init__(self, order, waypoints, time = 1) -> None:
-        super().__init__(order, waypoints, time)
+    def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO) -> None:
+        super().__init__(order, waypoints, time, log_level)
 
         # setup constraints
-        print("[Optimizer] Setting up constraints")
+        if self.log_level>=LogLevel.INFO:
+            print("[Optimizer] Setting up constraints")
         self.setup_constraints()
 
         # setup objectives
-        print("[Optimizer] Setting up optimization objective")
+        if self.log_level >=LogLevel.INFO:
+            print("[Optimizer] Setting up optimization objective")
         self.setup_objectives()
 
     def setup_constraints(self):
@@ -217,15 +229,15 @@ class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
         super().__init__(order, waypoints, time)
 
 class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
-    def __init__(self, order, waypoints, time=1) -> None:
-        super().__init__(order, waypoints, time)
+    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO) -> None:
+        super().__init__(order, waypoints, time, log_level)
+        
         # print(np.linalg.matrix_rank(self.H), np.linalg.matrix_rank(self.A))
         
     def setup_constraints(self):
-        print(self.t)
         t0 = self.t[0]
         t1 = self.t[1]
-        t2 = self.t[2]
+        t2 = self.t[2] + t1
         self.A = np.array([
             ## X
             # === endpoint constraints ===
@@ -333,7 +345,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
     def setup_objectives(self):
         t1 = self.t[1]
         # print(t1)
-        t2 = self.t[2]       
+        t2 = self.t[2] + t1
         self.H = scipy.linalg.block_diag(self.get_H_1seg(t1), self.get_H_1seg(t2), self.get_H_1seg(t1), self.get_H_1seg(t2))
 
 
@@ -343,8 +355,9 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
         """
         Return an optimized plan for all dimensions
         """
-        print("[Optimizer] Starting optimization...")
-        options = {}
+        if self.log_level >= LogLevel.INFO:
+            print("[Optimizer] Starting optimization...")
+        options = {"show_progress":self.log_level>=LogLevel.DEBUG}
         
         self.sol = solvers.qp(G=matrix(self.G, tc='d'), h=matrix(self.h, tc='d'),P = matrix(self.H), q=matrix(self.f), A=matrix(np.array(self.A), tc='d'), b=matrix(self.b, tc='d'), options=options)
         # print("slack: ", self.sol['s'])
@@ -353,15 +366,15 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
             self.cost = self.sol['primal objective']
         elif self.status == 'unknown':
             self.cost = np.inf
-
-        print("[Optimizer] Done.")
+        if self.log_level >= LogLevel.INFO:
+            print("[Optimizer] Done.")
 
         return self.cost
 
     def generate(self, coeffs_raw, dt, order=0):
         """works only for two segments, some hardcoding but fast"""
         C = np.array(coeffs_raw).reshape(self.l, self.m, 2*self.n) # coefficients
-        tvec = np.arange(0,self.t[-1]+dt, dt)
+        tvec = np.arange(0,sum(self.t)+dt, dt)
 
         diff = [fact(j,order) for j in range(2*self.n)]        
         time_powers = np.concatenate([[0]*order, np.arange(2*self.n -order)])
@@ -375,7 +388,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
     
     def evaluate(self, dt, order=0):
         """get a specific plan for position, velocity etc."""
-        if not self.sol["x"]:
+        if not self.sol["x"] and self.log_level>=LogLevel.INFO:
             print("Run the optimization first")
             return
         else:
@@ -385,7 +398,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
 
 
 class DynamicTraj():
-    def __init__(self,ax, st1, st2) -> None:
+    def __init__(self,ax, st1, st2, wps) -> None:
         self.ax = ax
         plt.subplots_adjust(left=0.25, bottom=0.25)
 
@@ -393,18 +406,15 @@ class DynamicTraj():
         st2.on_changed(self.update_t2)
         plt.connect('button_press_event', self.on_click)
 
-        self.wps = np.array([
-            [0., 0.7, 0.8],
-            [0., 0.99, 1],
-            # [5., 2.],        
-            ]).T
+        self.wps =wps
         
         # inits
         self.t1 = st1.val
         self.t2 = st2.val
         self.end_x = self.wps[1][0]
         self.end_y = self.wps[1][1]
-        
+        self.cost_txt = None
+
     def update_t1(self, val):
         self.t1 = val
         self.update()
@@ -420,22 +430,30 @@ class DynamicTraj():
         for line in self.ax.collections:
             line.remove()
         
+        if self.cost_txt:
+            self.cost_txt.remove()
+
         self.wps[1][0] = self.end_x
         self.wps[1][1] = self.end_y
-        mvajscp = MinAcc2WP2D(order=2, waypoints=self.wps.T, time=[0,self.t1,self.t2])
-        mvajscp.optimize()
 
+        # self.traj_opt.set_waypoints(self.wps)
+        # self.traj_opt.set_segment_times([0,self.t1, self.t2])
+        mvajscp = MinAcc2WP2D(order=2, waypoints=self.wps.T, time=[0,self.t1,self.t2], log_level=LogLevel.NONE)
+        cost = mvajscp.optimize() + 0*(self.t1+self.t2)
         dt = 0.05
         pos = mvajscp.evaluate(order = 0, dt=dt)
         vel = mvajscp.evaluate(order = 1, dt=dt)
         acc = mvajscp.evaluate(order = 2, dt=dt)
-        # print(acc)
+        max_acc = np.max(np.abs(acc), axis=0)
         self.ax.plot(pos[-1][0], pos[-1][1], "ko", markersize=6)
         self.ax.plot(mvajscp.wps[0],mvajscp.wps[1],'k--', linewidth=2)
         self.ax.plot(pos[:,0],pos[:,1], 'b-', linewidth=3)
         self.ax.plot(mvajscp.wps[0],mvajscp.wps[1],'ko')
         mvajscp.plot(pos, ax=self.ax)
-        mvajscp.plot_vec(pos, acc,ax=self.ax ,color='gray')    
+        mvajscp.plot_vec(pos, vel,ax=self.ax ,color='gray')
+        mvajscp.plot_vec(pos, acc,ax=self.ax ,color='k')
+        
+        self.cost_txt = plt.gcf().text(0.3, 0.05, f"cost: {cost}, \n amax: {max_acc}", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)    
         plt.pause(0.00001)
 
 
@@ -447,22 +465,62 @@ class DynamicTraj():
 
 
 class TimeOptTraj():
-    def __init__(self) -> None:
-        pass
-    def get_gradient(self):
-        pass
+    def __init__(self, wps, x0, log_level) -> None:
+        self.wps = wps
+        self.x0 = x0[1:]
+        self.bounds = ((0.1, None), (0.1, None))
+        self.cons = {
+            # "type":'eq', 'fun':lambda x:  x[0] + x[1] - sum(x0),
+            "type":'ineq', 'fun':lambda x:  x[0] - x[1],
+        }
+        # self.cons = None
+        self.log_level = log_level
+
+    def get_gradient(self, x):
+        h = 0.02
+        
+        # x_inc = np.array([
+        #     [x[0] + h, x[1] - h],
+        #     [x[0] - h, x[1] + h],
+        # ])
+        x_inc = np.array([
+            [x[0] + h, x[1]],
+            [x[0], x[1] + h],
+        ])
+        # x_inc = np.clip(x_inc, 0.1, None)
+        x_cost = self.objective(x)
+        grad = [(self.objective(x_inc[i]) - x_cost)/h for i in range(len(x))]
+        return grad
 
     def objective(self, x):
+        start = time.perf_counter()
+        self.traj_opt = MinAcc2WP2D(order=2, waypoints=self.wps.T, time=[0,x[0],x[1]], log_level=self.log_level)
         
-        self.traj_opt = MinAcc2WP2D(order=2, waypoints=self.wps.T, time=[0,x[0],x[1]])
-        cost = mvajscp.optimize()
-        
+        kinematic_cost = self.traj_opt.optimize()
+        time_cost = np.sum(x**2)
+        cost = 0.0*kinematic_cost + 1.0*time_cost
+        # print(kinematic_cost, time_cost)
+        # acc = self.traj_opt.evaluate(order = 2, dt=dt)
+        # max_acc = np.mean(np.linalg.norm(acc, axis=1), axis=0)
+        if self.log_level>=LogLevel.DEBUG:
+            print("Optimization time for 1 iteration: ", time.perf_counter() - start)
+        # print(f"x: {x}, cost:{cost}")
         return cost
+
+    def optimize(self):
+        # x0 = [0.7,0.8]
+        # res = scipy.optimize.minimize(self.objective, self.x0, method='BFGS', jac=self.get_gradient,
+        #        options={'gtol': 1e-6, 'disp': True})        
+        res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac=self.get_gradient,
+               options={'gtol': 1e-6, 'disp': True},constraints=self.cons, bounds = self.bounds)        
+
+        return res.x
+        # print("Optimal times:", res.x)
 
 if __name__=="__main__":
     wps = np.array([
-        [0., 0.7, 0.8],
-        [0., 0.99, 1],
+        [0., 0.6, 0.8],
+        [0., 0.5, 1],
         # [5., 2.],        
         ]).T
 
@@ -471,11 +529,19 @@ if __name__=="__main__":
         wps = wps_sorted[idx[:-1],:]
     else:
         wps = wps_sorted[idx,:]
-    # mvajscp0 = MinVelAccJerkSnapCrackPop(order=2, waypoints=wps.T, time=2)
-    # pos = mvajscp0.optimize(plan_order = 0, num_pts=20)
-    # print(np.array(mvajscp0.A).shape)
-    # mvajscp = MinVelAccJerkSnapCrackPopCorridor(order=2, waypoints=wps.T, time=5)
-    mvajscp = MinAcc2WP2D(order=2, waypoints=wps.T, time=[0,0.5,0.6])
+
+    t0 = [0,0.7, 0.2]
+    
+    # time optimization
+    start = time.perf_counter()
+    time_opt = TimeOptTraj(wps, t0, log_level=LogLevel.NONE).optimize()
+    print("Optimal times: ", time_opt)
+    print(time.perf_counter()-start)
+
+
+
+    # Plot result
+    mvajscp = MinAcc2WP2D(order=2, waypoints=wps.T, time=[0, time_opt[0], time_opt[1]])
     mvajscp.optimize()
 
     dt = 0.05
@@ -485,37 +551,30 @@ if __name__=="__main__":
     acc = mvajscp.evaluate(order = 2, dt=dt)
     # jerk = mvajscp.optimize(plan_order = 3, num_pts=200)
     # snap = mvajscp.optimize(plan_order = 4, num_pts=200)
-    # print(acc)
-    # print(vel)
 
-    #plt.figure()
-    #mvajscp.plot_vec(pos, vel, color='gray')
-    #mvajscp.plot(pos)
-    print(pos)
-    print(vel)
-    print(acc)
+    # print(pos)
+    # print(vel)
+    # print(acc)
     plt.figure()
     ax = plt.axes(xlim=(-0.2,1.2),ylim=(-0.2, 1.2))
-    
+    rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='r', facecolor='none', linestyle='dashed')
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+
     ax.plot(pos[-1][0], pos[-1][1], "ko", markersize=6)
     mvajscp.plot(pos, ax=ax)
     mvajscp.plot_vec(pos, vel,ax=ax ,color='gray')    
     mvajscp.plot_vec(pos, acc,ax=ax ,color='black')    
 
-    
-    # binding_id = plt.connect('motion_notify_event', on_move)
-    
+
+    # Interactive plot
     axfreq = plt.axes([0.25, 0.1, 0.65, 0.03])
     axamp = plt.axes([0.25, 0.15, 0.65, 0.03])  
     # these need to be outside of a function to work (for some crazy reason
-    st1 = Slider(axfreq, 't1', 0.1, 1, valinit=0.5, valstep=0.05)
-    st2 = Slider(axamp, 't2', 0.1, 1, valinit=0.6, valstep=0.05)
+    st1 = Slider(axfreq, 't1', 0.1, 1.2, valinit=time_opt[0], valstep=0.01)
+    st2 = Slider(axamp, 't2', 0.1, 1.2, valinit=time_opt[1], valstep=0.01)
 
-    dtraj = DynamicTraj(ax, st1, st2)
-
-    rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='r', facecolor='none', linestyle='dashed')
-
-    # Add the patch to the Axes
-    ax.add_patch(rect)
+    dtraj = DynamicTraj(ax, st1, st2, wps)
+    
     plt.show()
     
