@@ -7,6 +7,7 @@ from matplotlib import animation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from trajectory import MinVelAccJerkSnapCrackPop
 import paramiko
+import pandas as pd
 
 class Env():
     def __init__(self, agent, controller, target, gf) -> None:
@@ -26,7 +27,7 @@ class Env():
         ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-2.5, 0), zlim=(-1.5, 0))
         ax.view_init(elev=25, azim=90)
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
-        self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(2)]
+        self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(15)]
         self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.N)]
         self.motor_plts = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
         
@@ -58,39 +59,44 @@ class Env():
             ssh.connect(host, 22, username, pkey=key)
             sftp = ssh.open_sftp()
 
-            folder_path = "/home/pats/pats/data/20231003_135112_bm/"
-            flight_num = 3
+            folder_path = "/home/pats/pats/data/20231009_104411/"
+            flight_num = 1
 
             # folder_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230922_180506/"
 
             with sftp.file(folder_path + f"trajectory{flight_num}.csv", 'r') as traj_file:
                 self.traj = np.loadtxt(traj_file, delimiter=",")
 
-            # ax.plot(self.wps[0],self.wps[2],self.wps[1],'b--')
-            ax.plot(self.traj[:,0],self.traj[:,2],self.traj[:,1], 'r.', linewidth=3)
-            
-            # relevant columns from the log file
-            cols = [12, 13, 14, 19, 20,21, 23, 24, 25, 47,48,49, 31, 30, 41,42,43]
-            cols.extend(range(72,102))
-
             with sftp.file(folder_path + f"log_flight{flight_num}.csv", 'r') as log_file:
-                data = np.loadtxt(log_file.readlines()[1:-1], delimiter=";", usecols=cols) 
+                data = pd.read_csv(log_file, delimiter=';')
+            
+            self.state_log = data['drone_state_str']
+            start = data.index.get_loc(data[data['drone_state_str']=="ns_set_waypoint"].index[0])
+            end =data.index.get_loc(data[data['drone_state_str']=="ns_set_waypoint"].index[-1])
+            total_time = data['elapsed'][end] -data['elapsed'][start]
+            print("Total time: ", total_time)
+            self.pos_log = data[['posX_drone', 'posY_drone', 'posZ_drone']].to_numpy()
+            self.vel_log = data[['svelX_drone', 'svelY_drone', 'svelZ_drone']].to_numpy()
+            self.acc_log = data[['saccX_drone', 'saccY_drone', 'saccZ_drone']].to_numpy()
 
-            self.pos_log = data[:,:3]
-            self.vel_log = data[:,3:6]
-            self.acc_log = data[:,6:9]
-            print("max_vel: ", np.max(np.linalg.norm(self.vel_log[90:], axis=1)))
-            print("max_acc: ", np.max(np.linalg.norm(self.acc_log[90:], axis=1)))
-            self.control_log = data[:, 9:12]
-            # timesteps = data[:, 12]
-            self.time_log = data[:, 13]
-            self.pos_t_log = np.unique(data[:, 14:17], axis=0)
-            # print(Se)
+            print("max_vel: ", np.max(np.linalg.norm(self.vel_log[start:end], axis=1)))
+            print("max_acc: ", np.max(np.linalg.norm(self.acc_log[start:end], axis=1)))
+            self.control_log = data[['accX_commanded', 'accY_commanded', 'accZ_commanded']]
+
+            # waypoints
+            self.pos_t_log = data[self.state_log=="ns_set_waypoint"][['posX_target', 'posY_target', 'posZ_target']].to_numpy()
             ax.plot(self.pos_t_log[:, 0], self.pos_t_log[:, 2], self.pos_t_log[:, 1], "bx", markersize=6)
-            self.preds_log = data[:, 17:].reshape((len(data), self.controller.N, 3))  
+            
+            # mpc predictions
+            preds_log = data.iloc[:-1,data.columns.get_loc('mpc_pred_1_x'):data.columns.get_loc('mpc_pred_10_z')+1].to_numpy()
+            self.preds_log = preds_log.reshape((len(data)-1, 10, 3))
+
+            # dynamic trajectory
+            traj_log = data.iloc[:-1,data.columns.get_loc('traj_1_x'):data.columns.get_loc('traj_15_z')+1].to_numpy()
+            self.traj_log = traj_log.reshape((len(data)-1, 15, 3))
 
             num_frames = len(data)
-            ani_interval = 20
+            ani_interval = 60
             # self.anim = animation.FuncAnimation(fig, self.replay_update, frames=len(data), interval=20, blit=True)
         
         else:
@@ -147,6 +153,9 @@ class Env():
             for i in range(self.controller.N):
                 self.x_pred_plts[i].set_data_3d(self.x_preds[i][0], self.x_preds[i][2], self.x_preds[i][1])
         
+        for i in range(15):
+            self.traj_plt[i].set_data_3d(self.x_traj[i][0], self.x_traj[i][2], self.x_traj[i][1])
+        
         # return 
 
     def update(self, i):
@@ -154,6 +163,7 @@ class Env():
         if self.replay:
             self.sim_x = self.pos_log[i]
             self.x_preds = self.preds_log[i]
+            self.x_traj = self.traj_log[i]
         else:
 
             self.moth.update(self.moth.get_action())
