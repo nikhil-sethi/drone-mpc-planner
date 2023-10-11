@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <condition_variable>
 #include<iostream>
 #include <chrono>
@@ -43,6 +44,7 @@
 #include "interceptor.h"
 #include "baseboardlink.h"
 #include "daemonlink.h"
+#include "json.hpp"
 #if ROSVIS
 #include "rosvisualizerdatacollector.h"
 #endif
@@ -102,6 +104,7 @@ std::string pats_xml_fn = "", drone_xml_fn = "";
 
 std::ofstream logger;
 std::ofstream logger_video_ids;
+nlohmann::json json_log;
 std::unique_ptr<RC> rc;
 
 Visualizer visualizer;
@@ -247,8 +250,70 @@ void process_frame(StereoPair *frame) {
            << baseboard_link.charging_state_str() << ";" << static_cast<uint16_t>(baseboard_link.charging_state()) << ";";
 
     if (pparams.op_mode == op_mode_x) {
-        double max_opti_time = 1000. / 2 / pparams.fps - ((std::chrono::high_resolution_clock::now() - t_start_process_frame).count()) * 1e-6;
-        patser.interceptor.max_optimization_time(max_opti_time * 1e-3);
+        json_log.clear();
+
+        static string baseboard_charging_state;
+        static bool charging_enabled;
+        static float drone_max_thrust;
+        static string drone_state;
+        static bool hunt_state;
+        static float light_level_threshold;
+        static string location;
+        static float pad_pos_x;
+
+        // event based logs
+        if (baseboard_charging_state != charging_state_names[baseboard_link.charging_state()]) {
+            baseboard_charging_state = charging_state_names[baseboard_link.charging_state()];
+            json_log["baseboard_charging_state"] = baseboard_charging_state;
+        }
+        if (drone_state != patser.drone.drone_state_str()) {
+            drone_state = patser.drone.drone_state_str();
+            json_log["drone_state"] = drone_state;
+        }
+        if (hunt_state != !pparams.disable_real_hunts) {
+            hunt_state = !pparams.disable_real_hunts;
+            json_log["hunt_state"] = hunt_state ? "enabled" : "disabled";
+        }
+
+        // periodic logs
+        static int log_div_cnt = 0;
+        log_div_cnt = (log_div_cnt + 1) % (5 * 60 * pparams.fps); // only log once per 5 minutes, to save data
+        if (!log_div_cnt) {
+            json_log["baseboard_battery_voltage"] = baseboard_link.drone_battery_voltage();
+            json_log["light_level"] = light_level;
+            json_log["rssi"] = static_cast<int>(rc->telemetry.rssi);
+
+            // periodic + event based log
+            if (charging_enabled != pparams.charging) {
+                charging_enabled = pparams.charging;
+                json_log["charging_enabled"] = charging_enabled;
+            }
+            if (drone_max_thrust != *patser.drone.control.max_thrust()) {
+                drone_max_thrust = *patser.drone.control.max_thrust();
+                json_log["drone_max_thrust"] = drone_max_thrust;
+            }
+            if (light_level_threshold != pparams.light_level_threshold) {
+                light_level_threshold = pparams.light_level_threshold;
+                json_log["light_level_threshold"] = light_level_threshold;
+            }
+            if (location != pparams.location) {
+                location = pparams.location;
+                json_log["location"] = location;
+            }
+        }
+        if (json_log.size()) {
+            timeval _time_now;
+            gettimeofday(&_time_now, NULL);
+            int _milliseconds = _time_now.tv_usec / 1000;
+            char timestamp [80];
+            strftime(timestamp, 80, "%Y/%m/%d %H:%M:%S", localtime(&_time_now.tv_sec));
+            char timestamp_ms[84] = "";
+            sprintf(timestamp_ms, "%s:%03d", timestamp, _milliseconds);
+
+            json_log["timestamp"] = timestamp_ms;
+            std::ofstream o("log.json", std::ios_base::out | std::ios_base::app);
+            o << json_log << std::endl;
+        }
     }
 
 #ifdef PATS_PROFILING

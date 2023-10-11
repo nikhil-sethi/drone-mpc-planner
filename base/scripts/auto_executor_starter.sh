@@ -54,6 +54,7 @@ while [ 1 ]; do
 	echo Moving old data to $OUTDIR_LOG
 	/bin/mv logging/ ${OUTDIR_LOG}/ || true
 	/bin/mv terminal.log ${OUTDIR_LOG}/ || true
+	/bin/mv log.json ${OUTDIR_LOG}/ || true
 
 	(cd ../scripts/ && ./process_session.py -i ${OUTDIR_LOG} || true)
 

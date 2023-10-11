@@ -19,4 +19,6 @@ mkdir -p ~/pats/logs
 [ -f /home/pats/pats/flags/disable_trapeye ] || {
 	/usr/bin/screen -t te /bin/bash -c '~/pats/release/scripts/auto_trapeye_starter.sh 30'
 }
+/usr/bin/screen -t prmtl /bin/bash -c 'cd ~/pats/release/logging && ~/pats/release/logging/promtail-linux-amd64 --config.file promtail-config.yaml && sleep 1; exec /bin/bash'
+/usr/bin/screen -t loki /bin/bash -c 'cd ~/pats/release/logging && ~/pats/release/logging/loki-linux-amd64 --config.file loki-config.yaml && sleep 1; exec /bin/bash'
 /usr/bin/screen -t bash /bin/bash -c 'cd ~/; exec /bin/bash'

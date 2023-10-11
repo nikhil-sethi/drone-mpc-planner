@@ -37,5 +37,6 @@ ln -s ~/code/pats/base/install ~/pats/release/install
 ln -s ~/code/pats/base/scripts ~/pats/release/scripts
 ln -s ~/code/pats/base/xml ~/pats/release/xml
 ln -s ~/code/pats/base/replay_insects ~/pats/release/replay_insects
+ln -s ~/code/pats/logging ~/pats/release/logging
 touch ~/pats/flags/disable_updates
 

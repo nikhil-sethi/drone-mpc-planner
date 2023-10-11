@@ -29,6 +29,8 @@ def strip_dir(dir_name: str, logger):
         os.remove(dir_name + '/terminal.log')
     if os.path.isfile(dir_name + '/log.csv'):
         os.remove(dir_name + '/log.csv')
+    if os.path.isfile(dir_name + '/log.json'):
+        os.remove(dir_name + '/log.json')
     if os.path.isfile(dir_name + '/frames.csv'):
         os.remove(dir_name + '/frames.csv')
     vids = glob.glob(dir_name + "/*.mkv")
