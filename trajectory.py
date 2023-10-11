@@ -15,7 +15,11 @@ class LogLevel(enum.IntEnum):
     INFO = 1
     DEBUG = 2
     ERROR = 3
- 
+
+
+AMAX = 20
+VMAX = 4
+
 
 def fact(j, i):
     """factorial of j upto i. Used for derivatives"""
@@ -95,9 +99,9 @@ class TrajectoryManager():
             ax.plot(self.wps[0],self.wps[2],self.wps[1],'b--')
             ax.plot(points[:,0],points[:,2],points[:,1], 'r-', linewidth=3)
         elif dims == 2:
-            ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
+            # ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
             ax.plot(points[:,0],points[:,1], 'b-', linewidth=3)
-            ax.plot(self.wps[0],self.wps[1],'ko')
+            ax.plot(self.wps[0],self.wps[1],'ro')
         elif dims == 1:
             """plot against time"""
             pass
@@ -237,7 +241,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
     def setup_constraints(self):
         t0 = self.t[0]
         t1 = self.t[1]
-        t2 = self.t[2] + t1
+        t2 = self.t[2] +t1
         self.A = np.array([
             ## X
             # === endpoint constraints ===
@@ -284,7 +288,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
             [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 2*t1**0, 6*t1**1,      -0, -0, -2*t1**0, -6*t1**1,      ] #  acceleration continuity at mid point
         ])
 
-        amax=20
+        amax=AMAX
 
         # self.b = np.array([
         #     self.wps[0][0], self.wps[0][2], 0,0,    self.wps[0][1], self.wps[0][1], 0,0,
@@ -327,7 +331,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
         ])
 
         self.h = np.array([
-            1,1,1,1,
+            1,2,1,0,
             amax, amax,amax, amax, 
             amax, amax, amax, amax, 
             amax, amax, amax, amax, 
@@ -345,7 +349,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
     def setup_objectives(self):
         t1 = self.t[1]
         # print(t1)
-        t2 = self.t[2] + t1
+        t2 = self.t[2] 
         self.H = scipy.linalg.block_diag(self.get_H_1seg(t1), self.get_H_1seg(t2), self.get_H_1seg(t1), self.get_H_1seg(t2))
 
 
@@ -374,13 +378,13 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
     def generate(self, coeffs_raw, dt, order=0):
         """works only for two segments, some hardcoding but fast"""
         C = np.array(coeffs_raw).reshape(self.l, self.m, 2*self.n) # coefficients
-        tvec = np.arange(0,sum(self.t)+dt, dt)
+        self.tvec = np.arange(0,sum(self.t)+dt, dt)
 
         diff = [fact(j,order) for j in range(2*self.n)]        
         time_powers = np.concatenate([[0]*order, np.arange(2*self.n -order)])
-        pvec = diff*(np.tile(tvec[:, np.newaxis], 2*self.n) ** time_powers) # (d/l x order)
+        pvec = diff*(np.tile(self.tvec[:, np.newaxis], 2*self.n) ** time_powers) # (d/l x order)
 
-        c_mask = (tvec>=self.t[1]).astype(int)
+        c_mask = (self.tvec>=self.t[1]).astype(int)
 
         traj = np.sum(C[:,c_mask.astype(int)]*pvec, axis=2).T
 
@@ -399,8 +403,10 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
 
 class DynamicTraj():
     def __init__(self,ax, st1, st2, wps) -> None:
-        self.ax = ax
-        plt.subplots_adjust(left=0.25, bottom=0.25)
+        self.ax1 = ax["left"]
+        self.ax2 = ax["upper right"]
+        self.ax3 = ax["lower right"]
+        plt.subplots_adjust(left=0.25, bottom=0.55)
 
         st1.on_changed(self.update_t1)
         st2.on_changed(self.update_t2)
@@ -424,12 +430,22 @@ class DynamicTraj():
         self.update()
     
     def update(self):
-        for line in self.ax.lines:
+        # remove pos traj
+        for line in self.ax1.lines:
             line.remove()
 
-        for line in self.ax.collections:
+        # remove arrows
+        for line in self.ax1.collections:
             line.remove()
-        
+            
+        # acc graph
+        for line in self.ax3.lines:
+            line.remove()
+
+        # vel graph
+        for line in self.ax2.lines:
+            line.remove()
+            
         if self.cost_txt:
             self.cost_txt.remove()
 
@@ -444,21 +460,38 @@ class DynamicTraj():
         pos = mvajscp.evaluate(order = 0, dt=dt)
         vel = mvajscp.evaluate(order = 1, dt=dt)
         acc = mvajscp.evaluate(order = 2, dt=dt)
+
+
+        ax2.set_xlim([0, (self.t1+self.t2)])
+
+        ax3.set_xlim([0, (self.t1+self.t2)])
+
+        # plot side graphs    
+        self.ax3.plot(mvajscp.tvec, acc[:,0],'r-',linewidth=2)
+        self.ax3.plot(mvajscp.tvec, acc[:,1],'b-',linewidth=2)
+        self.ax3.plot(mvajscp.tvec, np.linalg.norm(acc, axis=1),'k-',linewidth=3)
+
+        self.ax2.plot(mvajscp.tvec, vel[:,0],'r-',linewidth=2)
+        self.ax2.plot(mvajscp.tvec, vel[:,1],'b-',linewidth=2)
+        self.ax2.plot(mvajscp.tvec, np.linalg.norm(vel, axis=1),'k-',linewidth=3)
+
+        # plot main trajectory
         max_acc = np.max(np.abs(acc), axis=0)
-        self.ax.plot(pos[-1][0], pos[-1][1], "ko", markersize=6)
-        self.ax.plot(mvajscp.wps[0],mvajscp.wps[1],'k--', linewidth=2)
-        self.ax.plot(pos[:,0],pos[:,1], 'b-', linewidth=3)
-        self.ax.plot(mvajscp.wps[0],mvajscp.wps[1],'ko')
-        mvajscp.plot(pos, ax=self.ax)
-        mvajscp.plot_vec(pos, vel,ax=self.ax ,color='gray')
-        mvajscp.plot_vec(pos, acc,ax=self.ax ,color='k')
+        mvajscp.plot(pos, ax=self.ax1)
+        self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
+        # self.ax1.plot(mvajscp.wps[0],mvajscp.wps[1],'k--', linewidth=2)
+        # self.ax1.plot(pos[:,0],pos[:,1], 'b-', linewidth=3)
+        # self.ax1.plot(mvajscp.wps[0],mvajscp.wps[1],'ko')
         
-        self.cost_txt = plt.gcf().text(0.3, 0.05, f"cost: {cost}, \n amax: {max_acc}", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)    
-        plt.pause(0.00001)
+        mvajscp.plot_vec(pos, vel,ax=self.ax1 ,color='gray')
+        mvajscp.plot_vec(pos, acc,ax=self.ax1 ,color='k')
+        
+        self.cost_txt = plt.gcf().text(0.5, 0.95, f"cost: {cost}, \n amax: {max_acc}", horizontalalignment='center', verticalalignment='center', transform=self.ax1.transAxes)    
+        plt.pause(0.00001) # need dis boi here
 
 
     def on_click(self, event):
-        if event.button is MouseButton.LEFT and event.inaxes==self.ax:
+        if event.button is MouseButton.LEFT and event.inaxes==self.ax1:
             self.end_x = event.xdata
             self.end_y = event.ydata
             self.update()
@@ -479,6 +512,9 @@ class TimeOptTraj():
     def get_gradient(self, x):
         h = 0.02
         
+        # this formulation is used when we want to constrain total time
+        # in the original paper this takes a more general form with equal splitting of times among segments
+        # but we only have two segments to it's chill
         # x_inc = np.array([
         #     [x[0] + h, x[1] - h],
         #     [x[0] - h, x[1] + h],
@@ -488,7 +524,7 @@ class TimeOptTraj():
             [x[0], x[1] + h],
         ])
         # x_inc = np.clip(x_inc, 0.1, None)
-        x_cost = self.objective(x)
+        x_cost = self.objective(x) # precompute
         grad = [(self.objective(x_inc[i]) - x_cost)/h for i in range(len(x))]
         return grad
 
@@ -517,10 +553,14 @@ class TimeOptTraj():
         return res.x
         # print("Optimal times:", res.x)
 
+
+
+
+
 if __name__=="__main__":
     wps = np.array([
-        [0., 0.6, 0.8],
-        [0., 0.5, 1],
+        [0, 0.6, 0],
+        [0., 0.9, 0],
         # [5., 2.],        
         ]).T
 
@@ -530,15 +570,13 @@ if __name__=="__main__":
     else:
         wps = wps_sorted[idx,:]
 
-    t0 = [0,0.7, 0.2]
+    time_opt = [0,0.7, 0.2]
     
     # time optimization
     start = time.perf_counter()
-    time_opt = TimeOptTraj(wps, t0, log_level=LogLevel.NONE).optimize()
+    time_opt = TimeOptTraj(wps, time_opt, log_level=LogLevel.NONE).optimize()
     print("Optimal times: ", time_opt)
     print(time.perf_counter()-start)
-
-
 
     # Plot result
     mvajscp = MinAcc2WP2D(order=2, waypoints=wps.T, time=[0, time_opt[0], time_opt[1]])
@@ -555,26 +593,43 @@ if __name__=="__main__":
     # print(pos)
     # print(vel)
     # print(acc)
-    plt.figure()
-    ax = plt.axes(xlim=(-0.2,1.2),ylim=(-0.2, 1.2))
-    rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='r', facecolor='none', linestyle='dashed')
+    
+    # fig, axes = plt.subplots(1,2)
+    fig, axes, = plt.subplot_mosaic([['left','upper right'],
+                               ['left','lower right']],
+                              figsize=(10.5, 5.5), layout="tight")
+    ax1 = axes["left"]
+    ax2 = axes["upper right"]
+    ax3 = axes["lower right"]
+    
+    ax1.set_xlim([-1.2, 1.2])
+    ax1.set_ylim([-0.3, 2.2])
+
+    ax2.set_xlim([0, sum(time_opt)])
+    ax2.set_ylim([-5, 5])
+    ax2.grid(True)
+    ax3.set_xlim([0, sum(time_opt)])
+    ax3.set_ylim([-25, 25])
+    ax3.grid(True)
+
+
+    rect = patches.Rectangle((-1, 0), 2, 2, linewidth=1, edgecolor='r', facecolor='none', linestyle='dashed')
     # Add the patch to the Axes
-    ax.add_patch(rect)
+    ax1.add_patch(rect)
 
-    ax.plot(pos[-1][0], pos[-1][1], "ko", markersize=6)
-    mvajscp.plot(pos, ax=ax)
-    mvajscp.plot_vec(pos, vel,ax=ax ,color='gray')    
-    mvajscp.plot_vec(pos, acc,ax=ax ,color='black')    
-
+    ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
+    mvajscp.plot(pos, ax=ax1)
+    mvajscp.plot_vec(pos, vel,ax=ax1 ,color='gray')    
+    mvajscp.plot_vec(pos, acc,ax=ax1 ,color='black')    
 
     # Interactive plot
-    axfreq = plt.axes([0.25, 0.1, 0.65, 0.03])
-    axamp = plt.axes([0.25, 0.15, 0.65, 0.03])  
+    axfreq = plt.axes([0.1, 0.1, 0.35, 0.03])
+    axamp = plt.axes([0.1, 0.13, 0.35, 0.03])  
     # these need to be outside of a function to work (for some crazy reason
     st1 = Slider(axfreq, 't1', 0.1, 1.2, valinit=time_opt[0], valstep=0.01)
     st2 = Slider(axamp, 't2', 0.1, 1.2, valinit=time_opt[1], valstep=0.01)
 
-    dtraj = DynamicTraj(ax, st1, st2, wps)
+    dtraj = DynamicTraj(axes, st1, st2, wps)
     
     plt.show()
     
