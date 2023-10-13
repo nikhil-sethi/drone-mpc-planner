@@ -26,7 +26,7 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_inactive",
                                            "fm_wait",
                                            "fm_manual",
-                                           "fm_init_spinup",
+                                           "fm_spinup",
                                            "fm_start_takeoff",
                                            "fm_remaining_spinup",
                                            "fm_max_burn",
@@ -63,7 +63,7 @@ public:
         fm_inactive,
         fm_wait,
         fm_manual,
-        fm_init_spinup,
+        fm_spinup,
         fm_start_takeoff,
         fm_remaining_spinup,
         fm_max_burn,
@@ -313,7 +313,7 @@ public:
         _log_auto_throttle = entry.auto_throttle;
     }
 
-    bool spinup() {  return _flight_mode == fm_init_spinup || _flight_mode == fm_remaining_spinup; }
+    bool spinup() {  return _flight_mode == fm_spinup || _flight_mode == fm_remaining_spinup; }
     float remaining_spinup_duration() { return remaining_spinup_duration_t0; }
     float takeoff_delay() { return _takeoff_delay; }
     bool landing() { return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start; }
@@ -321,7 +321,7 @@ public:
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
-        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_init_spinup || _flight_mode == fm_remaining_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_sleep)
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_remaining_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_sleep)
             in_flight_start_time = -1;
 
         if (in_flight_start_time > 0)
