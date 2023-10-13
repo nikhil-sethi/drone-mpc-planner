@@ -203,14 +203,6 @@ void DroneNavigation::update(double time) {
                     _tracker->hover_mode(true);
                 }
 
-                if (_nav_flight_mode == nfm_hunt && _iceptor->target_acquired(time) && (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset)) {
-                    _navigation_status = ns_start_the_chase;
-                    _control->hover_mode(false);
-                    _tracker->hover_mode(false);
-                    _control->flight_mode(DroneController::fm_flying_pid);
-                    _control->kiv_ctrl.enable();
-                }
-
                 check_abort_autonomous_flight_conditions();
                 break;
         } case ns_reset_headless_yaw: {
