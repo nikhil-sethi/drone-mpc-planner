@@ -33,19 +33,30 @@ frontend:
   max_outstanding_per_tenant: 4096
   compress_responses: true
 
+compactor:
+  working_directory: /tmp/loki/data/retention
+  shared_store: filesystem
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
 schema_config:
-  configs:
-    - from: 2020-10-24
-      store: boltdb-shipper
-      object_store: filesystem
-      schema: v11
-      index:
-        prefix: index_
-        period: 24h
+    configs:
+      - from: "2020-07-31"
+        index:
+            period: 24h
+            prefix: loki_index_
+        object_store: filesystem
+        schema: v11
+        store: boltdb-shipper
+storage_config:
+    boltdb_shipper:
+        active_index_directory: /tmp/loki/data/index
+        cache_location: /tmp/loki/data/boltdb-cache
+        shared_store: filesystem
 
-table_manager:
-  retention_deletes_enabled: true
-  retention_period: 720h
+limits_config:
+  retention_period: 744h
 
 ruler:
   alertmanager_url: http://localhost:9093
