@@ -98,7 +98,7 @@ void DroneTracker::update(double time) {
                 match_template();
                 cv::Point3f acc = *_commanded_acceleration;
                 acc.y = std::max(0.f, acc.y - GRAVITY);
-                if (normf(acc) > GRAVITY && start_burn_time == 0) {
+                if (normf(acc) && start_burn_time == 0) {
                     start_burn_time = time;
                     std::cout << "Expecting drone movement in about 10 frames from now" << std::endl;
                 }
