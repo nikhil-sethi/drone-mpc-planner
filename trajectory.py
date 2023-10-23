@@ -33,7 +33,7 @@ def pow(n, k):
     return n**k
 
 np.set_printoptions(precision=4, suppress=True)
-np. set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
+np.set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
 class TrajectoryManager():
     def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO) -> None:
         
@@ -73,20 +73,24 @@ class TrajectoryManager():
         diffs = np.linalg.norm(wps[:,1:] - wps[:,:-1], axis=0)
         return diffs/sum(diffs)
 
-    def generate(self, coeffs_raw, order = 0, d=100):
-        """Takes in optimizer solution and generates a discretized trajectory"""
-        C = np.expand_dims((np.array(coeffs_raw).reshape(self.m,2*self.n)),-1) # coefficients
+    def generate(self, coeffs_raw, order = 0, dt=0.05):
+        """works only for two segments, some hardcoding but fast"""
+        C = np.array(coeffs_raw).reshape(self.l, self.m, 2*self.n) # coefficients
+        self.tvec = np.arange(0, sum(self.t)+dt, dt)
 
-        # d = 40 # discretisation
-        pts_per_poly = d//self.m
-        tvec = np.linspace(self.t[:-1],self.t[1:], pts_per_poly).T.reshape(self.m, pts_per_poly,1)
+        diff = [fact(j,order) for j in range(2*self.n)]
         diff = [fact(j,order) for j in range(2*self.n)]
         
+        diff = [fact(j,order) for j in range(2*self.n)]        
+        
         time_powers = np.concatenate([[0]*order, np.arange(2*self.n -order)])
-        # print(diff, time_powers)
-        pvec = diff*(np.tile(tvec, 2*self.n) ** time_powers) # (d/l x order)
+        pvec = diff*(np.tile(self.tvec[:, np.newaxis], 2*self.n) ** time_powers) # (d/l x order)
+        c_mask = np.zeros_like(self.tvec)
+        for t in self.t[1:-1]:
+            c_mask += (self.tvec>=t).astype(int)
 
-        traj = (pvec@C).flatten()
+        traj = np.sum(C[:, c_mask.astype(int)]*pvec, axis=2).T
+
         return traj
         
     def plot(self, points, ax=None)	:
@@ -116,9 +120,20 @@ class TrajectoryManager():
         
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
-    def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO) -> None:
-        super().__init__(order, waypoints, time, log_level)
+    def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO, a_t = None) -> None:
+        # calc 'moving forward' bounds for theta opt
+        vec_incoming = waypoints[1] - waypoints[0]
+        theta_incoming = np.arctan2(vec_incoming[1], vec_incoming[0])
+        
+        # acc_theta_bounds = (, (theta_incoming+np.pi/4)/(2*np.pi))
+        ic_theta = (theta_incoming - np.pi/2) + (np.pi) *(a_t[0])
+        # print(theta_incoming, ic_theta)
+        ic_mag = 5 + 10*a_t[1]
+        
+        self.a_t = ic_mag*np.array([np.cos(ic_theta), np.sin(ic_theta)])
 
+        super().__init__(order, waypoints, time, log_level)
+        
         # setup constraints
         if self.log_level>=LogLevel.INFO:
             print("[Optimizer] Setting up constraints")
@@ -144,7 +159,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
 
         # last waypoint
         m = self.m
-        for n in range(self.n):
+        for n in range(1,self.n):
             A_ep_i = [0]*2*self.n*(m-1)
             A_ep_i.extend([fact(j,n)*pow(self.t[m], j-n) for j in range(2*self.n)])	
             A_ep_i.extend([0]*2*self.n*(self.m-m))
@@ -183,7 +198,20 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             # only n coefficients out of 2n will be active. Need to set H accordingly
             self.H[2*self.n*m:2*self.n*(m+1), 2*self.n*m:2*self.n*(m+1)] = self.get_H_1seg(self.t[m+1])
 
-        self.f = np.zeros(2*self.n*self.m)
+        # self.f = np.zeros(2*self.n*self.m)
+
+        # self.f = np.zeros(self.H.shape[0])
+        a_t_x = AMAX*np.cos(self.theta_t)
+        a_t_y = AMAX*np.sin(self.theta_t)
+        self.a_t = np.array([a_t_x, a_t_y])
+        if self.log_level >= LogLevel.DEBUG:
+            print("Target acc. at interception: ", a_t_x, a_t_y)
+        t1 = self.t[1]
+        self.f = np.array([
+            0,0,0,0,0,0,
+            0, 0, -4*a_t_x, -12*t1*a_t_x, -24*a_t_x*t1**2, -40*a_t_x*t1**3
+            ])
+
 
     def get_H_1seg(self, T):
         """Quadratic Cost matrix for integration of a squared n degree polynomial"""
@@ -203,23 +231,23 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         
         return H_seg
 
-
     def optimize(self, plan_order = 0, num_pts=150):
         """
         Return an optimized plan for all dimensions
         """
         print("[Optimizer] Starting optimization...")
-        plan = []
+        coeffs = []
         for l in range(self.l):
-            b_ep = [self.wps[l][0]] + [0]*(self.n-1) + [self.wps[l][-1]] + [0]*(self.n-1)
+            b_ep = [self.wps[l][0]] + [0]*(self.n-1) + [0]*(self.n-1)
             b_con = []
             for i in range(1, self.m):
                 b_con += [self.wps[l][i]]*2 + [0]*self.n 
             b = b_ep + b_con	# continuity RHS
             # print(np.array(self.A))
-            self.sol = solvers.qp(P = matrix(self.H), q=matrix(self.f), A=matrix(np.array(self.A), tc='d'), b=matrix(b, tc='d'))
+            self.sol = solvers.qp(P = matrix(self.H), q=matrix(self.f, tc='d'), A=matrix(np.array(self.A), tc='d'), b=matrix(b, tc='d'))
+            coeffs.extend(self.sol["x"])
 
-            plan.append(self.generate(self.sol["x"], order = plan_order, d=num_pts))
+        plan = self.generate(coeffs, order = plan_order, dt=0.05)
         print("[Optimizer] Done.")
         return np.array(plan).T
 
@@ -233,8 +261,8 @@ class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
         super().__init__(order, waypoints, time)
 
 class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
-    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO) -> None:
-        super().__init__(order, waypoints, time, log_level)
+    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO, a_t=None) -> None:
+        super().__init__(order, waypoints, time, log_level, a_t=a_t)
         
         # print(np.linalg.matrix_rank(self.H), np.linalg.matrix_rank(self.A))
         
@@ -388,9 +416,17 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
         self.status = self.sol['status']
         if self.status == 'optimal':
             self.cost = self.sol['primal objective']
-            pos = self.generate(self.sol['x'], dt=0.1, order=0)
+            pos = self.generate(self.sol['x'], dt=0.1, order=0) # coarse discretization is fine 
+            acc = self.generate(self.sol['x'], dt=0.05, order=2) # need finer discretization because acc is more senstive
+
+            # penalize geofence //  try to add this in linear quadratic program 
             if np.any(pos > np.array([1,2])+0.1) or np.any(pos<np.array([-1,0])-0.1):
                 self.cost += 100000
+
+            # penalise ovreall acceleration magnitude // is nonlinear
+            if np.max(np.linalg.norm(acc, axis=1))>AMAX:
+                self.cost += 100000
+            
         elif self.status == 'unknown':
             self.cost = 100000
         if self.log_level >= LogLevel.INFO:
@@ -402,6 +438,7 @@ class MinAcc2WP2D(MinVelAccJerkSnapCrackPop):
         """works only for two segments, some hardcoding but fast"""
         C = np.array(coeffs_raw).reshape(self.l, self.m, 2*self.n) # coefficients
         self.tvec = np.arange(0,sum(self.t)+dt, dt)
+        self.tvec[-1] = sum(self.t) # last point is missed out when doing np arange
 
         diff = [fact(j,order) for j in range(2*self.n)]        
         time_powers = np.concatenate([[0]*order, np.arange(2*self.n -order)])
@@ -568,17 +605,13 @@ class MinAcc3WP2D(MinAcc2WP2D):
         return plan
 
 class MinJerk2WP2D(MinAcc2WP2D):
-    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO, theta_t = None) -> None:
-        self.theta_t = 6.28*theta_t
-        super().__init__(order, waypoints, time, log_level)
-        
-
+    def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO, a_t = None) -> None:    
+        super().__init__(order, waypoints, time, log_level, a_t=a_t)
+    
     def setup_constraints(self):
         t0 = self.t[0] # just 0
         t1 = self.t[1]
         t2 = self.t[2] + t1
-
-        # acc_t = wp
 
         self.A = np.array([
             ## X
@@ -645,17 +678,10 @@ class MinJerk2WP2D(MinAcc2WP2D):
 
         ])
 
-
         self.b = np.array([
             self.wps[0][0], 0, 0, 0,0,   self.wps[0][1], self.wps[0][1], 0,0, 0,0,
             self.wps[1][0], 0, 0, 0,0,   self.wps[1][1], self.wps[1][1], 0,0, 0,0,
         ])
-
-        # print(self.A)
-        # self.b = np.array([
-        #     self.wps[0][0], 0, 0, self.wps[0][1], 0, 0,   0,0,0,
-        #     self.wps[1][0], 0, 0, self.wps[1][1], 0, 0,   0,0,0
-        # ])
 
         self.G = np.array([
 
@@ -683,13 +709,34 @@ class MinJerk2WP2D(MinAcc2WP2D):
             [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0,  2*t2**0,  6*t2**1,  12*t2**2,  20*t2**3,], #  acceleration continuity at mid point
             [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0, -2*t2**0, -6*t2**1, -12*t2**2, -20*t2**3,], #  acceleration continuity at mid point
             
+            # wp mid 1 acceleration box
+            # [0, 0, 0, 0, 0, 0,     0, 0,  2*((t2+t1)/4)**0,  6*((t2+t1)/4)**1,  12*((t2+t1)/4)**2,  20*((t2+t1)/4)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, -2*((t2+t1)/4)**0, -6*((t2+t1)/4)**1, -12*((t2+t1)/4)**2, -20*((t2+t1)/4)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0,  2*((t2+t1)/4)**0,  6*((t2+t1)/4)**1,  12*((t2+t1)/4)**2,  20*((t2+t1)/4)**3], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0, -2*((t2+t1)/4)**0, -6*((t2+t1)/4)**1, -12*((t2+t1)/4)**2, -20*((t2+t1)/4)**3], #  acceleration continuity at mid point
+            
+            # wp mid 2 acceleration box
+            # [0, 0, 0, 0, 0, 0,     0, 0,  2*(3*(t2+t1)/4)**0,  6*(3*(t2+t1)/4)**1,  12*(3*(t2+t1)/4)**2,  20*(3*(t2+t1)/4)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, -2*(3*(t2+t1)/4)**0, -6*(3*(t2+t1)/4)**1, -12*(3*(t2+t1)/4)**2, -20*(3*(t2+t1)/4)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0,  2*(3*(t2+t1)/4)**0,  6*((3*t2+t1)/4)**1,  12*(3*(t2+t1)/4)**2,  20*(3*(t2+t1)/4)**3], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0, -2*(3*(t2+t1)/4)**0, -6*((3*t2+t1)/4)**1, -12*(3*(t2+t1)/4)**2, -20*(3*(t2+t1)/4)**3], #  acceleration continuity at mid point
+            
+            # wp mid 3 acceleration box
+            # [0, 0, 0, 0, 0, 0,     0, 0,  2*((t2+t1)/2)**0,  6*((t2+t1)/2)**1,  12*((t2+t1)/2)**2,  20*((t2+t1)/2)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, -2*((t2+t1)/2)**0, -6*((t2+t1)/2)**1, -12*((t2+t1)/2)**2, -20*((t2+t1)/2)**3,  0, 0, 0, 0, 0, 0,     0, 0, 0, 0, 0, 0], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0,  2*((t2+t1)/2)**0,  6*((t2+t1)/2)**1,  12*((t2+t1)/2)**2,  20*((t2+t1)/2)**3], #  acceleration continuity at mid point
+            # [0, 0, 0, 0, 0, 0,     0, 0, 0, 0,0, 0,                                 0, 0, 0, 0, 0, 0,     0, 0, -2*((t2+t1)/2)**0, -6*((t2+t1)/2)**1, -12*((t2+t1)/2)**2, -20*((t2+t1)/2)**3], #  acceleration continuity at mid point
+            
         ])
 
         self.h = np.array([
             1,2,1,0,
             AMAX, AMAX,AMAX, AMAX, 
+            AMAX, AMAX,AMAX, AMAX,
             AMAX, AMAX,AMAX, AMAX, 
-            AMAX, AMAX,AMAX, AMAX, 
+            # AMAX, AMAX,AMAX, AMAX,
+            # AMAX, AMAX,AMAX, AMAX,
+            # AMAX, AMAX,AMAX, AMAX, 
             #amax, amax,amax, amax
         ])
     
@@ -722,16 +769,17 @@ class MinJerk2WP2D(MinAcc2WP2D):
             [0, 0,  24*t**2, 72*t**3,  144*t**4, 240*t**5],
             [0, 0,  40*t**3, 120*t**4, 240*t**5, 400*t**6]
         ])
-    
+     
     def setup_objectives(self):
         t1 = self.t[1]
         t2 = self.t[2] 
         self.H = scipy.linalg.block_diag(0.01*self.get_acc_H(t1), 1*self.get_acc(t1), 0.01*self.get_acc_H(t1), 1*self.get_acc(t1))
 
         self.f = np.zeros(self.H.shape[0])
-        a_t_x = AMAX*np.cos(self.theta_t)
-        a_t_y = AMAX*np.sin(self.theta_t)
-        self.a_t = np.array([a_t_x, a_t_y])
+        a_t_x = self.a_t[0]
+        a_t_y = self.a_t[1]
+
+        # self.a_t = np.array([a_t_x, a_t_y])
         if self.log_level >= LogLevel.DEBUG:
             print("Target acc. at interception: ", a_t_x, a_t_y)
         self.f = np.array([
@@ -740,6 +788,7 @@ class MinJerk2WP2D(MinAcc2WP2D):
             0,0,0,0,0,0,
             0, 0, -4*a_t_y, -12*a_t_y*t1, -24*a_t_y*t1**2, -40*a_t_y*t1**3,
             ])
+
 class MinSnap2WP2D(MinAcc2WP2D):
     def setup_constraints(self):
         t0 = self.t[0] # just 0
@@ -1036,7 +1085,6 @@ class MinSnap3WP2D(MinSnap2WP2D):
         #     0,0,0,0,0,0,0,0,
         #     ])
 
-
 class DynamicTraj():
     def __init__(self,ax, st1, st2, wps, x0) -> None:
         self.ax1 = ax["left"]
@@ -1044,29 +1092,29 @@ class DynamicTraj():
         self.ax3 = ax["lower right"]
         plt.subplots_adjust(left=0.25, bottom=0.55)
 
-        st1.on_changed(self.update_t1)
-        st2.on_changed(self.update_t2)
+        st1.on_changed(self.update_v_theta)
+        st2.on_changed(self.update_v_mag)
         plt.connect('button_press_event', self.on_click)
         
         self.wps =wps
         
         # inits
-        self.t1 = st1.val
-        self.t2 = st2.val
+        self.v_theta = st1.val
+        self.v_mag = st2.val
         self.x0 = x0
-        self.end_x = self.wps[1][0]
-        self.end_y = self.wps[1][1]
+        self.moth_x = -1
+        self.moth_y = 1
         self.cost_txt = None
         self.update()
 
-    def update_t1(self, val):
-        self.t1 = val
+    def update_v_theta(self, val):
+        self.v_theta = val
         self.update()
 
-    def update_t2(self, val):
-        self.t2 = val
+    def update_v_mag(self, val):
+        self.v_mag = val
         self.update()
-    
+
     def update(self):
         # remove pos traj
         for line in self.ax1.lines:
@@ -1087,11 +1135,15 @@ class DynamicTraj():
         if self.cost_txt:
             self.cost_txt.remove()
 
-        self.wps[1][0] = self.end_x
-        self.wps[1][1] = self.end_y
+        # self.wps[1][0] = self.end_x
+        # self.wps[1][1] = self.end_y
+        
+        self.moth_origin = np.array([self.moth_x, self.moth_y])
+        self.moth_vel = np.array([self.v_theta, self.v_mag])
+
         # self.wps[2] = self.wps[1]+(self.wps[1]-self.wps[0])*0.2/np.linalg.norm(self.wps[1]-self.wps[0])
         # self.wps[2] = self.wps[1] + np.array([0,0.1])
-        segment_times = [0,self.t1,self.t2]
+        # segment_times = [0,self.t1,self.t2]
 
         # self.traj_opt.set_waypoints(self.wps)
         # self.traj_opt.set_segment_times([0,self.t1, self.t2])
@@ -1099,7 +1151,7 @@ class DynamicTraj():
 
         # nonlinear optimization
         start = time.perf_counter()
-        nl_optimizer = GDOptTraj(wps, self.x0, log_level=LogLevel.NONE)
+        nl_optimizer = GDOptTraj(wps, self.x0, LogLevel.NONE, self.moth_origin, self.moth_vel)
         x_opt, cost = nl_optimizer.optimize()
         self.t1 = x_opt[0]
         # mvajscp = MinJerk2WP2D(order=3, waypoints=self.wps.T, time=segment_times, log_level=LogLevel.NONE, theta_t=self.theta_opt)
@@ -1110,24 +1162,38 @@ class DynamicTraj():
         vel = mvajscp.evaluate(order = 1, dt=dt)
         acc = mvajscp.evaluate(order = 2, dt=dt)
 
-
+        # print(acc)
+        # print(np.linalg.norm(acc, axis=1))
         ax2.set_xlim([0, sum(x_opt[:2])])
 
         ax3.set_xlim([0, sum(x_opt[:2])])
 
-        # plot side graphs    
+        # plot side graphs   
+        
+        # acc. trajectory 
         self.ax3.plot(mvajscp.tvec, acc[:,0],'r-',linewidth=2)
         self.ax3.plot(mvajscp.tvec, acc[:,1],'b-',linewidth=2)
         self.ax3.plot(mvajscp.tvec, np.linalg.norm(acc, axis=1),'k-',linewidth=3)
 
+        # target acceleration at interception
+        self.ax3.plot(x_opt[0], mvajscp.a_t[0],'rx',markersize=7)        
+        self.ax3.plot(x_opt[0], mvajscp.a_t[1],'bx',markersize=7)
+
+        self.ax3.plot([x_opt[0],x_opt[0]], [-25, 25], "k", linestyle='--')
+
+        # velocity trajectory
         self.ax2.plot(mvajscp.tvec, vel[:,0],'r-',linewidth=2)
         self.ax2.plot(mvajscp.tvec, vel[:,1],'b-',linewidth=2)
         self.ax2.plot(mvajscp.tvec, np.linalg.norm(vel, axis=1),'k-',linewidth=3)
-
+        self.ax2.plot([x_opt[0], x_opt[0]],[-5, 5], "k", linestyle='--')
+        
         # plot main trajectory
         max_acc = np.max(np.abs(acc), axis=0)
         mvajscp.plot(pos, ax=self.ax1)
         self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
+        # print(mvajscp.wps.shape)
+        self.ax1.plot([self.moth_origin[0], mvajscp.wps[0][1]], [self.moth_origin[1], mvajscp.wps[1][1]], "k", linestyle="--")
+        self.ax1.plot(self.moth_origin[0], self.moth_origin[1] ,"kx", markersize=4)
         
         mvajscp.plot_vec(pos, vel,ax=self.ax1 ,color='gray')
         mvajscp.plot_vec(pos, acc,ax=self.ax1 ,color='k')
@@ -1137,23 +1203,22 @@ class DynamicTraj():
 
     def on_click(self, event):
         if event.button is MouseButton.LEFT and event.inaxes==self.ax1:
-            self.end_x = event.xdata
-            self.end_y = event.ydata
+            self.moth_x = event.xdata
+            self.moth_y = event.ydata
             self.update()
 
-
 class GDOptTraj():
-    def __init__(self, wps, x0, log_level) -> None:
+    def __init__(self, wps, x0, log_level, moth_origin, moth_vel) -> None:
         self.wps = wps
         self.x0 = x0
-
+        self.moth_origin = moth_origin
+        self.moth_vel = moth_vel
         # calc 'moving forward' bounds for theta opt
         vec_incoming = self.wps[1] - self.wps[0]
         theta_incoming = np.arctan2(vec_incoming[1], vec_incoming[0])
         
-        theta_bounds = ((theta_incoming-np.pi/4)/(2*np.pi), (theta_incoming+np.pi/4)/(2*np.pi))
 
-        self.bounds = ((0.2, 1.0), (0.2, 1.0), theta_bounds)
+        self.bounds = ((0.1, 1.8), (0.2, 1), (0,1), (0,1))
         self.cons = {
             # "type":'eq', 'fun':lambda x:  x[0] + x[1] - sum(x0),
             "type":'ineq', 'fun':lambda x:  x[0] - x[1],
@@ -1185,12 +1250,16 @@ class GDOptTraj():
     def objective(self, x):
         start = time.perf_counter()
 
-        self.traj_opt = MinJerk2WP2D(order=3, waypoints=self.wps.T, time=[0,x[0],x[1]], log_level=self.log_level, theta_t = x[2])
+        moth_vel = self.moth_vel[1]*np.array([np.cos(self.moth_vel[0]), np.sin(self.moth_vel[0])])
+        self.wps[1] = self.moth_origin + moth_vel*x[0]
+        self.traj_opt = MinJerk2WP2D(order=3, waypoints=self.wps.T, time=[0,x[0],x[1]], log_level=self.log_level, a_t = x[2:])
         
         kinematic_cost = self.traj_opt.optimize()
-        time_cost = np.sum(x[:2]**2)
-        
-        cost = 0.1*kinematic_cost + 50.0*time_cost
+        t1_cost = x[0]**2
+        t2_cost = x[1]**2
+        acc_cost = (x[-1])**2
+        # print(kinematic_cost, t1_cost, t2_cost,acc_cost)
+        cost = 0.1*kinematic_cost + 2*t1_cost + 0.1*t2_cost - 0.1*acc_cost
         
         if self.log_level>=LogLevel.DEBUG:
             print("Optimization time for 1 iteration: ", time.perf_counter() - start)
@@ -1204,8 +1273,6 @@ class GDOptTraj():
             print("Optimal val:", res.x)
         return res.x, res.fun
         
-
-
 if __name__=="__main__":
     wps = np.array([
         [0, -0.7, 1],
@@ -1213,7 +1280,7 @@ if __name__=="__main__":
         # [5., 2.],        
         ]).T
     
-
+    
     wps_sorted, _, idx = np.unique(wps, axis=0, return_index=True, return_inverse=True)
     if len(idx)!=len(wps):
         wps = wps_sorted[idx[:-1],:]
@@ -1222,8 +1289,8 @@ if __name__=="__main__":
 
 
     # starting value
-    time_opt = [0.7, 0.3]
-    x_opt = time_opt + [0.25]
+    time_opt = [0.5, 0.5]
+    x_opt = time_opt + [0.5, 0.5]
 
     
     fig, axes, = plt.subplot_mosaic([['left','upper right'],
@@ -1250,11 +1317,14 @@ if __name__=="__main__":
     # Interactive plot
     axfreq = plt.axes([0.1, 0.1, 0.35, 0.03])
     axamp = plt.axes([0.1, 0.13, 0.35, 0.03])  
+
     # these need to be outside of a function to work (for some crazy reason
-    st1 = Slider(axfreq, 't1', 0.1, 1.2, valinit=x_opt[0], valstep=0.01)
-    st2 = Slider(axamp, 't2', 0.1, 1.2, valinit=x_opt[1], valstep=0.01)
+    st1 = Slider(axfreq, 'dir', 0, 6.28, valinit=0, valstep=0.1)
+    st2 = Slider(axamp, 'mag', 0, 2, valinit=0.5, valstep=0.1)
 
     dtraj = DynamicTraj(axes, st1, st2, wps, x0 = x_opt)
-    
+    print("SDFGd")
     plt.show()
     
+    # traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps.T, time= [0,1,2], theta_t=x_opt[-1])
+    # print(traj_opt.optimize())
