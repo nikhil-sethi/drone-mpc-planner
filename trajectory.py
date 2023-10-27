@@ -24,12 +24,21 @@ class Order(enum.IntEnum):
     JERK = 3
     SNAP = 4
 
-geofence = np.array([(-1, 1), (0, 2), (-1.3, 0)])
+geofence = np.array([(-1, 1), (-1.3, 0), (-2.95, 0)])
 
 class Dynamics:
     AMIN = 5 # minimum acceleration for the norm
     AMAX = 20 # max acceleration for the norm
     VMAX = 4
+    VYMIN = 0
+    VMIN = -10000 
+    G = 9.81
+
+class Interception:
+    PHI = (0,np.pi)
+    THETA = (-np.pi/2, np.pi/2)
+    MAG = (Dynamics.AMIN, Dynamics.AMAX-5)
+
 
 class Weights:
     SmoothSeg = [0.01, 0.001]
@@ -115,8 +124,9 @@ class TrajectoryManager():
             # ax.set_xlim(-1.5,1.5)
             # ax.set_ylim(-1.5,1.5)
             # ax.set_zlim(-1.5,1.5)
-            ax.plot(self.wps[0],self.wps[2],self.wps[1],'b--')
-            ax.plot(points[:,0],points[:,2],points[:,1], 'r-', linewidth=3)
+            
+            ax.plot(self.wps[0],self.wps[2],self.wps[1],'ro')
+            ax.plot(points[:,0],points[:,2],points[:,1], 'b-', linewidth=3)
         elif dims == 2:
             # ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
             ax.plot(points[:,0],points[:,1], 'b-', linewidth=3)
@@ -129,21 +139,32 @@ class TrajectoryManager():
     def plot_vec(self, pos, vec, ax=None, color='k'):
         _, dims = pos.shape
         if dims == 3: # 3D
-            ax.quiver(pos[::2,0], 0, pos[::2,1], vec[::2,0], 0, vec[::2,1], color=color, arrow_length_ratio=0.1)
+            vec = 2*(vec/np.linalg.norm(vec))
+            ax.quiver(pos[::2,0], pos[::2,2], pos[::2,1], vec[::2,0], vec[::2,2], vec[::2,1], color=color)
         else:
             ax.quiver(pos[:,0], pos[:,1], vec[:,0],vec[:,1], color=color, width=0.005)
-        
+
+
+def acc_ic(acc_ic_norm):
+    ic_phi = Interception.PHI[0] + (Interception.PHI[1]-Interception.PHI[0])*(acc_ic_norm[1]) 
+    ic_theta = Interception.THETA[0] + (Interception.THETA[1] - Interception.THETA[0])*(acc_ic_norm[2]) 
+    ic_mag =  Interception.MAG[0] + (Interception.MAG[1] - Interception.MAG[0])*acc_ic_norm[0]
+    
+    return ic_mag * np.array([np.cos(ic_phi), np.sin(ic_phi)*np.cos(ic_theta), -np.sin(ic_phi)*np.sin(ic_theta)])
+
+
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
-    def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO, acc_ic = None) -> None:
+    def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO, acc_ic_norm = None) -> None:
         # calc 'moving forward' bounds for theta opt
 
-        vec_incoming = waypoints[:, 1] - waypoints[:, 0]
-        theta_incoming = np.arctan2(vec_incoming[1], vec_incoming[0])
+        # vec_incoming = waypoints[:, 1] - waypoints[:, 0]
+        # theta_incoming = np.arctan2(vec_incoming[1], vec_incoming[0])
         
-        ic_theta = (theta_incoming - np.pi/2) + (np.pi) *(acc_ic[0])
-        ic_mag = 5 + 10*acc_ic[1]
+        # ic_theta = (theta_incoming - np.pi/2) + (np.pi) *(acc_ic[0])
+
+        self.acc_ic = acc_ic(acc_ic_norm)
+        self.acc_ic[1] -= Dynamics.G
         
-        self.acc_ic = ic_mag*np.array([np.cos(ic_theta), np.sin(ic_theta)])
         super().__init__(order, waypoints, time, log_level)
         
         # setup constraints
@@ -211,7 +232,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             -self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2), # min position at interception
 
 
-
+            
             self.poly_t_n_m(self.t_s[-1], Order.POS, 2),  # max position at end point 
             -self.poly_t_n_m(self.t_s[-1], Order.POS, 2), # min position at end point 
             
@@ -223,6 +244,9 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         
             self.poly_t_n_m(self.t_s[-1], Order.ACC, 2),  # max acc at end point
             -self.poly_t_n_m(self.t_s[-1], Order.ACC, 2), # min acc at end point
+
+            -self.poly_t_n_m(self.t_s[1], Order.VEL, 2), # min position at end point 
+            
             ])
 
     def poly_t_n(self, t, n):
@@ -297,6 +321,15 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
                 b_con += [self.wps[l][i]]*2 + [0]*(self.n+1) # continuity RHS
             b = b_ep + b_con	
             
+            if l == 1: # y axis
+                amax = Dynamics.AMAX - Dynamics.G
+                amin = Dynamics.AMAX + Dynamics.G # this becomes negative
+                vmin = Dynamics.VYMIN
+            else:
+                amax = Dynamics.AMAX
+                amin = Dynamics.AMAX   # this becomes negative
+                vmin = abs(Dynamics.VYMIN)
+
             # inequality constraints RHS // box constraints
             h = [abs(geofence[l][1]), abs(geofence[l][0]), 
                  abs(geofence[l][1]), abs(geofence[l][0]), 
@@ -304,13 +337,13 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
                  abs(geofence[l][1]), abs(geofence[l][0]), 
                  abs(geofence[l][1]), abs(geofence[l][0]), 
                  abs(geofence[l][1]), abs(geofence[l][0]), 
-                 Dynamics.AMAX, Dynamics.AMAX,  
-                 Dynamics.AMAX, Dynamics.AMAX, 
-                 Dynamics.AMAX, Dynamics.AMAX]
+                 amax, amin,  
+                 amax, amin, 
+                 amax, amin,
+                 vmin]
 
             # acceleration at interception depends on dimension
             self.set_acc_t(self.acc_ic[l])
-
             options = {"show_progress":self.log_level>=LogLevel.DEBUG}
             self.sol = solvers.qp(P = matrix(self.H), q=matrix(self.f, tc='d'), A=matrix(np.array(self.A), tc='d'), b=matrix(b, tc='d'), G=matrix(self.G, tc='d'), h = matrix(h, tc='d'), options=options)
             self.status *= int(self.sol["status"] == "optimal")
@@ -328,10 +361,15 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             # penalize geofence //  try to add this in linear quadratic program 
             # if np.any(pos > np.array(geofence)[:2, 1] + 0.05) or np.any(pos<np.array(geofence)[:2,0]-0.05):
             #     self.cost += 100000
-
+            
             # penalise ovreall acceleration magnitude // is nonlinear
             if np.max(np.linalg.norm(acc, axis=1))>Dynamics.AMAX:
                 self.cost += 100000
+        
+            # manually set last waypoint
+            # print(self.wps)
+            self.wps[:,-1] = pos[-1]
+
         if self.log_level >= LogLevel.INFO:
             print("[Optimizer] Done.")
         return self.cost
@@ -344,6 +382,8 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         else:
             soln = self.x_opt
         plan = self.generate(soln, dt=dt, order = order)
+        if order==2:
+            plan[:,1] += 9.81 # always compensating for gravity
         return plan
 
 class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
@@ -1182,14 +1222,15 @@ class MinSnap3WP2D(MinSnap2WP2D):
         #     ])
 
 class DynamicTraj():
-    def __init__(self, axes, st1, st2, uav_origin) -> None:
+    def __init__(self, axes, st1, st2,) -> None:
         self.ax1 = axes["left"]
         self.ax2 = axes["upper right"]
         self.ax3 = axes["lower right"]
 
-        plt.subplots_adjust(left=0.25, bottom=0.55)
-        self.ax1.set_xlim([-1.2, 1.2])
-        self.ax1.set_ylim([-0.3, 2.2])
+        plt.subplots_adjust(left=0.25, bottom=0.15)
+        self.ax1.set_xlim(geofence[0])
+        self.ax1.set_ylim(geofence[2][::-1])
+        self.ax1.set_zlim(geofence[1])
         
         self.ax3.set_ylim([-Dynamics.AMAX-5, Dynamics.AMAX+5])
         self.ax2.set_ylim([-Dynamics.VMAX-1, Dynamics.VMAX+1])
@@ -1201,11 +1242,11 @@ class DynamicTraj():
         st2.on_changed(self.update_v_mag)
         plt.connect('button_press_event', self.on_click)
         
-        self.uav_origin = uav_origin
+        # self.uav_origin = uav_origin
         
         rect = patches.Rectangle(geofence[:2,0], *(geofence[:2,1] - geofence[:2,0]), linewidth=1, edgecolor='r', facecolor='none', linestyle='dashed')
         # Add the patch to the Axes
-        self.ax1.add_patch(rect)
+        # self.ax1.add_patch(rect)
 
         # inits
         self.v_theta = st1.val
@@ -1249,8 +1290,9 @@ class DynamicTraj():
         # nonlinear optimization
         start = time.perf_counter()
         # make sure that the timestep for moth is lesser than lowest t1 bound. because it's an euler simulation
-        moth = Particle(init_state=moth_origin, time_step=0.1, moth_vel=moth_vel)
-        nl_optimizer = MothObliterator(uav_origin = uav_origin, log_level=LogLevel.NONE, moth=moth)
+        drone_state = np.array([0, -1 ,  -1  , 0, 0, 0])
+        moth_state = np.array([0.2, -0.7, -1.2, self.v_mag, 0, 0])
+        nl_optimizer = MothObliterator(drone_state = drone_state, moth_state =moth_state, log_level=LogLevel.NONE)
         x_opt, cost = nl_optimizer.optimize()
 
         self.t1 = x_opt[0]
@@ -1258,6 +1300,7 @@ class DynamicTraj():
 
         dt = 0.05
         pos = mvajscp.evaluate(order = 0, dt=dt)
+
         vel = mvajscp.evaluate(order = 1, dt=dt)
         acc = mvajscp.evaluate(order = 2, dt=dt)
 
@@ -1268,28 +1311,31 @@ class DynamicTraj():
         
         # acc. trajectory 
         self.ax3.plot(mvajscp.tvec, acc[:,0],'r-',linewidth=2)
-        self.ax3.plot(mvajscp.tvec, acc[:,1],'b-',linewidth=2)
+        self.ax3.plot(mvajscp.tvec, acc[:,1],'g-',linewidth=2)
+        self.ax3.plot(mvajscp.tvec, acc[:,2],'b-',linewidth=2)
         self.ax3.plot(mvajscp.tvec, np.linalg.norm(acc, axis=1),'k-',linewidth=3)
 
         # target acceleration at interception
         self.ax3.plot(x_opt[0], mvajscp.acc_ic[0],'rx',markersize=7)        
-        self.ax3.plot(x_opt[0], mvajscp.acc_ic[1],'bx',markersize=7)
+        self.ax3.plot(x_opt[0], mvajscp.acc_ic[1]+ 9.81,'gx',markersize=7)
+        self.ax3.plot(x_opt[0], mvajscp.acc_ic[2],'bx',markersize=7)
 
         self.ax3.plot([x_opt[0],x_opt[0]], [-Dynamics.AMAX-5, Dynamics.AMAX+5], "k", linestyle='--')
 
         # velocity trajectory
         self.ax2.plot(mvajscp.tvec, vel[:,0],'r-',linewidth=2)
-        self.ax2.plot(mvajscp.tvec, vel[:,1],'b-',linewidth=2)
+        self.ax2.plot(mvajscp.tvec, vel[:,1],'g-',linewidth=2)
+        self.ax2.plot(mvajscp.tvec, vel[:,2],'b-',linewidth=2)
         self.ax2.plot(mvajscp.tvec, np.linalg.norm(vel, axis=1),'k-',linewidth=3)
         self.ax2.plot([x_opt[0], x_opt[0]],[-Dynamics.VMAX-1, Dynamics.VMAX+1], "k", linestyle='--')
         
         # plot main trajectory
         max_acc = np.max(np.abs(acc), axis=0)
         mvajscp.plot(pos, ax=self.ax1)
-        self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
+        # self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
 
         moth_history = np.array(nl_optimizer.moth.history)
-        self.ax1.plot(moth_history[:,0], moth_history[:,1], 'kx', linestyle="--")
+        self.ax1.plot(moth_history[:,0], moth_history[:,2], moth_history[:,1], 'kx', linestyle="--")
 
         mvajscp.plot_vec(pos, vel,ax=self.ax1 ,color='gray')
         mvajscp.plot_vec(pos, acc,ax=self.ax1 ,color='k')
@@ -1301,7 +1347,7 @@ class DynamicTraj():
         if event.button is MouseButton.LEFT and event.inaxes==self.ax1:
             self.moth_x = event.xdata
             self.moth_y = event.ydata
-            self.update()
+            # self.update()
 
 class Policy:
     def __call__(self, state) -> Any:
@@ -1314,9 +1360,14 @@ class Constant(Policy):
     def __call__(self, state) -> Any:
         return self.action
 
-class ConstantThetaMag(Constant):
+class ConstantThetaMag2D(Constant):
     def __call__(self, state) -> Any:
         return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
+
+# class ConstantThetaMag2D(Constant):
+#     def __call__(self, state) -> Any:
+#         return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
+
 
 class Random(Policy):
     def __init__(self, mean = [0,0], variance = [1,1]) -> None:
@@ -1332,15 +1383,20 @@ class Particle:
         self.init_state = init_state.astype(float) # dimsx2 (position and velocity)
         self.dt = time_step 
 
-        self.policy = ConstantThetaMag(action=kwargs["moth_vel"])
+        # self.policy = ConstantThetaMag2D(action=kwargs["moth_vel"])
+        self.policy = Constant(action=init_state[n_dims:])
         # self.policy = Random([0,0], [2,2])
 
-        self.history = [self.init_state]
+        self.history = [self.init_state[:n_dims]]
 
     def xdot(self, _x, _u):
         dx = _u[0]
-        dy = _u[1]
-        return [dx, dy]
+        dy = _u[2]
+        dz = _u[1]
+        du = 0
+        dv = 0
+        dw = 0
+        return [dx, dy, dz, du, dv, dw]
 
     def update(self):
         # print(self.state, action)
@@ -1350,28 +1406,34 @@ class Particle:
     def simulate(self, Ts):
         """Simulate system for Ts seconds"""
         self.state = self.init_state.copy()
-        self.history = [self.state]
+        self.history = [self.state[:n_dims]]
         N = int(Ts/self.dt)
         for _ in range(N):
             self.update()
-            self.history.append(self.state)
+            self.history.append(self.state[:n_dims])
 
         return self.state
 
 class MothObliterator():
-    def __init__(self, uav_origin, log_level, moth:Particle) -> None:
-        self.uav_origin = uav_origin
-        self.moth = moth
+    def __init__(self, drone_state, moth_state, log_level) -> None:
+        self.drone_state = drone_state
+        # drone_state = 
+        self.moth = Particle(init_state=moth_state, time_step=0.1)
+
+        self.moth_state = np.array([])
         self.log_level = log_level
 
         # nonlinear optimization params
         self.x0 = [0.5]*n_vars 
-        self.bounds = ((0.1, 1.8), (0.2, 1), (0,1), (0,1))
+        self.x0[-1] = 0.58  # starting pitch angle (try to be close to +g as possible)
+        self.bounds = ((0.1, 1.8), (0.2, 1), (0,1), (0,1), (0,1))
+
+
         self.cons = {
             # "type":'eq', 'fun':lambda x:  x[0] + x[1] - sum(x0),
-            "type":'ineq', 'fun':lambda x:  x[0] - x[1],
+            "type":'ineq', 'fun':lambda x:  acc_ic(x[2:])[1] - Dynamics.G
         }
-        self.cons = None
+        # self.cons = None
         
     def get_gradient(self, x):
         h = 0.02
@@ -1400,18 +1462,20 @@ class MothObliterator():
         # ic_point = self.moth.init_state + self.moth.policy(self.moth.init_state)*x[0]
 
         ic_point = self.moth.simulate(x[0]) # simulate moth for t1 seconds
+        # ic_point = np.array([0.5, -0.5, -0.5])
         wps = np.array([
-            uav_origin,
-            ic_point, 
-            np.empty_like(uav_origin) # dummy end point. optimized internally
+            self.drone_state[:n_dims],
+            ic_point[:n_dims], 
+            np.empty_like(self.drone_state[:n_dims]) # dummy end point. optimized internally
             ])
-        
-        self.traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps.T, time=[0,x[0],x[1]], acc_ic=x[2:], log_level=LogLevel.NONE)
+        # print(wps)
+
+        self.traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps.T, time=[0,x[0],x[1]], acc_ic_norm=x[2:], log_level=LogLevel.NONE)
 
         kinematic_cost = self.traj_opt.optimize()
         t1_cost = x[0]**2
         t2_cost = x[1]**2
-        acc_max_cost = (x[-1])**2
+        acc_max_cost = (x[2])**2
         cost = 0.1*kinematic_cost + Weights.MinTime[0]*t1_cost + Weights.MinTime[1]*t2_cost - Weights.MaxAccIC*acc_max_cost
         
         if self.log_level>=LogLevel.DEBUG:
@@ -1428,14 +1492,18 @@ class MothObliterator():
         
 if __name__=="__main__":
 
-    n_dims = 2
-    uav_origin = np.array([1]*n_dims)
-    n_vars = 4
+    n_dims = 3
+    n_vars = 5
 
     fig, axes, = plt.subplot_mosaic([['left','upper right'],
                                      ['left','lower right']],
-                                     figsize=(10.5, 5.5), layout="tight")
-
+                                     figsize=(10.5, 5.5), layout="tight",
+                                     subplot_kw={})
+    
+    ss = axes["left"].get_subplotspec()
+    axes["left"].remove()
+    axes["left"] = fig.add_subplot(ss, projection='3d')
+        
     # Interactive plot
     ax_dir = plt.axes([0.1, 0.1, 0.35, 0.03])
     ax_mag = plt.axes([0.1, 0.13, 0.35, 0.03])  
@@ -1444,6 +1512,6 @@ if __name__=="__main__":
     st1 = Slider(ax_dir, 'dir', 0, 6.28, valinit=0, valstep=0.1)
     st2 = Slider(ax_mag, 'mag', 0, 2, valinit=0.5, valstep=0.1)
 
-    dtraj = DynamicTraj(axes, st1, st2, uav_origin)
+    dtraj = DynamicTraj(axes, st1, st2)
     plt.show()
     
