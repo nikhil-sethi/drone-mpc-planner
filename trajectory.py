@@ -64,9 +64,12 @@ class TrajectoryManager():
         
         self.wps = waypoints
         
-        self.l  = len(waypoints) # number of dimensions
+        self.n_wps = len(waypoints)
+        self.l = n_dims
+        self.m = self.n_wps - 1 # num segments
+        # self.l  = len(waypoints) # number of dimensions
         
-        self.m = len(waypoints[0])-1 # number of segments
+        # self.m = len(waypoints[0])-1 # number of segments
         
         assert self.m >=1, "There must be at least two waypoints for a path"
         self.n = order # order of control/number of derivatives
@@ -80,7 +83,7 @@ class TrajectoryManager():
             # self.t[1]-=0.1
             # self.t[-2]-=0.2
         elif type(time) is list:
-            assert len(time) == self.m+1, "Number of timestamps must be equal to the number of waypoints."
+            assert len(time) == self.n_wps, "Number of timestamps must be equal to the number of waypoints."
             self.t = time
 
         self.t_s = np.cumsum(self.t) # stamped times at waypoints
@@ -125,7 +128,7 @@ class TrajectoryManager():
             # ax.set_ylim(-1.5,1.5)
             # ax.set_zlim(-1.5,1.5)
             
-            ax.plot(self.wps[0],self.wps[2],self.wps[1],'ro')
+            ax.plot(self.wps[:, 0],self.wps[:, 2],self.wps[:, 1],'ro', markersize=8)
             ax.plot(points[:,0],points[:,2],points[:,1], 'b-', linewidth=3)
         elif dims == 2:
             # ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
@@ -144,14 +147,12 @@ class TrajectoryManager():
         else:
             ax.quiver(pos[:,0], pos[:,1], vec[:,0],vec[:,1], color=color, width=0.005)
 
-
 def acc_ic(acc_ic_norm):
     ic_phi = Interception.PHI[0] + (Interception.PHI[1]-Interception.PHI[0])*(acc_ic_norm[1]) 
     ic_theta = Interception.THETA[0] + (Interception.THETA[1] - Interception.THETA[0])*(acc_ic_norm[2]) 
     ic_mag =  Interception.MAG[0] + (Interception.MAG[1] - Interception.MAG[0])*acc_ic_norm[0]
     
     return ic_mag * np.array([np.cos(ic_phi), np.sin(ic_phi)*np.cos(ic_theta), -np.sin(ic_phi)*np.sin(ic_theta)])
-
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
     def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO, acc_ic_norm = None) -> None:
@@ -161,12 +162,16 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         # theta_incoming = np.arctan2(vec_incoming[1], vec_incoming[0])
         
         # ic_theta = (theta_incoming - np.pi/2) + (np.pi) *(acc_ic[0])
+        
 
         self.acc_ic = acc_ic(acc_ic_norm)
         self.acc_ic[1] -= Dynamics.G
         
         super().__init__(order, waypoints, time, log_level)
-        
+
+        self.wps_pos = self.wps[:, :3]
+        self.wps_vel = self.wps[:, 3:]
+
         # setup constraints
         if self.log_level>=LogLevel.INFO:
             print("[Optimizer] Setting up constraints")
@@ -230,7 +235,6 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             
             self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2),  # max position at interception 
             -self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2), # min position at interception
-
 
             
             self.poly_t_n_m(self.t_s[-1], Order.POS, 2),  # max position at end point 
@@ -315,12 +319,14 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         self.cost = 0
         for l in range(self.l):   
             # equality constraints RHS
-            b_ep = [self.wps[l][0]] + [0]*(self.n-1) + [0]*(self.n-1)
+            b_ep = [self.wps_pos[0, l]] + [self.wps_vel[0, l]] + [0]*(self.n-2)  # first waypoint
+            b_ep += [self.wps_vel[self.m, l]] + [0]*(self.n-2) # last waypoint (no position)
+
             b_con = []
             for i in range(1, self.m):
-                b_con += [self.wps[l][i]]*2 + [0]*(self.n+1) # continuity RHS
+                b_con += [self.wps_pos[i, l]]*2 + [0]*(self.n+1) # continuity RHS
             b = b_ep + b_con	
-            
+
             if l == 1: # y axis
                 amax = Dynamics.AMAX - Dynamics.G
                 amin = Dynamics.AMAX + Dynamics.G # this becomes negative
@@ -358,17 +364,13 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             pos = self.generate(self.x_opt, dt=0.1, order=0) # coarse discretization is fine 
             acc = self.generate(self.x_opt, dt=0.05, order=2) # need finer discretization because acc is more senstive
 
-            # penalize geofence //  try to add this in linear quadratic program 
-            # if np.any(pos > np.array(geofence)[:2, 1] + 0.05) or np.any(pos<np.array(geofence)[:2,0]-0.05):
-            #     self.cost += 100000
-            
             # penalise ovreall acceleration magnitude // is nonlinear
             if np.max(np.linalg.norm(acc, axis=1))>Dynamics.AMAX:
                 self.cost += 100000
         
             # manually set last waypoint
-            # print(self.wps)
-            self.wps[:,-1] = pos[-1]
+
+            self.wps[-1,:3] = pos[-1]
 
         if self.log_level >= LogLevel.INFO:
             print("[Optimizer] Done.")
@@ -383,7 +385,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             soln = self.x_opt
         plan = self.generate(soln, dt=dt, order = order)
         if order==2:
-            plan[:,1] += 9.81 # always compensating for gravity
+            plan[:,1] +=  Dynamics.G # always compensating for gravity
         return plan
 
 class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
@@ -1317,7 +1319,7 @@ class DynamicTraj():
 
         # target acceleration at interception
         self.ax3.plot(x_opt[0], mvajscp.acc_ic[0],'rx',markersize=7)        
-        self.ax3.plot(x_opt[0], mvajscp.acc_ic[1]+ 9.81,'gx',markersize=7)
+        self.ax3.plot(x_opt[0], mvajscp.acc_ic[1]+ Dynamics.G,'gx',markersize=7)
         self.ax3.plot(x_opt[0], mvajscp.acc_ic[2],'bx',markersize=7)
 
         self.ax3.plot([x_opt[0],x_opt[0]], [-Dynamics.AMAX-5, Dynamics.AMAX+5], "k", linestyle='--')
@@ -1464,13 +1466,13 @@ class MothObliterator():
         ic_point = self.moth.simulate(x[0]) # simulate moth for t1 seconds
         # ic_point = np.array([0.5, -0.5, -0.5])
         wps = np.array([
-            self.drone_state[:n_dims],
-            ic_point[:n_dims], 
-            np.empty_like(self.drone_state[:n_dims]) # dummy end point. optimized internally
+            self.drone_state,
+            ic_point[:], 
+            np.empty_like(self.drone_state[:]) # dummy end point. optimized internally
             ])
         # print(wps)
 
-        self.traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps.T, time=[0,x[0],x[1]], acc_ic_norm=x[2:], log_level=LogLevel.NONE)
+        self.traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps, time=[0,x[0],x[1]], acc_ic_norm=x[2:], log_level=LogLevel.NONE)
 
         kinematic_cost = self.traj_opt.optimize()
         t1_cost = x[0]**2
