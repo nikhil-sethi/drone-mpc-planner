@@ -26,6 +26,7 @@
 #include "flightarea/flightarea.h"
 #include "smoother.h"
 #include "multimodule.h"
+#include "elrs.h"
 #include "replayrc.h"
 #include "stopwatch.h"
 #include "drone.h"
@@ -586,7 +587,7 @@ void check_exit_conditions(double frame_time, bool escape_key_pressed) {
             if (rc->init_package_failure()) {
                 exit_now = true;
                 communicate_state(es_rc_problem);
-                cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
+                cmdcenter.reset_commandcenter_status_file("TX init error", true);
             } else if (rc->bf_version_error()) {
                 exit_now = true;
                 communicate_state(es_drone_version_mismatch);
@@ -619,6 +620,10 @@ void check_exit_conditions(double frame_time, bool escape_key_pressed) {
                 } else if (rc->bf_uid_str() == "quto") {
                     std::cout << "Detected a drone config that fits, reloading!" << std::endl;
                     pparams.drone = drone_quto;
+                    pparams.serialize(pats_xml_fn);
+                } else if (rc->bf_uid_str() == "jorn") {
+                    std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                    pparams.drone = drone_jornboard;
                     pparams.serialize(pats_xml_fn);
                 }
                 if (!patser.drone.in_flight()) {
@@ -703,6 +708,7 @@ void print_terminal(StereoPair *frame) {
                    ", light: " << to_string_with_precision(light_level, 2) <<
                    " " << rc->telemetry.batt_cell_v <<
                    "v, rssi: " << static_cast<int>(rc->telemetry.rssi) <<
+                   ", rc%: " << static_cast<float>(rc->telemetry.uplink_quality) <<
                    ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
                    ", arm: " << static_cast<int>(rc->telemetry.arming_state) <<
                    ", t_base: " << static_cast<int>(baseboard_link.uptime());
@@ -819,8 +825,8 @@ void init_loggers() {
         logger_video_ids << "encoded_img_count" << ";" << "imgcount" << ";" << "rs_id" << ";" << "time" << '\n';
     }
 
-    if (rc->connected())
-        rc->init_logger();
+    // if (rc->connected())
+    rc->init_logger();
     baseboard_link.init_logger();
 }
 
@@ -940,18 +946,30 @@ void check_hardware() {
         // init rc
         if (airsim_mode) {
             rc = std::unique_ptr<RC>(new AirSimController());
+        } else if (dparams.tx == tx_elrs) {
+            rc = std::unique_ptr<RC>(new ELRS());
         } else if (dparams.tx != tx_none) {
             rc = std::unique_ptr<RC>(new MultiModule());
         }
         if (!rc->connect()) {
-            std::ofstream(data_output_dir + "no_multimodule_flag").close();
-            std::string rc_type = (airsim_mode) ? "AirSim" : "MultiModule";
+            std::ofstream(data_output_dir + "no_tx_module_flag").close();
+            std::string rc_type = (airsim_mode) ? "AirSim" : "TX module";
+            std::cout << "Error: Failed to initialize TX Module." << std::endl;
+            if (pparams.drone == drone_jornboard) { // temporary fix to switch between MultiModule and ELRS
+                std::cout << "Switching from ELRS to MultiModule" << std::endl;
+                pparams.drone = drone_anvil_superbee;
+                pparams.serialize(pats_xml_fn);
+            } else {
+                std::cout << "Switching from MultiModule to ELRS" << std::endl;
+                pparams.drone = drone_jornboard;
+                pparams.serialize(pats_xml_fn);
+            } // end temporary fix
             throw std::runtime_error("cannot connect to " + rc_type);
         }
     } else if (log_replay_mode) {
         rc = std::unique_ptr<RC>(new ReplayRC(replay_dir));
     } else {
-        rc = std::unique_ptr<RC>(new MultiModule());
+        rc = std::unique_ptr<RC>(new ELRS());
     }
     //init cam and check version
     std::cout << "Connecting camera..." << std::endl;

@@ -27,19 +27,19 @@ accelerometer_trim_data AccelerometerTrim::trim_commands(double time) {
                 } else {
                     trim_state = init_trim_pitch;
                 }
-                ret.roll = RC_MIDDLE;
-                ret.pitch = RC_MIDDLE;
+                ret.roll = BF_CHN_MID;
+                ret.pitch = BF_CHN_MID;
                 break;
         } case trim_roll: {
                 if (abs((time - time_start_trimming_roll) / bf_stick_autorepeat) - 0.5 < abs(delta_roll_trim_cycles)) {
                     if (delta_roll_trim_cycles < 0)
-                        ret.roll = RC_BOUND_MAX;
+                        ret.roll = BF_CHN_MAX;
                     else
-                        ret.roll = RC_BOUND_MIN;
-                    ret.pitch = RC_MIDDLE;
+                        ret.roll = BF_CHN_MIN;
+                    ret.pitch = BF_CHN_MID;
                 } else {
-                    ret.roll = RC_MIDDLE;
-                    ret.pitch = RC_MIDDLE;
+                    ret.roll = BF_CHN_MID;
+                    ret.pitch = BF_CHN_MID;
                     integrator_hovering_roll = 0;
                     trim_state = init_trim_pitch;
                     time_start_trimming_roll = -1;
@@ -57,19 +57,19 @@ accelerometer_trim_data AccelerometerTrim::trim_commands(double time) {
                     // trigger_reset_state(time);
                     ret.finished = true;
                 }
-                ret.roll = RC_MIDDLE;
-                ret.pitch = RC_MIDDLE;
+                ret.roll = BF_CHN_MID;
+                ret.pitch = BF_CHN_MID;
                 break;
         } case trim_pitch: {
                 if (abs((time - time_start_trimming_pitch) / bf_stick_autorepeat) - 0.5 < abs(delta_pitch_trim_cycles)) {
                     if (delta_pitch_trim_cycles < 0)
-                        ret.pitch = RC_BOUND_MAX;
+                        ret.pitch = BF_CHN_MAX;
                     else
-                        ret.pitch = RC_BOUND_MIN;
-                    ret.roll = RC_MIDDLE;
+                        ret.pitch = BF_CHN_MIN;
+                    ret.roll = BF_CHN_MID;
                 } else {
-                    ret.roll = RC_MIDDLE;
-                    ret.pitch = RC_MIDDLE;
+                    ret.roll = BF_CHN_MID;
+                    ret.pitch = BF_CHN_MID;
                     // trigger_reset_state(time);
                     ret.finished = true;
                     integrator_hovering_pitch = 0;
@@ -84,10 +84,10 @@ accelerometer_trim_data AccelerometerTrim::trim_commands(double time) {
 
 accelerometer_trim_data AccelerometerTrim::reset_commands(double time) {
     accelerometer_trim_data ret;
-    ret.throttle = RC_BOUND_MIN;
-    ret.roll = RC_MIDDLE;
-    ret.pitch = RC_MIDDLE;
-    ret.yaw = RC_MIDDLE;
+    ret.throttle = BF_CHN_MIN;
+    ret.roll = BF_CHN_MID;
+    ret.pitch = BF_CHN_MID;
+    ret.yaw = BF_CHN_MID;
 
     const double arm_duration = 1.1;
     switch (reset_state) {
@@ -119,4 +119,3 @@ float AccelerometerTrim::calibration_error(float integrator, trim_axes trim_axis
     else
         return atan2f(dparams.ki_pos_pitch_hover * integrator, 9.81) * rad2deg * 10;
 }
-

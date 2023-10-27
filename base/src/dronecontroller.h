@@ -1,7 +1,7 @@
 #pragma once
 #include "dronetracker.h"
 #include "joystick.hpp"
-#include "multimodule.h"
+#include "elrs.h"
 #include "common.h"
 #include "flightarea/flightarea.h"
 #include "tracking.h"
@@ -147,7 +147,7 @@ private:
     double interception_start_time = 0;
     double in_flight_start_time = -1;
     double ff_land_start_time = 0;
-    int ff_auto_throttle_start = RC_BOUND_MIN;
+    int ff_auto_throttle_start = BF_CHN_MIN;
     float auto_burn_duration = 0;
     uint n_invalid_or_bad_telemetry_package = 0; // Counts when telemetry holds imposiible (invalid) data or (bad) data which will result in some undesired system state
     bool landing_att_calibration_msg_printed = false;
@@ -184,12 +184,12 @@ private:
     uint16_t initial_hover_throttle_guess_non3d;
     uint16_t spinup_throttle() {
         if (dparams.mode3d)
-            return RC_MIDDLE + 1;
+            return BF_CHN_MID + 1;
         else {
             return dparams.spinup_throttle_non3d;
         }
     }
-
+    int mm_to_bf(int mm_throttle);
     float thrust_to_throttle(float thrust);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
     DroneController::integrator_state horizontal_integrators(double time);
@@ -329,15 +329,15 @@ public:
 
     void nav_waypoint_moved(double time) { time_waypoint_moved = time; }
 
-    int joy_throttle = RC_BOUND_MIN;
-    int joy_roll = RC_MIDDLE;
-    int joy_pitch = RC_MIDDLE;
-    int joy_yaw = RC_MIDDLE;
+    int joy_throttle = BF_CHN_MIN;
+    int joy_roll = BF_CHN_MID;
+    int joy_pitch = BF_CHN_MID;
+    int joy_yaw = BF_CHN_MID;
 
-    int auto_throttle = RC_BOUND_MIN;
-    int auto_roll = RC_MIDDLE;
-    int auto_pitch = RC_MIDDLE;
-    int auto_yaw = RC_MIDDLE;
+    int auto_throttle = BF_CHN_MIN;
+    int auto_roll = BF_CHN_MID;
+    int auto_pitch = BF_CHN_MID;
+    int auto_yaw = BF_CHN_MID;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -346,7 +346,7 @@ public:
         float throttle = _rc->throttle;
         if (log_replay_mode)
             throttle  = _log_auto_throttle;
-        throttle /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
+        throttle /= static_cast<float>(BF_CHN_MAX - BF_CHN_MIN);
         return throttle;
     }
     //Normalized roll, between [-1 .. 1].
@@ -355,8 +355,8 @@ public:
         float roll = _rc->roll;
         if (log_replay_mode)
             roll  = _log_auto_roll;
-        roll -= RC_MIDDLE;
-        roll /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
+        roll -= BF_CHN_MID;
+        roll /= static_cast<float>(BF_CHN_MAX - BF_CHN_MIN);
         return roll;
     }
     //Normalized pitch, between [0 .. 1].
@@ -365,15 +365,15 @@ public:
         float pitch = _rc->pitch;
         if (log_replay_mode)
             pitch = _log_auto_pitch;
-        pitch -= RC_MIDDLE;
-        pitch /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
+        pitch -= BF_CHN_MID;
+        pitch /= static_cast<float>(BF_CHN_MAX - BF_CHN_MIN);
         return pitch;
     }
 
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
-        command -= RC_MIDDLE;
-        float commandf = static_cast<float>(command) / static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
+        command -= BF_CHN_MID;
+        float commandf = static_cast<float>(command) / static_cast<float>(BF_CHN_MAX - BF_CHN_MIN);
         return commandf * max_bank_angle;
     }
 

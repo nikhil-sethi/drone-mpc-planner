@@ -19,43 +19,24 @@
 #define MULTI_CHAN_BITS                     11
 #define RXBUFFER_SIZE                       36
 
-#define RC_BOUND_MIN                       224   // 1000
-#define RC_BOUND_MAX                       1824 // 2000
-#define RC_BOUND_RANGE    (RC_BOUND_MAX -  RC_BOUND_MIN)
-#define RC_MIN_THRESH                      300   // 1048
-#define RC_MAX_THRESH                      1750 // 1800
-#define RC_MIN                             0   //  1000
-#define RC_MAX                             2048 // 2000
-#define RC_MIDDLE                          1024 // 1500
-
 #define BF_CHN_MIN                         1000
 #define BF_CHN_MAX                         2000
+#define BF_CHN_MID                         1500
 #define BF_CHN_OFFSET                      1000
-
+#define BF_CHN_RANGE                       1000
 
 enum betaflight_mode {
-    bf_angle = RC_BOUND_MIN,
-    bf_acro = (RC_MIDDLE + RC_BOUND_MIN)
-};
-enum betaflight_headless_mode { // value_betaflight = 1000/1600 * value_here + 1000
-                                // value_here = 1600/1000 * (value_betaflight - 1000)
-    bf_headless_enabled = 0,
-    bf_headless_disabled = 50, // semi random number that gives a nice detectable change in the mode switch (1030 in BF), but is small enough to not interfere with the normal modes (can be made smaller prolly if necessary)
-    bf_yaw_reset = 100,
-    bf_PID_loop_disabled = 150,
-    bf_spin_motor = 200,
-    bf_spin_motor_reversed = 250,
-    bf_airmode = 300,
-    bf_sleep =  408
+    bf_angle = BF_CHN_MIN,
+    bf_acro = (BF_CHN_MID + BF_CHN_MIN)
 };
 static const char *armed_names[] = {"rc_disarmed", "rc_armed"};
 enum betaflight_arming {
-    bf_disarmed = RC_BOUND_MIN,
-    bf_armed = RC_BOUND_MAX
+    bf_disarmed = BF_CHN_MIN,
+    bf_armed = BF_CHN_MAX
 };
 enum betaflight_turtle {
-    bf_turtle_disabled = RC_BOUND_MIN,
-    bf_turtle_enabled = RC_BOUND_MAX
+    bf_turtle_disabled = BF_CHN_MIN,
+    bf_turtle_enabled = BF_CHN_MAX
 };
 
 // these data identifiers are obtained from https://github.com/opentx/opentx/blob/master/radio/src/telemetry/frsky_hub.h
@@ -126,16 +107,27 @@ struct Telemetry {
     int             bf_minor;
     int             bf_patch;
     std::string     bf_uid_str;
+    uint8_t         uplink_quality;
 };
 class RC {
 
 public:
-    uint16_t mode = RC_BOUND_MIN; // set to angle mode in BF
-    int roll = RC_MIDDLE, pitch = RC_MIDDLE, yaw = RC_MIDDLE;
-    int throttle = RC_BOUND_MIN;
-    int arm_switch = RC_BOUND_MIN;
-    int turtle_mode = RC_BOUND_MIN;
+    uint16_t mode = BF_CHN_MIN; // set to angle mode in BF
+    int roll = BF_CHN_MID, pitch = BF_CHN_MID, yaw = BF_CHN_MID;
+    int throttle = BF_CHN_MIN;
+    int arm_switch = BF_CHN_MIN;
+    int turtle_mode = BF_CHN_MIN;
+    int led = BF_CHN_MIN;
     Telemetry telemetry = {0};
+
+    virtual int bf_headless_enabled() = 0;
+    virtual int bf_headless_disabled() = 0;
+    virtual int bf_yaw_reset() = 0;
+    virtual int bf_PID_loop_disabled() = 0;
+    virtual int bf_spin_motor() = 0;
+    virtual int bf_spin_motor_reversed() = 0;
+    virtual int bf_airmode() = 0;
+    virtual int bf_sleep() = 0;
 
     virtual void init(int drone_id) = 0;
     virtual void init_logger() = 0;
@@ -158,9 +150,9 @@ public:
     bool bf_telem_OK() { return _bf_uid_error < 0 && _bf_version_error < 0;}
     bool telemetry_time_out() {return _time - last_telemetry_time > 10;}
     std::string bf_uid_str() {return telemetry.bf_uid_str;}
-    std::string armed_str() { return armed_names[arm_switch > RC_MIDDLE]; }
+    std::string armed_str() { return armed_names[arm_switch > BF_CHN_MID]; }
     bool arm_command() { return arm_switch == bf_armed; }
-    bool connected() {return !notconnected;}
+    bool connected() {return !port_unopened;}
 
     void queue_commands(int new_throttle, int new_roll, int new_pitch, int new_yaw, int new_mode) {
         if (!exitSendThread) {
@@ -170,6 +162,7 @@ public:
             pitch = new_pitch;
             yaw = new_yaw;
             mode = new_mode;
+            led = _LED_drone;
             g_lockData.unlock();
         }
     }
@@ -275,11 +268,13 @@ protected:
     double last_telemetry_time = 0;
 
     bool initialized = false;
+    bool bound = false;
     bool logger_initialized = false;
-    int notconnected = 1;
+    int port_unopened = true;
+
     bool _init_package_failure = false;
-    int16_t _bf_version_error = 0;
-    int16_t _bf_uid_error = 0;
+    int16_t _bf_version_error = -1;
+    int16_t _bf_uid_error = -1;
     bool mm_version_check_OK = false;
     uint init_package_nOK_cnt = 1;
     bool send_init_package_now = false;
@@ -296,8 +291,9 @@ protected:
     std::mutex g_lockData;
     std::timed_mutex g_sendData;
     std::stringstream received;
-    std::thread send_thread_mm;
-    std::thread receive_thread_mm;
+    std::thread init_thread_tx;
+    std::thread send_thread_tx;
+    std::thread receive_thread_tx;
     bool exitSendThread = false;
     bool exitReceiveThread = false;
 
@@ -309,12 +305,11 @@ protected:
     void receive_data(void);
     void convert_channels(uint16_t *channels, unsigned char *packet);
     void zerothrottle();
-    void send_pats_init_package();
     void acc_throttle_pkg(int16_t accz, int16_t thr);
     void acc_rpm_pkg(int16_t accz, int16_t rpm);
     bool receive_telemetry(std::string buffer);
     void process_pats_init_packages(std::string bufs);
     void handle_bind();
-    void watchdog_pats_init_package();
+    void watchdog_tx_connect();
 
 };

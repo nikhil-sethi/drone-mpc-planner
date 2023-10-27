@@ -68,7 +68,7 @@ void GeneratorCam::calibration() {
 }
 
 StereoPair *GeneratorCam::update() {
-    if (_rc->throttle > RC_BOUND_MIN || takeoff_start_time > 0) {
+    if (_rc->throttle > BF_CHN_MIN || takeoff_start_time > 0) {
         if (takeoff_start_time < 0)
             takeoff_start_time = _frame_time;
         float dt_takeoff = static_cast<float>(_frame_time - takeoff_start_time) - dparams.full_bat_and_throttle_spinup_duration;

@@ -25,5 +25,5 @@ bool LandingController::switch_to_ff_landing(tracking::TrackData drone_track_dat
 }
 
 int LandingController::ff_auto_throttle(int ff_auto_throttle_start, float dt) {
-    return ff_auto_throttle_start - (1.f / powf(_time_ff_landing, 2)) * powf(dt, 2) * (ff_auto_throttle_start - RC_BOUND_MIN);
+    return ff_auto_throttle_start - (1.f / powf(_time_ff_landing, 2)) * powf(dt, 2) * (ff_auto_throttle_start - BF_CHN_MIN);
 }

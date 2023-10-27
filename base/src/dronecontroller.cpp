@@ -69,7 +69,7 @@ void DroneController::init_flight(std::ofstream *logger, int flight_id) {
     interception_start_time = 0;
     in_flight_start_time = -1;
     ff_land_start_time = 0;
-    ff_auto_throttle_start = RC_BOUND_MIN;
+    ff_auto_throttle_start = BF_CHN_MIN;
 
     _dist_to_setpoint = 999;
     time_waypoint_moved = 0;
@@ -79,7 +79,7 @@ void DroneController::init_flight(std::ofstream *logger, int flight_id) {
     auto_burn_duration = 0;
     _manual_override_take_off_now = false;
 
-    initial_hover_throttle_guess_non3d = GRAVITY / dparams.max_thrust * RC_BOUND_RANGE + dparams.min_throttle;
+    initial_hover_throttle_guess_non3d = GRAVITY / dparams.max_thrust * BF_CHN_RANGE + dparams.min_throttle;
 }
 
 void DroneController::init_full_log_replay(std::string replay_dir) {
@@ -135,11 +135,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
     _relative_velocity_to_setpoint = normf(data_drone.state.vel - data_target.state.vel);
     _relative_acceleration_to_setpoint = normf(data_drone.state.acc - data_target.state.acc);
 
-    int throttle = 0, roll = 0, pitch = 0, yaw = 0, mode = RC_BOUND_MIN;
+    int throttle = BF_CHN_MIN, roll = BF_CHN_MID, pitch = BF_CHN_MID, yaw = BF_CHN_MID, mode = BF_CHN_MIN;
     bool joy_control = false;
     switch (_flight_mode) {
         case fm_manual: {
-                mode += bf_headless_disabled;
+                mode += _rc->bf_headless_disabled();
                 throttle = joy_throttle;
                 _rc->arm(_joy_arm_switch);
                 roll = joy_roll;
@@ -159,10 +159,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 _flight_mode = fm_remaining_spinup;
                 [[fallthrough]];
         } case fm_remaining_spinup: {
-                mode += bf_airmode;
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                mode += _rc->bf_airmode();
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 auto_throttle = spinup_throttle();
                 commanded_acceleration = cv::Point3f(0, 0, 0);
 
@@ -175,8 +175,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 break;
         } case fm_max_burn: {
-                mode += bf_airmode;
-                auto_throttle = RC_BOUND_MAX;
+                mode += _rc->bf_airmode();
+                auto_throttle = BF_CHN_MAX;
                 commanded_acceleration = cv::Point3f(0, dparams.max_thrust, 0);
                 if (data_drone.vel_valid && data_drone.pos().y > _dtrk->pad_location().y + land_ctrl.trusted_tracking_height_above_pad()) {
                     _flight_mode = fm_flying_pid_init;
@@ -189,14 +189,14 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 break;
         } case fm_max_burn_spin_down: {
-                mode += bf_airmode;
+                mode += _rc->bf_airmode();
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands({0, 0, 0});
                 commanded_acceleration = cv::Point3f(0, 0, 0);
                 if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
                     _flight_mode = fm_1g;
                 break;
         }  case fm_1g: {
-                mode += bf_airmode;
+                mode += _rc->bf_airmode();
                 cv::Point3f aim_acceleration = takeoff_acceleration(data_target, GRAVITY);
                 commanded_acceleration = aim_acceleration;
                 std::tie(auto_roll, auto_pitch, auto_throttle) = drone_commands(aim_acceleration);
@@ -230,7 +230,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 [[fallthrough]];
         } case fm_flying_pid: {
-                mode += bf_airmode;
+                mode += _rc->bf_airmode();
                 if (!data_drone.pos_valid) {
                     pos_err_i = {0};
                     if (_time - take_off_start_time < 0.5)
@@ -247,34 +247,34 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 
                 break;
         } case fm_long_range_forth: {
-                mode += bf_headless_disabled;
-                auto_yaw = RC_MIDDLE;
+                mode += _rc->bf_headless_disabled();
+                auto_yaw = BF_CHN_MID;
                 control_drone_position_based(data_drone, data_target);
-                auto_pitch = RC_MIDDLE + RC_BOUND_RANGE / 2 / 8;
+                auto_pitch = BF_CHN_MID + BF_CHN_RANGE / 2 / 8;
                 break;
         } case fm_long_range_back: {
-                mode += bf_headless_disabled;
-                auto_yaw = RC_MIDDLE;
+                mode += _rc->bf_headless_disabled();
+                auto_yaw = BF_CHN_MID;
                 control_drone_position_based(data_drone, data_target);
-                auto_pitch = RC_MIDDLE - RC_BOUND_RANGE / 2 / 8;
+                auto_pitch = BF_CHN_MID - BF_CHN_RANGE / 2 / 8;
                 break;
         } case fm_calib_thrust:
         case fm_prep_to_land:
         case fm_reset_headless_yaw:
         case fm_headed: {
-                mode += bf_headless_disabled;
-                auto_yaw = RC_MIDDLE;
+                mode += _rc->bf_headless_disabled();
+                auto_yaw = BF_CHN_MID;
                 control_drone_position_based(data_drone, data_target);
                 break;
         } case fm_reset_yaw_on_pad: {
-                mode += bf_headless_disabled;
+                mode += _rc->bf_headless_disabled();
                 auto_throttle = max(static_cast<int>(thrust_to_throttle(2.f)), dparams.spinup_throttle_non3d);
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 break;
         } case fm_correct_yaw: {
-                mode += bf_headless_disabled;
+                mode += _rc->bf_headless_disabled();
                 control_drone_position_based(data_drone, data_target);
                 if (data_drone.yaw_deviation_valid)
                     correct_yaw(data_drone.yaw_deviation);
@@ -284,16 +284,16 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 landing_att_calibration_msg_printed = false;
                 ff_land_start_time = time;
                 ff_auto_throttle_start = auto_throttle;
-                auto_yaw = RC_MIDDLE;
+                auto_yaw = BF_CHN_MID;
                 [[fallthrough]];
         } case fm_ff_landing: {
-                mode += bf_headless_disabled;
+                mode += _rc->bf_headless_disabled();
                 control_drone_position_based(data_drone, data_target);
                 float dt = static_cast<float>(time - ff_land_start_time);
                 auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, dt);
 
                 if (dt > land_ctrl.time_ff_landing()) {
-                    auto_throttle = RC_BOUND_MIN;
+                    auto_throttle = BF_CHN_MIN;
                     _landed = true;
                     if (dparams.static_shakeit_thrust > 0)
                         _flight_mode = fm_wait;
@@ -316,11 +316,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 const int spin_value_shake_reversed = max(static_cast<int>(thrust_to_throttle(dparams.static_shakeit_thrust * 2.3f)), dparams.spinup_throttle_non3d);
 
                 //defaults:
-                mode += bf_spin_motor;
-                auto_roll = RC_BOUND_MIN;
-                auto_pitch = RC_BOUND_MIN;
-                auto_throttle = RC_BOUND_MIN;
-                auto_yaw = RC_BOUND_MIN;
+                mode += _rc->bf_spin_motor();
+                auto_roll = BF_CHN_MIN;
+                auto_pitch = BF_CHN_MIN;
+                auto_throttle = BF_CHN_MIN;
+                auto_yaw = BF_CHN_MIN;
 
                 static int shake_state = 0;
                 switch (shake_state) {
@@ -341,7 +341,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                         }
                         break;
                     case 4:
-                        mode += bf_spin_motor_reversed;
+                        mode += _rc->bf_spin_motor_reversed();
                         auto_roll = spin_value_shake_reversed;
                         auto_yaw = spin_value_shake_reversed;
                         if (time - state_start_time > shake_period) {
@@ -350,7 +350,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                         }
                         break;
                     case 6:
-                        mode += bf_spin_motor_reversed;
+                        mode += _rc->bf_spin_motor_reversed();
                         auto_roll = spin_value_shake_reversed;
                         auto_yaw = spin_value_shake_reversed;
                         if (time - state_start_time > shake_period) {
@@ -425,44 +425,44 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
 
                 break;
         } case fm_disarmed: {
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 if (dparams.mode3d)
-                    auto_throttle = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MID;
                 else
-                    auto_throttle = RC_BOUND_MIN;
+                    auto_throttle = BF_CHN_MIN;
                 _rc->arm(bf_disarmed);
                 break;
         } case fm_inactive: {
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
-                mode += bf_yaw_reset;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
+                mode += _rc->bf_yaw_reset();
 
                 if (dparams.mode3d)
-                    auto_throttle = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MID;
                 else
-                    auto_throttle = RC_BOUND_MIN;
+                    auto_throttle = BF_CHN_MIN;
                 if (pparams.joystick == rc_none && !dparams.mode3d)
                     _rc->arm(bf_armed);
                 else if (dparams.mode3d)
                     _rc->arm(bf_disarmed);
                 break;
         } case fm_wait: {
-                auto_throttle = RC_BOUND_MIN;
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                auto_throttle = BF_CHN_MIN;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 break;
         } case fm_abort: {
                 if (dparams.mode3d)
-                    auto_throttle = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MID;
                 else
-                    auto_throttle = RC_BOUND_MIN;
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MIN;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 break;
         } case fm_joystick_check: {
                 if (pparams.joystick == rc_none) {
@@ -472,16 +472,16 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
                 }
                 _joy_state = js_checking;
                 if (dparams.mode3d)
-                    auto_throttle = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MID;
                 else
-                    auto_throttle = RC_BOUND_MIN;
-                auto_roll = RC_MIDDLE;
-                auto_pitch = RC_MIDDLE;
-                auto_yaw = RC_MIDDLE;
+                    auto_throttle = BF_CHN_MIN;
+                auto_roll = BF_CHN_MID;
+                auto_pitch = BF_CHN_MID;
+                auto_yaw = BF_CHN_MID;
                 _rc->arm(bf_disarmed);
                 break;
         } case fm_sleep: {
-                mode += bf_sleep;
+                mode += _rc->bf_sleep();
             }
     }
 
@@ -492,14 +492,14 @@ void DroneController::control(TrackData data_drone, TrackData data_target, contr
         yaw = auto_yaw;
     }
 
-    throttle = std::clamp(throttle, RC_BOUND_MIN, RC_BOUND_MAX);
-    roll = std::clamp(roll, RC_BOUND_MIN, RC_BOUND_MAX);
-    pitch = std::clamp(pitch, RC_BOUND_MIN, RC_BOUND_MAX);
-    yaw = std::clamp(yaw, RC_BOUND_MIN, RC_BOUND_MAX);
-    auto_throttle = std::clamp(auto_throttle, RC_BOUND_MIN, RC_BOUND_MAX);
-    auto_pitch = std::clamp(auto_pitch, RC_BOUND_MIN, RC_BOUND_MAX);
-    auto_roll = std::clamp(auto_roll, RC_BOUND_MIN, RC_BOUND_MAX);
-    auto_yaw = std::clamp(auto_yaw, RC_BOUND_MIN, RC_BOUND_MAX);
+    throttle = std::clamp(throttle, BF_CHN_MIN, BF_CHN_MAX);
+    roll = std::clamp(roll, BF_CHN_MIN, BF_CHN_MAX);
+    pitch = std::clamp(pitch, BF_CHN_MIN, BF_CHN_MAX);
+    yaw = std::clamp(yaw, BF_CHN_MIN, BF_CHN_MAX);
+    auto_throttle = std::clamp(auto_throttle, BF_CHN_MIN, BF_CHN_MAX);
+    auto_pitch = std::clamp(auto_pitch, BF_CHN_MIN, BF_CHN_MAX);
+    auto_roll = std::clamp(auto_roll, BF_CHN_MIN, BF_CHN_MAX);
+    auto_yaw = std::clamp(auto_yaw, BF_CHN_MIN, BF_CHN_MAX);
 
     // std::cout <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
     _rc->queue_commands(throttle, roll, pitch, yaw, mode);
@@ -638,6 +638,10 @@ std::tuple<float, float> DroneController::acc_to_quaternion(cv::Point3f acc) {
     return std::make_tuple(q.v.x, q.v.y);
 }
 
+int DroneController::mm_to_bf(int mm_throttle) {
+    float x = (static_cast<float>(mm_throttle) - 224.f) / (1824.f - 224.f);
+    return static_cast<int>(1000.f + (2000.f - 1000.f) * x);
+}
 
 float DroneController::thrust_to_throttle(float thrust) {
     const float thrust_ratio = thrust / calibration.max_thrust;
@@ -646,7 +650,8 @@ float DroneController::thrust_to_throttle(float thrust) {
     const float p3 = 48.2837516242;
     const float p4 = 1501.36671279;
     const float p5 = 292.80869993;
-    return p1 * powf(thrust_ratio, 4) + p2 * powf(thrust_ratio, 3) + p3 * powf(thrust_ratio, 2) + p4 * thrust_ratio + p5;
+    float throttle_mm = p1 * powf(thrust_ratio, 4) + p2 * powf(thrust_ratio, 3) + p3 * powf(thrust_ratio, 2) + p4 * thrust_ratio + p5;
+    return mm_to_bf(throttle_mm);
 }
 
 cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_target, float target_acceleration_y) {
@@ -670,7 +675,6 @@ cv::Point3f DroneController::takeoff_acceleration(tracking::TrackData data_targe
     return takeoff_accel;
 }
 
-
 std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_acc) {
 
     if (normf(desired_acc) < 0.001f) //if no drone acceleration required, put the drone in an upright orientation
@@ -687,8 +691,8 @@ std::tuple<int, int, int> DroneController::drone_commands(cv::Point3f desired_ac
         throttle_cmd = dparams.spinup_throttle_non3d;
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(direction);
-    int roll_cmd =  roundf((roll_quat * RC_BOUND_RANGE / 2.f) + RC_MIDDLE); // convert to RC commands range
-    int pitch_cmd = roundf((-pitch_quat * RC_BOUND_RANGE / 2.f) + RC_MIDDLE);
+    int roll_cmd =  roundf((roll_quat * BF_CHN_RANGE / 2.f) + BF_CHN_MID); // convert to BF channel range
+    int pitch_cmd = roundf((-pitch_quat * BF_CHN_RANGE / 2.f) + BF_CHN_MID);
     return std::make_tuple(roll_cmd, pitch_cmd, throttle_cmd);
 }
 
@@ -741,9 +745,9 @@ cv::Point3f DroneController::combine_drone_accelerations_with_priority(cv::Point
 void DroneController::mix_drone_accelerations(TrackData data_drone, cv::Point3f target_acc) {
     _target_acceleration = target_acc;
     if (_dtrk->image_predict_item().out_of_image) {
-        auto_roll = RC_MIDDLE;
-        auto_pitch = RC_MIDDLE;
-        auto_yaw = RC_MIDDLE;
+        auto_roll = BF_CHN_MID;
+        auto_pitch = BF_CHN_MID;
+        auto_yaw = BF_CHN_MID;
         auto_throttle = spinup_throttle();
         return;
     }
@@ -1007,7 +1011,7 @@ void DroneController::correct_yaw(float deviation_angle) {
     else if (deviation_angle > min_yaw_deviation)
         target_theta_velocity = 3;
 
-    auto_yaw = RC_MIDDLE + target_theta_velocity;
+    auto_yaw = BF_CHN_MID + target_theta_velocity;
 }
 
 void DroneController::fine_tune_thrust(float integration_error) {
@@ -1032,16 +1036,16 @@ void DroneController::read_joystick(void) {
             if (pparams.joystick == rc_xlite) {
                 switch (event.number) {
                     case 0: // roll
-                        joy_roll = static_cast<uint16_t>((event.value >> 5) * 0.8 + RC_MIDDLE);
+                        joy_roll = static_cast<uint16_t>((event.value >> 5) * 0.8 + BF_CHN_MID);
                         break;
                     case 1: // pitch
-                        joy_pitch = static_cast<uint16_t>((event.value >> 5) * 0.8 + RC_MIDDLE);
+                        joy_pitch = static_cast<uint16_t>((event.value >> 5) * 0.8 + BF_CHN_MID);
                         break;
                     case 2: //throttle
-                        joy_throttle =  static_cast<uint16_t>((event.value >> 5) * 0.8 + RC_MIDDLE);
+                        joy_throttle =  static_cast<uint16_t>((event.value >> 5) * 0.8 + BF_CHN_MID);
                         break;
                     case 3: //yaw
-                        joy_yaw = static_cast<uint16_t>((event.value >> 5) * 0.4 + RC_MIDDLE);
+                        joy_yaw = static_cast<uint16_t>((event.value >> 5) * 0.4 + BF_CHN_MID);
                         break;
                     case 4: //arm switch (two way)
                         if (event.value > 0) {
@@ -1089,7 +1093,7 @@ void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (_joy_state == js_checking) {
         if (_joy_arm_switch == bf_disarmed &&
-                ((joy_throttle <= RC_MIN_THRESH && !dparams.mode3d) || (abs(joy_throttle - RC_MIDDLE) < 50 && dparams.mode3d)) &&
+                ((joy_throttle <= BF_CHN_MIN && !dparams.mode3d) || (abs(joy_throttle - BF_CHN_MID) < 50 && dparams.mode3d)) &&
                 !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
             _joy_state = js_disarmed;

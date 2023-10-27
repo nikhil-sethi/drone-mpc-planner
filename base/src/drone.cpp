@@ -170,6 +170,10 @@ void Drone::update(double time) {
 
         } case ds_rc_loss: {
                 // #1177
+                // get out of here if we get rc back
+                if (control.rc_ok(time)) {
+                    _state = ds_ready;
+                }
                 break;
         } case ds_beep: {
                 _rc->beep(true);

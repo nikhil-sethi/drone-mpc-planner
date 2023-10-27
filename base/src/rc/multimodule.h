@@ -13,6 +13,15 @@
 #include "stopwatch.h"
 #include "rc.h"
 
+#define RC_BOUND_MIN                       224   // 1000
+#define RC_BOUND_MAX                       1824 // 2000
+#define RC_BOUND_RANGE    (RC_BOUND_MAX -  RC_BOUND_MIN)
+#define RC_MIN_THRESH                      300   // 1048
+#define RC_MAX_THRESH                      1750 // 1800
+#define RC_MIN                             0   //  1000
+#define RC_MAX                             2048 // 2000
+#define RC_MIDDLE                          1024 // 1500
+
 class MultiModule : public RC {
 
 public:
@@ -22,6 +31,16 @@ public:
     void close();
     void bind(bool b);
     int drone_id() {return _drone_id_rxnum;}
+
+    // value_betaflight = value_here + 1000
+    int bf_headless_enabled() { return 0;}
+    int bf_headless_disabled() { return 31;}
+    int bf_yaw_reset() { return 63;}
+    int bf_PID_loop_disabled() { return 94;}
+    int bf_spin_motor() { return 125;}
+    int bf_spin_motor_reversed() { return 156;}
+    int bf_airmode() { return 187;}
+    int bf_sleep() { return  255;}
 
 private:
     int protocol;
@@ -51,5 +70,6 @@ private:
     bool receive_telemetry(std::string buffer);
     void process_pats_init_packages(std::string bufs);
     void handle_bind();
-    void watchdog_pats_init_package();
+    void watchdog_tx_connect();
+    int map(int inValue, float minInRange, float maxInRange, float minOutRange, float maxOutRange);
 };

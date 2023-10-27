@@ -22,10 +22,10 @@ enum trim_axes {
 };
 
 struct accelerometer_trim_data {
-    int roll = RC_MIDDLE;
-    int pitch = RC_MIDDLE;
-    int throttle = RC_BOUND_MIN;
-    int yaw = RC_MIDDLE;
+    int roll = BF_CHN_MID;
+    int pitch = BF_CHN_MID;
+    int throttle = BF_CHN_MIN;
+    int yaw = BF_CHN_MID;
     bool arm = true;
     bool finished = false;
 };

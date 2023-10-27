@@ -23,4 +23,14 @@ public:
     void queue_commands(int new_throttle, int new_roll, int new_pitch, int new_yaw);
     float normalize_rc_input(float in_value, float lower_bound = -1, float upper_bound = 1);
     int drone_id() { return 0; }
+
+    // value_betaflight = value_here + 1000
+    int bf_headless_enabled() {return 16;}
+    int bf_headless_disabled() {return 47;}
+    int bf_yaw_reset() {return 79;}
+    int bf_PID_loop_disabled() {return 110;}
+    int bf_spin_motor() {return 142;}
+    int bf_spin_motor_reversed() {return 173;}
+    int bf_airmode() {return 204;}
+    int bf_sleep() {return  236;}
 };

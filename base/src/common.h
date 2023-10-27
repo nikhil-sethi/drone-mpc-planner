@@ -131,7 +131,8 @@ enum tx_protocols {
     tx_cx10,
     tx_frskyd8,
     tx_frskyd16,
-    tx_redpine
+    tx_redpine,
+    tx_elrs
 };
 enum d16_subprotocols {
     d16_ch16 = 0,
@@ -167,7 +168,8 @@ static const char *tx_protocols_str[] = {
     "tx_cx10",
     "tx_frskyd8",
     "tx_frskyd16",
-    "tx_redpine"
+    "tx_redpine",
+    "tx_elrs"
     "" // must be the last entry! (check in serializer)
 };
 enum drone_types {
@@ -179,7 +181,8 @@ enum drone_types {
     drone_qutt,
     drone_quf4,
     drone_quto,
-    drone_anvil_diamond
+    drone_anvil_diamond,
+    drone_jornboard
 };
 static const char *drone_types_str[] = {
     "drone_none",
@@ -191,6 +194,7 @@ static const char *drone_types_str[] = {
     "drone_quf4",
     "drone_quto",
     "drone_anvil_diamond",
+    "drone_jornboard"
     "" // must be the last entry! (check in serializer)
 };
 enum op_modes {

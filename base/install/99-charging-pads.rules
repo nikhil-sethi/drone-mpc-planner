@@ -1,4 +1,4 @@
-ACTION=="add", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60",  SYMLINK+="baseboard"
+ACTION=="add", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{product}=="CP2104 USB to UART Bridge Controller", SYMLINK+="baseboard"
 
 SUBSYSTEM=="tty", \
     ENV{ID_MODEL}=="CP2104_USB_to_UART_Bridge_Controller", \

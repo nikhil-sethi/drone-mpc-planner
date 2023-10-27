@@ -3,8 +3,10 @@
 
 bool MultiModule::connect() {
     std::cout << "Connecting multimodule" << std::endl;
-    if (notconnected) {
+    if (port_unopened) {
         switch (dparams.tx) {
+            case tx_elrs:
+                [[fallthrough]];
             case tx_none: {
                     protocol = 0;
                     sub_protocol = 0;
@@ -47,17 +49,17 @@ bool MultiModule::connect() {
         zerothrottle();
 
         if (dparams.tx != tx_none) {
-            notconnected = RS232_OpenComport(115200, "/dev/pats_mm0");
-            if (notconnected)
-                notconnected = RS232_OpenComport(115200, "/dev/pats_mm1");
+            port_unopened = RS232_OpenComport(115200, "/dev/pats_mm0");
+            if (port_unopened)
+                port_unopened = RS232_OpenComport(115200, "/dev/pats_mm1");
 
-            if (notconnected)
+            if (port_unopened)
                 std::cout << "Could not open multimodule port."  << std::endl;
             else
                 std::cout << "Opened multimodule port."  << std::endl;
         }
     }
-    return !notconnected;
+    return !port_unopened;
 }
 
 void MultiModule::init(int drone_id) {
@@ -67,10 +69,10 @@ void MultiModule::init(int drone_id) {
 
     _drone_id_rxnum = drone_id;
 
-    if (!notconnected) {
+    if (!port_unopened) {
         send_init_package_now = true;
-        receive_thread_mm = std::thread(&MultiModule::receive_thread, this);
-        send_thread_mm = std::thread(&MultiModule::send_thread, this);
+        receive_thread_tx = std::thread(&MultiModule::receive_thread, this);
+        send_thread_tx = std::thread(&MultiModule::send_thread, this);
         initialized = true;
     }
 }
@@ -110,7 +112,7 @@ void MultiModule::send_thread(void) {
     g_sendData.lock(); // wait for first frame to arrive to prevent triggering a wdt in the MM
     std::cout << "Multimodule send thread started!" << std::endl;
     while (!exitSendThread) {
-        watchdog_pats_init_package();
+        watchdog_tx_connect();
         if (send_init_package_now)
             send_pats_init_package();
         else {
@@ -128,7 +130,7 @@ void MultiModule::receive_thread(void) {
     }
 }
 
-void MultiModule::watchdog_pats_init_package() {
+void MultiModule::watchdog_tx_connect() {
     if (init_package_nOK_cnt) {
         init_package_nOK_cnt++;
         if (init_package_nOK_cnt > 5 * pparams.fps) {
@@ -145,18 +147,18 @@ void MultiModule::handle_bind() {
         cycles_until_bind--;
         if (cycles_until_bind == 0)
             _bind = true;
-        arm_switch = RC_MIN_THRESH;
+        arm_switch = BF_CHN_MIN;
         zerothrottle();
     }
     if (cycles_until_bind < 0) {
         cycles_until_bind++;
         if (cycles_until_bind == 0)
             _bind = false;
-        arm_switch = RC_MIN_THRESH;
+        arm_switch = BF_CHN_MIN;
         zerothrottle();
     }
     if (_bind) {
-        arm_switch = RC_MIN_THRESH;
+        arm_switch = BF_CHN_MIN;
         zerothrottle();
         if (sw_bind.Read() > 20000)
             _bind = false;
@@ -178,6 +180,11 @@ void MultiModule::convert_channels(uint16_t *channels, unsigned char *packet) {
             bitsavailable -= 8;
         }
     }
+}
+
+int MultiModule::map(int inValue, float minInRange, float maxInRange, float minOutRange, float maxOutRange) {
+    float x = (inValue - minInRange) / (maxInRange - minInRange);
+    return minOutRange + (maxOutRange - minOutRange) * x;
 }
 
 void MultiModule::send_rc_data(void) {
@@ -216,16 +223,16 @@ void MultiModule::send_rc_data(void) {
 
         if (calibrate_acc_cnt) {
             calibrate_acc_cnt--;
-            arm_switch = RC_BOUND_MIN;
-            roll = RC_MIDDLE;
-            pitch = RC_BOUND_MIN;
-            yaw = RC_BOUND_MIN;
-            throttle = RC_BOUND_MAX;
+            arm_switch = BF_CHN_MIN;
+            roll = BF_CHN_MID;
+            pitch = BF_CHN_MIN;
+            yaw = BF_CHN_MIN;
+            throttle = BF_CHN_MAX;
         }
         //AETR
         channels[0] = roll;
         if (dparams.tx == tx_cx10)
-            channels[0] = RC_MAX - roll;
+            channels[0] = BF_CHN_MAX - roll;
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
@@ -236,7 +243,7 @@ void MultiModule::send_rc_data(void) {
         if (_beep || calibrate_acc_cnt) {
             std::cout << "BEEP" << std::endl;
             channels[4] = bf_disarmed;
-            channels[5] = RC_BOUND_MAX;
+            channels[5] = BF_CHN_MAX;
         }
 
         if (dparams.tx == tx_cx10)
@@ -245,13 +252,17 @@ void MultiModule::send_rc_data(void) {
         channels[6] = turtle_mode;
 
         if (calibrate_acc_cnt)
-            channels[7] = RC_BOUND_MIN + RC_BOUND_RANGE / 100 * 100;
+            channels[7] = BF_CHN_MIN + BF_CHN_RANGE / 100 * 100;
         else
-            channels[7] = RC_BOUND_MIN + RC_BOUND_RANGE / 100 * _LED_drone;
+            channels[7] = BF_CHN_MIN + BF_CHN_RANGE / 100 * led;
 
+        // map channels to RC range
+        for (uint16_t i = 0; i < 16; i++) {
+            channels[i] = map(channels[i], BF_CHN_MIN, BF_CHN_MAX, RC_BOUND_MIN, RC_BOUND_MAX);;
+        }
         convert_channels(channels, &packet[4]);
 
-        if (!notconnected) {
+        if (!port_unopened) {
             RS232_SendBuf(static_cast<unsigned char *>(packet), RXBUFFER_SIZE);
         }
     }
@@ -259,7 +270,7 @@ void MultiModule::send_rc_data(void) {
 }
 
 void MultiModule::receive_data() {
-    if (!notconnected) {
+    if (!port_unopened) {
         unsigned char inbuf[1];
         std::stringstream tmp;
         int n = 1;
@@ -523,10 +534,10 @@ void MultiModule::close() {
         exitSendThread = true;
         g_sendData.unlock();
         g_lockData.unlock();
-        send_thread_mm.join();
+        send_thread_tx.join();
         usleep(1e5);
         exitReceiveThread = true;
-        receive_thread_mm.join();
+        receive_thread_tx.join();
 
         // kill throttle when closing the module
         g_lockData.lock();
@@ -541,7 +552,7 @@ void MultiModule::close() {
         g_sendData.unlock();
         g_lockData.unlock();
         send_rc_data();
-        notconnected = 1;
+        port_unopened = 1;
         RS232_CloseComport();
         if (logger_initialized) {
             telem_logger.flush();

@@ -1,16 +1,16 @@
 #include "airsimcontroller.h"
 
 bool AirSimController::connect() {
-    if (notconnected) {
+    if (port_unopened) {
         std::cout << "Connecting AirSimController" << std::endl;
         sim.init(drone_name);
-        notconnected = 0;
+        port_unopened = 0;
     }
-    return !notconnected;
+    return !port_unopened;
 }
 
 void AirSimController::init(int __attribute__((unused))) {
-    send_thread_mm = std::thread(&AirSimController::send_thread, this);
+    send_thread_tx = std::thread(&AirSimController::send_thread, this);
     sim.rc_data_valid(true);
     initialized = true;
     sim.set_led(5000);
@@ -30,8 +30,8 @@ void AirSimController::init_logger() {
 }
 
 float AirSimController::normalize_rc_input(float in_value, float lower_bound /*=-1*/, float upper_bound /*=1*/) {
-    float x = (in_value - RC_BOUND_MIN);
-    return lower_bound + (upper_bound - lower_bound) * (x / RC_BOUND_RANGE);
+    float x = (in_value - BF_CHN_MIN);
+    return lower_bound + (upper_bound - lower_bound) * (x / BF_CHN_RANGE);
 }
 
 void AirSimController::send_rc_data() {
@@ -40,13 +40,12 @@ void AirSimController::send_rc_data() {
     if (dparams.tx != tx_none) {
         if (calibrate_acc_cnt) {
             calibrate_acc_cnt--;
-            roll = RC_MIDDLE;
-            pitch = RC_BOUND_MIN;
-            yaw = RC_BOUND_MIN;
-            throttle = RC_BOUND_MAX;
+            roll = BF_CHN_MID;
+            pitch = BF_CHN_MIN;
+            yaw = BF_CHN_MIN;
+            throttle = BF_CHN_MAX;
         }
 
-        float led = 0;
         if (calibrate_acc_cnt)
             led = 5000;
         else
@@ -71,24 +70,24 @@ void AirSimController::close() {
         exitSendThread = true;
         g_sendData.unlock();
         g_lockData.unlock();
-        send_thread_mm.join();
+        send_thread_tx.join();
         usleep(1e5);
         exitReceiveThread = true;
 
         // kill throttle when closing the module
         g_lockData.lock();
-        mode = RC_BOUND_MIN;
-        arm_switch = RC_BOUND_MIN;
-        throttle = RC_BOUND_MIN;
-        roll = RC_MIDDLE;
-        pitch = RC_MIDDLE;
-        yaw = RC_MIDDLE;
+        mode = BF_CHN_MIN;
+        arm_switch = BF_CHN_MIN;
+        throttle = BF_CHN_MIN;
+        roll = BF_CHN_MID;
+        pitch = BF_CHN_MID;
+        yaw = BF_CHN_MID;
         _LED_drone = 0;
 
         g_sendData.unlock();
         g_lockData.unlock();
         send_rc_data();
-        notconnected = 1;
+        port_unopened = 1;
     }
     initialized = false;
 }
