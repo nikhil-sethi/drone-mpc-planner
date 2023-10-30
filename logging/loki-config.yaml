@@ -9,8 +9,8 @@ common:
   path_prefix: /tmp/loki
   storage:
     filesystem:
-      chunks_directory: /tmp/loki/chunks
-      rules_directory: /tmp/loki/rules
+      chunks_directory: /home/pats/loki/chunks
+      rules_directory: /home/pats/loki/rules
   replication_factor: 1
   ring:
     kvstore:
@@ -34,7 +34,7 @@ frontend:
   compress_responses: true
 
 compactor:
-  working_directory: /tmp/loki/data/retention
+  working_directory: /home/pats/loki/data/retention
   shared_store: filesystem
   compaction_interval: 10m
   retention_enabled: true
@@ -51,8 +51,8 @@ schema_config:
         store: boltdb-shipper
 storage_config:
     boltdb_shipper:
-        active_index_directory: /tmp/loki/data/index
-        cache_location: /tmp/loki/data/boltdb-cache
+        active_index_directory: /home/pats/loki/data/index
+        cache_location: /home/pats/loki/data/boltdb-cache
         shared_store: filesystem
 
 limits_config:
