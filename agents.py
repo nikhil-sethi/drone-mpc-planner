@@ -4,46 +4,71 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from matplotlib import animation
-import scipy
+from models import DynamicsModel
 from casadi import sin, cos, tan
+from typing import Any
+from params import Dynamics
 
 np.set_printoptions(precision=5)
 
 class Particle:
-    def __init__(self, n_states=6, n_actions=3) -> None:
+    def __init__(self, model:DynamicsModel, controller, n_states=6, n_actions=3, **kwds:Any) -> None:
         self.N_STATES = n_states
         self.N_ACTIONS = n_actions # motor speeds
-        self.m = 1
-        self.g0  = 9.81     # [m.s^2] accerelation of gravity
-        self.dt = 0.19 # timestep
-        self.x = np.zeros(n_states)
+        self.n_dims = 3
+        self.dt = Dynamics.dt # timestep
+        if "init_state" in kwds:
+            self.init_state = kwds["init_state"]
+        else:
+            self.init_state = np.zeros(n_states)
 
-    def xdot(self, x,u):
-
-        # position derivative
-        dx = x[3]
-        dy = x[4]
-        dz = x[5]
-
-        # velocity derivative
-        dvx = u[0] 
-        dvy = u[1] - self.g0
-        dvz = u[2] 
-
-        return [dx, dy, dz, dvx, dvy, dvz]
-
-    def update(self, u):
-        """Simple integration"""
-        self.x += np.array(self.xdot(self.x, u))*self.dt
-        return self.x
+        self.model = model
+        self.controller = controller
     
+        self.reset()
+
+    def reset(self):
+        self.state = self.init_state.copy()
+        self.history = {"state":[], "action":[]}
+
+    # def xdot(self, x,u):
+
+    #     # position derivative
+    #     dx = x[3]
+    #     dy = x[4]
+    #     dz = x[5]
+
+    #     # velocity derivative
+    #     dvx = u[0] 
+    #     dvy = u[1] - self.g0
+    #     dvz = u[2] 
+
+    #     return [dx, dy, dz, dvx, dvy, dvz]
+
+    def update(self):
+        """Simple integration"""
+        action = self.controller(self.state)
+        self.state += np.array(self.model(self.state, action))*self.dt
+        return self.state
+    
+    def simulate(self, Ts):
+        """Simulate system for Ts seconds"""
+        self.reset()
+
+        N = int(Ts/self.dt)
+        for _ in range(N):
+            self.update()
+            self.history["state"].append(self.state)
+
+        return self.state
+
     @property
     def pos(self):
-        return self.x[:3]
+        return self.x[:self.n_dims]
 
     @property
     def vel(self):
-        return self.x[3:6]
+        return self.x[self.n_dims:2*self.n_dims]
 
     @property
     def acc(self):

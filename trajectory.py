@@ -9,53 +9,11 @@ from matplotlib.backend_bases import MouseButton
 from matplotlib import patches
 from matplotlib.widgets import Slider
 import time
-import enum
-
-class LogLevel(enum.IntEnum):
-    NONE = 0
-    INFO = 1
-    DEBUG = 2
-    ERROR = 3
-
-class Order(enum.IntEnum):
-    POS = 0
-    VEL = 1
-    ACC = 2
-    JERK = 3
-    SNAP = 4
-
-geofence = np.array([(-1, 1), (-1.3, 0), (-2.95, 0)])
-
-class Dynamics:
-    AMIN = 5 # minimum acceleration for the norm
-    AMAX = 20 # max acceleration for the norm
-    VMAX = 4
-    VYMIN = 0
-    VMIN = -10000 
-    G = 9.81
-
-class Interception:
-    PHI = (0,np.pi)
-    THETA = (-np.pi/2, np.pi/2)
-    MAG = (Dynamics.AMIN, Dynamics.AMAX-5)
-
-
-class Weights:
-    SmoothSeg = [0.01, 0.001]
-    MatchAccIC = 3
-    MaxAccIC = 0.1
-    MinTime = [2, 2]
-
-def fact(j, i):
-    """factorial of j upto i. Used for derivatives"""
-    if i==0:
-        return 1
-    return j*fact(j-1, i-1)
-
-def pow(n, k):
-    if k<0:
-        return 1
-    return n**k
+from utils import fact, pow
+from params import *
+from models import ConstantVel
+from agents import Particle
+from controllers import Constant
 
 np.set_printoptions(precision=4, suppress=True)
 np.set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
@@ -1351,82 +1309,58 @@ class DynamicTraj():
             self.moth_y = event.ydata
             # self.update()
 
-class Policy:
-    def __call__(self, state) -> Any:
-        raise NotImplementedError
 
-class Constant(Policy):
-    def __init__(self, action) -> None:
-        self.action = action
+# class Particle:
+#     """Prediction model for moth movement"""
+#     def __init__(self, init_state, time_step, **kwargs) -> None:
+#         self.init_state = init_state.astype(float) # dimsx2 (position and velocity)
+#         self.dt = time_step 
 
-    def __call__(self, state) -> Any:
-        return self.action
+#         # self.policy = ConstantThetaMag2D(action=kwargs["moth_vel"])
+#         self.policy = ConstantVel(action=init_state[n_dims:])
+#         # self.policy = Random([0,0], [2,2])
 
-class ConstantThetaMag2D(Constant):
-    def __call__(self, state) -> Any:
-        return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
+#         self.history = [self.init_state[:n_dims]]
 
-# class ConstantThetaMag2D(Constant):
-#     def __call__(self, state) -> Any:
-#         return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
+#     def xdot(self, _x, _u):
+#         dx = _u[0]
+#         dy = _u[2]
+#         dz = _u[1]
+#         du = 0
+#         dv = 0
+#         dw = 0
+#         return [dx, dy, dz, du, dv, dw]
 
+#     def update(self):
+#         # print(self.state, action)
+#         action = self.policy(self.state)
+#         self.state = self.state + np.array(self.xdot(self.state, action))*self.dt 
 
-class Random(Policy):
-    def __init__(self, mean = [0,0], variance = [1,1]) -> None:
-        self.mu = mean
-        self.var = variance 
-        
-    def __call__(self, state) -> Any:
-        return np.random.normal(loc=self.mu, scale=[self.var[0]/2, self.var[0]/2],size=len(self.mu)) # divide by two because we want 95% of the velocities to be under v_max
+#     def simulate(self, Ts):
+#         """Simulate system for Ts seconds"""
+#         self.state = self.init_state.copy()
+#         self.history = [self.state[:n_dims]]
+#         N = int(Ts/self.dt)
+#         for _ in range(N):
+#             self.update()
+#             self.history.append(self.state[:n_dims])
 
-class Particle:
-    """Prediction model for moth movement"""
-    def __init__(self, init_state, time_step, **kwargs) -> None:
-        self.init_state = init_state.astype(float) # dimsx2 (position and velocity)
-        self.dt = time_step 
-
-        # self.policy = ConstantThetaMag2D(action=kwargs["moth_vel"])
-        self.policy = Constant(action=init_state[n_dims:])
-        # self.policy = Random([0,0], [2,2])
-
-        self.history = [self.init_state[:n_dims]]
-
-    def xdot(self, _x, _u):
-        dx = _u[0]
-        dy = _u[2]
-        dz = _u[1]
-        du = 0
-        dv = 0
-        dw = 0
-        return [dx, dy, dz, du, dv, dw]
-
-    def update(self):
-        # print(self.state, action)
-        action = self.policy(self.state)
-        self.state = self.state + np.array(self.xdot(self.state, action))*self.dt 
-
-    def simulate(self, Ts):
-        """Simulate system for Ts seconds"""
-        self.state = self.init_state.copy()
-        self.history = [self.state[:n_dims]]
-        N = int(Ts/self.dt)
-        for _ in range(N):
-            self.update()
-            self.history.append(self.state[:n_dims])
-
-        return self.state
+#         return self.state
 
 class MothObliterator():
-    def __init__(self, drone_state, moth_state, log_level) -> None:
+    def __init__(self, drone_state, moth_state, log_level=LogLevel.NONE) -> None:
         self.drone_state = drone_state
         # drone_state = 
-        self.moth = Particle(init_state=moth_state, time_step=0.1)
+        moth_model = ConstantVel(n_states=6, n_actions=3)
+        self.moth = Particle(model = moth_model, controller=Constant(action=moth_state[3:]), init_state = moth_state)
+
+        # self.moth = Particle(init_state=moth_state, time_step=0.1)
 
         self.moth_state = np.array([])
         self.log_level = log_level
 
         # nonlinear optimization params
-        self.x0 = [0.5]*n_vars 
+        self.x0 = [0.5]*5 
         self.x0[-1] = 0.58  # starting pitch angle (try to be close to +g as possible)
         self.bounds = ((0.1, 1.8), (0.2, 1), (0,1), (0,1), (0,1))
 

@@ -1,27 +1,51 @@
 from acados_template import AcadosOcpSolver, AcadosOcp, AcadosModel
 import casadi as ca
 from casadi import *
-import time
-import scipy
 import numpy as np
 from math import pi, cos
+from typing import Any
+from params import Dynamics, geofence
+from models import DynamicsModel, ConstantAccGravity
 
-def create_model(agent):
+class Controller:
+    def __call__(self, state, **kwds: Any) -> Any:
+        raise NotImplementedError
+
+class Constant(Controller):
+    def __init__(self, action) -> None:
+        self.action = action
+
+    def __call__(self, state, **kwds: Any) -> Any:
+        return self.action
+
+class ConstantThetaMag2D(Constant):
+    def __call__(self, state, **kwds: Any) -> Any:
+        return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
+
+class Random(Controller):
+    def __init__(self, mean = [0,0], variance = [1,1]) -> None:
+        self.mu = mean
+        self.var = variance 
+        
+    def __call__(self, state, **kwds: Any) -> Any:
+        return np.random.normal(loc=self.mu, scale=[self.var[0]/2, self.var[0]/2],size=len(self.mu)) # divide by two because we want 95% of the velocities to be under v_max
+
+def create_model(model):
     name = "particle_ode"
     # Create the CasADi symbols for the function definition
 
     # states
-    x = ca.MX.sym('x', agent.N_STATES)
+    x = ca.MX.sym('x', model.N_STATES)
 
     # controls
-    u = ca.MX.sym('u', agent.N_ACTIONS)
+    u = ca.MX.sym('u', model.N_ACTIONS)
 
     # dynamics model
-    xdot = ca.MX.sym('xdot', agent.N_STATES)
+    xdot = ca.MX.sym('xdot', model.N_STATES)
 
     # explicit expression. the actual derivative xdot = f(x,u)
     # f_expl = agent.xdot_linear(x,u)
-    f_expl = ca.vertcat(*agent.xdot(x,u))
+    f_expl = ca.vertcat(*model(x,u))
 
     model = AcadosModel()
     model.x = x
@@ -46,10 +70,10 @@ def create_model(agent):
     # model.set('constr_expr_h', h);
     return model
 
-class MPCController():
-    def __init__(self, gf, agent=None) -> None:
+class MPC(Controller):
+    def __init__(self, model:DynamicsModel) -> None:
         self.ocp = AcadosOcp()
-        self.model = create_model(agent)
+        self.model = create_model(model)
         self.ocp.model = self.model
 
         nx = self.ocp.model.x.size()[0]
@@ -62,12 +86,12 @@ class MPCController():
 
         self.N = 10  # number of optimization predictions
           
-        Tf = self.N*agent.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
+        Tf = self.N*Dynamics.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
         Q_mat = 1*np.diag([550, 550, 550, 40, 40, 40])
         R_mat = 0.0001*np.diag([1, 1, 1])
 
-        self.x0 = agent.x0
-        self.u0 = np.array([0,0,0])
+        # self.x0 = agent.x0
+        self.u0 = np.array([0,Dynamics.G,0]) # hover
 
         # set simulation time
         self.ocp.dims.N = self.N
@@ -126,7 +150,7 @@ class MPCController():
         # this is a limitation and probably better tuning could allow more room
 
         phi_max = theta_max = pi/2
-        T_max = agent.g0*1.2
+        T_max = Dynamics.G*1.2
 
         # self.ocp.constraints.lbu = np.array([-10, -10, -0])
         # self.ocp.constraints.ubu = np.array([+10, +10, +T_max])
@@ -150,7 +174,7 @@ class MPCController():
 
         # state constraints
         max_speed = 3
-        self.gf = gf
+        self.gf = geofence
         self.ocp.constraints.lbx = np.array([self.gf[0][0], self.gf[1][0], self.gf[2][0], -max_speed, -max_speed, -max_speed])
         self.ocp.constraints.ubx = np.array([self.gf[0][1], self.gf[1][1], self.gf[2][1], +max_speed, +max_speed, +max_speed])
         self.ocp.constraints.idxbx = np.array([0, 1, 2, 3, 4, 5])
@@ -171,7 +195,7 @@ class MPCController():
         self.ocp.solver_options.nlp_solver_type = 'SQP_RTI' # SQP_RTI, SQP
         self.ocp.solver_options.qp_solver_cond_N = self.N
         self.ocp.solver_options.print_level = 0 # SQP_RTI, SQP
-        self.ocp.constraints.x0 = self.x0
+        # self.ocp.constraints.x0 = self.x0
 
         self.ocp.solver_options.tf = Tf
 
@@ -179,7 +203,7 @@ class MPCController():
 
         self.preds = np.zeros((self.N, self.nx))
 
-    def get_action(self, state_c, traj, i=0):
+    def __call__(self, state_c, traj, i=0):
 
         # set current state
         self.solver.set(0, "lbx", state_c)
