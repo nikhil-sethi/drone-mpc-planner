@@ -2,7 +2,7 @@ from agents import PATSX, Moth
 from controllers import MPCController
 from environment import Env
 
-geofence = [(-1,1), (-1.3, 0), (-1.95, 0)]
+geofence = [(-3,3), (-1.8, 0), (-2.95, 0)]
 
 agent = PATSX()
 controller = MPCController(agent=agent, gf = geofence)

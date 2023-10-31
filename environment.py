@@ -24,10 +24,12 @@ class Env():
 
         # RENDERING
         fig = plt.figure(figsize=(10,10))
-        ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-2.5, 0), zlim=(-1.5, 0))
+        ax = plt.axes(projection='3d', xlim=gf[0], ylim=gf[2], zlim=gf[1])
         ax.view_init(elev=25, azim=90)
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
-        self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(15)]
+        # self.traj_plt = [ax.plot(0,0,0, 'rx', markersize=5)[0] for _ in range(15)]
+        self.traj_plt = ax.plot(np.zeros(26),np.zeros(26),np.zeros(26), 'rx--', markersize=5)[0]
+        print(self.traj_plt)
         self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(controller.N)]
         self.motor_plts = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
         
@@ -50,7 +52,7 @@ class Env():
         self.replay = True
 
         if self.replay:
-            host = "pats84"
+            host = "10.13.11.55"
             username = "pats"
             key_path = "/home/nikhil/.ssh/pats_wg_id_ed25519"
             key = paramiko.RSAKey(filename=key_path)
@@ -59,17 +61,17 @@ class Env():
             ssh.connect(host, 22, username, pkey=key)
             sftp = ssh.open_sftp()
 
-            folder_path = "/home/pats/pats/data/20231009_104411/"
+            folder_path = "/home/pats/pats/data/20231030_211821/"
             flight_num = 1
 
-            # folder_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230922_180506/"
+            folder_path = "/home/nikhil/"
 
-            with sftp.file(folder_path + f"trajectory{flight_num}.csv", 'r') as traj_file:
-                self.traj = np.loadtxt(traj_file, delimiter=",")
+            # with sftp.file(folder_path + f"trajectory{flight_num}.csv", 'r') as traj_file:
+            #     self.traj = np.loadtxt(traj_file, delimiter=",")
 
-            with sftp.file(folder_path + f"log_flight{flight_num}.csv", 'r') as log_file:
-                data = pd.read_csv(log_file, delimiter=';')
-            
+            with open(folder_path + f"log_flight{flight_num}.csv", 'r') as log_file:
+                data = pd.read_csv(log_file, delimiter=',')
+            print(data)
             self.state_log = data['drone_state_str']
             start = data.index.get_loc(data[data['drone_state_str']=="ns_set_waypoint"].index[0])
             end =data.index.get_loc(data[data['drone_state_str']=="ns_set_waypoint"].index[-1])
@@ -79,8 +81,8 @@ class Env():
             self.vel_log = data[['svelX_drone', 'svelY_drone', 'svelZ_drone']].to_numpy()
             self.acc_log = data[['saccX_drone', 'saccY_drone', 'saccZ_drone']].to_numpy()
 
-            print("max_vel: ", np.max(np.linalg.norm(self.vel_log[start:end], axis=1)))
-            print("max_acc: ", np.max(np.linalg.norm(self.acc_log[start:end], axis=1)))
+            print("max_vel: ", np.max(np.linalg.norm(self.vel_log[start:], axis=1)))
+            print("max_acc: ", np.max(np.linalg.norm(self.acc_log[start:], axis=1)))
             self.control_log = data[['accX_commanded', 'accY_commanded', 'accZ_commanded']]
 
             # waypoints
@@ -92,8 +94,8 @@ class Env():
             self.preds_log = preds_log.reshape((len(data)-1, 10, 3))
 
             # dynamic trajectory
-            traj_log = data.iloc[:-1,data.columns.get_loc('traj_1_x'):data.columns.get_loc('traj_15_z')+1].to_numpy()
-            self.traj_log = traj_log.reshape((len(data)-1, 15, 3))
+            traj_log = data.iloc[:-1,data.columns.get_loc('traj_1_x'):data.columns.get_loc('traj_26_z')+1].to_numpy()
+            self.traj_log = traj_log.reshape((len(data)-1, 26, 3))
 
             num_frames = len(data)
             ani_interval = 60
@@ -153,8 +155,8 @@ class Env():
             for i in range(self.controller.N):
                 self.x_pred_plts[i].set_data_3d(self.x_preds[i][0], self.x_preds[i][2], self.x_preds[i][1])
         
-        for i in range(15):
-            self.traj_plt[i].set_data_3d(self.x_traj[i][0], self.x_traj[i][2], self.x_traj[i][1])
+        # for i in range(15):
+        self.traj_plt.set_data_3d(self.x_traj[:,0], self.x_traj[:,2], self.x_traj[:,1])
         
         # return 
 
@@ -207,7 +209,7 @@ class Env():
             #     # acados_integrator.set("x", np.zeros(6))
             #     print("not caught")
 
-        return self.agent_plt, *self.motor_plts, *self.x_pred_plts, *self.traj_plt
+        return self.agent_plt, *self.motor_plts, *self.x_pred_plts, self.traj_plt
 
 
     def replay_update(self, i):
