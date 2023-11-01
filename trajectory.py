@@ -10,10 +10,10 @@ from matplotlib import patches
 from matplotlib.widgets import Slider
 import time
 from utils import fact, pow
-from params import *
-from models import ConstantVel
-from agents import Particle
-from controllers import Constant
+from conf import *
+# from models import FirstOrder
+from agents import Moth
+# from controllers import Constant, Random
 
 np.set_printoptions(precision=4, suppress=True)
 np.set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
@@ -207,7 +207,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             self.poly_t_n_m(self.t_s[-1], Order.ACC, 2),  # max acc at end point
             -self.poly_t_n_m(self.t_s[-1], Order.ACC, 2), # min acc at end point
 
-            -self.poly_t_n_m(self.t_s[1], Order.VEL, 2), # min position at end point 
+            # -self.poly_t_n_m(self.t_s[1], Order.VEL, 2), # min position at end point 
             
             ])
 
@@ -304,11 +304,15 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
                  amax, amin,  
                  amax, amin, 
                  amax, amin,
-                 vmin]
+                #  vmin
+                 ]
+                 
 
             # acceleration at interception depends on dimension
             self.set_acc_t(self.acc_ic[l])
             options = {"show_progress":self.log_level>=LogLevel.DEBUG}
+            # print(np.array(self.A), self.G, self.H)
+            # print(self.f, b, h)
             self.sol = solvers.qp(P = matrix(self.H), q=matrix(self.f, tc='d'), A=matrix(np.array(self.A), tc='d'), b=matrix(b, tc='d'), G=matrix(self.G, tc='d'), h = matrix(h, tc='d'), options=options)
             self.status *= int(self.sol["status"] == "optimal")
             if self.status == 1:
@@ -1251,7 +1255,8 @@ class DynamicTraj():
         start = time.perf_counter()
         # make sure that the timestep for moth is lesser than lowest t1 bound. because it's an euler simulation
         drone_state = np.array([0, -1 ,  -1  , 0, 0, 0])
-        moth_state = np.array([0.2, -0.7, -1.2, self.v_mag, 0, 0])
+        # moth_state = np.array([0.2, -0.7, -1.2, self.v_mag, 0, 0])
+        moth_state = np.array([-1.0, -0.3, -1.2, self.v_mag, 0, 0])
         nl_optimizer = MothObliterator(drone_state = drone_state, moth_state =moth_state, log_level=LogLevel.NONE)
         x_opt, cost = nl_optimizer.optimize()
 
@@ -1294,8 +1299,8 @@ class DynamicTraj():
         mvajscp.plot(pos, ax=self.ax1)
         # self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
 
-        moth_history = np.array(nl_optimizer.moth.history)
-        self.ax1.plot(moth_history[:,0], moth_history[:,2], moth_history[:,1], 'kx', linestyle="--")
+        moth_pos_history = np.array(nl_optimizer.moth.history["state"])[:, :3]
+        self.ax1.plot(moth_pos_history[:,0], moth_pos_history[:,2], moth_pos_history[:,1], 'kx', linestyle="--")
 
         mvajscp.plot_vec(pos, vel,ax=self.ax1 ,color='gray')
         mvajscp.plot_vec(pos, acc,ax=self.ax1 ,color='k')
@@ -1351,12 +1356,15 @@ class MothObliterator():
     def __init__(self, drone_state, moth_state, log_level=LogLevel.NONE) -> None:
         self.drone_state = drone_state
         # drone_state = 
-        moth_model = ConstantVel(n_states=6, n_actions=3)
-        self.moth = Particle(model = moth_model, controller=Constant(action=moth_state[3:]), init_state = moth_state)
+        # moth_model = FirstOrder(n_states=6, n_actions=3)
 
-        # self.moth = Particle(init_state=moth_state, time_step=0.1)
+        # moth_controller = Random(n_actions=3, variance= np.linalg.norm(moth_state[:3])*np.ones(3))
+        # moth_controller = Constant(action=moth_state[3:])
+        
+        # self.moth = Particle(model=moth_model, controller=moth_controller, init_state = moth_state)
 
-        self.moth_state = np.array([])
+        self.moth = Moth(init_state = moth_state)
+
         self.log_level = log_level
 
         # nonlinear optimization params

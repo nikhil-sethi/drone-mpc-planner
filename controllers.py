@@ -4,16 +4,19 @@ from casadi import *
 import numpy as np
 from math import pi, cos
 from typing import Any
-from params import Dynamics, geofence
-from models import DynamicsModel, ConstantAccGravity
+from conf import Dynamics, geofence, MPCParams
+from models import DynamicsModel, SecondOrderGravity
 
 class Controller:
+    def __init__(self, n_actions) -> None:
+        self.n_actions = n_actions
     def __call__(self, state, **kwds: Any) -> Any:
         raise NotImplementedError
 
 class Constant(Controller):
     def __init__(self, action) -> None:
         self.action = action
+        super().__init__(len(self.action))
 
     def __call__(self, state, **kwds: Any) -> Any:
         return self.action
@@ -23,12 +26,22 @@ class ConstantThetaMag2D(Constant):
         return self.action[1]*np.array([np.cos(self.action[0]), np.sin(self.action[0])])
 
 class Random(Controller):
-    def __init__(self, mean = [0,0], variance = [1,1]) -> None:
-        self.mu = mean
-        self.var = variance 
+    def __init__(self, n_actions, mean = None, variance = None) -> None:
+        super().__init__(n_actions)
+        if mean != None:
+            self.mu = mean
+        else:
+            self.mu = np.zeros(self.n_actions)
         
+        if variance is None:
+            self.var = np.array(variance)
+        else:
+            self.var = np.ones(self.n_actions) 
+        
+        assert len(self.mu) == len(self.var), "Mean and variance must be same length"
+
     def __call__(self, state, **kwds: Any) -> Any:
-        return np.random.normal(loc=self.mu, scale=[self.var[0]/2, self.var[0]/2],size=len(self.mu)) # divide by two because we want 95% of the velocities to be under v_max
+        return np.random.normal(loc=self.mu, scale=self.var/2,size=len(self.mu)) # divide by two because we want 95% of the velocities to be under v_max
 
 def create_model(model):
     name = "particle_ode"
@@ -84,13 +97,13 @@ class MPC(Controller):
         ny = nx + nu
         ny_e = nx
 
-        self.N = 10  # number of optimization predictions
+        self.N = MPCParams.N  # number of optimization predictions
           
         Tf = self.N*Dynamics.dt # number of seconds to 'look-ahead' =  time for each step in seconds * number of steps
-        Q_mat = 1*np.diag([550, 550, 550, 40, 40, 40])
+        Q_mat = 1*np.diag([550, 550, 550, 20, 20, 20])
         R_mat = 0.0001*np.diag([1, 1, 1])
 
-        # self.x0 = agent.x0
+        # self.x0 = agent.state
         self.u0 = np.array([0,Dynamics.G,0]) # hover
 
         # set simulation time
@@ -173,7 +186,7 @@ class MPC(Controller):
         self.ocp.cost.Zu = 0 * np.ones((ns,))
 
         # state constraints
-        max_speed = 3
+        max_speed = 4
         self.gf = geofence
         self.ocp.constraints.lbx = np.array([self.gf[0][0], self.gf[1][0], self.gf[2][0], -max_speed, -max_speed, -max_speed])
         self.ocp.constraints.ubx = np.array([self.gf[0][1], self.gf[1][1], self.gf[2][1], +max_speed, +max_speed, +max_speed])
@@ -195,7 +208,7 @@ class MPC(Controller):
         self.ocp.solver_options.nlp_solver_type = 'SQP_RTI' # SQP_RTI, SQP
         self.ocp.solver_options.qp_solver_cond_N = self.N
         self.ocp.solver_options.print_level = 0 # SQP_RTI, SQP
-        # self.ocp.constraints.x0 = self.x0
+        self.ocp.constraints.x0 = np.ones(self.nx)
 
         self.ocp.solver_options.tf = Tf
 
@@ -220,6 +233,7 @@ class MPC(Controller):
         cid = np.argmin(np.linalg.norm(state_c[:3] - traj[:, :3], axis=1))
 
         idf = min(cid, i)
+        idf = i
         for j in range(self.N):
 
             idx = min(j + idf, len(traj)-1)
@@ -252,7 +266,7 @@ class MPC(Controller):
         # print(state_c[3:], traj[min(idf, len(traj)-1), 3:6])
 
         # the perfect MPC predicted state. not sure which one to use.
-        self.x = self.solver.get(1, "x")
+        # self.x = self.solver.get(1, "x")
 
         # store predictions
         self.preds = np.zeros((self.N, self.nx))
@@ -262,6 +276,7 @@ class MPC(Controller):
         self.u = self.solver.get(0, "u")
         # if np.linalg.norm(self.u)>15:
         #     self.u = self.u/np.linalg.norm(self.u)*15
+        # return traj[i][-3:]
         return self.u
 
 if __name__=="__main__":
@@ -272,5 +287,5 @@ if __name__=="__main__":
     print("========= Rebulding OCP problem... ======== ")
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     agent = PATSX()
-    controller = MPCController(agent=agent)
+    controller = MPC(agent=agent)
     print("========== Done ============")

@@ -4,10 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from matplotlib import animation
-from models import DynamicsModel
+from models import DynamicsModel, FirstOrder
+from controllers import Constant
 from casadi import sin, cos, tan
 from typing import Any
-from params import Dynamics
+from conf import Dynamics
+
+
 
 np.set_printoptions(precision=5)
 
@@ -18,7 +21,7 @@ class Particle:
         self.n_dims = 3
         self.dt = Dynamics.dt # timestep
         if "init_state" in kwds:
-            self.init_state = kwds["init_state"]
+            self.init_state = np.array(kwds["init_state"])
         else:
             self.init_state = np.zeros(n_states)
 
@@ -29,7 +32,7 @@ class Particle:
 
     def reset(self):
         self.state = self.init_state.copy()
-        self.history = {"state":[], "action":[]}
+        self.history = {"state":[self.init_state], "action":[]}
 
     # def xdot(self, x,u):
 
@@ -58,7 +61,7 @@ class Particle:
         N = int(Ts/self.dt)
         for _ in range(N):
             self.update()
-            self.history["state"].append(self.state)
+            self.history["state"].append(self.state.copy())
 
         return self.state
 
@@ -246,33 +249,45 @@ class PATSX(Particle):
         
         return [dx, dy, dz, dvx, dvy, dvz]
 
-
 class Moth(Particle):
-    def __init__(self) -> None:
-        super().__init__(n_states=3, n_actions=3)
-        self.i = 0 # counter for state updates of moth
-        self.v_max = 2 # maximum speed of the moth
+    moth_vel = [1.5,0,0]
+    def __init__(self, n_states=6, n_actions=3, **kwds: Any) -> None:
+        model = FirstOrder(n_states=n_states, n_actions=n_actions)
+        if 'velocity' in kwds:
+            velocity = kwds["velocity"]
+        else:
+            velocity = kwds["init_state"][-3:]
+            
+        controller = Constant(action=np.array(velocity))
+        super().__init__(model, controller, n_states, n_actions, **kwds)
 
-        self.switch_time = 1 # (seconds) random direction every switch time seconds
 
-        self.u = np.zeros(self.N_ACTIONS) 
-        self.x = np.array([1.,3.,4.])
+# class Moth(Particle):
+#     def __init__(self) -> None:
+#         super().__init__(n_states=3, n_actions=3)
+#         self.i = 0 # counter for state updates of moth
+#         self.v_max = 2 # maximum speed of the moth
 
-    def xdot(self, _x, _u):
+#         self.switch_time = 1 # (seconds) random direction every switch time seconds
 
-        dx = _u[0]
-        dy = _u[1]
-        dz = _u[2]
+#         self.u = np.zeros(self.N_ACTIONS) 
+#         self.x = np.array([1.,3.,4.])
+
+#     def xdot(self, _x, _u):
+
+#         dx = _u[0]
+#         dy = _u[1]
+#         dz = _u[2]
        
-        return [dx, dy, dz]
+#         return [dx, dy, dz]
     
-    def get_action(self):
-        self.i += 1
-        if self.i  % (self.switch_time//self.dt) == 0:
-            self.u = np.random.normal(loc=[0,0,0], scale=[self.v_max/2, self.v_max/2, self.v_max/2],size=(3)) # divide by two because we want 95% of the velocities to be under v_max
-        self.u = np.zeros(self.N_ACTIONS)
+#     def get_action(self):
+#         self.i += 1
+#         if self.i  % (self.switch_time//self.dt) == 0:
+#             self.u = np.random.normal(loc=[0,0,0], scale=[self.v_max/2, self.v_max/2, self.v_max/2],size=(3)) # divide by two because we want 95% of the velocities to be under v_max
+#         self.u = np.zeros(self.N_ACTIONS)
         
-        return self.u
+#         return self.u
 
-    def reset(self):
+#     def reset(self):
         self.x = -2 + 2*np.random.rand(self.N_STATES)

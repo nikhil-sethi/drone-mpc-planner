@@ -1,5 +1,5 @@
 from typing import Any
-from params import Dynamics
+from conf import Dynamics
 
 class DynamicsModel:
     def __init__(self, n_states, n_actions) -> None:
@@ -9,7 +9,7 @@ class DynamicsModel:
     def __call__(self, state, action, **kwds: Any) -> Any:
         raise NotImplementedError
 
-class ConstantVel(DynamicsModel):
+class FirstOrder(DynamicsModel):
     def __init__(self, n_states, n_actions) -> None:
         super().__init__(n_states, n_actions)
 
@@ -22,7 +22,7 @@ class ConstantVel(DynamicsModel):
         dw = 0
         return [dx, dy, dz, du, dv, dw]
 
-class ConstantAccGravity(DynamicsModel):
+class SecondOrderGravity(DynamicsModel):
     def __init__(self, n_states, n_actions, mass = 1, gravity = [0,-Dynamics.G, 0]) -> None:
         super().__init__(n_states, n_actions)
         self.mass = mass
@@ -40,3 +40,4 @@ class ConstantAccGravity(DynamicsModel):
         dvz = (action[2] + self.gravity[2])/self.mass
 
         return [dx, dy, dz, dvx, dvy, dvz]
+    

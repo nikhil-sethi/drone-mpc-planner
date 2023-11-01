@@ -8,7 +8,13 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from trajectory import MinVelAccJerkSnapCrackPop, MothObliterator
 import paramiko
 import pandas as pd
-from params import geofence
+from conf import geofence, Dynamics
+import threading
+
+class RepeatTimer(threading.Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
 
 
 class Env():
@@ -19,23 +25,27 @@ class Env():
         self.gf = geofence
 
         self._simulator = AcadosSimSolver(self.controller.ocp, json_file = "acados_json")
-        self.sim_x = agent.init_state
+        self.sim_x = agent.state
         self.u0 = self.controller.u0
 
         # self.target = np.array([moth_pos[0], moth_pos[1], moth_pos[2], target_vel[0], target_vel[1], target_vel[2], 0, 0, self.agent.hov_T])
 
         # RENDERING
         fig = plt.figure(figsize=(10,10))
-        ax = plt.axes(projection='3d', xlim=(-1, 1), ylim=(-2.5, 0), zlim=(-1.5, 0))
-        ax.view_init(elev=25, azim=90)
-        self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=5)
-        self.moth_plt, = ax.plot(1,0,0, 'kx', markersize=5)
+        ax = plt.axes(projection='3d', xlim=self.gf[0], ylim=self.gf[2], zlim=self.gf[1])
+        ax.view_init(elev=25, azim=135)
+        self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=6)
+        self.moth_plt, = ax.plot(1,0,0, 'kx', markersize=6)
 
-        self.traj_plt = [ax.plot(0,0,0, 'ro', markersize=5)[0] for _ in range(20)]
-        self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(agent.controller.N)]
+        self.traj_plt = ax.plot(np.zeros(20),np.zeros(20),np.zeros(20), 'rx-', markersize=5, alpha=0.5)[0]
+        # self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(agent.controller.N)]
+        self.x_pred_plts = ax.plot(np.zeros(self.controller.N), np.zeros(self.controller.N), np.zeros(self.controller.N), marker='', color = 'limegreen', linestyle='-',markersize=5, linewidth=3)[0]
+
         self.motor_plts = [ax.plot(0,0,0, 'ro', markersize=2)[0] for _ in range(4)]
-        
-        # gf = (1,2,2)
+        # self.timer_txt = plt.figtext(0.5, 0.95, "sfdg", fontsize=14)
+        self.timer_txt = ax.text(0.5,0.5,  0.5, "t", bbox={'facecolor':'w', 'alpha':0.5, 'pad':5},
+                 ha="center")
+
         # self.gf = [(-1,1), (-1.3, 0), (-2.5, 0)]
         x = [self.gf[0][1],self.gf[0][1], self.gf[0][1], self.gf[0][1]], [self.gf[0][0], self.gf[0][0], self.gf[0][0], self.gf[0][0]], [self.gf[0][1], self.gf[0][0], self.gf[0][0], self.gf[0][1]], [self.gf[0][1], self.gf[0][0],self.gf[0][0], self.gf[0][1]]
         y = [self.gf[2][1],self.gf[2][0], self.gf[2][0], self.gf[2][1]], [self.gf[2][1], self.gf[2][0], self.gf[2][0], self.gf[2][1]], [self.gf[2][1], self.gf[2][1], self.gf[2][1], self.gf[2][1]], [self.gf[2][0], self.gf[2][0],self.gf[2][0], self.gf[2][0]]
@@ -138,22 +148,23 @@ class Env():
             # mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
 
             num_frames = 200
-            ani_interval = self.agent.dt*1000
+            self.ani_interval = self.agent.dt*10000
 
-        self.anim = animation.FuncAnimation(fig, self.update, frames=num_frames, interval=ani_interval, blit=True)
-        
-        # dt = np.mean(timesteps)
+        # self.traj_thread = RepeatTimer(0.2, function = self.traj_update) 
+        # self.traj_thread = threading.Thread(target = self.traj_update) 
+        self.traj_update() # just one run to get started
+        # self.traj_thread.start()
+        self.anim = animation.FuncAnimation(fig, self.update, frames=num_frames, interval=self.ani_interval, blit=True)
 
         plt.show()
 
     def simulate(self, x, u):
         pass
 
-    def render_update(self):
+    def render_update(self, i):
         # ========= Animation updates
         self.agent_plt.set_data_3d(self.sim_x[0], self.sim_x[2], self.sim_x[1])
         self.moth_plt.set_data_3d(self.moth.state[0], self.moth.state[2], self.moth.state[1])
-        print(self.moth.state)
         # for i in range(2):
         #     self.traj_plt[i].set_data_3d(self.traj[i][0], self.traj[i][1], self.traj[i][2])
         # R = scipy.spatial.transform.Rotation.from_euler('zyx', [sim_x[3], sim_x[4], sim_x[5]])
@@ -166,67 +177,80 @@ class Env():
         # for i in range(self.controller.N):
         #     x_pred = self.controller.solver.get(i, "x")
         #     self.x_pred_plts[i].set_data_3d(x_pred[0], x_pred[2], x_pred[1])
-        if self.x_preds.size !=0:
-            for i in range(self.controller.N):
-                self.x_pred_plts[i].set_data_3d(self.x_preds[i][0], self.x_preds[i][2], self.x_preds[i][1])
-        
-        for i in range(len(self.x_traj)):
-            self.traj_plt[i].set_data_3d(self.x_traj[i][0], self.x_traj[i][2], self.x_traj[i][1])
-        
+        # if self.x_preds.size !=0:
+        #     for i in range(self.controller.N):
+        #         self.x_pred_plts[i].set_data_3d(self.x_preds[i][0], self.x_preds[i][2], self.x_preds[i][1])
+        try:
+            self.x_pred_plts.set_data_3d(self.x_preds[:,0], self.x_preds[:,2], self.x_preds[:,1])
+        except:
+            pass
+       
+        try:
+            self.traj_plt.set_data_3d(self.x_traj[:,0], self.x_traj[:,2], self.x_traj[:,1])
+            pass
+        except:
+            pass
+
+        elapsed_time = i*self.agent.dt
+        self.timer_txt.set_text(f"{elapsed_time:0.2f} seconds")
         # return 
 
-    def update(self, i):
+    def traj_update(self):
+        # while True:
+        die_moth_die = MothObliterator(drone_state = self.sim_x, moth_state = self.moth.init_state)
+        x_opt, cost = die_moth_die.optimize()
 
+        self.t1 = x_opt[0]
+        mvajscp = die_moth_die.traj_opt
+
+        dt = Dynamics.dt
+        pos = mvajscp.evaluate(order = 0, dt=dt)
+        vel = mvajscp.evaluate(order = 1, dt=dt)
+        acc = mvajscp.evaluate(order = 2, dt=dt)
+        self.traj = np.hstack([pos, vel, acc])
+        self.x_traj = pos
+
+        print("max_vel = ", np.max(np.linalg.norm(vel, axis=1)))
+        print("max_acc = ", np.max(np.linalg.norm(acc, axis=1)))
+        print(x_opt)
+
+    def update(self, i):
+        
         if self.replay:
             self.sim_x = self.pos_log[i]
             self.x_preds = self.preds_log[i]
             self.x_traj = self.traj_log[i]
         else:
+            if i>0:   # because matplotlib takes a while to start and keeps the counter at 0 all the time
+                self.moth.update()
+                self.x_preds = self.controller.preds
 
-            self.moth.update()
-            
-            self.x_preds = self.controller.preds #.copy()
-            die_moth_die = MothObliterator(drone_state = self.sim_x, moth_state = self.moth.state)
-            x_opt, cost = die_moth_die.optimize()
+                # ======= calculate optimal control problem
+                start = time.time()
+                action = self.controller(state_c=self.sim_x, traj=self.traj, i=i-1)
 
-            self.t1 = x_opt[0]
-            mvajscp = die_moth_die.traj_opt
+                # print("MPC compute rate: ",1/(time.time()-start))
+                self.sim_x = self._simulator.simulate(x = self.sim_x, u = action)
+            # self.sim_x = self.agent.init_state.copy()
 
-            dt = 0.05
-            pos = mvajscp.evaluate(order = 0, dt=dt)
-            vel = mvajscp.evaluate(order = 1, dt=dt)
-            acc = mvajscp.evaluate(order = 2, dt=dt)
-            self.traj = np.hstack([pos, vel, acc])
-            self.x_traj = pos
-
-            # ======= calculate optimal control problem
-            start = time.time()
-            # action = self.controller(state_c=self.sim_x, traj=self.traj, i=i)
-            action = np.array([0,9.81,0])
-            # print("MPC compute rate: ",1/(time.time()-start))
-            # self.sim_x = self._simulator.simulate(x = self.sim_x, u = action)
-            self.sim_x = self.agent.init_state.copy()
-
-
-        ani_tuple = self.render_update()
-        
+        ani_tuple = self.render_update(i)
+        # dist_to_moth = np.linalg.norm(self.sim_x-self.moth.state)
             # ====== Sanity checks
-            # reset simulation if you catch it or it goes out of bounds
-            # if dist_to_moth<0.05: # 5 cm accuracy of catching
-            #     # moth_pos = -2 + 2*np.random.rand(3)
-            #     self.moth.reset()
-            #     self.sim_x = np.zeros(6)
-            #     # acados_integrator.set("x", )
-            #     # print(acados_integrator.get("x"))
-            #     print("caught!")
+        # reset simulation if you catch it or it goes out of bounds
+        # if dist_to_moth<0.05: # 5 cm accuracy of catching
+        #     # moth_pos = -2 + 2*np.random.rand(3)
+        #     self.moth.reset()
+        #     self.sim_x = np.zeros(6)
+        #     # acados_integrator.set("x", )
+        #     # print(acados_integrator.get("x"))
+        #     print("caught!")
 
             # if np.any(np.abs(self.moth.pos) > self.gf):
             #     self.moth.reset()
             #     self.sim_x = np.zeros(6)
             #     # acados_integrator.set("x", np.zeros(6))
             #     print("not caught")
-
-        return self.agent_plt, *self.traj_plt, self.moth_plt
+        return self.agent_plt, self.moth_plt, self.x_pred_plts, self.traj_plt, self.timer_txt
 
     def replay_update(self, i):
         
