@@ -103,8 +103,8 @@ void DroneTracker::update(double time) {
                 }
 
                 float takeoff_duration = static_cast<float>(time - start_take_off_time);
+                calc_takeoff_prediction(time, acc);
                 if (post_burn_start(time)) {
-                    calc_takeoff_prediction(time, acc);
                     if (_world_item.valid) {
                         if (detect_lift_off()) {
                             if (!liftoff_detected)
@@ -350,10 +350,6 @@ void DroneTracker::delete_landing_motion(float duration) {
 }
 
 void DroneTracker::calc_takeoff_prediction(double time, cv::Point3f acc) {
-
-
-
-
     tracking::TrackData last_drone_detection;
     if (_track.size())
         last_drone_detection = _track.back();
