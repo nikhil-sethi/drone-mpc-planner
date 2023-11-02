@@ -36,12 +36,14 @@ private:
     double time_start_wait_after_landing = -1;
     double time_prev_wp_reached = -1;
     double time_wp_reached = -1;
+    double time_approach_landing = -1;
     double time_start_landing = -1;
     double time_landed = 0;
     double time_drone_problem = -1;
     double time_take_off = 0;
-    float time_out_after_landing = 10;
     double time_start_wait_expected_attitude = -1;
+    float time_out_after_landing = 10;
+    const double time_out_after_landing_approach_start = 300;
     const float duration_correct_yaw = 6;
     const float duration_trigger_bowling = 2.4f;
     const float duration_reset_headless_yaw = 2;
@@ -67,7 +69,7 @@ private:
     void next_waypoint(Waypoint wp, double time);
     bool drone_at_wp();
     bool drone_close_to_wp();
-    void check_abort_autonomous_flight_conditions();
+    void check_abort_autonomous_flight_conditions(double time);
     float calibration_offset(Waypoint wp);
     bool exec_thrust_calib() {return !_control->thrust_calib_valid() || force_thrust_calib;}
 
