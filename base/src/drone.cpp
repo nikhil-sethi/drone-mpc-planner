@@ -81,30 +81,31 @@ void Drone::update(double time) {
                     _state = ds_overcharged_failure;
                     break;
                 }
-                if (_interceptor->intercepting()) {
-
-                    take_off(true, time);
-                    _state = ds_flight;
-                    _interceptor->reset_hunt_error();
-
-                    _baseboard_link->allow_charging(false);
-                    break;
-                } else if (control.manual_override_take_off_now()) {
-                    flightplan_fn = pparams.flightplan;
-                    take_off(false, time);
-                    _state = ds_flight;
-                    _baseboard_link->allow_charging(false);
-                    break;
-                } else if (trigger_waypoint_flight && !_trackers->monster_alert() && _visdat->no_recent_brightness_events(time)) {
-                    trigger_waypoint_flight = false;
-                    take_off(false, time);
-                    _state = ds_flight;
-                    _baseboard_link->allow_charging(false);
-                    break;
+                if (_visdat->light_level() < pparams.light_level_threshold) {
+                    if (_interceptor->intercepting()) {
+                        _interceptor->reset_hunt_error();
+                        take_off(true, time);
+                        _state = ds_flight;
+                        _baseboard_link->allow_charging(false);
+                        break;
+                    } else if (control.manual_override_take_off_now()) {
+                        flightplan_fn = pparams.flightplan;
+                        take_off(false, time);
+                        _state = ds_flight;
+                        _baseboard_link->allow_charging(false);
+                        break;
+                    } else if (trigger_waypoint_flight && !_trackers->monster_alert() && _visdat->no_recent_brightness_events(time)) {
+                        trigger_waypoint_flight = false;
+                        take_off(false, time);
+                        _state = ds_flight;
+                        _baseboard_link->allow_charging(false);
+                        break;
+                    }
                 } else {
                     control.flight_mode(DroneController::fm_inactive);
                     _baseboard_link->allow_charging(true);
                 }
+
                 if (_baseboard_link->charging_problem())
                     _state = ds_charging_failure;
                 else if (_baseboard_link->contact_problem() || !_baseboard_link->drone_on_pad()) {
