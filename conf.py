@@ -25,7 +25,7 @@ class Dynamics:
     VYMIN = 0
     VMIN = -10000 
     G = 9.81
-    dt = 0.1
+    dt = 0.01
 
 class MPCParams:
     N = 10

@@ -1428,7 +1428,7 @@ class MothObliterator():
         return cost
 
     def optimize(self):     
-        res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac='2-point', options={'gtol': 1e-6, 'disp': True},constraints=self.cons, bounds = self.bounds)        
+        res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac='2-point', options={'gtol': 1e-6, 'disp': False},constraints=self.cons, bounds = self.bounds)        
 
         if self.log_level >=LogLevel.INFO:
             print("Optimal val:", res.x)

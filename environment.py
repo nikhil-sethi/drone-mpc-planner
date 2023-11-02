@@ -10,6 +10,7 @@ import paramiko
 import pandas as pd
 from conf import geofence, Dynamics
 import threading
+from utils import in_arena
 
 class RepeatTimer(threading.Timer):
     def run(self):
@@ -22,6 +23,8 @@ class Env():
         self.agent = agent
         self.controller = agent.controller
         self.moth = target
+        # self.moth.randomize()
+
         self.gf = geofence
 
         self._simulator = AcadosSimSolver(self.controller.ocp, json_file = "acados_json")
@@ -37,7 +40,7 @@ class Env():
         self.agent_plt, = ax.plot(0,0,0, 'bo', markersize=6)
         self.moth_plt, = ax.plot(1,0,0, 'kx', markersize=6)
 
-        self.traj_plt = ax.plot(np.zeros(20),np.zeros(20),np.zeros(20), 'rx-', markersize=5, alpha=0.5)[0]
+        self.traj_plt = ax.plot(np.zeros(20),np.zeros(20),np.zeros(20), 'r-', markersize=5, alpha=0.5)[0]
         # self.x_pred_plts = [ax.plot(0,0,0, 'k.', markersize=4)[0] for _ in range(agent.controller.N)]
         self.x_pred_plts = ax.plot(np.zeros(self.controller.N), np.zeros(self.controller.N), np.zeros(self.controller.N), marker='', color = 'limegreen', linestyle='-',markersize=5, linewidth=3)[0]
 
@@ -59,7 +62,7 @@ class Env():
         for surface in surfaces:
             ax.add_collection3d(Poly3DCollection(surface, alpha=0.2))
 
-        np.random.seed(1)
+        # np.random.seed(1)
         self.x_preds = np.zeros(0)
         self.replay = False
 
@@ -148,7 +151,7 @@ class Env():
             # mvajscp.plot_vec(pos, vel, ax=ax, color='gray')
 
             num_frames = 200
-            self.ani_interval = self.agent.dt*10000
+            self.ani_interval = self.agent.dt*1000
 
         # self.traj_thread = RepeatTimer(0.2, function = self.traj_update) 
         # self.traj_thread = threading.Thread(target = self.traj_update) 
@@ -156,6 +159,9 @@ class Env():
         # self.traj_thread.start()
         self.anim = animation.FuncAnimation(fig, self.update, frames=num_frames, interval=self.ani_interval, blit=True)
 
+        self.counter = 0
+        self.caught = 0
+        self.not_caught = 0
         plt.show()
 
     def simulate(self, x, u):
@@ -167,9 +173,9 @@ class Env():
         self.moth_plt.set_data_3d(self.moth.state[0], self.moth.state[2], self.moth.state[1])
         # for i in range(2):
         #     self.traj_plt[i].set_data_3d(self.traj[i][0], self.traj[i][1], self.traj[i][2])
-        # R = scipy.spatial.transform.Rotation.from_euler('zyx', [sim_x[3], sim_x[4], sim_x[5]])
+        R = scipy.spatial.transform.Rotation.from_euler('zyx', [self.action[0], self.action[1], self.action[2]])
 
-        # motor_pts_t = R.apply(agent.motor_pos) + np.array([sim_x[0], sim_x[1], sim_x[2]])
+        motor_pts_t = R.apply(agent.motor_pos) + np.array([self.sim_x[0], self.sim_x[1], self.sim_x[2]])
 
         # for i in range(4):
         #     motor_plots[i].set_data_3d(motor_pts_t[i,0], motor_pts_t[i,1], motor_pts_t[i,2])
@@ -194,6 +200,7 @@ class Env():
         elapsed_time = i*self.agent.dt
         self.timer_txt.set_text(f"{elapsed_time:0.2f} seconds")
         # return 
+        
 
     def traj_update(self):
         # while True:
@@ -210,9 +217,9 @@ class Env():
         self.traj = np.hstack([pos, vel, acc])
         self.x_traj = pos
 
-        print("max_vel = ", np.max(np.linalg.norm(vel, axis=1)))
-        print("max_acc = ", np.max(np.linalg.norm(acc, axis=1)))
-        print(x_opt)
+        # print("max_vel = ", np.max(np.linalg.norm(vel, axis=1)))
+        # print("max_acc = ", np.max(np.linalg.norm(acc, axis=1)))
+        # print(x_opt)
 
     def update(self, i):
         
@@ -223,33 +230,38 @@ class Env():
         else:
             if i>0:   # because matplotlib takes a while to start and keeps the counter at 0 all the time
                 self.moth.update()
+                self.counter = self.counter+1
                 self.x_preds = self.controller.preds
-
+                
                 # ======= calculate optimal control problem
                 start = time.time()
-                action = self.controller(state_c=self.sim_x, traj=self.traj, i=i-1)
-
+                self.action = self.controller(state_c=self.sim_x, traj=self.traj, i=self.counter-1)
+                
                 # print("MPC compute rate: ",1/(time.time()-start))
-                self.sim_x = self._simulator.simulate(x = self.sim_x, u = action)
+                self.sim_x = self._simulator.simulate(x = self.sim_x, u = self.action)
             # self.sim_x = self.agent.init_state.copy()
 
         ani_tuple = self.render_update(i)
-        # dist_to_moth = np.linalg.norm(self.sim_x-self.moth.state)
-            # ====== Sanity checks
+        dist_to_moth = np.linalg.norm(self.sim_x[:3]-self.moth.state[:3])
+         
+        # ====== Sanity checks
         # reset simulation if you catch it or it goes out of bounds
-        # if dist_to_moth<0.05: # 5 cm accuracy of catching
-        #     # moth_pos = -2 + 2*np.random.rand(3)
-        #     self.moth.reset()
-        #     self.sim_x = np.zeros(6)
-        #     # acados_integrator.set("x", )
-        #     # print(acados_integrator.get("x"))
-        #     print("caught!")
+        if dist_to_moth<0.05: # 5 cm accuracy of catching
+            self.moth.randomize()
+            self.sim_x = self.agent.reset()    
+            self.traj_update()
+            self.counter = 0
+            self.caught +=1
+            print("caught! ", self.caught)
 
-            # if np.any(np.abs(self.moth.pos) > self.gf):
-            #     self.moth.reset()
-            #     self.sim_x = np.zeros(6)
-            #     # acados_integrator.set("x", np.zeros(6))
-            #     print("not caught")
+        if not in_arena(self.moth.state):
+            self.moth.randomize()
+            self.sim_x = self.agent.reset()
+            self.traj_update()
+            self.counter=0
+            self.not_caught += 1
+            print("not caught", self.not_caught)
+
         return self.agent_plt, self.moth_plt, self.x_pred_plts, self.traj_plt, self.timer_txt
 
     def replay_update(self, i):

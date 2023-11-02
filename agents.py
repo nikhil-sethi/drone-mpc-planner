@@ -8,8 +8,8 @@ from models import DynamicsModel, FirstOrder
 from controllers import Constant
 from casadi import sin, cos, tan
 from typing import Any
-from conf import Dynamics
-
+from conf import Dynamics, geofence
+from utils import sample_in_range, in_arena
 
 
 np.set_printoptions(precision=5)
@@ -33,7 +33,7 @@ class Particle:
     def reset(self):
         self.state = self.init_state.copy()
         self.history = {"state":[self.init_state], "action":[]}
-
+        return self.state
     # def xdot(self, x,u):
 
     #     # position derivative
@@ -55,7 +55,7 @@ class Particle:
         return self.state
     
     def simulate(self, Ts):
-        """Simulate system for Ts seconds"""
+        """forward simulate system for Ts seconds"""
         self.reset()
 
         N = int(Ts/self.dt)
@@ -251,16 +251,28 @@ class PATSX(Particle):
 
 class Moth(Particle):
     moth_vel = [1.5,0,0]
+    MAX_VEL = 1
     def __init__(self, n_states=6, n_actions=3, **kwds: Any) -> None:
         model = FirstOrder(n_states=n_states, n_actions=n_actions)
         if 'velocity' in kwds:
             velocity = kwds["velocity"]
         else:
-            velocity = kwds["init_state"][-3:]
-            
-        controller = Constant(action=np.array(velocity))
+            velocity = Moth.moth_vel
+        
+        # for a constant controller, just use the initial velocity
+        controller = Constant(action=np.array(kwds["init_state"][-3:]))
         super().__init__(model, controller, n_states, n_actions, **kwds)
 
+    def randomize(self):
+        self.init_state[:3] = sample_in_range(np.array(geofence).T) # position
+        self.init_state[3:] = Moth.MAX_VEL*(-1+2*np.random.rand(3)) # velocity
+        # state = 
+
+        max_pos = self.simulate(1.8) # simulate for maximum interception time and do arena check
+        if not in_arena(max_pos): # if not in arena, reset again
+            self.randomize()
+        self.controller.action = self.init_state[3:]
+        return super().reset()
 
 # class Moth(Particle):
 #     def __init__(self) -> None:
