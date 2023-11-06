@@ -455,8 +455,15 @@ void ELRS::parseParameterEntry(unsigned char *buffer) {
         (void)_field_type; // silence compiler, maybe used in the future
         int index = 7;
         string _field_label = "";
-        while (buffer[index] != 0) {
+        while (!(index > 14)) {
             _field_label += char(buffer[index]);
+            index ++;
+        }
+        if (buffer[index] == 0)
+            index++;
+        string _options_label = "";
+        while (buffer[index] != 0) {
+            _options_label += char(buffer[index]);
             index ++;
         }
         if (_current_config_index == _config_field_index) {
