@@ -5,7 +5,7 @@
     <Member Name="full_bat_and_throttle_spinup_duration">0.5</Member>
     <Member Name="drone_blink_strength">30</Member>
     <Member Name="drone_led_strength">5</Member>
-    <Member Name="blink_period">0.1</Member>
+    <Member Name="blink_period">0.3</Member>
     <Member Name="radius">0.05</Member>
     <Member Name="pad_radius">0.12</Member>
     <Member Name="max_thrust">27</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
