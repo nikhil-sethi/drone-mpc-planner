@@ -210,7 +210,7 @@ private:
 
     bool _exchanged = false;
     uint8_t no_cfg_params = 0;
-    bool find_bind_parameter = true;
+    bool find_modelid_parameter = true;
     bool send_read_parameters = false;
     bool _bind = false;
 
@@ -242,6 +242,8 @@ private:
     void get_elrs_info();
     void ping();
     void read_parameter(uint8_t config_field_index, uint8_t chunk_index);
+    void write_parameter(uint8_t config_field_index, uint8_t value);
+    void set_model_id(uint8_t model_id);
     bool receive_telemetry(std::string buffer);
     void watchdog_tx_connect();
     int map(int inValue, float minInRange, float maxInRange, float minOutRange, float maxOutRange);
@@ -298,5 +300,5 @@ private:
     };
 
     int _current_config_index;
-    int _bind_index;
+    int _model_match_index;
 };

@@ -95,11 +95,15 @@ void ELRS::ping_thread(void) {
     usleep(100);
     ping();
     _current_config_index = 0;
-    while (find_bind_parameter && _current_config_index <= no_cfg_params) {
+    while (find_modelid_parameter && _current_config_index <= no_cfg_params) {
         read_parameter(_current_config_index, 0);
         _current_config_index++;
     }
+    if (_model_match_index) {
+        write_parameter(_model_match_index, 20);
+    }
     std::cout << "\n\nPinged\n\n" << std::endl;
+    set_model_id(20);
     receive_thread_tx = std::thread(&ELRS::receive_thread, this);
     send_thread_tx = std::thread(&ELRS::send_thread, this);
     return;
@@ -230,6 +234,43 @@ void ELRS::read_parameter(uint8_t config_field_index, uint8_t chunk_index) {
     packet[7] = crsf_crc8(&packet[2], packet[1] - 1);
     while (exchange(packet, 8, CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY))
         usleep(1000);
+}
+
+void ELRS::write_parameter(uint8_t config_field_index, uint8_t value) {
+    uint8_t packet[8];
+    packet[0] = CRSF_ADDRESS_CRSF_TRANSMITTER;
+    packet[1] = 6;
+    packet[2] = CRSF_FRAMETYPE_PARAMETER_WRITE;
+    packet[3] = CRSF_ADDRESS_CRSF_TRANSMITTER;
+    packet[4] = CRSF_ADDRESS_ELRS_LUA;
+    packet[5] = config_field_index;
+    packet[6] = value;
+    packet[7] = crsf_crc8(&packet[2], packet[1] - 1);
+    std::cout << "start writing model id" << std::endl;
+    int _cnt = 0;
+    while (exchange(packet, 8, CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY)) {
+        _cnt++;
+        usleep(1000);
+    }
+}
+
+void ELRS::set_model_id(uint8_t model_id) {
+    uint8_t packet[9];
+    packet[0] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    packet[1] = 8;
+    packet[2] = CRSF_FRAMETYPE_COMMAND;
+    packet[3] = CRSF_ADDRESS_CRSF_TRANSMITTER;
+    packet[4] = CRSF_ADDRESS_RADIO_TRANSMITTER;
+    packet[5] = SUBCOMMAND_CRSF;
+    packet[6] = COMMAND_MODEL_SELECT_ID;
+    packet[7] = model_id;
+    packet[8] = crsf_crc8(&packet[2], packet[1] - 1);
+    std::cout << "start sending model id" << std::endl;
+    int _cnt = 0;
+    while (exchange(packet, 9, CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY) && _cnt < 10) {
+        _cnt++;
+        usleep(1000);
+    }
 }
 
 void ELRS::zerothrottle() {
@@ -467,9 +508,9 @@ void ELRS::parseParameterEntry(unsigned char *buffer) {
             index ++;
         }
         if (_current_config_index == _config_field_index) {
-            if (_field_label == "Bind") {
-                std::cout << "ELRS: Bind parameter at config field index " << +_config_field_index << std::endl;
-                _bind_index = +_config_field_index;
+            if (_field_label == "Model Ma") {
+                std::cout << "ELRS: model match at config field index " << +_config_field_index << std::endl;
+                _model_match_index = +_config_field_index;
             }
             _exchanged = true;
         }
