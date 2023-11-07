@@ -159,16 +159,13 @@ class MPC(Controller):
         Vx_e[:nx, :nx] = np.eye(nx)
         self.ocp.cost.Vx_e = Vx_e
 
-        # Constraints on the RPMs is what helps keep the drone corrected
-        # this is a limitation and probably better tuning could allow more room
+        # Nonlinear constraints.
+        """
+        in my experience, nonlinear constraints on the control inputs don't seem to work well. but this could just require a better formulation or slack tuning which i didn't explore much
+        when the constraint is linear it works nicely
 
-        phi_max = theta_max = pi/2
-        T_max = Dynamics.G*1.2
-
-        # self.ocp.constraints.lbu = np.array([-10, -10, -0])
-        # self.ocp.constraints.ubu = np.array([+10, +10, +T_max])
-
-        # self.ocp.dims.np = 1
+        if at some point, you need to add convex obstacles, add them here
+        """
         self.ocp.constraints.constr_type = 'BGH'
         # self.ocp.model.con_h_expr = ca.vertcat(*[self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 + self.ocp.model.u[2]**2])
         self.ocp.model.con_h_expr = self.ocp.model.u[0]**2 + self.ocp.model.u[1]**2 + self.ocp.model.u[2]**2
@@ -194,6 +191,8 @@ class MPC(Controller):
 
         u_max = 15
 
+        # a box constraint on the control input: acceleration. 
+        # this should technically be a sphere with a max norm. but nonlinear constraints weren't working well.
         self.ocp.constraints.lbu = np.array([-20, -0, -20])
         self.ocp.constraints.ubu = np.array([+20, +18, +20])
 
@@ -215,6 +214,7 @@ class MPC(Controller):
         self.solver = AcadosOcpSolver(self.ocp, json_file = 'acados_json', verbose=False)
 
         self.preds = np.zeros((self.N, self.nx))
+        self.status = 0
 
     def __call__(self, state_c, traj, i=0):
 
@@ -222,51 +222,24 @@ class MPC(Controller):
         self.solver.set(0, "lbx", state_c)
         self.solver.set(0, "ubx", state_c)
 
-        # v_t = state_d[:-6] - state_c[:-3]
-        # v_t_cap = v_t/np.linalg.norm(v_t)
-        # self.solver.set(1, "u", v_t_cap*10)
-
-        split = self.N-1
-
         # set current setpoint
 
         cid = np.argmin(np.linalg.norm(state_c[:3] - traj[:, :3], axis=1))
-
         idf = min(cid, i)
+
         idf = i
         for j in range(self.N):
 
             idx = min(j + idf, len(traj)-1)
-            # print(idf, idx)
             yref = traj[idx]
-            # yref = np.array([0.85, -0.5,-1.04486, 0,0,0, 0,0,0])
-
             self.solver.set(j, "yref", yref)
 
-        # for j in range(self.N-split, self.N):
-        #     self.solver.set(j, "yref", traj[1])
         idx_n = min(idf + self.N, len(traj)-1)
         yref_n = traj[idx_n][:-3]
-        # yref_n = np.array([0.85, -0.5,-1.04486, 0,0,0])
-
-        # print(state_c)
-        # print(np.linalg.norm(state_c[3:6]))
-
-        # for j in range(self.N):
-        #     yref = np.array([traj[0][j+i][0], traj[0][j+i][1], traj[0][j+i][2], traj[1][j+i][0], traj[1][j+i][1], traj[1][j+i][2], traj[2][j+i][0], traj[2][j+i][1], traj[2][j+i][2]])
-        #     self.solver.set(j, "yref", yref)
-
-        # # for j in range(self.N-split, self.N):
-        # #     self.solver.set(j, "yref", traj[1])
-        # yref_n = np.array([traj[0][-1][0], traj[0][-1][1], traj[0][-1][2], traj[1][-1][0], traj[1][-1][1], traj[1][-1][2]])
-
+       
         self.solver.set(self.N, "yref", yref_n)
 
-        status = self.solver.solve()
-        # print(state_c[3:], traj[min(idf, len(traj)-1), 3:6])
-
-        # the perfect MPC predicted state. not sure which one to use.
-        # self.x = self.solver.get(1, "x")
+        self.status = self.solver.solve()
 
         # store predictions
         self.preds = np.zeros((self.N, self.nx))

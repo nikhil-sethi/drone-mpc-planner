@@ -121,7 +121,6 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         
         # ic_theta = (theta_incoming - np.pi/2) + (np.pi) *(acc_ic[0])
         
-
         self.acc_ic = acc_ic(acc_ic_norm)
         self.acc_ic[1] -= Dynamics.G
         
@@ -1258,7 +1257,7 @@ class DynamicTraj():
         # moth_state = np.array([0.2, -0.7, -1.2, self.v_mag, 0, 0])
         moth_state = np.array([-1.0, -0.3, -1.2, self.v_mag, 0, 0])
         nl_optimizer = MothObliterator(drone_state = drone_state, moth_state =moth_state, log_level=LogLevel.NONE)
-        x_opt, cost = nl_optimizer.optimize()
+        x_opt, cost, status = nl_optimizer.optimize()
 
         self.t1 = x_opt[0]
         mvajscp = nl_optimizer.traj_opt
@@ -1355,14 +1354,6 @@ class DynamicTraj():
 class MothObliterator():
     def __init__(self, drone_state, moth_state, log_level=LogLevel.NONE) -> None:
         self.drone_state = drone_state
-        # drone_state = 
-        # moth_model = FirstOrder(n_states=6, n_actions=3)
-
-        # moth_controller = Random(n_actions=3, variance= np.linalg.norm(moth_state[:3])*np.ones(3))
-        # moth_controller = Constant(action=moth_state[3:])
-        
-        # self.moth = Particle(model=moth_model, controller=moth_controller, init_state = moth_state)
-
         self.moth = Moth(init_state = moth_state)
 
         self.log_level = log_level
@@ -1375,7 +1366,7 @@ class MothObliterator():
 
         self.cons = {
             # "type":'eq', 'fun':lambda x:  x[0] + x[1] - sum(x0),
-            "type":'ineq', 'fun':lambda x:  acc_ic(x[2:])[1] - Dynamics.G
+            "type":'ineq', 'fun':lambda x:  acc_ic(x[2:])[1] - Dynamics.G # y component of interception accleration should be atleast gravity
         }
         # self.cons = None
         
@@ -1402,17 +1393,12 @@ class MothObliterator():
 
     def objective(self, x):
         start = time.perf_counter()
-
-        # ic_point = self.moth.init_state + self.moth.policy(self.moth.init_state)*x[0]
-
         ic_point = self.moth.simulate(x[0]) # simulate moth for t1 seconds
-        # ic_point = np.array([0.5, -0.5, -0.5])
         wps = np.array([
             self.drone_state,
             ic_point[:], 
             np.empty_like(self.drone_state[:]) # dummy end point. optimized internally
             ])
-        # print(wps)
 
         self.traj_opt = MinVelAccJerkSnapCrackPop(order = 3, waypoints = wps, time=[0,x[0],x[1]], acc_ic_norm=x[2:], log_level=LogLevel.NONE)
 
@@ -1428,11 +1414,11 @@ class MothObliterator():
         return cost
 
     def optimize(self):     
-        res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac='2-point', options={'gtol': 1e-6, 'disp': False},constraints=self.cons, bounds = self.bounds)        
-
+        res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac='2-point', options={'acc': 1e-6, 'disp': False}, constraints=self.cons, bounds = self.bounds)        
+        
         if self.log_level >=LogLevel.INFO:
             print("Optimal val:", res.x)
-        return res.x, res.fun
+        return res.x, res.fun, res.status
         
 if __name__=="__main__":
 

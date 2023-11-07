@@ -88,7 +88,7 @@ class FullDroneModel(DynamicsModel):
                                                                                         [-1, 1, 1, -1],
                                                                                         [-1, 1, -1, 1]])
 
-class DroneRPY(FullDroneModel):
+class NonLinearDroneRPY(FullDroneModel):
     """Full nonlinear drone model with roll, pitch, yaw and RPM as input"""
     def __init__(self, n_states=12, n_actions=4, mass=1) -> None:
         super().__init__(n_states, n_actions, mass) 
@@ -125,7 +125,7 @@ class DroneRPY(FullDroneModel):
 
         return [dx,dy,dz,dphi, dtheta, dpsi, dvbx,dvby,dvbz,dp,dq,dr]
     
-class DroneQuat(FullDroneModel):
+class NonelinearDroneQuat(FullDroneModel):
     def __init__(self, n_states=12, n_actions=4, mass=1) -> None:
         super().__init__(n_states, n_actions, mass)
 
@@ -166,4 +166,29 @@ class DroneQuat(FullDroneModel):
         dwy = -(self.Ct*self.l*(w1**2 - w2**2 - w3**2 + w4**2) + self.Ixx*wx*wz - self.Izz*wx*wz)/self.Iyy
         dwz = -(self.Cd*(w1**2 - w2**2 + w3**2 - w4**2) - self.Ixx*wx*wy + self.Iyy*wx*wy)/self.Izz
 
-        [dxq,dyq,dzq,dq1,dq2,dq3,dq4,dvbx,dvby,dvbz,dwx,dwy,dwz]
+        return [dxq,dyq,dzq,dq1,dq2,dq3,dq4,dvbx,dvby,dvbz,dwx,dwy,dwz]
+    
+class LinearDroneRPY(FullDroneModel):
+    """nonlinear model approximated around equilibrium point
+    ref: 
+    """
+
+    def __init__(self, n_states=12, n_actions=4, mass=1) -> None:
+        super().__init__(n_states, n_actions, mass)
+        # linear roll pitch model
+        self.A = np.zeros((self.N_STATES, self.N_STATES))
+        self.A[:self.N_STATES//2, self.N_STATES//2:] = np.eye(self.N_STATES//2)
+        self.A[7,3] = -self.g0
+        self.A[6,4] = self.g0
+
+        self.B = np.zeros((self.N_STATES, self.N_ACTIONS))
+        self.B[8] = (2*self.Ct/self.mass) * np.array([1,1,1,1])
+        self.B[11] = (2*self.Cd/self.Izz) * np.array([-1,1,-1,1])
+        self.B[10] = (self.dq*self.Ct/self.Iyy) * np.array([-1,1,1,-1])
+        self.B[9] = (self.dq*self.Ct/self.Ixx) * np.array([-1,-1,1,1])
+
+        self.B *= self.hov_w
+
+
+    def __call__(self, state, action):
+        return self.A @ state + self.B @ action
