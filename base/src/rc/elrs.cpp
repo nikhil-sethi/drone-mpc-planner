@@ -99,11 +99,11 @@ void ELRS::ping_thread(void) {
         read_parameter(_current_config_index, 0);
         _current_config_index++;
     }
-    if (_model_match_index) {
-        write_parameter(_model_match_index, 20);
-    }
+    // if (_model_match_index) {
+    //     write_parameter(_model_match_index, 20);
+    // }
     std::cout << "\n\nPinged\n\n" << std::endl;
-    set_model_id(20);
+    // set_model_id(20);
     receive_thread_tx = std::thread(&ELRS::receive_thread, this);
     send_thread_tx = std::thread(&ELRS::send_thread, this);
     return;
