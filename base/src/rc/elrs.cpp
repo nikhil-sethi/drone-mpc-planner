@@ -93,6 +93,15 @@ int read_chunk_index = 0;
 
 void ELRS::ping_thread(void) {
     usleep(100);
+    // reset module
+    RS232_disableDTR();
+    usleep(100);
+    RS232_enableDTR();
+    RS232_CloseComport();
+    port_unopened = true;
+    usleep(5e6);
+    connect();
+    usleep(1e6);
     ping();
     _current_config_index = 0;
     while (find_modelid_parameter && _current_config_index <= no_cfg_params) {
