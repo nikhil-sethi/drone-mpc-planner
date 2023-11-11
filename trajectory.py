@@ -14,10 +14,11 @@ from conf import *
 # from models import FirstOrder
 from agents import Moth
 # from controllers import Constant, Random
-
+history = []
 np.set_printoptions(precision=4, suppress=True)
 np.set_printoptions(threshold=np. inf, suppress=True, linewidth=np. inf)
 class TrajectoryManager():
+    """ Base class for all trajectory planners. Helps in plotting, sanity checks etc."""
     def __init__(self, order, waypoints, time=1, log_level=LogLevel.INFO) -> None:
         
         self.wps = waypoints
@@ -62,23 +63,28 @@ class TrajectoryManager():
         return diffs/sum(diffs)
 
     def generate(self, coeffs_raw, order = 0, dt=0.05):
-        """works only for two segments, some hardcoding but fast"""
+        """Evaluate the polynomial defined by coeffs_raw at discretized time instants.
+        
+        coeffs_raw: coefficients for all segments (m), all dimensions (l) and the right order(n)
+        order: derivative order of the polynoimial
+        dt: discretization time step
+        """
         C = np.array(coeffs_raw).reshape(self.l, self.m, 2*self.n) # coefficients
-        self.tvec = np.arange(0, sum(self.t)+dt, dt)
-        self.tvec[-1] = sum(self.t)
+        self.tvec = np.arange(0, sum(self.t)+dt, dt)  # all time stamps with discretization
+        self.tvec[-1] = sum(self.t) # manually add the last point too, can get lost when discretisation is coarse
 
-        diff = [fact(j,order) for j in range(2*self.n)]
+        diff = [fact(j,order) for j in range(2*self.n)] # TODO: stuff here can be replaced by poly_t_n functions in derived classes. just for intuitiveness
         time_powers = np.concatenate([[0]*order, np.arange(2*self.n -order)])
-        pvec = diff*(np.tile(self.tvec[:, np.newaxis], 2*self.n) ** time_powers) # (d/l x order)
+        pvec = diff*(np.tile(self.tvec[:, np.newaxis], 2*self.n) ** time_powers) # this is polynomial evaluated at all discretized time steps with the 
         c_mask = np.zeros_like(self.tvec)
         for t in self.t[1:-1]:
             c_mask += (self.tvec>=t).astype(int)
 
-        traj = np.sum(C[:, c_mask.astype(int)]*pvec, axis=2).T
+        traj = np.sum(C[:, c_mask.astype(int)]*pvec, axis=2).T # coefficients x time^i  at each time stamp is the polynomial. this is just a vectorised version of that.
 
         return traj
         
-    def plot(self, points, ax=None)	:
+    def plot(self, points, ax=None, line_color = 'blue', wp_color = 'red', alpha = 1, linewidth = 4)	:
         _, dims = points.shape
         if dims == 3: # 3D
             # self.ax = plt.axes(projection='3d')
@@ -86,8 +92,8 @@ class TrajectoryManager():
             # ax.set_ylim(-1.5,1.5)
             # ax.set_zlim(-1.5,1.5)
             
-            ax.plot(self.wps[:, 0],self.wps[:, 2],self.wps[:, 1],'ro', markersize=8)
-            ax.plot(points[:,0],points[:,2],points[:,1], 'b-', linewidth=3)
+            ax.plot(points[:,0],points[:,2],points[:,1], linestyle = '-', color = line_color , alpha = alpha, linewidth=linewidth)
+            ax.plot(self.wps[:, 0],self.wps[:, 2],self.wps[:, 1], marker = 'o', color = wp_color, alpha=alpha , markersize=8, linestyle='')
         elif dims == 2:
             # ax.plot(self.wps[0],self.wps[1],'k--', linewidth=2)
             ax.plot(points[:,0],points[:,1], 'b-', linewidth=3)
@@ -106,6 +112,11 @@ class TrajectoryManager():
             ax.quiver(pos[:,0], pos[:,1], vec[:,0],vec[:,1], color=color, width=0.005)
 
 def acc_ic(acc_ic_norm):
+    """Calculate acceleration at interception from optimization variables"""
+
+    # the roll and pitch ranges for this calculation could be limited so that search is carried out only 
+    # in a certain 3d solid-angle. For example you could choose an area that only allows interception acclerations that are moving forward.
+    # might also make search faster + give better solutions. depends on what you want
     ic_phi = Interception.PHI[0] + (Interception.PHI[1]-Interception.PHI[0])*(acc_ic_norm[1]) 
     ic_theta = Interception.THETA[0] + (Interception.THETA[1] - Interception.THETA[0])*(acc_ic_norm[2]) 
     ic_mag =  Interception.MAG[0] + (Interception.MAG[1] - Interception.MAG[0])*acc_ic_norm[0]
@@ -113,6 +124,9 @@ def acc_ic(acc_ic_norm):
     return ic_mag * np.array([np.cos(ic_phi), np.sin(ic_phi)*np.cos(ic_theta), -np.sin(ic_phi)*np.sin(ic_theta)])
 
 class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
+    """Main trajectory planner
+    Uses quadratic programming from CVXOPT to plan a continuous trajectory between multiple waypoints that can minimize snap/jerk etc.
+    """
     def __init__(self, order, waypoints, time = 1, log_level=LogLevel.INFO, acc_ic_norm = None) -> None:
         # calc 'moving forward' bounds for theta opt
 
@@ -140,9 +154,10 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         # setup objectives
         if self.log_level >=LogLevel.INFO:
             print("[Optimizer] Setting up optimization objective")
-        self.setup_objectives()
+        self.setup_objectives()     
 
     def setup_eq_constraints(self):
+        """Sets up the LHS matrix (A) for the equality constraints for the quadratic program of the form A@x = b"""
         # Endpoint constraints
         A_ep = []
 
@@ -172,8 +187,9 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
 
         # combine endpoint and continuity constraints
         self.A = A_ep + A_con
-
+        
     def setup_ineq_constraints(self):
+        """Sets up the LHS matrix (G) for the inequality constraints for the quadratic program of the form G@x <= h"""
         self.G = np.array([
 
             # geofence constraints
@@ -184,19 +200,21 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             self.poly_t_n_m(self.t_s[1], Order.POS, 1),  # max position at interception 
             -self.poly_t_n_m(self.t_s[1], Order.POS, 1), # min position at interception
             
-            self.poly_t_n_m(self.t_s[1] + self.t[2]/2, Order.POS, 2),  # max position at interception 
-            -self.poly_t_n_m(self.t_s[1] + self.t[2]/2, Order.POS, 2), # min position at interception
+            # following three constraints constrain the second half of the trajectory within geofence
+            self.poly_t_n_m(self.t_s[1] + self.t[2]/2, Order.POS, 2),  # max position at interception + 50% 
+            -self.poly_t_n_m(self.t_s[1] + self.t[2]/2, Order.POS, 2), # min position at interception + 50%
             
-            self.poly_t_n_m(self.t_s[1] + 3*self.t[2]/4, Order.POS, 2),  # max position at interception 
-            -self.poly_t_n_m(self.t_s[1] + 3*self.t[2]/4, Order.POS, 2), # min position at interception
+            self.poly_t_n_m(self.t_s[1] + 3*self.t[2]/4, Order.POS, 2),  # max position at interception + 75%
+            -self.poly_t_n_m(self.t_s[1] + 3*self.t[2]/4, Order.POS, 2), # min position at interception + 75%
             
-            self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2),  # max position at interception 
-            -self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2), # min position at interception
+            self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2),  # max position at interception + 25%
+            -self.poly_t_n_m(self.t_s[1] + self.t[2]/4, Order.POS, 2), # min position at interception + 25%
 
-            
             self.poly_t_n_m(self.t_s[-1], Order.POS, 2),  # max position at end point 
             -self.poly_t_n_m(self.t_s[-1], Order.POS, 2), # min position at end point 
             
+
+            # acceleration bo limits at the tree points
             self.poly_t_n_m(self.t_s[0], Order.ACC, 1),  # max acc at start point
             -self.poly_t_n_m(self.t_s[0], Order.ACC, 1), # min acc at start point
             
@@ -211,7 +229,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             ])
 
     def poly_t_n(self, t, n):
-        """nth polynomial derivative at time t for the m'th segment"""
+        """nth polynomial derivative at time t"""
         return [fact(j, n)*pow(t, j-n) for j in range(2*self.n)]
 
     def poly_t_n_m(self, t, n, m):
@@ -219,6 +237,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         return np.array([0]*2*self.n*(m-1) + self.poly_t_n(t, n) + [0]*2*self.n*(self.m - m))
 
     def acc_quad_t(self, t):
+        """Quadratic cost matrix for squared acceleration at time instant t"""
         diff = [fact(j, 2) for j in range(2*self.n)]
         coeff_prods = np.prod(list(product(diff,repeat=2)),-1).reshape(2*self.n,2*self.n)
         
@@ -243,6 +262,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
         self.H *= 2. # to comply with quadratic form
 
     def set_acc_t(self, acc_ic_l):
+        """Sets the linear part of the objective. In our case it's the matching acceleration part (xdd(t) - a_t)^2 = xdd(t)^2 + a_t^2 - 2.a_t.xdd(t) .  Constant part is ignored"""
         self.f = [0, 0] + [Weights.MatchAccIC * (-2*fact(j,2)*acc_ic_l*(self.t_s[1]**(j-2))) for j in range(2,2*self.n)] # comes from linear term of (x_dd(t)-a_t)**2 polynomial
         self.f.extend([0]*2*self.n)
         
@@ -285,13 +305,16 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             b = b_ep + b_con	
 
             if l == 1: # y axis
-                amax = Dynamics.AMAX - Dynamics.G
+                # the box around acceleration in the y axis is shifted downwards. This happens because we assume that we're already compensating for gravity.
+                # so the amount of acceleration left in the upwards direction is exactly lesser than that amount.
+                # this is ofc. not ideal. Ideally you would just upper cap the norm of the entire thing. 
+                amax = Dynamics.AMAX - Dynamics.G 
                 amin = Dynamics.AMAX + Dynamics.G # this becomes negative
                 vmin = Dynamics.VYMIN
             else:
                 amax = Dynamics.AMAX
                 amin = Dynamics.AMAX   # this becomes negative
-                vmin = abs(Dynamics.VYMIN)
+                vmin = abs(Dynamics.VYMIN) # used 
 
             # inequality constraints RHS // box constraints
             h = [abs(geofence[l][1]), abs(geofence[l][0]), 
@@ -310,8 +333,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             # acceleration at interception depends on dimension
             self.set_acc_t(self.acc_ic[l])
             options = {"show_progress":self.log_level>=LogLevel.DEBUG}
-            # print(np.array(self.A), self.G, self.H)
-            # print(self.f, b, h)
+
             self.sol = solvers.qp(P = matrix(self.H), q=matrix(self.f, tc='d'), A=matrix(np.array(self.A), tc='d'), b=matrix(b, tc='d'), G=matrix(self.G, tc='d'), h = matrix(h, tc='d'), options=options)
             self.status *= int(self.sol["status"] == "optimal")
             if self.status == 1:
@@ -324,7 +346,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             # self.cost = self.sol['primal objective']
             pos = self.generate(self.x_opt, dt=0.1, order=0) # coarse discretization is fine 
             acc = self.generate(self.x_opt, dt=0.05, order=2) # need finer discretization because acc is more senstive
-
+            history.append(pos)
             # penalise ovreall acceleration magnitude // is nonlinear
             if np.max(np.linalg.norm(acc, axis=1))>Dynamics.AMAX:
                 self.cost += 100000
@@ -337,6 +359,13 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             print("[Optimizer] Done.")
         return self.cost
     
+    def plot_history(self, ax):
+        """Helps to visualise how trajectories are changing over time. 
+        TODO history is a global var right now, shame on you, change this
+        """
+        for pos in history:
+            self.plot(pos, ax, line_color='gray', alpha=0.3, wp_color='gray', linewidth=2)
+
     def evaluate(self, dt, order=0):
         """get a specific plan for position, velocity etc."""
         if not self.x_opt and self.log_level>=LogLevel.INFO:
@@ -346,7 +375,7 @@ class MinVelAccJerkSnapCrackPop(TrajectoryManager): # cute name
             soln = self.x_opt
         plan = self.generate(soln, dt=dt, order = order)
         if order==2:
-            plan[:,1] +=  Dynamics.G # always compensating for gravity
+            plan[:,1] +=  Dynamics.G # assume thealways compensating for gravity
         return plan
 
 class MinVelAccJerkSnapCrackPopCorridor(MinVelAccJerkSnapCrackPop):
@@ -1201,6 +1230,14 @@ class DynamicTraj():
         self.ax2.grid(True)
         self.ax3.grid(True)
 
+        self.ax1.set_xlabel("x(Width)")
+        self.ax1.set_zlabel("y(Height)")
+        self.ax1.set_ylabel("z(Depth)")
+
+        self.ax2.set_ylabel("Velocity")
+        self.ax3.set_ylabel("Acceleration")
+        self.ax3.set_xlabel("Time")
+        
         st1.on_changed(self.update_v_theta)
         st2.on_changed(self.update_v_mag)
         plt.connect('button_press_event', self.on_click)
@@ -1295,7 +1332,9 @@ class DynamicTraj():
         
         # plot main trajectory
         max_acc = np.max(np.abs(acc), axis=0)
+        mvajscp.plot_history(self.ax1)
         mvajscp.plot(pos, ax=self.ax1)
+        
         # self.ax1.plot(pos[-1][0], pos[-1][1], "ro", markersize=6)
 
         moth_pos_history = np.array(nl_optimizer.moth.history["state"])[:, :3]
@@ -1313,44 +1352,6 @@ class DynamicTraj():
             self.moth_y = event.ydata
             # self.update()
 
-
-# class Particle:
-#     """Prediction model for moth movement"""
-#     def __init__(self, init_state, time_step, **kwargs) -> None:
-#         self.init_state = init_state.astype(float) # dimsx2 (position and velocity)
-#         self.dt = time_step 
-
-#         # self.policy = ConstantThetaMag2D(action=kwargs["moth_vel"])
-#         self.policy = ConstantVel(action=init_state[n_dims:])
-#         # self.policy = Random([0,0], [2,2])
-
-#         self.history = [self.init_state[:n_dims]]
-
-#     def xdot(self, _x, _u):
-#         dx = _u[0]
-#         dy = _u[2]
-#         dz = _u[1]
-#         du = 0
-#         dv = 0
-#         dw = 0
-#         return [dx, dy, dz, du, dv, dw]
-
-#     def update(self):
-#         # print(self.state, action)
-#         action = self.policy(self.state)
-#         self.state = self.state + np.array(self.xdot(self.state, action))*self.dt 
-
-#     def simulate(self, Ts):
-#         """Simulate system for Ts seconds"""
-#         self.state = self.init_state.copy()
-#         self.history = [self.state[:n_dims]]
-#         N = int(Ts/self.dt)
-#         for _ in range(N):
-#             self.update()
-#             self.history.append(self.state[:n_dims])
-
-#         return self.state
-
 class MothObliterator():
     def __init__(self, drone_state, moth_state, log_level=LogLevel.NONE) -> None:
         self.drone_state = drone_state
@@ -1362,7 +1363,6 @@ class MothObliterator():
         self.x0 = [0.5]*5 
         self.x0[-1] = 0.58  # starting pitch angle (try to be close to +g as possible)
         self.bounds = ((0.1, 1.8), (0.2, 1), (0,1), (0,1), (0,1))
-
 
         self.cons = {
             # "type":'eq', 'fun':lambda x:  x[0] + x[1] - sum(x0),
@@ -1407,7 +1407,6 @@ class MothObliterator():
         t2_cost = x[1]**2
         acc_max_cost = (x[2])**2
         cost = 0.1*kinematic_cost + Weights.MinTime[0]*t1_cost + Weights.MinTime[1]*t2_cost - Weights.MaxAccIC*acc_max_cost
-        
         if self.log_level>=LogLevel.DEBUG:
             print("Optimization time for 1 iteration: ", time.perf_counter() - start)
             print("Total cost: ", cost)
@@ -1415,10 +1414,10 @@ class MothObliterator():
 
     def optimize(self):     
         res = scipy.optimize.minimize(self.objective, self.x0, method='SLSQP', jac='2-point', options={'acc': 1e-6, 'disp': False}, constraints=self.cons, bounds = self.bounds)        
-        
+        # res = scipy.optimize.shgo(self.objective, self.bounds, constraints = self.cons,n=64, sampling_method='sobol', options={'f_tol': 1e-3, 'disp': True, 'maxtime':0.2})
         if self.log_level >=LogLevel.INFO:
             print("Optimal val:", res.x)
-        return res.x, res.fun, res.status
+        return res.x, res.fun, res["status"]
         
 if __name__=="__main__":
 

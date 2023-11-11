@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import time
 from matplotlib import animation
 from models import DynamicsModel, FirstOrder
-from controllers import Constant
+from controllers import Constant, Random
 from casadi import sin, cos, tan
 from typing import Any
 from conf import Dynamics, geofence
@@ -114,6 +114,7 @@ class Moth(Particle):
         
         # for a constant controller, just use the initial velocity
         controller = Constant(action=np.array(kwds["init_state"][-3:]))
+        # controller = Random(n_actions=3, variance=[2,2,2])
         super().__init__(model, controller, n_states, n_actions, **kwds)
 
     def randomize(self):

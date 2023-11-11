@@ -106,8 +106,8 @@ class Env():
             ssh.connect(host, 22, username, pkey=key)
             sftp = ssh.open_sftp()
 
-            folder_path = "/home/pats/pats/data/20231030_104246/"
-            flight_num = 1
+            folder_path = "/home/pats/pats/data/20231109_184421/"
+            flight_num = 2
 
             # folder_path = "/home/nikhil/Nikhil/Masters/Internship/PATS/code/pats/logs/20230922_180506/"
 
@@ -143,7 +143,7 @@ class Env():
             self.traj_log = traj_log.reshape((len(data)-1, 15, 3))
 
             num_frames = len(data)
-            ani_interval = 60
+            self.ani_interval = 10
             # self.anim = animation.FuncAnimation(fig, self.replay_update, frames=len(data), interval=20, blit=True)
         
         # Dynamic simulation 
