@@ -1,0 +1,10 @@
+keep-one-line-blocks
+keep-one-line-statements
+--pad-oper
+--pad-header
+--indent-switches
+--indent-cases
+--unpad-paren
+--align-pointer=name
+--align-reference=name
+--convert-tabs

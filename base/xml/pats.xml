@@ -1,0 +1,27 @@
+<SerializableClass Type="PatsParameters" Version="1.21">
+    <Member Name="light_level_threshold">0.5</Member>
+    <Member Name="has_screen">false</Member>
+    <Member Name="periodic_restart_minutes">60</Member>
+    <Member Name="enable_start">disabled</Member>
+    <Member Name="enable_end">disabled</Member>
+    <Member Name="min_hunt_size">0.01</Member>
+    <Member Name="max_hunt_size">0.05</Member>
+    <Member Name="op_mode">op_mode_c</Member>
+    <Member Name="disable_real_hunts">false</Member>
+    <Member Name="watchdog">true</Member>
+    <Member Name="fps">90</Member>
+    <Member Name="video_raw">video_file</Member>
+    <Member Name="video_render">video_disabled</Member>
+    <Member Name="joystick">rc_none</Member>
+    <Member Name="drone">drone_anvil_superbee</Member>
+    <Member Name="location">openspace</Member>
+    <Member Name="flightplan">../xml/flightplans/simple-demo-koppert.xml</Member>
+    <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>
+    <Member Name="live_image_frq">30</Member>
+    <Member Name="max_cam_angle">30</Member>
+    <Member Name="n_cams">1</Member>
+    <Member Name="long_range_mode">false</Member>
+    <Member Name="charging">false</Member>
+    <Member Name="tag">v2.3.3</Member>
+    <Member Name="trapeye">false</Member>
+</SerializableClass>

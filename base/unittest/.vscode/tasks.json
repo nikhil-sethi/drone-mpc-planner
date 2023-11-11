@@ -1,0 +1,72 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceRoot}/build-unittest"
+            },
+            "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}",
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "make clean",
+            "type": "shell",
+            "command": "make clean",
+            "options": {
+                "cwd": "${workspaceRoot}/build-unittest"
+            },
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make -j$(nproc)",
+            "options": {
+                "cwd": "${workspaceRoot}/build-unittest"
+            },
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": [
+                {
+                    "base": "$gcc",
+                    "fileLocation": [
+                        "absolute"
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "Run (no debug)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build-unittest/pats-unittest",
+            "args": [ ],
+            "dependsOn": [
+                "make"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build-unittest"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "showReuseMessage": false
+            }
+        }
+    ]
+}

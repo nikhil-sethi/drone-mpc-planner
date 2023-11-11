@@ -1,0 +1,18 @@
+{
+    // See http://go.microsoft.com/fwlink/?LinkId=827846
+    // for the documentation about the extensions.json format
+    "recommendations": [
+        "eamodio.gitlens",
+        "bierner.markdown-preview-github-styles",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "mhutchie.git-graph",
+        "dotjoshjohnson.xml",
+        "chiehyu.vscode-astyle",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "twxs.cmake",
+        "ms-vscode.cpptools-extension-pack",
+        "aaron-bond.better-comments"
+    ]
+}

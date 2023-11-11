@@ -1,0 +1,13 @@
+---
+- hosts: kevin
+  strategy: free
+  tasks:
+    - name: Kill executor process
+      shell: "killall executor || true"
+    - name: Reboot
+      become: true
+      ignore_errors: yes
+      ignore_unreachable: yes
+      async: yes
+      poll: no
+      shell: "sleep 5 && sudo rtcwake -m off -s 120"

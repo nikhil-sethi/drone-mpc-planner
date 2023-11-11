@@ -1,0 +1,145 @@
+# 
+
+# diff
+
+# version
+# Betaflight / STM32F411 (S411) 4.2.0 Aug  6 2020 / 17:38:49 (532824e0f) MSP API: 1.43
+# config: manufacturer_id: IFRC, board_name: IFLIGHT_F411_PRO, version: bc19b7dc, date: 2020-04-01T04:37:12Z
+
+# start the command batch
+batch start
+
+board_name IFLIGHT_F411_PRO
+manufacturer_id IFRC
+
+# name: Diomedes
+
+# resources
+resource MOTOR 1 B07
+resource MOTOR 2 B06
+resource MOTOR 3 B10
+resource MOTOR 4 A00
+resource LED 1 NONE
+resource LED 2 NONE
+
+# feature
+feature -RX_PARALLEL_PWM
+feature -OSD
+feature -AIRMODE
+feature RX_SERIAL
+feature MOTOR_STOP
+feature LED_STRIP
+
+# beeper
+beeper -DISARMING
+beeper -ARMING
+beeper -ARMING_GPS_FIX
+beeper -READY_BEEP
+beeper -DISARM_REPEAT
+beeper -ARMED
+beeper -ON_USB
+
+# beacon
+beacon RX_SET
+
+# serial
+serial 1 64 115200 57600 0 115200
+
+# led
+led 0 4,7::C:0
+led 1 5,7::CT:6
+led 2 6,7::CT:2
+led 3 7,7::CT:6
+led 4 8,7::C:0
+
+# color
+color 1 0,0,1
+color 3 0,0,255
+color 5 359,0,1
+color 6 359,0,1
+color 7 359,255,255
+
+# mode_color
+mode_color 5 0 9
+mode_color 5 1 11
+mode_color 5 2 2
+mode_color 5 3 13
+mode_color 5 4 10
+mode_color 5 5 3
+mode_color 6 0 0
+mode_color 6 1 2
+mode_color 7 0 7
+
+# aux
+aux 0 0 0 1300 2100 0 0
+aux 1 1 1 900 1300 0 0
+aux 2 13 1 1975 2100 0 0
+aux 3 15 3 900 1025 0 0
+aux 4 28 1 1300 2100 0 0
+aux 5 35 2 1650 2100 0 0
+
+# master
+set gyro_lowpass2_hz = 350
+set dyn_lpf_gyro_min_hz = 280
+set dyn_lpf_gyro_max_hz = 700
+set acc_calibration = -153,83,-91,1
+set serialrx_provider = SBUS
+set dshot_idle_value = 500
+set dshot_bidir = ON
+set motor_pwm_protocol = DSHOT300
+set motor_poles = 12
+set align_board_yaw = 180
+set yaw_motors_reversed = ON
+set runaway_takeoff_prevention = OFF
+set runaway_takeoff_deactivate_throttle_percent = 25
+set gyro_1_sensor_align = DEFAULT
+set gyro_1_align_pitch = 1800
+set gyro_1_align_yaw = 1800
+set gyro_rpm_notch_harmonics = 2
+set gyro_rpm_notch_q = 600
+set name = Diomedes
+set debug_mode =  DSHOT_RPM_TELEMETRY
+
+profile 0
+
+# profile 0
+set dyn_lpf_dterm_min_hz = 98
+set dyn_lpf_dterm_max_hz = 238
+set dyn_lpf_dterm_curve_expo = 7
+set dterm_lowpass2_hz = 210
+set iterm_relax_cutoff = 30
+set yaw_lowpass_hz = 100
+set throttle_boost = 3
+set throttle_boost_cutoff = 25
+set p_pitch = 51
+set i_pitch = 99
+set d_pitch = 42
+set f_pitch = 105
+set p_roll = 46
+set i_roll = 94
+set d_roll = 39
+set f_roll = 99
+set p_yaw = 50
+set i_yaw = 99
+set f_yaw = 99
+set angle_level_strength = 140
+set level_limit = 180
+set d_min_roll = 25
+set d_min_pitch = 28
+set ff_interpolate_sp = ON
+set ff_smooth_factor = 0
+set ff_boost = 20
+set idle_min_rpm = 20
+
+rateprofile 0
+
+# rateprofile 0
+set roll_rc_rate = 255
+set pitch_rc_rate = 255
+set roll_srate = 0
+set pitch_srate = 0
+
+# end the command batch
+batch end
+
+# 

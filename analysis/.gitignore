@@ -1,0 +1,5 @@
+.ipynb_checkpoints
+__pycache__
+moth.json
+bash.exe.stackdump
+pats_records.db

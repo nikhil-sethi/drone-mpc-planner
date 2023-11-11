@@ -1,0 +1,53 @@
+---
+- hosts: holstein
+  strategy: free
+  tasks:
+    - name: Disable all pats daemons
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: touch
+    - name: Disable all baseboard
+      ansible.builtin.file:
+        path: ~/pats/flags/disable_baseboard
+        state: touch
+    - name: Kill (auto restart) executor process
+      shell: "killall executor || true"
+    - name: Kill (auto restart) daemon
+      shell: "kill $(pgrep -f daemon.py)"
+      failed_when: false
+      ignore_errors: yes
+    - name: Kill (auto restart) baseboard
+      shell: "kill $(pgrep -f baseboardlink.py)"
+      failed_when: false
+      ignore_errors: yes
+    - name: Pull pats
+      git:
+        repo: git@github.com:pats-drones/pats.git
+        dest: /home/pats/code/pats
+        update: yes
+        version: master
+        force: yes
+        clone: no
+    - name: Flash the baseboard
+      shell: "cd ~/code/pats/config/firmwares/baseboard && ./flash.sh"
+    - name: Remove disable flag
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: absent
+    - name: Build executor
+      make:
+        chdir: /home/pats/code/pats/base/build
+        params:
+          NUM_THREADS: 4
+    - name: Remove disable baseboard flag
+      ansible.builtin.file:
+        path: ~/pats/flags/disable_baseboard
+        state: absent
+    - name: Kill (auto restart) daemon
+      shell: "kill $(pgrep -f daemon.py)"
+      failed_when: false
+      ignore_errors: yes
+    - name: Kill (auto restart) baseboard
+      shell: "kill $(pgrep -f baseboardlink.py)"
+      failed_when: false
+      ignore_errors: yes

@@ -1,0 +1,12 @@
+[Unit]
+Description=RFKill-Unblock All Devices
+
+[Service]
+Type=oneshot
+ExecStart=/home/pats/pats/release/scripts/trapeye_wifi_boot_setup.sh
+ExecStop=
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+

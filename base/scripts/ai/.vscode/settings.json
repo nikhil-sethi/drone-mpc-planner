@@ -1,0 +1,18 @@
+{
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "editor.formatOnSave": true,
+    "python.formatting.autopep8Args": [
+        "--ignore=E501"
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/../base",
+        "../base/ai/"
+    ],
+    "python.pythonPath": "venv/bin/python",
+    "python.linting.pylintPath": "venv/bin/pylint",
+    "python.analysis.useImportHeuristic": true,
+    "python.linting.pylintArgs": [
+        "--generated-members=numpy.* ,torch.*"
+    ]
+}

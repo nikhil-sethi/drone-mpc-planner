@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -ex
+
+
+if [[ $HOSTNAME != pats31 ]]; then
+	echo "This test update is not intended for this system"
+	exit 0
+fi
+
+/bin/su - pats -c "cd ~/pats/release && git pr"
+kill $(pgrep -f daemon.py)
+kill $(pgrep -f baseboardlink.py)
+[ -f /home/pats/pats/flags/disable_trapeye ] || {
+	# trap eye systems must reboot
+	sleep 3600 # to have a safety in case of unexpected bootloops, with this at least one should be able to login again
+	/bin/su - pats -c "sudo rtcwake -m off -s 120 "
+}

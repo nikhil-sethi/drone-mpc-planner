@@ -1,0 +1,77 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceRoot}/build-vscode"
+            },
+            "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}",
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "make clean",
+            "type": "shell",
+            "command": "make clean",
+            "options": {
+                "cwd": "${workspaceRoot}/build-vscode"
+            },
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make -j$(nproc)",
+            "options": {
+                "cwd": "${workspaceRoot}/build-vscode"
+            },
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "showReuseMessage": false
+            },
+            "problemMatcher": [
+                {
+                    "base": "$gcc",
+                    "fileLocation": [
+                        "absolute"
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "Run (no debug)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build-vscode/executor",
+            "args": [
+                "--drone-id",
+                "1",
+                "--pats-xml",
+                "../xml/pats_debug.xml"
+            ],
+            "dependsOn": [
+                "make"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build-vscode"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "showReuseMessage": false
+            }
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "redhat.ansible",
+        "eamodio.gitlens",
+        "bierner.markdown-preview-github-styles",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "mhutchie.git-graph",
+        "dotjoshjohnson.xml",
+        "ms-python.python",
+        "visualstudioexptteam.vscodeintellicode",
+        "ms-python.vscode-pylance",
+        "aaron-bond.better-comments"
+    ]
+}

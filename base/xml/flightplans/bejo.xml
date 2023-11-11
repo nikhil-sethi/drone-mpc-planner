@@ -1,0 +1,65 @@
+<SerializableClass Type="FlightPlanXML" Version="1.3">
+    <Member Name="flightplan_name">Bejo</Member>
+    <Collection Name="waypoints">
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_takeoff</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_flying</Member>
+            <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
+            <Member Name="x">0.0</Member>
+            <Member Name="y">-0.75</Member>
+            <Member Name="z">-1.75</Member>
+            <Member Name="name">WP1</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_flying</Member>
+            <Member Name="threshold_mm">200</Member>
+            <Member Name="threshold_v">1.0</Member>
+            <Member Name="hover_pause">0</Member>
+            <Member Name="x">0.0</Member>
+            <Member Name="y">-0.75</Member>
+            <Member Name="z">-2.75</Member>
+            <Member Name="name">WP2</Member>
+        </Class>
+        <!-- <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_flying</Member>
+            <Member Name="threshold_mm">500</Member>
+            <Member Name="threshold_v">10.7</Member>
+            <Member Name="hover_pause">0</Member>
+            <Member Name="x">0.0</Member>
+            <Member Name="y">-0.75</Member>
+            <Member Name="z">-7.5</Member>
+            <Member Name="name">WP3</Member>
+        </Class> -->
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_long_range</Member>
+            <Member Name="hover_pause">3</Member>
+            <Member Name="x">0.0</Member>
+            <Member Name="y">-0.75</Member>
+            <Member Name="z">-7.5</Member>
+            <Member Name="name">WP3</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_flying</Member>
+            <Member Name="threshold_mm">300</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
+            <Member Name="x">0.0</Member>
+            <Member Name="y">-0.75</Member>
+            <Member Name="z">-2.75</Member>
+            <Member Name="name">WP4</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_yaw_reset</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_thrust_calib</Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_landing</Member>
+        </Class>
+    </Collection>
+</SerializableClass>

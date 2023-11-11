@@ -1,0 +1,14 @@
+*~
+drone/_maps.yml
+build*
+
+src/main\.cpp\.autosave
+
+*.asv
+*.csv
+xml/landing_location*.xml
+
+*.csv#
+.dir-locals.el
+
+base/.ccls-cache/

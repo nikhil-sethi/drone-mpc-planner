@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": ["HAS_AIRSIM=0", "USE_QPOASES=true"],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "configurationProvider": "microsoft.cmake-tools",
+            "compilerArgs": [],
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "/usr/include/**",
+                "/usr/include/glib-2.0/**",
+                "/usr/include/gstreamer-1.0/**",
+                "/usr/local/include/**",
+                "/usr/lib/x86_64-linux-gnu/glib-2.0/include/**"
+            ]
+        }
+    ],
+    "version": 4
+}

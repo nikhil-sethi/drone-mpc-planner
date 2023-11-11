@@ -1,0 +1,5 @@
+messy implementation in matlab that filters the insect logs to exlude false positives.
+
+Run.m initiates the process. choose here which logging-folders need to be processed. 
+Read_data.m needs to be checked. There are two different log file types in the previous months with different column ordering.
+Check which folders contain which config

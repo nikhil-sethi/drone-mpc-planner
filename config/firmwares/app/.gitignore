@@ -1,0 +1,5 @@
+.pass
+android.keystore
+*.aab
+*.apk
+*.apks

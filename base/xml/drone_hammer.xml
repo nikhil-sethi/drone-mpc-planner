@@ -1,0 +1,46 @@
+<SerializableClass Type="DroneParameters" Version="1.16">
+    <Member Name="name">hacr</Member>
+    <Member Name="initial_hover_throttle">675</Member>
+    <Member Name="min_throttle">305</Member>
+    <Member Name="full_bat_and_throttle_spinup_duration">0.4</Member>
+    <Member Name="drone_blink_strength">50</Member>
+    <Member Name="drone_led_strength">5</Member>
+    <Member Name="blink_period">0.1</Member>
+    <Member Name="radius">0.07</Member>
+    <Member Name="pad_radius">0.16</Member>
+    <Member Name="max_thrust">38</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
+    <Member Name="tx">tx_frskyd16</Member>
+    <Member Name="mode3d">false</Member>
+    <Member Name="spinup_throttle_non3d">304</Member>
+    <Member Name="land_cell_v">3.0</Member>
+    <Member Name="max_flight_time">180</Member>
+    <Member Name="min_hunt_cell_v">4.1</Member>
+    <Member Name="static_shakeit_thrust">4.</Member>
+    <Member Name="target_takeoff_velocity">1.8</Member>
+    <Member Name="led_type">led_strip</Member>
+
+    <Member Name="kp_pos_roll">12.10</Member>
+    <Member Name="kp_pos_pitch">12.20</Member>
+    <Member Name="kp_pos_throttle">12.50</Member>
+    <Member Name="ki_pos_roll">0.030</Member>
+    <Member Name="ki_pos_pitch">0.030</Member>
+    <Member Name="ki_thrust">0.100</Member>
+    <Member Name="kd_pos_roll">4.85</Member>
+    <Member Name="kd_pos_pitch">4.40</Member>
+    <Member Name="kd_pos_throttle">5.90</Member>
+
+    <Member Name="kp_pos_roll_hover">12.50</Member>
+    <Member Name="kp_pos_pitch_hover">10.00</Member>
+    <Member Name="kp_pos_throttle_hover">10.00</Member>
+    <Member Name="ki_pos_roll_hover">0.030</Member>
+    <Member Name="ki_pos_pitch_hover">0.030</Member>
+    <Member Name="ki_thrust_hover">0.200</Member>
+    <Member Name="kd_pos_roll_hover">5.50</Member>
+    <Member Name="kd_pos_pitch_hover">4.00</Member>
+    <Member Name="kd_pos_throttle_hover">4.50</Member>
+
+    <Member Name="kp_pos_kiv">4.0</Member>
+    <Member Name="kd_pos_kiv">0.1</Member>
+    <Member Name="kp_vel_kiv">0.5</Member>
+    <Member Name="kd_vel_kiv">0.01</Member>
+</SerializableClass>

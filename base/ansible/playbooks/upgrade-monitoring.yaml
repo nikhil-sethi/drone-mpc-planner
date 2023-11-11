@@ -1,0 +1,9 @@
+---
+- hosts: c,trapeye
+  strategy: free
+  tasks:
+    - name: pull
+      ansible.builtin.script: pull_release.sh
+      register: output_checks
+    - name: debug
+      ansible.builtin.debug: var=output_checks.stdout_lines

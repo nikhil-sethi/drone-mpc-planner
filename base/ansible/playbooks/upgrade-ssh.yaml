@@ -1,0 +1,14 @@
+---
+- hosts: tree
+  strategy: linear
+  gather_facts: no
+  tasks:
+    - name: checks
+      script: ssh_fix.sh
+      register: output_checks
+    - debug: var=output_checks.stdout_lines
+    # - name: serial
+    #   become: true
+    #   shell: "cat /sys/class/dmi/id/product_serial"
+    #   register: output_serial
+    # - debug: var=output_serial.stdout_lines

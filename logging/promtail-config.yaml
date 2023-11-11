@@ -1,0 +1,29 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+#  - url: http://10.13.9.11:3100/loki/api/v1/push
+  - url: http://localhost:3100/loki/api/v1/push
+    backoff_config:
+      max_period: 30m
+      max_retries: 0
+      min_period: 1s
+    batchsize: 134217728 
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: logs
+      __path__: /home/pats/pats/release/build/log.json
+#  - targets:
+#      - localhost
+#    labels:
+#      job: xml
+#      __path__: /home/pats/pats/xml/*.xml

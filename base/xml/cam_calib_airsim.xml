@@ -1,0 +1,20 @@
+<SerializableClass Type="CamCalibrationData" Version="1.3">
+    <Member Name="Angle_X">0</Member>
+    <Member Name="Angle_Y">30</Member>
+    <Member Name="Exposure">0</Member>
+    <Member Name="Gain">0</Member>
+    <Member Name="Width">848</Member>
+    <Member Name="Height">480</Member>
+    <Member Name="ppx">424</Member>
+    <Member Name="ppy">240</Member>
+    <Member Name="fx">423.691</Member>
+    <Member Name="fy">423.691</Member>
+    <Member Name="Model">4</Member>
+    <Member Name="Coeff0">0</Member>
+    <Member Name="Coeff1">0</Member>
+    <Member Name="Coeff2">0</Member>
+    <Member Name="Coeff3">0</Member>
+    <Member Name="Coeff4">0</Member>
+    <Member Name="Depth_Scale">0.001</Member>
+    <Member Name="Baseline">0.09</Member>
+</SerializableClass>

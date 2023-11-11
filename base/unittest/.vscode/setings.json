@@ -1,0 +1,9 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/",
+    "cmake.buildDirectory": "${workspaceFolder}/build-unittest/",
+    "cmake.configureOnOpen": true,
+    "cmake.preferredGenerators":[
+        "Unix Makefiles",
+        "Ninja"
+    ]
+}

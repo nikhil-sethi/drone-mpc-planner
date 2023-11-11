@@ -1,0 +1,22 @@
+<SerializableClass Type="DroneParameters" Version="1.16">
+    <Member Name="name">----</Member>
+    <Member Name="initial_hover_throttle">675</Member>
+    <Member Name="min_throttle">305</Member>
+    <Member Name="full_bat_and_throttle_spinup_duration">0.4</Member>
+    <Member Name="drone_blink_strength">50</Member>
+    <Member Name="drone_led_strength">5</Member>
+    <Member Name="blink_period">0.1</Member>
+    <Member Name="radius">0.07</Member>
+    <Member Name="pad_radius">0.16</Member>
+    <Member Name="max_thrust">65</Member>
+    <Member Name="tx">tx_frskyd16</Member>
+    <Member Name="mode3d">false</Member>
+    <Member Name="control">control_anvil_superbee</Member>
+    <Member Name="spinup_throttle_non3d">304</Member>
+    <Member Name="land_cell_v">3.0</Member>
+    <Member Name="max_flight_time">180</Member>
+    <Member Name="min_hunt_cell_v">4.1</Member>
+    <Member Name="static_shakeit_thrust">250</Member>
+    <Member Name="target_takeoff_velocity">1.</Member>
+    <Member Name="led_type">led_none</Member>
+</SerializableClass>

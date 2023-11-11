@@ -1,0 +1,14 @@
+---
+- hosts: tree
+  strategy: free
+  gather_facts: no
+  tasks:
+    - name: Kill executor process
+      shell: "killall executor || true"
+    - name: Shutdown
+      become: true
+      ignore_errors: yes
+      ignore_unreachable: yes
+      async: yes
+      poll: no
+      shell: "halt -p"
