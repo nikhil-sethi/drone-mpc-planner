@@ -1,0 +1,16 @@
+In this repository:
+1. Python simulator which can do planning, control and replay past logs
+2. Main trajectory planning algorithm (trajectory.py)
+
+
+## Setting up for MPC 
+
+To build the MPC controller (you need to do this everytime you change something in controllers.py)
+
+```python3 controllers.py```
+
+This should createa folder called `c_generated_code` which has the gen code that acados will need for compilation. The `libacados_ocp_solver_particle_ode.so` is the main library for this.
+
+
+
+

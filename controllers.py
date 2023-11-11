@@ -254,11 +254,11 @@ class MPC(Controller):
 
 if __name__=="__main__":
     import os
-    from agents import PATSX
+    from models import SecondOrderGravity
 
     # directory change magic so that there aren't a billion cgen code folders
     print("========= Rebulding OCP problem... ======== ")
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    agent = PATSX()
-    controller = MPC(agent=agent)
+    model = SecondOrderGravity(n_states=6, n_actions=3)
+    controller = MPC(model=model)
     print("========== Done ============")
