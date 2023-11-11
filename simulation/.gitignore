@@ -1,0 +1,4 @@
+c_generated_code
+*.json
+acados_json
+*.pyc
